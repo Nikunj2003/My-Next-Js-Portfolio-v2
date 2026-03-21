@@ -1,8 +1,70 @@
 "use client";
-import { useRef } from "react";
-import { motion, useScroll } from "framer-motion";
+import { useRef, useState, useEffect, useCallback } from "react";
+import { motion, useScroll, AnimatePresence } from "framer-motion";
 import { Briefcase } from "lucide-react";
-import Link from "next/link";
+
+const CHAPTER_WORDS = ["adventure", "chapter", "journey"];
+
+function FlipChapter() {
+  const [currentWord, setCurrentWord] = useState(CHAPTER_WORDS[0]);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+
+  const startAnimation = useCallback(() => {
+    const word = CHAPTER_WORDS[CHAPTER_WORDS.indexOf(currentWord) + 1] || CHAPTER_WORDS[0];
+    setCurrentWord(word);
+    setIsAnimating(true);
+  }, [currentWord]);
+
+  useEffect(() => {
+    const handler = () => setIsVisible(!document.hidden);
+    document.addEventListener("visibilitychange", handler);
+    return () => document.removeEventListener("visibilitychange", handler);
+  }, []);
+
+  useEffect(() => {
+    if (!isAnimating && isVisible) {
+      const id = setTimeout(() => startAnimation(), 3000);
+      return () => clearTimeout(id);
+    }
+  }, [isAnimating, isVisible, startAnimation]);
+
+  return (
+    <motion.h3
+      initial={{ opacity: 0, y: 10 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5 }}
+      className="mx-auto mt-10 text-center text-base font-semibold text-foreground sm:text-xl md:text-2xl"
+    >
+      And a new{" "}
+      <AnimatePresence onExitComplete={() => setIsAnimating(false)}>
+        <motion.span
+          key={currentWord}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: "spring", stiffness: 100, damping: 10 }}
+          exit={{ opacity: 0, y: -40, x: 40, filter: "blur(8px)", scale: 2, position: "absolute" }}
+          className="relative inline-block px-2 text-left"
+          style={{ color: "#208D93" }}
+        >
+          {currentWord.split("").map((letter, i) => (
+            <motion.span
+              key={currentWord + i}
+              initial={{ opacity: 0, y: 10, filter: "blur(8px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              transition={{ delay: i * 0.08, duration: 0.4 }}
+              className="inline-block"
+            >
+              {letter}
+            </motion.span>
+          ))}
+        </motion.span>
+      </AnimatePresence>{" "}
+      ahead
+    </motion.h3>
+  );
+}
 
 const OLD_EXPERIENCE_DATA = [
   {
@@ -138,6 +200,8 @@ const ExperienceSection = () => {
               <ExperienceItem key={index} exp={exp} />
             ))}
           </ul>
+
+          <FlipChapter />
         </div>
       </div>
     </section>

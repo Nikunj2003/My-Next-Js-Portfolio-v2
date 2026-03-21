@@ -70,6 +70,7 @@ export interface Project {
   title: string;
   category: string;
   description: string;
+  images: string[];
   tech: string[];
   github: string;
   live?: string;
@@ -80,6 +81,15 @@ export const projects: Project[] = [
     title: "CodeNex Backend v1",
     category: "Backend / Microservices",
     description: "Production-grade Java backend for the Codenex platform — a microservices-based system automating full-stack-web app generation using LLMs, inspired by Lovable/v0.",
+    images: [
+      "/images/projects/codenex/landing-page-light.png",
+      "/images/projects/codenex/landing-page-dark.png",
+      "/images/projects/codenex/dashboard-overview-light.png",
+      "/images/projects/codenex/dashboard-overview-dark.png",
+      "/images/projects/codenex/dashboard-usage-dark.png",
+      "/images/projects/codenex/project-builder-dark.png",
+      "/images/projects/codenex/login-page-dark.png",
+    ],
     tech: ["Java", "Spring Boot", "Maven", "Docker", "Kubernetes", "Redis", "Kafka"],
     github: "https://github.com/Nikunj2003/Codenex-backend-v1",
   },
@@ -87,6 +97,12 @@ export const projects: Project[] = [
     title: "CodeNex AI API Proxy",
     category: "AI Infrastructure",
     description: "Unified AI gateway bridging local AI tools to the web. Single API interface to multiple LLM providers with protocol translation, provider pooling, health-tracked failover, and streaming.",
+    images: [
+      "/images/projects/codenex-proxy/dashbord.png",
+      "/images/projects/codenex-proxy/providers.png",
+      "/images/projects/codenex-proxy/api-docs.png",
+      "/images/projects/codenex-proxy/login.png",
+    ],
     tech: ["Go", "Gin", "Node.js", "Express.js", "Redis", "PostgreSQL", "React"],
     github: "https://github.com/Nikunj2003/codenex-ai-api-proxy",
   },
@@ -94,6 +110,16 @@ export const projects: Project[] = [
     title: "Serenify",
     category: "Full Stack / AI Product",
     description: "Open-source mental wellness app combining empathetic AI chat (Gemini 2.5 Flash), mood tracking, journaling, guided wellness sessions, and personal analytics with privacy-first design.",
+    images: [
+      "/images/projects/serenify/landing-page-light.png",
+      "/images/projects/serenify/dashboard-light.png",
+      "/images/projects/serenify/chat-light.png",
+      "/images/projects/serenify/activities-light.png",
+      "/images/projects/serenify/profile-light.png",
+      "/images/projects/serenify/crisis-help-light.png",
+      "/images/projects/serenify/login-page-light.png",
+      "/images/projects/serenify/dashboard-streak-dark.png",
+    ],
     tech: ["React", "TypeScript", "Supabase", "pgvector", "Gemini AI", "Vercel"],
     github: "https://github.com/Nikunj2003/Serenify",
   },
@@ -101,6 +127,10 @@ export const projects: Project[] = [
     title: "CodeNex Images",
     category: "AI Product",
     description: "AI-powered image generation and editing platform using Google Gemini models, with Auth0 authentication and a polished editing workspace.",
+    images: [
+      "/images/projects/codenex-images/login-page-dark.png",
+      "/images/projects/codenex-images/generation-workspace-dark.png",
+    ],
     tech: ["React", "TypeScript", "Vite", "Auth0", "Gemini AI", "Node.js", "MongoDB"],
     github: "https://github.com/Nikunj2003/codenex-images",
   },
@@ -108,6 +138,16 @@ export const projects: Project[] = [
     title: "Resume Fit — CodeNex",
     category: "AI Product",
     description: "AI-powered resume analysis & optimization tool with ATS score checking, multi-pillar performance scoring, refinement workflows, and keyword extraction.",
+    images: [
+      "/images/projects/resumefit/landing-page-light.png",
+      "/images/projects/resumefit/landing-page-dark.png",
+      "/images/projects/resumefit/job-description-dark.png",
+      "/images/projects/resumefit/api-key-entry-light.png",
+      "/images/projects/resumefit/api-key-entry-dark.png",
+      "/images/projects/resumefit/upload-resume-empty-dark.png",
+      "/images/projects/resumefit/upload-resume-filled-dark.png",
+      "/images/projects/resumefit/system-architecture-dark.png",
+    ],
     tech: ["React", "TypeScript", "Gemini AI", "Vercel AI SDK", "Recharts"],
     github: "https://github.com/Nikunj2003/Resume-Fit-Codenex",
   },
@@ -115,6 +155,10 @@ export const projects: Project[] = [
     title: "LLaMa MCP Streamlit",
     category: "AI / LLM / MCP",
     description: "Interactive AI assistant using Streamlit, NVIDIA NIM's LLaMA 3.3 70B, and Model Context Protocol (MCP) for real-time external tool execution.",
+    images: [
+      "/images/projects/llama-mcp-streamlit/configuration-dark.png",
+      "/images/projects/llama-mcp-streamlit/tools-list-dark.png",
+    ],
     tech: ["Python", "Streamlit", "MCP", "LLaMA", "NVIDIA NIM"],
     github: "https://github.com/Nikunj2003/LLaMa-MCP-Streamlit",
   },

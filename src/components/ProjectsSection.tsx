@@ -4,6 +4,13 @@ import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { ExternalLink, Github } from "lucide-react";
 import { projects } from "@/data/portfolio";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 const categories = ["All", ...Array.from(new Set(projects.map((p) => p.category)))];
 
@@ -57,57 +64,105 @@ const ProjectsSection = () => {
         </motion.div>
 
         {/* Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((project, i) => (
             <motion.div
               key={project.title}
               initial={{ opacity: 0, y: 20, filter: "blur(4px)" }}
               animate={inView ? { opacity: 1, y: 0, filter: "blur(0px)" } : {}}
               transition={{ duration: 0.6, delay: 0.1 + i * 0.08, ease: [0.16, 1, 0.3, 1] }}
-              className="glass rounded-xl p-6 flex flex-col hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 group"
+              className="glass rounded-xl flex flex-col hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 group overflow-hidden border border-white/5"
             >
-              <span className="text-[10px] font-mono uppercase tracking-widest text-primary mb-3">
-                {project.category}
-              </span>
-              <h3 className="text-lg font-bold mb-2">{project.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-4 flex-1">
-                {project.description}
-              </p>
-              <div className="flex flex-wrap gap-1.5 mb-4">
-                {project.tech.map((t) => (
-                  <span
-                    key={t}
-                    className="px-2 py-0.5 rounded-md text-[10px] font-mono glass-subtle text-muted-foreground"
-                  >
-                    {t}
-                  </span>
-                ))}
+              <div className="w-full relative bg-black/20 overflow-hidden aspect-video group-hover:bg-black/40 transition-colors">
+                {project.images && project.images.length > 0 ? (
+                  <Carousel className="w-full h-full">
+                    <CarouselContent>
+                      {project.images.map((img, idx) => (
+                        <CarouselItem key={idx}>
+                          <img
+                            src={img}
+                            alt={`${project.title} screenshot ${idx + 1}`}
+                            className="w-full h-full object-cover object-top"
+                          />
+                        </CarouselItem>
+                      ))}
+                    </CarouselContent>
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <CarouselPrevious className="left-2 bg-background/80 hover:bg-background border-none w-8 h-8 pointer-events-auto" />
+                      <CarouselNext className="right-2 bg-background/80 hover:bg-background border-none w-8 h-8 pointer-events-auto" />
+                    </div>
+                  </Carousel>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
+                    No image available
+                  </div>
+                )}
               </div>
-              <div className="flex items-center gap-3">
-                <a
-                  href={project.github}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
-                >
-                  <Github className="w-3.5 h-3.5" />
-                  Source
-                </a>
-                {project.live && (
+
+              <div className="p-6 flex flex-col flex-1">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-primary mb-3 block">
+                  {project.category}
+                </span>
+                <h3 className="text-xl font-bold mb-3">{project.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-5 flex-1">
+                  {project.description}
+                </p>
+                
+                <div className="flex flex-wrap gap-1.5 mb-5 mt-auto">
+                  {project.tech.map((t) => (
+                    <span
+                      key={t}
+                      className="px-2 py-1 rounded-md text-[10px] font-mono glass-subtle text-muted-foreground"
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
+                
+                <div className="flex items-center gap-4 border-t border-white/5 pt-4">
                   <a
-                    href={project.live}
+                    href={project.github}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
+                    className="flex items-center gap-1.5 text-xs font-medium text-foreground/70 hover:text-primary transition-colors"
                   >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    Live
+                    <Github className="w-4 h-4" />
+                    Source
                   </a>
-                )}
+                  {project.live && (
+                    <a
+                      href={project.live}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-xs font-medium text-foreground/70 hover:text-primary transition-colors"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      Live
+                    </a>
+                  )}
+                </div>
               </div>
             </motion.div>
           ))}
         </div>
+
+        {/* View more on GitHub */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ delay: 0.5 }}
+          className="flex justify-center mt-12"
+        >
+          <a
+            href="https://github.com/Nikunj2003"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-6 py-3 rounded-full glass-subtle text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-white/10 border border-white/10 hover:border-primary/30 transition-all duration-300 active:scale-95"
+          >
+            <Github className="w-4 h-4" />
+            View more on GitHub
+          </a>
+        </motion.div>
       </div>
     </section>
   );
