@@ -15,7 +15,7 @@ const CATEGORY_ICONS: Record<string, React.ElementType> = {
 };
 
 const SkillsSection = () => {
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.05 });
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0 });
 
   return (
     <section id="skills" className="section-padding relative">
@@ -47,7 +47,7 @@ const SkillsSection = () => {
             {skillCategories.map((cat, i) => {
               const Icon = CATEGORY_ICONS[cat.title] ?? Wrench;
               return (
-                <SpotlightCard key={cat.title} delay={0.1 + i * 0.1} className="w-full">
+                <SpotlightCard key={cat.title} delay={i * 0.05} className="w-full">
                   <div className="p-8 sm:p-10">
                     <div className="flex items-center gap-4 mb-8">
                       <div className="w-12 h-12 rounded-2xl glass-subtle border border-white/5 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-500 group-hover:border-primary/30">
@@ -66,7 +66,7 @@ const SkillsSection = () => {
                           initial={{ opacity: 0, scale: 0.9 }}
                           animate={inView ? { opacity: 1, scale: 1 } : {}}
                           transition={{ delay: Math.min(0.1 + si * 0.01, 0.3), duration: 0.25 }}
-                          className="px-4 py-2 rounded-xl text-sm font-medium glass-subtle text-foreground/80 border border-white/5 hover:bg-white/10 hover:border-primary/40 hover:text-primary transition-all duration-300 cursor-default select-none"
+                          className="px-4 py-2 rounded-xl text-sm font-medium glass-subtle text-foreground/80 border border-white/5 hover:bg-white/10 hover:border-primary/40 hover:text-primary transition-all duration-300 select-none"
                         >
                           {skill}
                         </motion.span>

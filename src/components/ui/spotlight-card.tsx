@@ -24,7 +24,7 @@ export function SpotlightCard({
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const [isHovered, setIsHovered] = useState(false);
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0, rootMargin: '0px 0px -40px 0px' });
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0, rootMargin: '100px 0px 100px 0px' });
 
   function handleMouseMove({ currentTarget, clientX, clientY }: MouseEvent) {
     if (!isHovered) setIsHovered(true);

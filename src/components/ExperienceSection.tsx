@@ -150,7 +150,7 @@ const ExperienceItem = ({ exp, index }: { exp: typeof OLD_EXPERIENCE_DATA[0]; in
   return (
     <li ref={ref} className="relative mb-12 sm:mb-16 flex w-full flex-col gap-1 pl-[50px] sm:pl-[90px]">
       <TimelineIcon iconRef={ref} />
-      <SpotlightCard delay={0.2 + index * 0.1}>
+      <SpotlightCard delay={index * 0.05}>
         <div className="p-6 md:p-8">
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-5">
             <div>
@@ -182,7 +182,7 @@ const ExperienceSection = () => {
     offset: ["start 80%", "end 80%"],
   });
 
-  const [sectionRef, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
+  const [sectionRef, inView] = useInView({ triggerOnce: true, threshold: 0 });
 
   return (
     <section id="experience" className="section-padding relative z-10">

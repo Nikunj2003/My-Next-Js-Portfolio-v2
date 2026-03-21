@@ -3,7 +3,7 @@ import { JetBrains_Mono, Outfit } from 'next/font/google'
 import Script from 'next/script'
 import './globals.css'
 import { Providers } from './providers'
-
+import { SmoothScroll } from '@/components/SmoothScroll'
 const outfit = Outfit({ 
   subsets: ['latin'],
   variable: '--font-outfit',
@@ -88,9 +88,11 @@ export default function RootLayout({
           }}
         />
         <div id="root">
-          <Providers>
-            {children}
-          </Providers>
+          <SmoothScroll>
+            <Providers>
+              {children}
+            </Providers>
+          </SmoothScroll>
         </div>
       </body>
     </html>
