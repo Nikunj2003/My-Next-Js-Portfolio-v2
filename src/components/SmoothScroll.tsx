@@ -12,6 +12,8 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
       gestureOrientation: 'vertical',
       smoothWheel: true,
       wheelMultiplier: 0.8, // Slightly lower multiplier makes it feel heavier and smoother
+      syncTouch: true, // Syncs touch scroll speed on mobile
+      touchMultiplier: 1.5, // Matches the mobile swipe feel to desktop
     });
 
     function raf(time: number) {
