@@ -46,8 +46,7 @@ function FlipChapter() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: "spring", stiffness: 100, damping: 10 }}
           exit={{ opacity: 0, y: -40, x: 40, filter: "blur(8px)", scale: 2, position: "absolute" }}
-          className="relative inline-block px-2 text-left"
-          style={{ color: "#208D93" }}
+          className="relative inline-block px-2 text-left text-primary"
         >
           {currentWord.split("").map((letter, i) => (
             <motion.span
@@ -115,10 +114,8 @@ function TimelineIcon({ iconRef }: { iconRef: React.RefObject<HTMLLIElement | nu
     if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setInView(true);
-          pathLength.set(1);
-        }
+        setInView(entry.isIntersecting);
+        pathLength.set(entry.isIntersecting ? 1 : 0);
       },
       { threshold: 0.5 }
     );
@@ -224,7 +221,7 @@ const ExperienceSection = () => {
             {/* Glowing Animated Scroll Line */}
             <motion.div
               style={{ scaleY: scrollYProgress }}
-              className="absolute left-[24px] sm:left-[44px] bottom-0 top-0 w-[2px] rounded-full bg-primary origin-top shadow-[0_0_15px_rgba(41,214,185,0.6)]"
+              className="absolute left-[24px] sm:left-[44px] bottom-0 top-0 w-[2px] rounded-full bg-primary origin-top shadow-[0_0_8px_rgba(41,214,185,0.4)] sm:shadow-[0_0_15px_rgba(41,214,185,0.6)]"
             />
 
             <ul className="w-full relative py-4">
@@ -233,7 +230,7 @@ const ExperienceSection = () => {
               ))}
             </ul>
             
-            <div className="lg:hidden mt-8">
+            <div className="lg:hidden mt-8 pl-[50px] sm:pl-[90px]">
               <FlipChapter />
             </div>
           </div>
