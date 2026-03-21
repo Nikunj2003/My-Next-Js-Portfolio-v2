@@ -1,0 +1,184 @@
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
+
+
+@layer base {
+  :root {
+    --background: 40 20% 97%;
+    --foreground: 220 25% 10%;
+    --card: 40 15% 95%;
+    --card-foreground: 220 25% 10%;
+    --popover: 40 15% 95%;
+    --popover-foreground: 220 25% 10%;
+    --primary: 175 84% 32%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 170 20% 92%;
+    --secondary-foreground: 175 84% 22%;
+    --muted: 170 15% 92%;
+    --muted-foreground: 220 10% 45%;
+    --accent: 170 68% 50%;
+    --accent-light: 170 68% 60%;
+    --accent-dark: 176 61% 19%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 175 20% 85%;
+    --input: 175 20% 85%;
+    --ring: 175 84% 32%;
+    --radius: 0.75rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 224 47% 7%;
+    --foreground: 170 20% 92%;
+    --card: 221 39% 11%;
+    --card-foreground: 170 20% 92%;
+    --popover: 221 39% 13%;
+    --popover-foreground: 170 20% 92%;
+    --primary: 170 68% 50%;
+    --primary-foreground: 224 47% 7%;
+    --secondary: 221 30% 15%;
+    --secondary-foreground: 170 40% 80%;
+    --muted: 221 30% 15%;
+    --muted-foreground: 220 15% 55%;
+    --accent: 170 68% 50%;
+    --accent-light: 170 68% 60%;
+    --accent-dark: 176 61% 19%;
+    --accent-foreground: 224 47% 7%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 221 20% 18%;
+    --input: 221 20% 18%;
+    --ring: 170 68% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    overflow-wrap: break-word;
+  }
+}
+
+/* ===== Custom Cursor Icons ===== */
+/* Default cursor for light theme */
+body {
+  cursor: url("/icons8-select-cursor-18-light.png"), auto;
+}
+
+/* Default cursor for dark theme */
+.dark body {
+  cursor: url("/icons8-select-cursor-18-dark.png"), auto;
+}
+
+/* Hand cursor for interactive elements (light theme) */
+a,
+button,
+select,
+[role="button"],
+input[type="submit"],
+input[type="button"] {
+  cursor: url("/icons8-hand-cursor-18-light.png"), pointer;
+}
+
+/* Hand cursor for interactive elements (dark theme) */
+.dark a,
+.dark button,
+.dark select,
+.dark [role="button"],
+.dark input[type="submit"],
+.dark input[type="button"] {
+  cursor: url("/icons8-hand-cursor-18-dark.png"), pointer;
+}
+
+/* Text cursor for text inputs (light theme) */
+input[type="text"],
+input[type="email"],
+input[type="search"],
+input[type="password"],
+input[type="url"],
+input[type="tel"],
+textarea,
+[contenteditable="true"] {
+  cursor: url("/icons8-text-cursor-19-light.png"), text;
+}
+
+/* Text cursor for text inputs (dark theme) */
+.dark input[type="text"],
+.dark input[type="email"],
+.dark input[type="search"],
+.dark input[type="password"],
+.dark input[type="url"],
+.dark input[type="tel"],
+.dark textarea,
+.dark [contenteditable="true"] {
+  cursor: url("/icons8-text-cursor-19-dark.png"), text;
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white/10 dark:bg-white/[0.04] backdrop-blur-xl border border-white/20 dark:border-white/[0.08];
+  }
+
+  .glass-strong {
+    @apply bg-white/20 dark:bg-white/[0.08] backdrop-blur-2xl border border-white/30 dark:border-white/[0.12];
+  }
+
+  .glass-subtle {
+    @apply bg-white/5 dark:bg-white/[0.02] backdrop-blur-lg border border-white/10 dark:border-white/[0.05];
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent;
+  }
+
+  .glow-accent {
+    box-shadow: 0 0 30px hsl(var(--accent) / 0.15), 0 0 60px hsl(var(--accent) / 0.05);
+  }
+
+  .section-padding {
+    @apply py-20 md:py-28 lg:py-32;
+  }
+
+  .container-narrow {
+    @apply max-w-6xl mx-auto px-5 sm:px-6 lg:px-8;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--accent) / 0.3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--accent) / 0.5);
+}
+
+/* Selection */
+::selection {
+  background: hsl(var(--accent) / 0.3);
+  color: hsl(var(--foreground));
+}
