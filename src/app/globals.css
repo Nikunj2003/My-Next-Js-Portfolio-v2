@@ -3,6 +3,11 @@
 
 
 @layer base {
+  /* Applied before JS to prevent white flash — matches .dark --background value */
+  html {
+    background-color: hsl(224, 47%, 7%);
+  }
+
   :root {
     --background: 40 20% 97%;
     --foreground: 220 25% 10%;

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { JetBrains_Mono, Outfit } from 'next/font/google'
+import Script from 'next/script'
 import './globals.css'
 import { Providers } from './providers'
 
@@ -60,7 +61,32 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <meta name="color-scheme" content="dark light" />
+      </head>
       <body className={`${outfit.variable} ${jetbrainsMono.variable} font-sans`} suppressHydrationWarning>
+        {/* Must be first in body — runs synchronously before any paint */}
+        <Script
+          id="theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var theme = localStorage.getItem('theme');
+                  var root = document.documentElement;
+                  if (theme === 'light') {
+                    root.classList.remove('dark');
+                  } else {
+                    root.classList.add('dark');
+                  }
+                } catch(e) {
+                  document.documentElement.classList.add('dark');
+                }
+              })();
+            `,
+          }}
+        />
         <div id="root">
           <Providers>
             {children}

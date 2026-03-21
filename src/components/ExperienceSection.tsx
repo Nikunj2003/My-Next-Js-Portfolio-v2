@@ -1,6 +1,6 @@
 "use client";
 import { useRef, useState, useEffect, useCallback } from "react";
-import { motion, useScroll, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useSpring, useScroll } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { Briefcase } from "lucide-react";
 
@@ -106,24 +106,38 @@ const OLD_EXPERIENCE_DATA = [
   },
 ];
 
-function TimelineIcon({ iconRef }: { iconRef: React.RefObject<HTMLElement | null> }) {
-  const { scrollYProgress } = useScroll({
-    target: iconRef,
-    offset: ["center 90%", "center 80%"],
-  });
+function TimelineIcon({ iconRef }: { iconRef: React.RefObject<HTMLLIElement | null> }) {
+  const [inView, setInView] = useState(false);
+  const pathLength = useSpring(0, { stiffness: 100, damping: 20 });
+
+  useEffect(() => {
+    const el = iconRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true);
+          pathLength.set(1);
+        }
+      },
+      { threshold: 0.5 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [iconRef, pathLength]);
 
   return (
-    <figure className="absolute left-[38px] -translate-x-1/2 w-[75px] h-[75px] flex items-center justify-center stroke-foreground top-0 md:top-4">
-      <svg width="75" height="75" viewBox="0 0 100 100" className="rotate-[-90deg]">
+    <figure className="absolute left-[25px] sm:left-[45px] -translate-x-1/2 w-[50px] h-[50px] sm:w-[75px] sm:h-[75px] flex items-center justify-center stroke-foreground top-2 md:top-4">
+      <svg viewBox="0 0 100 100" className="w-full h-full rotate-[-90deg]">
         <circle cx="50" cy="50" r="20" className="fill-background stroke-primary/20 stroke-1" />
         <motion.circle
-          style={{ pathLength: scrollYProgress }}
+          style={{ pathLength }}
           cx="50"
           cy="50"
           r="20"
           className="fill-none stroke-primary stroke-[5px]"
         />
-        <circle cx="50" cy="50" r="10" className="fill-primary stroke-1" />
+        <circle cx="50" cy="50" r="10" className={`fill-primary stroke-1 transition-opacity duration-500 ${inView ? "opacity-100" : "opacity-0"}`} />
       </svg>
     </figure>
   );
@@ -137,7 +151,7 @@ const ExperienceItem = ({ exp, index }: { exp: typeof OLD_EXPERIENCE_DATA[0]; in
   const ref = useRef<HTMLLIElement>(null);
 
   return (
-    <li ref={ref} className="relative mb-16 flex w-full flex-col gap-1 pl-[70px] sm:pl-[90px]">
+    <li ref={ref} className="relative mb-12 sm:mb-16 flex w-full flex-col gap-1 pl-[50px] sm:pl-[90px]">
       <TimelineIcon iconRef={ref} />
       <SpotlightCard delay={0.2 + index * 0.1}>
         <div className="p-6 md:p-8">
@@ -205,12 +219,12 @@ const ExperienceSection = () => {
           {/* Right Column: Timeline */}
           <div className="lg:w-2/3 relative w-full" ref={ref}>
             {/* Background Timeline Line */}
-            <div className="absolute left-[36px] bottom-0 top-0 w-[2px] rounded-full bg-white/10 origin-top" />
+            <div className="absolute left-[24px] sm:left-[44px] bottom-0 top-0 w-[2px] rounded-full bg-white/10 origin-top" />
 
             {/* Glowing Animated Scroll Line */}
             <motion.div
               style={{ scaleY: scrollYProgress }}
-              className="absolute left-[36px] bottom-0 top-0 w-[2px] rounded-full bg-primary origin-top shadow-[0_0_15px_rgba(41,214,185,0.6)]"
+              className="absolute left-[24px] sm:left-[44px] bottom-0 top-0 w-[2px] rounded-full bg-primary origin-top shadow-[0_0_15px_rgba(41,214,185,0.6)]"
             />
 
             <ul className="w-full relative py-4">

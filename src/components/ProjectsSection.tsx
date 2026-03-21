@@ -67,7 +67,7 @@ const ProjectsSection = () => {
             return (
               <div
                 key={project.title}
-                className="sticky w-full"
+                className="w-full static lg:sticky"
                 // The stack offset calculates top position so cards visually overlap like a deck
                 style={{
                   top: `calc(10vh + ${i * 30}px)`,
@@ -79,7 +79,7 @@ const ProjectsSection = () => {
                   <div className={`flex flex-col ${isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'} min-h-[450px]`}>
                     
                     {/* Content Section */}
-                    <div className="p-8 lg:p-12 flex flex-col justify-center flex-1 lg:w-1/2 static z-10">
+                    <div className="p-6 sm:p-8 lg:p-12 flex flex-col justify-center flex-1 lg:w-1/2 static z-10">
                       <span className="text-xs font-mono uppercase tracking-widest text-primary mb-4 block">
                         {project.category}
                       </span>

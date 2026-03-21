@@ -87,7 +87,7 @@ const ContactSection = () => {
 
           {/* Left panel */}
           <SpotlightCard delay={0.1} className="h-full">
-            <div className="p-8 sm:p-10 flex flex-col gap-6 h-full">
+            <div className="p-6 sm:p-8 md:p-10 flex flex-col gap-6 h-full">
               {/* Grows to fill */}
               <div className="flex flex-col gap-6 flex-1">
                 <div>
@@ -140,7 +140,7 @@ const ContactSection = () => {
 
           {/* Right panel — Form */}
           <SpotlightCard delay={0.2} className="h-full">
-            <form onSubmit={handleSubmit} className="p-8 sm:p-10 flex flex-col gap-6 h-full">
+            <form onSubmit={handleSubmit} className="p-6 sm:p-8 md:p-10 flex flex-col gap-6 h-full">
               {/* Grows to fill */}
               <div className="flex flex-col gap-6 flex-1">
                 <div>

@@ -62,6 +62,9 @@ const HeroSection = () => {
       {/* Massive Glowing Animated Orbs */}
       <div className="absolute top-1/4 -right-1/4 w-[800px] h-[800px] bg-primary/20 rounded-full blur-[120px] mix-blend-screen animate-[pulse_8s_ease-in-out_infinite] opacity-50 pointer-events-none" />
       <div className="absolute bottom-0 -left-1/4 w-[600px] h-[600px] bg-accent/20 rounded-full blur-[100px] mix-blend-screen animate-[pulse_10s_ease-in-out_infinite_reverse] opacity-40 pointer-events-none" />
+      
+      {/* Smooth fade into the next section */}
+      <div className="absolute bottom-0 inset-x-0 h-32 sm:h-64 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none z-0" />
 
       <div className="container-narrow relative z-10 w-full">
         <div className="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
@@ -76,10 +79,10 @@ const HeroSection = () => {
             </motion.div>
 
             <div className="flex flex-col gap-2">
-              <motion.h1 variants={item} className="text-5xl sm:text-7xl lg:text-[5.5rem] font-bold tracking-tighter leading-[1.05]">
+              <motion.h1 variants={item} className="text-4xl sm:text-7xl lg:text-[5.5rem] font-bold tracking-tighter leading-[1.1] sm:leading-[1.05]">
                 {personalInfo.name}
               </motion.h1>
-              <motion.h2 variants={item} className="text-2xl sm:text-4xl font-semibold tracking-tight text-muted-foreground mt-2">
+              <motion.h2 variants={item} className="text-xl sm:text-4xl font-semibold tracking-tight text-muted-foreground mt-2">
                 Crafting <span className="text-gradient">Intelligent</span> Experiences
               </motion.h2>
             </div>
@@ -88,10 +91,10 @@ const HeroSection = () => {
               {personalInfo.tagline} I specialize in Full-Stack capabilities and Generative AI, building production-ready scalable systems.
             </motion.p>
 
-            <motion.div variants={item} className="flex flex-wrap gap-4 mt-2">
+            <motion.div variants={item} className="flex flex-col sm:flex-row flex-wrap gap-4 mt-2">
               <a
                 href="#projects"
-                className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-primary text-primary-foreground font-bold text-sm tracking-wide shadow-[0_0_25px_rgba(41,214,185,0.3)] hover:shadow-[0_0_35px_rgba(41,214,185,0.4)] transition-all duration-300 active:scale-95"
+                className="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-8 py-3.5 rounded-full bg-primary text-primary-foreground font-bold text-sm tracking-wide shadow-[0_0_25px_rgba(41,214,185,0.3)] hover:shadow-[0_0_35px_rgba(41,214,185,0.4)] transition-all duration-300 active:scale-95"
               >
                 View Projects
                 <ArrowDown className="w-4 h-4 ml-1" />
@@ -99,14 +102,14 @@ const HeroSection = () => {
               <a
                 href={personalInfo.resumeUrl}
                 download
-                className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full glass-subtle border border-white/10 font-bold text-foreground text-sm tracking-wide hover:bg-white/10 transition-all duration-300 active:scale-95"
+                className="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-8 py-3.5 rounded-full bg-white/5 dark:bg-white/[0.02] backdrop-blur-lg border border-primary/50 dark:border-primary/50 font-bold text-foreground text-sm tracking-wide hover:bg-primary/10 transition-all duration-300 active:scale-95"
               >
                 <Download className="w-4 h-4 mr-1 text-primary" />
                 Resume
               </a>
               <a
                 href="#ai-twin"
-                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full hover:bg-white/5 transition-all duration-300 font-semibold text-sm text-muted-foreground hover:text-foreground active:scale-95"
+                className="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-6 py-3.5 rounded-full hover:bg-white/5 transition-all duration-300 font-semibold text-sm text-muted-foreground hover:text-foreground active:scale-95"
               >
                 <MessageCircle className="w-4 h-4 text-primary" />
                 Talk to AI Twin
