@@ -29,7 +29,7 @@ const Footer = () => (
             <a href="#" className="flex items-center gap-3 group shrink-0">
               <div className="relative">
                 <div className="absolute inset-0 bg-primary/20 blur-md rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                <img src={logo.src} alt="NK" className="w-8 h-8 opacity-80 group-hover:opacity-100 relative z-10 transition-opacity" />
+                <img src={logo.src} alt="NK" className="w-8 h-8 opacity-80 group-hover:opacity-100 relative z-10 transition-opacity pointer-events-none" draggable="false" />
               </div>
               <span className="text-base font-bold text-muted-foreground group-hover:text-foreground transition-colors tracking-tight">
                 Nikunj Khitha

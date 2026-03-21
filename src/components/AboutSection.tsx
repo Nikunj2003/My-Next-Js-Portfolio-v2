@@ -24,7 +24,7 @@ const AboutSection = () => {
               <div className="flex items-center gap-3 mb-6">
                 <div className="relative">
                   <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
-                  <img src={logo.src} alt="NK" className="w-12 h-12 opacity-80 relative z-10" />
+                  <img src={logo.src} alt="NK" className="w-12 h-12 opacity-80 relative z-10 pointer-events-none" draggable="false" />
                 </div>
                 <div className="inline-flex items-center px-3 py-1.5 rounded-full glass-subtle border border-primary/20 text-xs font-mono text-primary">
                   Profile

@@ -78,7 +78,7 @@ const ContactSection = () => {
           className="block lg:hidden mb-10 mx-auto w-full max-w-xs sm:max-w-sm"
         >
           <Card3D>
-            <img src={cardImage.src} alt="Business Card" className="w-full h-auto rounded-3xl border border-white/10 shadow-2xl" />
+            <img src={cardImage.src} alt="Business Card" className="w-full h-auto rounded-3xl border border-white/10 shadow-2xl pointer-events-none" draggable="false" />
           </Card3D>
         </motion.div>
 

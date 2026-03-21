@@ -139,11 +139,12 @@ const HeroSection = () => {
              <div className="absolute inset-0 bg-gradient-to-tr from-primary/15 to-transparent blur-[100px] rounded-full scale-150" />
              <div className="relative z-10 w-full max-w-[500px] xl:max-w-[600px] lg:scale-110 xl:scale-125 lg:origin-right lg:translate-x-4 xl:translate-x-12">
               <Card3D className="w-full">
-                <img
-                  src={cardImage.src}
-                  alt="Nikunj Khitha — Business Card"
-                  className="w-full h-auto rounded-3xl border border-white/10 shadow-2xl shadow-black/80"
-                />
+                  <img
+                    src={cardImage.src}
+                    alt="Nikunj Khitha — Business Card"
+                    className="w-full h-auto rounded-3xl border border-white/10 shadow-2xl shadow-black/80 pointer-events-none"
+                    draggable="false"
+                  />
               </Card3D>
              </div>
           </motion.div>

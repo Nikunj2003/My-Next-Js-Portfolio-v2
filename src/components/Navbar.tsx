@@ -33,7 +33,7 @@ const Navbar = () => {
           }`}
         >
           <a href="#" className="flex items-center gap-2 group">
-            <img src={logo.src} alt="NK" className="w-10 h-10 sm:w-12 sm:h-12 transition-transform duration-300 group-hover:scale-110" />
+            <img src={logo.src} alt="NK" className="w-10 h-10 sm:w-12 sm:h-12 transition-transform duration-300 group-hover:scale-110 pointer-events-none" draggable="false" />
             <span className="font-bold text-lg tracking-wide hidden sm:block">Nikunj Khitha</span>
           </a>
 

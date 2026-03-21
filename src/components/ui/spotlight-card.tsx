@@ -1,7 +1,7 @@
 "use client";
 import { motion, useMotionTemplate, useMotionValue } from "framer-motion";
 import { useInView } from "react-intersection-observer";
-import { MouseEvent } from "react";
+import { MouseEvent, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface SpotlightCardProps {
@@ -23,12 +23,18 @@ export function SpotlightCard({
 }: SpotlightCardProps) {
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
+  const [isHovered, setIsHovered] = useState(false);
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0, rootMargin: '0px 0px -40px 0px' });
 
   function handleMouseMove({ currentTarget, clientX, clientY }: MouseEvent) {
+    if (!isHovered) setIsHovered(true);
     const { left, top } = currentTarget.getBoundingClientRect();
     mouseX.set(clientX - left);
     mouseY.set(clientY - top);
+  }
+
+  function handleMouseLeave() {
+    setIsHovered(false);
   }
 
   return (
@@ -38,6 +44,7 @@ export function SpotlightCard({
       animate={inView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.4, delay: Math.min(delay, 0.2), ease: [0.16, 1, 0.3, 1] }}
       onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
       className={cn(
         "group relative rounded-3xl border border-black/5 dark:border-white/5 bg-black/[0.02] dark:bg-white/[0.02] overflow-hidden",
         className
@@ -45,7 +52,9 @@ export function SpotlightCard({
     >
       {/* Spotlight hover effect */}
       <motion.div
-        className="pointer-events-none absolute -inset-px rounded-3xl opacity-0 transition duration-500 group-hover:opacity-100"
+        className="pointer-events-none absolute -inset-px rounded-3xl"
+        animate={{ opacity: isHovered ? glowOpacity / 100 : 0 }}
+        transition={{ duration: 0.5 }}
         style={{
           background: useMotionTemplate`
             radial-gradient(
@@ -54,7 +63,6 @@ export function SpotlightCard({
               transparent 80%
             )
           `,
-          opacity: glowOpacity / 100,
         }}
       />
       

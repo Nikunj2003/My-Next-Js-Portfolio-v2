@@ -137,7 +137,8 @@ const ProjectsSection = () => {
                                   <img
                                     src={img}
                                     alt={`${project.title} screenshot ${idx + 1}`}
-                                    className="w-full h-full object-contain object-center opacity-90 group-hover/img:opacity-100 transition-all duration-500 rounded-lg"
+                                    className="w-full h-full object-contain object-center opacity-90 group-hover/img:opacity-100 transition-all duration-500 rounded-lg pointer-events-none"
+                                    draggable="false"
                                   />
                                 </div>
                               </CarouselItem>
