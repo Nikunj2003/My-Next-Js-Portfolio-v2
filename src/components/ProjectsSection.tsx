@@ -1,6 +1,7 @@
 "use client";
+
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { ExternalLink, Github } from "lucide-react";
 import { projects } from "@/data/portfolio";
@@ -11,6 +12,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { SpotlightCard } from "@/components/ui/spotlight-card";
 
 const categories = ["All", ...Array.from(new Set(projects.map((p) => p.category)))];
 
@@ -21,129 +23,143 @@ const ProjectsSection = () => {
   const filtered = filter === "All" ? projects : projects.filter((p) => p.category === filter);
 
   return (
-    <section id="projects" className="section-padding">
+    <section id="projects" className="section-padding relative z-10">
       <div className="container-narrow" ref={ref}>
-        <motion.h2
+        {/* Centered Header */}
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="text-3xl sm:text-4xl font-bold text-center mb-6 tracking-tight"
+          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          className="text-center mb-16 flex flex-col items-center"
         >
-          Projects
-        </motion.h2>
+          <div className="inline-flex items-center px-3 py-1.5 rounded-full glass-subtle border border-primary/20 text-xs font-mono text-primary mb-6">
+            Portfolio
+          </div>
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
+            Featured <span className="text-gradient">Work</span>
+          </h2>
+          <p className="text-muted-foreground leading-relaxed mb-10 max-w-xl text-lg">
+            Production-grade systems, AI platforms, and scalable applications built to solve complex problems.
+          </p>
 
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={inView ? { opacity: 1 } : {}}
-          transition={{ delay: 0.15 }}
-          className="text-muted-foreground text-center mb-10 max-w-xl mx-auto"
-        >
-          Production-grade systems — not toy demos.
-        </motion.p>
-
-        {/* Filters */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.2 }}
-          className="flex flex-wrap justify-center gap-2 mb-12"
-        >
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setFilter(cat)}
-              className={`px-4 py-2 rounded-full text-xs font-medium transition-all duration-300 active:scale-95 ${
-                filter === cat
-                  ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
-                  : "glass-subtle text-muted-foreground hover:text-foreground hover:bg-white/10"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+          {/* Filters */}
+          <div className="flex flex-wrap justify-center gap-3">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setFilter(cat)}
+                className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 active:scale-95 border ${
+                  filter === cat
+                    ? "bg-primary text-primary-foreground border-primary shadow-[0_0_20px_rgba(41,214,185,0.4)]"
+                    : "glass-subtle text-muted-foreground border-white/5 hover:text-foreground hover:bg-white/10 hover:border-white/10"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
         </motion.div>
 
-        {/* Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((project, i) => (
-            <motion.div
-              key={project.title}
-              initial={{ opacity: 0, y: 20, filter: "blur(4px)" }}
-              animate={inView ? { opacity: 1, y: 0, filter: "blur(0px)" } : {}}
-              transition={{ duration: 0.6, delay: 0.1 + i * 0.08, ease: [0.16, 1, 0.3, 1] }}
-              className="glass rounded-xl flex flex-col hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 group overflow-hidden border border-white/5"
-            >
-              <div className="w-full relative bg-black/20 overflow-hidden aspect-video group-hover:bg-black/40 transition-colors">
-                {project.images && project.images.length > 0 ? (
-                  <Carousel className="w-full h-full">
-                    <CarouselContent>
-                      {project.images.map((img, idx) => (
-                        <CarouselItem key={idx}>
-                          <img
-                            src={img}
-                            alt={`${project.title} screenshot ${idx + 1}`}
-                            className="w-full h-full object-cover object-top"
-                          />
-                        </CarouselItem>
-                      ))}
-                    </CarouselContent>
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <CarouselPrevious className="left-2 bg-background/80 hover:bg-background border-none w-8 h-8 pointer-events-auto" />
-                      <CarouselNext className="right-2 bg-background/80 hover:bg-background border-none w-8 h-8 pointer-events-auto" />
+        {/* Stacked Cards Layout */}
+        <div className="flex flex-col gap-8 relative pb-20 max-w-5xl mx-auto">
+          {filtered.map((project, i) => {
+            const isEven = i % 2 === 0;
+            return (
+              <div
+                key={project.title}
+                className="sticky w-full"
+                // The stack offset calculates top position so cards visually overlap like a deck
+                style={{
+                  top: `calc(10vh + ${i * 30}px)`,
+                  // Z-index increases so subsequent cards go over previous ones
+                  zIndex: i,
+                }}
+              >
+                <SpotlightCard className="w-full relative shadow-2xl shadow-black/50 bg-background dark:bg-background border-black/10 dark:border-white/10">
+                  <div className={`flex flex-col ${isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'} min-h-[450px]`}>
+                    
+                    {/* Content Section */}
+                    <div className="p-8 lg:p-12 flex flex-col justify-center flex-1 lg:w-1/2 static z-10">
+                      <span className="text-xs font-mono uppercase tracking-widest text-primary mb-4 block">
+                        {project.category}
+                      </span>
+                      <h3 className="text-3xl font-bold mb-4 tracking-tight leading-tight">{project.title}</h3>
+                      <p className="text-base text-muted-foreground leading-relaxed mb-8 flex-1 text-pretty">
+                        {project.description}
+                      </p>
+                      
+                      <div className="flex flex-wrap gap-2 mb-8">
+                        {project.tech.map((t) => (
+                          <span
+                            key={t}
+                            className="px-3 py-1.5 rounded-lg text-xs font-mono bg-primary/10 text-primary border border-primary/20 backdrop-blur-sm"
+                          >
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                      
+                      <div className="flex items-center gap-6 mt-auto">
+                        <a
+                          href={project.github}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-sm font-semibold text-foreground hover:text-primary transition-colors hover:bg-primary/10 px-4 py-2 rounded-lg -ml-4"
+                        >
+                          <Github className="w-5 h-5" />
+                          Source Code
+                        </a>
+                        {project.live && (
+                          <a
+                            href={project.live}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-sm font-semibold text-foreground hover:text-primary transition-colors hover:bg-primary/10 px-4 py-2 rounded-lg"
+                          >
+                            <ExternalLink className="w-5 h-5" />
+                            Live Demo
+                          </a>
+                        )}
+                      </div>
                     </div>
-                  </Carousel>
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
-                    No image available
-                  </div>
-                )}
-              </div>
 
-              <div className="p-6 flex flex-col flex-1">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-primary mb-3 block">
-                  {project.category}
-                </span>
-                <h3 className="text-xl font-bold mb-3">{project.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed mb-5 flex-1">
-                  {project.description}
-                </p>
-                
-                <div className="flex flex-wrap gap-1.5 mb-5 mt-auto">
-                  {project.tech.map((t) => (
-                    <span
-                      key={t}
-                      className="px-2 py-1 rounded-md text-[10px] font-mono glass-subtle text-muted-foreground"
-                    >
-                      {t}
-                    </span>
-                  ))}
-                </div>
-                
-                <div className="flex items-center gap-4 border-t border-white/5 pt-4">
-                  <a
-                    href={project.github}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-xs font-medium text-foreground/70 hover:text-primary transition-colors"
-                  >
-                    <Github className="w-4 h-4" />
-                    Source
-                  </a>
-                  {project.live && (
-                    <a
-                      href={project.live}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 text-xs font-medium text-foreground/70 hover:text-primary transition-colors"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                      Live
-                    </a>
-                  )}
-                </div>
+                    {/* Image / Carousel Showcase Section */}
+                    <div className="lg:w-1/2 bg-black/40 border-t lg:border-t-0 lg:border-l border-white/5 p-6 sm:p-10 flex items-center justify-center overflow-hidden group/img relative">
+                      <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent opacity-50 pointer-events-none" />
+                      
+                      {project.images && project.images.length > 0 ? (
+                        <Carousel className="w-full relative z-10 rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10 bg-black">
+                          <CarouselContent>
+                            {project.images.map((img, idx) => (
+                              <CarouselItem key={idx}>
+                                {/* Using object-contain and an aspect ratio ensures the full uncropped image is visible inside a strict frame */}
+                                <div className="aspect-[16/10] w-full flex items-center justify-center bg-zinc-950 p-1">
+                                  <img
+                                    src={img}
+                                    alt={`${project.title} screenshot ${idx + 1}`}
+                                    className="w-full h-full object-contain object-center opacity-90 group-hover/img:opacity-100 transition-all duration-500 rounded-lg"
+                                  />
+                                </div>
+                              </CarouselItem>
+                            ))}
+                          </CarouselContent>
+                          <div className="opacity-0 group-hover/img:opacity-100 transition-opacity duration-300">
+                            <CarouselPrevious className="left-4 bg-background/80 hover:bg-background border-none w-10 h-10 flex items-center justify-center text-foreground hover:text-primary transition-colors z-20 shadow-xl" />
+                            <CarouselNext className="right-4 bg-background/80 hover:bg-background border-none w-10 h-10 flex items-center justify-center text-foreground hover:text-primary transition-colors z-20 shadow-xl" />
+                          </div>
+                        </Carousel>
+                      ) : (
+                        <div className="aspect-[16/10] w-full flex items-center justify-center rounded-xl ring-1 ring-white/10 bg-zinc-950/50 text-muted-foreground text-sm font-mono z-10">
+                          {">"} No preview available
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+                </SpotlightCard>
               </div>
-            </motion.div>
-          ))}
+            );
+          })}
         </div>
 
         {/* View more on GitHub */}
@@ -157,10 +173,10 @@ const ProjectsSection = () => {
             href="https://github.com/Nikunj2003"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 px-6 py-3 rounded-full glass-subtle text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-white/10 border border-white/10 hover:border-primary/30 transition-all duration-300 active:scale-95"
+            className="flex items-center gap-2 px-8 py-4 rounded-full glass border border-white/10 border-b-white/5 text-sm font-bold text-foreground hover:text-primary hover:bg-white/10 transition-all duration-300 shadow-xl hover:shadow-[0_0_30px_rgba(41,214,185,0.2)] active:scale-95"
           >
-            <Github className="w-4 h-4" />
-            View more on GitHub
+            <Github className="w-5 h-5" />
+            Explore more repositories
           </a>
         </motion.div>
       </div>

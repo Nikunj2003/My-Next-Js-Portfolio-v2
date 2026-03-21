@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState, useEffect, useCallback } from "react";
 import { motion, useScroll, AnimatePresence } from "framer-motion";
+import { useInView } from "react-intersection-observer";
 import { Briefcase } from "lucide-react";
 
 const CHAPTER_WORDS = ["adventure", "chapter", "journey"];
@@ -35,7 +36,7 @@ function FlipChapter() {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5 }}
-      className="mx-auto mt-10 text-center text-base font-semibold text-foreground sm:text-xl md:text-2xl"
+      className="mt-10 text-left text-base font-semibold text-foreground sm:text-xl md:text-2xl"
     >
       And a new{" "}
       <AnimatePresence onExitComplete={() => setIsAnimating(false)}>
@@ -128,37 +129,37 @@ function TimelineIcon({ iconRef }: { iconRef: React.RefObject<HTMLElement | null
   );
 }
 
-const ExperienceItem = ({ exp }: { exp: typeof OLD_EXPERIENCE_DATA[0] }) => {
+import { SpotlightCard } from "@/components/ui/spotlight-card";
+
+// ... [Keep CHAPTER_WORDS, FlipChapter, OLD_EXPERIENCE_DATA, TimelineIcon as they were] ...
+
+const ExperienceItem = ({ exp, index }: { exp: typeof OLD_EXPERIENCE_DATA[0]; index: number }) => {
   const ref = useRef<HTMLLIElement>(null);
 
   return (
-    <li ref={ref} className="relative mx-auto mb-16 flex w-full flex-col gap-1 pl-[90px] md:pl-[120px]">
+    <li ref={ref} className="relative mb-16 flex w-full flex-col gap-1 pl-[70px] sm:pl-[90px]">
       <TimelineIcon iconRef={ref} />
-      <motion.div
-        initial={{ y: 50, opacity: 0 }}
-        whileInView={{ y: 0, opacity: 1 }}
-        viewport={{ once: true, amount: 0.25 }}
-        transition={{ ease: "easeOut", duration: 0.5 }}
-        className="glass rounded-xl border border-primary/10 p-6 md:p-8 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/10 relative"
-      >
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4">
-          <div>
-            <h3 className="text-xl md:text-2xl font-bold text-foreground">
-              {exp.title}
-            </h3>
-            <span className="text-primary font-medium mt-1 block">
-              @{exp.organisation.name}
-            </span>
+      <SpotlightCard delay={0.2 + index * 0.1}>
+        <div className="p-6 md:p-8">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-5">
+            <div>
+              <h3 className="text-xl md:text-2xl font-bold text-foreground">
+                {exp.title}
+              </h3>
+              <span className="text-primary font-medium mt-1 block">
+                {exp.organisation.name}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-mono font-medium text-muted-foreground bg-white/5 border border-white/10 px-3 py-1.5 rounded-full shrink-0">
+              <Briefcase className="w-3.5 h-3.5" />
+              {exp.date}
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-sm font-mono text-muted-foreground bg-primary/5 px-3 py-1 rounded-full w-fit">
-            <Briefcase className="w-3.5 h-3.5" />
-            {exp.date}
-          </div>
+          <p className="text-sm md:text-base text-muted-foreground leading-relaxed" style={{ textWrap: "pretty" }}>
+            {exp.description}
+          </p>
         </div>
-        <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
-          {exp.description}
-        </p>
-      </motion.div>
+      </SpotlightCard>
     </li>
   );
 };
@@ -170,38 +171,59 @@ const ExperienceSection = () => {
     offset: ["start 80%", "end 80%"],
   });
 
+  const [sectionRef, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
+
   return (
-    <section id="experience" className="section-padding overflow-hidden">
-      <div className="container-narrow">
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="text-3xl sm:text-4xl font-bold text-center mb-20 tracking-tight"
-        >
-          <span className="bg-gradient-to-r from-primary/70 to-primary bg-clip-text text-transparent">
-            Experience & Education
-          </span>
-        </motion.h2>
+    <section id="experience" className="section-padding relative z-10">
+      <div className="container-narrow" ref={sectionRef}>
+        <div className="flex flex-col lg:flex-row gap-12 lg:gap-20 items-start">
+          
+          {/* Left Column: Sticky Header */}
+          <div className="lg:w-1/3 lg:sticky lg:top-32 shrink-0">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              animate={inView ? { opacity: 1, x: 0 } : {}}
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <div className="inline-flex items-center px-3 py-1.5 rounded-full glass-subtle border border-primary/20 text-xs font-mono text-primary mb-6">
+                Journey
+              </div>
+              <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6">
+                Professional <br className="hidden lg:block" />
+                <span className="text-gradient">Experience</span>
+              </h2>
+              <p className="text-muted-foreground leading-relaxed mb-8 max-w-md">
+                My career path from intern to engineering enterprise-scale AI platforms.
+              </p>
+              
+              <div className="hidden lg:block">
+                <FlipChapter />
+              </div>
+            </motion.div>
+          </div>
 
-        <div className="relative w-full md:mx-auto md:max-w-4xl" ref={ref}>
-          {/* Background Timeline Line */}
-          <div className="absolute left-[36px] bottom-0 top-0 w-[4px] rounded-full bg-primary/10 origin-top" />
+          {/* Right Column: Timeline */}
+          <div className="lg:w-2/3 relative w-full" ref={ref}>
+            {/* Background Timeline Line */}
+            <div className="absolute left-[36px] bottom-0 top-0 w-[2px] rounded-full bg-white/10 origin-top" />
 
-          {/* Glowing Animated Scroll Line */}
-          <motion.div
-            style={{ scaleY: scrollYProgress }}
-            className="absolute left-[36px] bottom-0 top-0 w-[4px] rounded-full bg-primary origin-top shadow-[0_0_15px_rgba(var(--primary),0.5)]"
-          />
+            {/* Glowing Animated Scroll Line */}
+            <motion.div
+              style={{ scaleY: scrollYProgress }}
+              className="absolute left-[36px] bottom-0 top-0 w-[2px] rounded-full bg-primary origin-top shadow-[0_0_15px_rgba(41,214,185,0.6)]"
+            />
 
-          <ul className="w-full relative py-4">
-            {OLD_EXPERIENCE_DATA.map((exp, index) => (
-              <ExperienceItem key={index} exp={exp} />
-            ))}
-          </ul>
+            <ul className="w-full relative py-4">
+              {OLD_EXPERIENCE_DATA.map((exp, index) => (
+                <ExperienceItem key={index} exp={exp} index={index} />
+              ))}
+            </ul>
+            
+            <div className="lg:hidden mt-8">
+              <FlipChapter />
+            </div>
+          </div>
 
-          <FlipChapter />
         </div>
       </div>
     </section>

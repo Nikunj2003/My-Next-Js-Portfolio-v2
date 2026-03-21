@@ -25,6 +25,29 @@ const AITwinChat = () => {
     }
   }, [messages]);
 
+  useEffect(() => {
+    const handleOpenTwin = (e: Event) => {
+      const customEvent = e as CustomEvent<{ question: string }>;
+      setIsOpen(true);
+      if (customEvent.detail?.question) {
+        // Delay to allow chat animation to open
+        setTimeout(() => {
+          setInput("");
+          setMessages((prev) => [
+            ...prev,
+            { role: "user", content: customEvent.detail.question },
+            {
+              role: "assistant", // Using the same hardcoded response for now
+              content: "Thanks for the question! The AI backend isn't connected yet, but Nikunj would love to answer this directly. Reach out at njkhitha2003@gmail.com or connect on LinkedIn!",
+            },
+          ]);
+        }, 400);
+      }
+    };
+    window.addEventListener("open-ai-twin", handleOpenTwin);
+    return () => window.removeEventListener("open-ai-twin", handleOpenTwin);
+  }, []);
+
   const handleSend = (text?: string) => {
     const msg = text || input.trim();
     if (!msg) return;

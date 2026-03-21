@@ -1,9 +1,9 @@
 "use client";
-import { motion, useMotionTemplate, useMotionValue } from "framer-motion";
+import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { skillCategories } from "@/data/portfolio";
-import { MouseEvent } from "react";
 import { Brain, Layers, Database, Server, Wrench } from "lucide-react";
+import { SpotlightCard } from "@/components/ui/spotlight-card";
 
 // Icons for each category
 const CATEGORY_ICONS: Record<string, React.ElementType> = {
@@ -12,58 +12,6 @@ const CATEGORY_ICONS: Record<string, React.ElementType> = {
   "Databases & Data": Database,
   "DevOps & Infrastructure": Server,
   "Dev Tools & Platforms": Wrench,
-};
-
-// Spotlight Card component
-const SpotlightCard = ({
-  children,
-  delay,
-}: {
-  children: React.ReactNode;
-  delay: number;
-}) => {
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
-
-  function handleMouseMove({ currentTarget, clientX, clientY }: MouseEvent) {
-    const { left, top } = currentTarget.getBoundingClientRect();
-    mouseX.set(clientX - left);
-    mouseY.set(clientY - top);
-  }
-
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 30 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] }}
-      onMouseMove={handleMouseMove}
-      className="group relative rounded-3xl border border-white/5 bg-white/[0.02] overflow-hidden"
-    >
-      {/* Spotlight hover effect */}
-      <motion.div
-        className="pointer-events-none absolute -inset-px rounded-3xl opacity-0 transition duration-500 group-hover:opacity-100"
-        style={{
-          background: useMotionTemplate`
-            radial-gradient(
-              650px circle at ${mouseX}px ${mouseY}px,
-              rgba(41, 214, 185, 0.12),
-              transparent 80%
-            )
-          `,
-        }}
-      />
-      
-      {/* Subtle ambient glow always active */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none" />
-
-      {/* Card Content */}
-      <div className="relative z-10 p-8 sm:p-10">
-        {children}
-      </div>
-    </motion.div>
-  );
 };
 
 const SkillsSection = () => {
@@ -99,29 +47,31 @@ const SkillsSection = () => {
             {skillCategories.map((cat, i) => {
               const Icon = CATEGORY_ICONS[cat.title] ?? Wrench;
               return (
-                <SpotlightCard key={cat.title} delay={0.1 + i * 0.1}>
-                  <div className="flex items-center gap-4 mb-8">
-                    <div className="w-12 h-12 rounded-2xl glass-subtle border border-white/5 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-500 group-hover:border-primary/30">
-                      <Icon className="w-5 h-5 text-primary group-hover:text-primary transition-colors duration-500" />
+                <SpotlightCard key={cat.title} delay={0.1 + i * 0.1} className="w-full">
+                  <div className="p-8 sm:p-10">
+                    <div className="flex items-center gap-4 mb-8">
+                      <div className="w-12 h-12 rounded-2xl glass-subtle border border-white/5 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-500 group-hover:border-primary/30">
+                        <Icon className="w-5 h-5 text-primary group-hover:text-primary transition-colors duration-500" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold tracking-tight group-hover:text-primary transition-colors duration-300">{cat.title}</h3>
+                        <p className="text-xs text-muted-foreground mt-1 font-mono">{cat.skills.length} technologies</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-xl font-bold tracking-tight group-hover:text-primary transition-colors duration-300">{cat.title}</h3>
-                      <p className="text-xs text-muted-foreground mt-1 font-mono">{cat.skills.length} technologies</p>
-                    </div>
-                  </div>
 
-                  <div className="flex flex-wrap gap-2.5">
-                    {cat.skills.map((skill, si) => (
-                      <motion.span
-                        key={skill}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={inView ? { opacity: 1, scale: 1 } : {}}
-                        transition={{ delay: 0.2 + i * 0.1 + si * 0.02, duration: 0.3 }}
-                        className="px-4 py-2 rounded-xl text-sm font-medium glass-subtle text-foreground/80 border border-white/5 hover:bg-white/10 hover:border-primary/40 hover:text-primary transition-all duration-300 cursor-default select-none"
-                      >
-                        {skill}
-                      </motion.span>
-                    ))}
+                    <div className="flex flex-wrap gap-2.5">
+                      {cat.skills.map((skill, si) => (
+                        <motion.span
+                          key={skill}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={inView ? { opacity: 1, scale: 1 } : {}}
+                          transition={{ delay: 0.2 + i * 0.1 + si * 0.02, duration: 0.3 }}
+                          className="px-4 py-2 rounded-xl text-sm font-medium glass-subtle text-foreground/80 border border-white/5 hover:bg-white/10 hover:border-primary/40 hover:text-primary transition-all duration-300 cursor-default select-none"
+                        >
+                          {skill}
+                        </motion.span>
+                      ))}
+                    </div>
                   </div>
                 </SpotlightCard>
               );
