@@ -60,8 +60,8 @@ const HeroSection = () => {
       }} />
       
       {/* Massive Glowing Animated Orbs */}
-      <div className="absolute top-1/4 -right-1/4 w-[800px] h-[800px] bg-primary/20 rounded-full blur-[120px] mix-blend-screen animate-[pulse_8s_ease-in-out_infinite] opacity-50 pointer-events-none" />
-      <div className="absolute bottom-0 -left-1/4 w-[600px] h-[600px] bg-accent/20 rounded-full blur-[100px] mix-blend-screen animate-[pulse_10s_ease-in-out_infinite_reverse] opacity-40 pointer-events-none" />
+      <div className="absolute top-1/4 -right-1/4 w-[800px] h-[800px] rounded-full mix-blend-screen animate-[pulse_8s_ease-in-out_infinite] opacity-50 pointer-events-none bg-[radial-gradient(circle,hsl(var(--primary)/0.2)_0%,transparent_70%)]" />
+      <div className="absolute bottom-0 -left-1/4 w-[600px] h-[600px] rounded-full mix-blend-screen animate-[pulse_10s_ease-in-out_infinite_reverse] opacity-40 pointer-events-none bg-[radial-gradient(circle,hsl(var(--accent)/0.2)_0%,transparent_70%)]" />
       
       {/* Smooth fade into the next section */}
       <div className="absolute bottom-0 inset-x-0 h-32 sm:h-64 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none z-0" />
@@ -136,7 +136,7 @@ const HeroSection = () => {
             transition={{ duration: 1.2, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
             className="hidden lg:flex justify-end lg:col-span-5 relative"
           >
-             <div className="absolute inset-0 bg-gradient-to-tr from-primary/15 to-transparent blur-[100px] rounded-full scale-150" />
+             <div className="absolute inset-0 bg-[radial-gradient(circle,hsl(var(--primary)/0.15)_0%,transparent_70%)] rounded-full scale-150" />
              <div className="relative z-10 w-full max-w-[500px] xl:max-w-[600px] lg:scale-110 xl:scale-125 lg:origin-right lg:translate-x-4 xl:translate-x-12">
               <Card3D className="w-full">
                   <img
