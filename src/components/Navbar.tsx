@@ -32,8 +32,8 @@ const Navbar = () => {
     >
       <div className="container-narrow flex items-center justify-between h-16">
         <a href="#" className="flex items-center gap-2 group">
-          <img src={logo.src} alt="NK" className="w-8 h-8 transition-transform duration-300 group-hover:scale-110" />
-          <span className="font-semibold text-sm tracking-wide hidden sm:block">Nikunj Khitha</span>
+          <img src={logo.src} alt="NK" className="w-14 h-14 transition-transform duration-300 group-hover:scale-110" />
+          <span className="font-semibold text-xl tracking-wide hidden sm:block">Nikunj Khitha</span>
         </a>
 
         <div className="hidden md:flex items-center gap-1">
