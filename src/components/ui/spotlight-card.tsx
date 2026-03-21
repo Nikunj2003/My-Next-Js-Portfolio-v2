@@ -23,7 +23,7 @@ export function SpotlightCard({
 }: SpotlightCardProps) {
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0, rootMargin: '0px 0px -40px 0px' });
 
   function handleMouseMove({ currentTarget, clientX, clientY }: MouseEvent) {
     const { left, top } = currentTarget.getBoundingClientRect();
@@ -36,7 +36,7 @@ export function SpotlightCard({
       ref={ref}
       initial={{ opacity: 0, y: 30 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.4, delay: Math.min(delay, 0.2), ease: [0.16, 1, 0.3, 1] }}
       onMouseMove={handleMouseMove}
       className={cn(
         "group relative rounded-3xl border border-black/5 dark:border-white/5 bg-black/[0.02] dark:bg-white/[0.02] overflow-hidden",
