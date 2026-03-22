@@ -131,10 +131,10 @@ const AITwinChat = () => {
 
   // Shared ChatContent component for both mobile and desktop
   const ChatContent = ({ isMobile = false }: { isMobile?: boolean }) => (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="flex flex-col h-full w-full overflow-hidden">
       {/* Header */}
       <div className={cn(
-        "flex-shrink-0 border-b border-border/40 flex items-center justify-between",
+        "flex-none border-b border-border/40 flex items-center justify-between",
         isMobile ? "px-4 py-3 bg-background" : "px-5 py-4 bg-accent/5"
       )}>
         <div className="flex items-center gap-3">
@@ -168,8 +168,8 @@ const AITwinChat = () => {
 
       {/* Messages */}
       <div ref={scrollRef} className={cn(
-        "flex-1 min-h-0 overflow-y-auto space-y-6 scrollbar-thin scrollbar-thumb-primary/10 hover:scrollbar-thumb-primary/20 overscroll-contain",
-        isMobile ? "px-3 py-4 pb-2" : "px-4 py-6"
+        "flex-1 overflow-y-auto overflow-x-hidden space-y-6 scrollbar-thin scrollbar-thumb-primary/10 hover:scrollbar-thumb-primary/20",
+        isMobile ? "px-3 py-4" : "px-4 py-6"
       )}>
         {messages.map((msg, i) => (
           <div key={msg.id} className="space-y-4">
@@ -256,9 +256,9 @@ const AITwinChat = () => {
 
       {/* Action Area */}
       <div className={cn(
-        "flex-shrink-0 border-t border-border/40",
+        "flex-none border-t border-border/40",
         isMobile
-          ? "p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] bg-background"
+          ? "p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-background"
           : "p-4 bg-accent/5"
       )}>
         {/* Initial suggestions if no conversation yet */}
@@ -347,13 +347,33 @@ const AITwinChat = () => {
 
       {/* Conditional Rendering Based on Viewport */}
       {isMobile ? (
-        // Mobile: Drawer (fullscreen)
-        <Drawer open={isOpen} onOpenChange={setIsOpen} shouldScaleBackground={false}>
-          <DrawerContent className="!mt-0 inset-0 h-dvh max-h-dvh rounded-none bg-background p-0 flex flex-col border-0 [&>div:first-child]:hidden overflow-hidden">
-            <DrawerTitle className="sr-only">AI Twin Chat</DrawerTitle>
-            <ChatContent isMobile />
-          </DrawerContent>
-        </Drawer>
+        // Mobile: Fullscreen overlay (using Dialog pattern instead of Drawer)
+        <AnimatePresence>
+          {isOpen && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsOpen(false)}
+                className="fixed inset-0 z-50 bg-black/80"
+              />
+
+              {/* Chat Content */}
+              <motion.div
+                initial={{ opacity: 0, y: "100%" }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: "100%" }}
+                transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                className="fixed inset-0 z-50 flex flex-col bg-background"
+                style={{ height: '100dvh', maxHeight: '100dvh' }}
+              >
+                <ChatContent isMobile />
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       ) : (
         // Desktop: Existing floating panel
         <AnimatePresence>
