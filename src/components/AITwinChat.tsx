@@ -130,8 +130,8 @@ const AITwinChat = () => {
     pendingUserMessageIdRef.current = null;
   };
 
-  // Shared ChatContent component for both mobile and desktop
-  const ChatContent = ({ isMobile = false }: { isMobile?: boolean }) => (
+  // Shared render function for ChatContent (prevents unmount/remount on every keystroke)
+  const renderChatContent = () => (
     <div className="flex flex-col h-full w-full overflow-hidden">
       {/* Header */}
       <div className={cn(
@@ -374,7 +374,7 @@ const AITwinChat = () => {
                 style={{ height: '100dvh', maxHeight: '100dvh' }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <ChatContent isMobile />
+                {renderChatContent()}
               </motion.div>
             </>
           )}
@@ -410,7 +410,7 @@ const AITwinChat = () => {
                 willChange: "width,height,transform,border-radius,box-shadow,backdrop-filter"
               }}
             >
-              <ChatContent />
+              {renderChatContent()}
             </motion.div>
           )}
         </AnimatePresence>
