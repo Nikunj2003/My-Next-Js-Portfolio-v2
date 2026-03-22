@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, X, Send, Bot, User, Trash2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -27,6 +27,7 @@ const AITwinChat = () => {
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const pendingUserMessageIdRef = useRef<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
 
   // Auto-scroll to bottom or anchor to user message top
@@ -285,6 +286,7 @@ const AITwinChat = () => {
         {/* Input */}
         <div className="relative flex items-center gap-2">
           <input
+            ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
@@ -348,11 +350,12 @@ const AITwinChat = () => {
       {/* Conditional Rendering Based on Viewport */}
       {isMobile ? (
         // Mobile: Fullscreen overlay (using Dialog pattern instead of Drawer)
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
           {isOpen && (
             <>
               {/* Backdrop */}
               <motion.div
+                key="chat-backdrop"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -362,12 +365,14 @@ const AITwinChat = () => {
 
               {/* Chat Content */}
               <motion.div
+                key="chat-content"
                 initial={{ opacity: 0, y: "100%" }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: "100%" }}
                 transition={{ type: "spring", damping: 30, stiffness: 300 }}
                 className="fixed inset-0 z-50 flex flex-col bg-background"
                 style={{ height: '100dvh', maxHeight: '100dvh' }}
+                onClick={(e) => e.stopPropagation()}
               >
                 <ChatContent isMobile />
               </motion.div>
