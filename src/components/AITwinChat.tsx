@@ -348,8 +348,8 @@ const AITwinChat = () => {
       {/* Conditional Rendering Based on Viewport */}
       {isMobile ? (
         // Mobile: Drawer (fullscreen)
-        <Drawer open={isOpen} onOpenChange={setIsOpen}>
-          <DrawerContent className="inset-0 h-screen max-h-screen rounded-none bg-background p-0 flex flex-col border-0 [&>div:first-child]:hidden">
+        <Drawer open={isOpen} onOpenChange={setIsOpen} shouldScaleBackground={false}>
+          <DrawerContent className="!mt-0 inset-0 h-screen max-h-screen rounded-none bg-background p-0 flex flex-col border-0 [&>div:first-child]:hidden">
             <DrawerTitle className="sr-only">AI Twin Chat</DrawerTitle>
             <ChatContent isMobile />
           </DrawerContent>
