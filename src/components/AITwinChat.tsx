@@ -131,11 +131,11 @@ const AITwinChat = () => {
 
   // Shared ChatContent component for both mobile and desktop
   const ChatContent = ({ isMobile = false }: { isMobile?: boolean }) => (
-    <div className={cn("flex flex-col h-full", isMobile && "relative")}>
+    <div className="flex flex-col h-full min-h-0">
       {/* Header */}
       <div className={cn(
-        "border-b border-border/40 flex items-center justify-between",
-        isMobile ? "px-4 py-3 shrink-0 sticky top-0 bg-background/95 backdrop-blur-sm z-10" : "px-5 py-4 bg-accent/5"
+        "flex-shrink-0 border-b border-border/40 flex items-center justify-between",
+        isMobile ? "px-4 py-3 bg-background" : "px-5 py-4 bg-accent/5"
       )}>
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
@@ -168,7 +168,7 @@ const AITwinChat = () => {
 
       {/* Messages */}
       <div ref={scrollRef} className={cn(
-        "flex-1 overflow-y-auto space-y-6 scrollbar-thin scrollbar-thumb-primary/10 hover:scrollbar-thumb-primary/20",
+        "flex-1 min-h-0 overflow-y-auto space-y-6 scrollbar-thin scrollbar-thumb-primary/10 hover:scrollbar-thumb-primary/20",
         isMobile ? "px-3 py-4" : "px-4 py-6"
       )}>
         {messages.map((msg, i) => (
@@ -256,9 +256,9 @@ const AITwinChat = () => {
 
       {/* Action Area */}
       <div className={cn(
-        "border-t border-border/40",
+        "flex-shrink-0 border-t border-border/40",
         isMobile
-          ? "shrink-0 sticky bottom-0 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] bg-background/95 backdrop-blur-sm z-10"
+          ? "p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] bg-background"
           : "p-4 bg-accent/5"
       )}>
         {/* Initial suggestions if no conversation yet */}
@@ -349,7 +349,7 @@ const AITwinChat = () => {
       {isMobile ? (
         // Mobile: Drawer (fullscreen)
         <Drawer open={isOpen} onOpenChange={setIsOpen}>
-          <DrawerContent className="h-[100dvh] max-h-[100dvh] rounded-t-2xl bg-background/95 p-0 flex flex-col">
+          <DrawerContent className="h-[100vh] max-h-[100vh] rounded-t-2xl bg-background p-0 flex flex-col">
             <DrawerTitle className="sr-only">AI Twin Chat</DrawerTitle>
             <ChatContent isMobile />
           </DrawerContent>
