@@ -131,11 +131,11 @@ const AITwinChat = () => {
 
   // Shared ChatContent component for both mobile and desktop
   const ChatContent = ({ isMobile = false }: { isMobile?: boolean }) => (
-    <div className="flex flex-col h-full">
+    <div className={cn("flex flex-col h-full", isMobile && "relative")}>
       {/* Header */}
       <div className={cn(
-        "border-b border-border/40 flex items-center justify-between bg-accent/5",
-        isMobile ? "px-4 py-3" : "px-5 py-4"
+        "border-b border-border/40 flex items-center justify-between",
+        isMobile ? "px-4 py-3 shrink-0 sticky top-0 bg-background/95 backdrop-blur-sm z-10" : "px-5 py-4 bg-accent/5"
       )}>
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
@@ -257,9 +257,8 @@ const AITwinChat = () => {
       {/* Action Area */}
       <div className={cn(
         "border-t border-border/40",
-        messages.length <= 1 ? "" : "",
         isMobile
-          ? "p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] bg-background/95 backdrop-blur-sm"
+          ? "shrink-0 sticky bottom-0 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] bg-background/95 backdrop-blur-sm z-10"
           : "p-4 bg-accent/5"
       )}>
         {/* Initial suggestions if no conversation yet */}
