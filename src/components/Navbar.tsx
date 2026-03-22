@@ -24,6 +24,29 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string, isMobile: boolean) => {
+    e.preventDefault();
+    if (isMobile) {
+      setIsOpen(false);
+      // Wait for menu close & iOS gesture end
+      setTimeout(() => {
+        const target = document.querySelector(href);
+        if (target) {
+          const top = target.getBoundingClientRect().top + window.scrollY - 85; 
+          window.scrollTo({ top, behavior: "smooth" });
+          window.history.pushState(null, "", href);
+        }
+      }, 150);
+    } else {
+      const target = document.querySelector(href);
+      if (target) {
+        const top = target.getBoundingClientRect().top + window.scrollY - 85; 
+        window.scrollTo({ top, behavior: "smooth" });
+        window.history.pushState(null, "", href);
+      }
+    }
+  };
+
   return (
     <>
       <div className="fixed top-0 inset-x-0 z-50 flex justify-center px-4 pt-4 sm:pt-6 pointer-events-none">
@@ -42,6 +65,7 @@ const Navbar = () => {
               <a
                 key={link.href}
                 href={link.href}
+                onClick={(e) => handleNavClick(e, link.href, false)}
                 className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-200 rounded-full hover:bg-white/10"
               >
                 {link.label}
@@ -71,19 +95,27 @@ const Navbar = () => {
 
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden fixed top-[4.5rem] inset-x-4 z-40 glass-strong border border-white/10 overflow-hidden rounded-2xl shadow-2xl"
-          >
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsOpen(false)}
+              className="md:hidden fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, height: 0, y: -10 }}
+              animate={{ opacity: 1, height: "auto", y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -10 }}
+              className="md:hidden fixed top-[4.5rem] inset-x-4 z-[100] glass-strong border border-white/10 overflow-hidden rounded-2xl shadow-2xl"
+            >
             <div className="py-4 flex flex-col gap-1 px-4">
               {navLinks.map((link) => (
                 <a
                   key={link.href}
                   href={link.href}
-                  onClick={() => setIsOpen(false)}
-                  className="px-4 py-3 text-sm rounded-lg hover:bg-white/5 transition-colors font-medium text-muted-foreground hover:text-foreground"
+                  onClick={(e) => handleNavClick(e, link.href, true)}
+                  className="block px-4 py-3 text-sm rounded-lg hover:bg-white/5 transition-colors font-medium text-muted-foreground hover:text-foreground w-full"
                 >
                   {link.label}
                 </a>
@@ -93,6 +125,7 @@ const Navbar = () => {
                 <a
                   href={personalInfo.resumeUrl}
                   download
+                  onClick={() => setIsOpen(false)}
                   className="flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl bg-primary text-primary-foreground active:scale-[0.97]"
                 >
                   <Download className="w-4 h-4" />
@@ -101,6 +134,7 @@ const Navbar = () => {
               </div>
             </div>
           </motion.div>
+          </>
         )}
       </AnimatePresence>
     </>
