@@ -5,6 +5,9 @@ import { MessageCircle, X, Send, Bot, User, Trash2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { chatSuggestions } from "@/data/portfolio";
+import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 interface Message {
   id: string;
@@ -24,6 +27,7 @@ const AITwinChat = () => {
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const pendingUserMessageIdRef = useRef<string | null>(null);
+  const isMobile = useIsMobile();
 
   // Auto-scroll to bottom or anchor to user message top
   useEffect(() => {
@@ -125,6 +129,181 @@ const AITwinChat = () => {
     pendingUserMessageIdRef.current = null;
   };
 
+  // Shared ChatContent component for both mobile and desktop
+  const ChatContent = ({ isMobile = false }: { isMobile?: boolean }) => (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className={cn(
+        "border-b border-border/40 flex items-center justify-between bg-accent/5",
+        isMobile ? "px-4 py-3" : "px-5 py-4"
+      )}>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+            <Bot className="w-4 h-4 text-primary" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold">Nikunj's AI Twin</p>
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Assistant Online</p>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={clearChat}
+            className="p-2 transition-colors hover:bg-muted rounded-full"
+            title="Clear chat"
+          >
+            <Trash2 className="w-4 h-4 text-muted-foreground" />
+          </button>
+          <button
+            onClick={() => setIsOpen(false)}
+            className="p-2 transition-colors hover:bg-muted rounded-full"
+          >
+            <X className="w-4 h-4 text-muted-foreground" />
+          </button>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div ref={scrollRef} className={cn(
+        "flex-1 overflow-y-auto space-y-6 scrollbar-thin scrollbar-thumb-primary/10 hover:scrollbar-thumb-primary/20",
+        isMobile ? "px-3 py-4" : "px-4 py-6"
+      )}>
+        {messages.map((msg, i) => (
+          <div key={msg.id} className="space-y-4">
+            <motion.div
+              data-message-id={msg.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : "justify-start"}`}
+            >
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 ${
+                msg.role === "assistant" ? "bg-primary/10" : "bg-muted"
+              }`}>
+                {msg.role === "assistant" ? <Bot className="w-4 h-4 text-primary" /> : <User className="w-4 h-4" />}
+              </div>
+              <div
+                className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm ${
+                  msg.role === "user"
+                    ? "bg-primary text-primary-foreground rounded-tr-none"
+                    : "bg-muted/50 dark:bg-muted/20 border border-border/20 rounded-tl-none prose prose-invert prose-sm"
+                }`}
+              >
+                {msg.role === "assistant" ? (
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {msg.content}
+                  </ReactMarkdown>
+                ) : (
+                  msg.content
+                )}
+              </div>
+            </motion.div>
+
+            {/* Suggestions beneath the AI message */}
+            {msg.role === "assistant" && msg.suggestions && msg.suggestions.length > 0 && (
+              <motion.div
+                className="mt-3 flex flex-wrap gap-2 pl-11"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.55, duration: 0.3 }}
+              >
+                {msg.suggestions.map((s, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleSuggestionClick(s)}
+                    onDoubleClick={() => handleSuggestionDoubleClick(s)}
+                    className="group relative select-none overflow-hidden rounded-full bg-primary/10 px-3 py-1 text-[11px] text-foreground transition-colors hover:bg-primary/20 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    aria-label={`Ask: ${s}`}
+                    title="Double-click to send"
+                  >
+                    <span className="relative z-10 flex items-center gap-1">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-3 w-3 opacity-60"
+                      >
+                        <path d="M12 19l-7-7 7-7" />
+                        <path d="M19 19l-7-7 7-7" />
+                      </svg>
+                      {s}
+                    </span>
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </div>
+        ))}
+        {isLoading && (
+          <div className="flex gap-3">
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-1">
+              <Bot className="w-4 h-4 text-primary" />
+            </div>
+            <div className="bg-muted/50 dark:bg-muted/20 border border-border/20 px-4 py-3 rounded-2xl rounded-tl-none flex gap-1.5 items-center shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.3s]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.15s]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce" />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Action Area */}
+      <div className={cn(
+        "border-t border-border/40",
+        messages.length <= 1 ? "" : "",
+        isMobile
+          ? "p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] bg-background/95 backdrop-blur-sm"
+          : "p-4 bg-accent/5"
+      )}>
+        {/* Initial suggestions if no conversation yet */}
+        {messages.length <= 1 && !isLoading && (
+          <motion.div
+            className="mb-4 flex flex-wrap gap-2"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            {chatSuggestions.map((s) => (
+              <button
+                key={s}
+                onClick={() => handleSuggestionClick(s)}
+                onDoubleClick={() => handleSuggestionDoubleClick(s)}
+                className="select-none rounded-full bg-primary/10 px-3 py-1 text-xs text-foreground transition-colors hover:bg-primary/20"
+                title="Double-click to send"
+              >
+                {s}
+              </button>
+            ))}
+          </motion.div>
+        )}
+
+        {/* Input */}
+        <div className="relative flex items-center gap-2">
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            placeholder="Type a message..."
+            className="flex-1 bg-background/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all placeholder:text-muted-foreground/50"
+          />
+          <button
+            onClick={() => handleSend()}
+            disabled={!input.trim() || isLoading}
+            className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 shadow-lg shadow-primary/20"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <>
       {/* Floating Button */}
@@ -133,7 +312,10 @@ const AITwinChat = () => {
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 260, damping: 20 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl flex items-center justify-center transition-all duration-300 ease-in-out border-2 border-primary/20 group cursor-pointer"
+        className={cn(
+          "fixed z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl flex items-center justify-center transition-all duration-300 ease-in-out border-2 border-primary/20 group cursor-pointer",
+          isMobile ? "bottom-4 right-4" : "bottom-6 right-6"
+        )}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
         aria-label="Toggle AI chat"
@@ -164,196 +346,51 @@ const AITwinChat = () => {
         </motion.div>
       </motion.button>
 
-      {/* Chat Panel */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            layout
-            layoutId="chat-window"
-            initial={{ opacity: 0, scale: 0.8, y: 20, rotateX: -15 }}
-            animate={{ opacity: 1, scale: 1, y: 0, rotateX: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 10, rotateX: 10 }}
-            transition={{ 
-              layout: {
+      {/* Conditional Rendering Based on Viewport */}
+      {isMobile ? (
+        // Mobile: Drawer (fullscreen)
+        <Drawer open={isOpen} onOpenChange={setIsOpen}>
+          <DrawerContent className="h-[100dvh] max-h-[100dvh] rounded-t-2xl bg-background/95 p-0 flex flex-col">
+            <DrawerTitle className="sr-only">AI Twin Chat</DrawerTitle>
+            <ChatContent isMobile />
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        // Desktop: Existing floating panel
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              layout
+              layoutId="chat-window"
+              initial={{ opacity: 0, scale: 0.8, y: 20, rotateX: -15 }}
+              animate={{ opacity: 1, scale: 1, y: 0, rotateX: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 10, rotateX: 10 }}
+              transition={{
+                layout: {
+                  type: "spring",
+                  stiffness: 260,
+                  damping: 34,
+                  mass: 0.7,
+                },
                 type: "spring",
                 stiffness: 260,
                 damping: 34,
-                mass: 0.7,
-              },
-              type: "spring", 
-              stiffness: 260, 
-              damping: 34,
-              mass: 0.7
-            }}
-            className="fixed bottom-24 right-6 z-50 w-80 sm:w-96 bg-background/55 dark:bg-background/55 backdrop-blur-[22px] backdrop-saturate-150 border border-border/60 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-            style={{ 
-              height: "32rem", 
-              maxHeight: "calc(100vh - 8rem)",
-              perspective: "1000px",
-              transformStyle: "preserve-3d",
-              willChange: "width,height,transform,border-radius,box-shadow,backdrop-filter"
-            }}
-          >
-            {/* Header */}
-            <div className="px-5 py-4 border-b border-border/40 flex items-center justify-between bg-accent/5">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold">Nikunj's AI Twin</p>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Assistant Online</p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-1">
-                <button 
-                  onClick={clearChat}
-                  className="p-2 transition-colors hover:bg-muted rounded-full"
-                  title="Clear chat"
-                >
-                  <Trash2 className="w-4 h-4 text-muted-foreground" />
-                </button>
-                <button 
-                  onClick={() => setIsOpen(false)}
-                  className="p-2 transition-colors hover:bg-muted rounded-full"
-                >
-                  <X className="w-4 h-4 text-muted-foreground" />
-                </button>
-              </div>
-            </div>
-
-            {/* Messages */}
-            <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6 space-y-6 scrollbar-thin scrollbar-thumb-primary/10 hover:scrollbar-thumb-primary/20">
-              {messages.map((msg, i) => (
-                <div key={msg.id} className="space-y-4">
-                  <motion.div 
-                    data-message-id={msg.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : "justify-start"}`}
-                  >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 ${
-                      msg.role === "assistant" ? "bg-primary/10" : "bg-muted"
-                    }`}>
-                      {msg.role === "assistant" ? <Bot className="w-4 h-4 text-primary" /> : <User className="w-4 h-4" />}
-                    </div>
-                    <div
-                      className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm ${
-                        msg.role === "user"
-                          ? "bg-primary text-primary-foreground rounded-tr-none"
-                          : "bg-muted/50 dark:bg-muted/20 border border-border/20 rounded-tl-none prose prose-invert prose-sm"
-                      }`}
-                    >
-                      {msg.role === "assistant" ? (
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                          {msg.content}
-                        </ReactMarkdown>
-                      ) : (
-                        msg.content
-                      )}
-                    </div>
-                  </motion.div>
-
-                  {/* Suggestions beneath the AI message */}
-                  {msg.role === "assistant" && msg.suggestions && msg.suggestions.length > 0 && (
-                    <motion.div 
-                      className="mt-3 flex flex-wrap gap-2 pl-11"
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.55, duration: 0.3 }}
-                    >
-                      {msg.suggestions.map((s, i) => (
-                        <button
-                          key={i}
-                          onClick={() => handleSuggestionClick(s)}
-                          onDoubleClick={() => handleSuggestionDoubleClick(s)}
-                          className="group relative select-none overflow-hidden rounded-full bg-primary/10 px-3 py-1 text-[11px] text-foreground transition-colors hover:bg-primary/20 focus:outline-none focus:ring-2 focus:ring-primary/50"
-                          aria-label={`Ask: ${s}`}
-                          title="Double-click to send"
-                        >
-                          <span className="relative z-10 flex items-center gap-1">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="h-3 w-3 opacity-60"
-                            >
-                              <path d="M12 19l-7-7 7-7" />
-                              <path d="M19 19l-7-7 7-7" />
-                            </svg>
-                            {s}
-                          </span>
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </div>
-              ))}
-              {isLoading && (
-                <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-1">
-                    <Bot className="w-4 h-4 text-primary" />
-                  </div>
-                  <div className="bg-muted/50 dark:bg-muted/20 border border-border/20 px-4 py-3 rounded-2xl rounded-tl-none flex gap-1.5 items-center shadow-sm">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.3s]" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.15s]" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce" />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Action Area */}
-            <div className={`p-4 bg-accent/5 border-t border-border/40 ${messages.length <= 1 ? "pb-6" : ""}`}>
-              {/* Initial suggestions if no conversation yet */}
-              {messages.length <= 1 && !isLoading && (
-                <motion.div 
-                  className="mb-4 flex flex-wrap gap-2"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
-                  {chatSuggestions.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => handleSuggestionClick(s)}
-                      onDoubleClick={() => handleSuggestionDoubleClick(s)}
-                      className="select-none rounded-full bg-primary/10 px-3 py-1 text-xs text-foreground transition-colors hover:bg-primary/20"
-                      title="Double-click to send"
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-
-              {/* Input */}
-              <div className="relative flex items-center gap-2">
-                <input
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                  placeholder="Type a message..."
-                  className="flex-1 bg-background/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all placeholder:text-muted-foreground/50"
-                />
-                <button
-                  onClick={() => handleSend()}
-                  disabled={!input.trim() || isLoading}
-                  className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 shadow-lg shadow-primary/20"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                mass: 0.7
+              }}
+              className="fixed bottom-24 right-6 z-50 w-80 sm:w-96 bg-background/55 dark:bg-background/55 backdrop-blur-[22px] backdrop-saturate-150 border border-border/60 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+              style={{
+                height: "32rem",
+                maxHeight: "calc(100vh - 8rem)",
+                perspective: "1000px",
+                transformStyle: "preserve-3d",
+                willChange: "width,height,transform,border-radius,box-shadow,backdrop-filter"
+              }}
+            >
+              <ChatContent />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
     </>
   );
 };
