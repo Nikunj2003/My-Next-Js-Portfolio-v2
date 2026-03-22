@@ -168,8 +168,8 @@ const AITwinChat = () => {
 
       {/* Messages */}
       <div ref={scrollRef} className={cn(
-        "flex-1 min-h-0 overflow-y-auto space-y-6 scrollbar-thin scrollbar-thumb-primary/10 hover:scrollbar-thumb-primary/20",
-        isMobile ? "px-3 py-4" : "px-4 py-6"
+        "flex-1 min-h-0 overflow-y-auto space-y-6 scrollbar-thin scrollbar-thumb-primary/10 hover:scrollbar-thumb-primary/20 overscroll-contain",
+        isMobile ? "px-3 py-4 pb-2" : "px-4 py-6"
       )}>
         {messages.map((msg, i) => (
           <div key={msg.id} className="space-y-4">
@@ -349,7 +349,7 @@ const AITwinChat = () => {
       {isMobile ? (
         // Mobile: Drawer (fullscreen)
         <Drawer open={isOpen} onOpenChange={setIsOpen} shouldScaleBackground={false}>
-          <DrawerContent className="!mt-0 inset-0 h-screen max-h-screen rounded-none bg-background p-0 flex flex-col border-0 [&>div:first-child]:hidden">
+          <DrawerContent className="!mt-0 inset-0 h-dvh max-h-dvh rounded-none bg-background p-0 flex flex-col border-0 [&>div:first-child]:hidden overflow-hidden">
             <DrawerTitle className="sr-only">AI Twin Chat</DrawerTitle>
             <ChatContent isMobile />
           </DrawerContent>
