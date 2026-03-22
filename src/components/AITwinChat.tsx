@@ -349,7 +349,7 @@ const AITwinChat = () => {
       {isMobile ? (
         // Mobile: Drawer (fullscreen)
         <Drawer open={isOpen} onOpenChange={setIsOpen}>
-          <DrawerContent className="h-[100vh] max-h-[100vh] rounded-t-2xl bg-background p-0 flex flex-col">
+          <DrawerContent className="inset-0 h-screen max-h-screen rounded-none bg-background p-0 flex flex-col border-0 [&>div:first-child]:hidden">
             <DrawerTitle className="sr-only">AI Twin Chat</DrawerTitle>
             <ChatContent isMobile />
           </DrawerContent>
