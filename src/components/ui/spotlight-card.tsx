@@ -46,7 +46,7 @@ export function SpotlightCard({
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       className={cn(
-        "group relative rounded-3xl border border-black/5 dark:border-white/5 bg-black/[0.02] dark:bg-white/[0.02] overflow-hidden",
+        "group relative rounded-3xl border border-border/60 bg-background/55 dark:bg-background/55 backdrop-blur-[22px] backdrop-saturate-150 overflow-hidden",
         className
       )}
     >

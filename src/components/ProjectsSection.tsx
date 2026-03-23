@@ -75,7 +75,7 @@ const ProjectsSection = () => {
                   zIndex: i,
                 }}
               >
-                <SpotlightCard className="w-full relative shadow-2xl shadow-black/50 bg-background dark:bg-background border-black/10 dark:border-white/10">
+                <SpotlightCard className="w-full relative shadow-2xl shadow-black/50 bg-background dark:bg-background border-black/10 dark:border-white/10 backdrop-blur-none backdrop-saturate-100">
                   <div className={`flex flex-col ${isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'} min-h-[450px]`}>
                     
                     {/* Content Section */}
