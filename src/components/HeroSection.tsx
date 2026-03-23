@@ -142,8 +142,8 @@ const HeroSection = () => {
                   <img
                     src={cardImage.src}
                     alt="Nikunj Khitha — Business Card"
-                    className="w-full h-auto rounded-3xl border border-white/10 shadow-2xl shadow-black/80 pointer-events-none"
-                    draggable="false"
+                    className="w-full h-auto rounded-3xl border border-white/10 shadow-2xl shadow-black/80 pointer-events-none select-none"
+                    draggable={false}
                   />
               </Card3D>
              </div>
