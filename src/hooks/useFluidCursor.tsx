@@ -1,5 +1,8 @@
 // @ts-nocheck
-const useFluidCursor = (canvas: HTMLCanvasElement | null) => {
+const useFluidCursor = (
+  canvas: HTMLCanvasElement | null,
+  onActivated?: () => void
+) => {
   if (!canvas) return;
   resizeCanvas();
 
@@ -964,7 +967,25 @@ const useFluidCursor = (canvas: HTMLCanvasElement | null) => {
   let colorUpdateTimer = 0.0;
 
   let animationId: number;
+  let hasStarted = false;
+  let isDisposed = false;
+
+  function startFluidSimulation() {
+    if (hasStarted || isDisposed) return;
+    hasStarted = true;
+    lastUpdateTime = Date.now();
+    onActivated?.();
+    update();
+  }
+
   function update() {
+    if (isDisposed) return;
+
+    if (canvas.clientWidth === 0 || canvas.clientHeight === 0) {
+      animationId = requestAnimationFrame(update);
+      return;
+    }
+
     const dt = calcDeltaTime();
     if (resizeCanvas()) initFramebuffers();
     updateColors(dt);
@@ -1198,6 +1219,16 @@ const useFluidCursor = (canvas: HTMLCanvasElement | null) => {
     listeners.push({ target, type, fn, opts });
   };
 
+  const dispose = () => {
+    if (isDisposed) return;
+    isDisposed = true;
+    cancelAnimationFrame(animationId);
+    themeObserver.disconnect();
+    listeners.forEach(({ target, type, fn, opts }) => {
+      target.removeEventListener(type, fn, opts);
+    });
+  };
+
   const handleMouseDown = (e: MouseEvent) => {
     const pointer = pointers[0];
     const posX = scaleByPixelRatio(e.clientX);
@@ -1214,7 +1245,7 @@ const useFluidCursor = (canvas: HTMLCanvasElement | null) => {
     const posY = scaleByPixelRatio(e.clientY);
     const color = generateColor();
 
-    update();
+    startFluidSimulation();
     updatePointerMoveData(pointer, posX, posY, color);
 
     document.body.removeEventListener("mousemove", handleFirstMouseMove);
@@ -1244,7 +1275,7 @@ const useFluidCursor = (canvas: HTMLCanvasElement | null) => {
       const posX = scaleByPixelRatio(touches[i].clientX);
       const posY = scaleByPixelRatio(touches[i].clientY);
 
-      update();
+      startFluidSimulation();
       updatePointerDownData(pointer, touches[i].identifier, posX, posY);
     }
 
@@ -1289,6 +1320,19 @@ const useFluidCursor = (canvas: HTMLCanvasElement | null) => {
   };
 
   addListener(window, "touchend", handleTouchEnd);
+
+  const handleLifecycleDispose = () => {
+    canvas.style.opacity = "0";
+    dispose();
+  };
+
+  const handleVisibilityDispose = () => {
+    if (document.visibilityState === "hidden") handleLifecycleDispose();
+  };
+
+  addListener(window, "beforeunload", handleLifecycleDispose);
+  addListener(window, "pagehide", handleLifecycleDispose);
+  addListener(document, "visibilitychange", handleVisibilityDispose);
 
   function updatePointerDownData(pointer, id, posX, posY) {
     pointer.id = id;
@@ -1493,10 +1537,7 @@ const useFluidCursor = (canvas: HTMLCanvasElement | null) => {
   }
 
   return () => {
-    cancelAnimationFrame(animationId);
-    listeners.forEach(({ target, type, fn, opts }) => {
-      target.removeEventListener(type, fn, opts);
-    });
+    dispose();
   };
 }
 
