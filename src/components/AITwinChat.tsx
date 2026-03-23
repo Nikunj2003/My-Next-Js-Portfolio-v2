@@ -27,6 +27,7 @@ const AITwinChat = () => {
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const pendingUserMessageIdRef = useRef<string | null>(null);
+  const isSendingRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
 
@@ -82,8 +83,9 @@ const AITwinChat = () => {
 
   const handleSend = async (text?: string) => {
     const msg = text || input.trim();
-    if (!msg || isLoading) return;
-    
+    if (!msg || isSendingRef.current) return;
+
+    isSendingRef.current = true;
     const userMsgId = Date.now().toString();
     setInput("");
     setMessages((prev) => [...prev, { id: userMsgId, role: "user", content: msg }]);
@@ -106,27 +108,28 @@ const AITwinChat = () => {
       if (!response.ok) throw new Error("API call failed");
 
       const data = await response.json();
-      
+
       setMessages((prev) => [
         ...prev,
-        { 
+        {
           id: (Date.now() + 1).toString(),
-          role: "assistant", 
+          role: "assistant",
           content: data.response,
-          suggestions: data.suggestions 
+          suggestions: data.suggestions
         },
       ]);
     } catch (error) {
       console.error("AI Chat Error:", error);
       setMessages((prev) => [
         ...prev,
-        { 
+        {
           id: (Date.now() + 1).toString(),
-          role: "assistant", 
-          content: "I'm having trouble connecting to my brain right now. Please try again or reach out to Nikunj directly via email!" 
+          role: "assistant",
+          content: "I'm having trouble connecting to my brain right now. Please try again or reach out to Nikunj directly via email!"
         },
       ]);
     } finally {
+      isSendingRef.current = false;
       setIsLoading(false);
     }
   };
