@@ -36,26 +36,6 @@ const FluidCursor = () => {
     };
   }, [shouldRender]);
 
-  useEffect(() => {
-    if (!shouldRender) return;
-
-    const hideCursorLayer = () => setIsActivated(false);
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden") hideCursorLayer();
-    };
-
-    window.addEventListener("beforeunload", hideCursorLayer);
-    window.addEventListener("pagehide", hideCursorLayer);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      window.removeEventListener("beforeunload", hideCursorLayer);
-      window.removeEventListener("pagehide", hideCursorLayer);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [shouldRender]);
-
-
   return (
     <div className="pointer-events-none fixed inset-0 z-0 h-screen w-screen overflow-hidden" style={{ opacity: isActivated ? 1 : 0 }}>
       <canvas

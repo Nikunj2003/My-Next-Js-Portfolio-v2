@@ -1,6 +1,6 @@
 "use client";
 import { useRef, useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence, useSpring, useScroll } from "framer-motion";
+import { motion, AnimatePresence, useSpring, useMotionValue } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { Briefcase } from "lucide-react";
 
@@ -177,10 +177,40 @@ const ExperienceItem = ({ exp, index }: { exp: typeof OLD_EXPERIENCE_DATA[0]; in
 
 const ExperienceSection = () => {
   const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start 80%", "end 80%"],
-  });
+  const scrollYProgress = useMotionValue(0);
+
+  useEffect(() => {
+    let frameId: number | null = null;
+
+    const updateProgress = () => {
+      const el = ref.current;
+      if (!el) return;
+
+      const rect = el.getBoundingClientRect();
+      const viewportThreshold = window.innerHeight * 0.8;
+      const total = Math.max(rect.height, 1);
+      const rawProgress = (viewportThreshold - rect.top) / total;
+      const clampedProgress = Math.max(0, Math.min(1, rawProgress));
+
+      scrollYProgress.set(clampedProgress);
+      frameId = null;
+    };
+
+    const requestUpdate = () => {
+      if (frameId !== null) return;
+      frameId = window.requestAnimationFrame(updateProgress);
+    };
+
+    requestUpdate();
+    window.addEventListener("scroll", requestUpdate, { passive: true });
+    window.addEventListener("resize", requestUpdate);
+
+    return () => {
+      if (frameId !== null) window.cancelAnimationFrame(frameId);
+      window.removeEventListener("scroll", requestUpdate);
+      window.removeEventListener("resize", requestUpdate);
+    };
+  }, [scrollYProgress]);
 
   const [sectionRef, inView] = useInView({ triggerOnce: true, threshold: 0 });
 
@@ -214,7 +244,7 @@ const ExperienceSection = () => {
           </div>
 
           {/* Right Column: Timeline */}
-          <div className="lg:w-2/3 relative w-full" ref={ref}>
+          <div className="lg:w-2/3 relative w-full" ref={ref} style={{ position: "relative" }}>
             {/* Background Timeline Line */}
             <div className="absolute left-[24px] sm:left-[44px] bottom-0 top-0 w-[2px] rounded-full bg-white/10 origin-top" />
 

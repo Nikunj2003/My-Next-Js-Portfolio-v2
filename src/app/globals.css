@@ -72,11 +72,13 @@
   }
 
   html {
+    position: relative;
     scroll-behavior: smooth;
     scroll-padding-top: 5rem;
   }
 
   body {
+    position: relative;
     @apply bg-background text-foreground font-sans antialiased;
     overflow-wrap: break-word;
   }

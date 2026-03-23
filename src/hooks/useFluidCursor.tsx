@@ -1326,13 +1326,7 @@ const useFluidCursor = (
     dispose();
   };
 
-  const handleVisibilityDispose = () => {
-    if (document.visibilityState === "hidden") handleLifecycleDispose();
-  };
-
   addListener(window, "beforeunload", handleLifecycleDispose);
-  addListener(window, "pagehide", handleLifecycleDispose);
-  addListener(document, "visibilitychange", handleVisibilityDispose);
 
   function updatePointerDownData(pointer, id, posX, posY) {
     pointer.id = id;
