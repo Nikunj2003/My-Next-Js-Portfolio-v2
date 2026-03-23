@@ -98,44 +98,68 @@ body {
 /* Hand cursor for interactive elements (light theme) */
 a,
 button,
-select,
 [role="button"],
 input[type="submit"],
-input[type="button"] {
+input[type="button"],
+.cursor-pointer {
   cursor: url("/icons8-hand-cursor-18-light.png"), pointer;
 }
 
 /* Hand cursor for interactive elements (dark theme) */
 .dark a,
 .dark button,
-.dark select,
 .dark [role="button"],
 .dark input[type="submit"],
-.dark input[type="button"] {
+.dark input[type="button"],
+.dark .cursor-pointer {
   cursor: url("/icons8-hand-cursor-18-dark.png"), pointer;
 }
 
+/* Select cursor for dropdown controls (light theme) */
+select,
+option,
+[role="combobox"],
+[role="option"],
+.cursor-default {
+  cursor: url("/icons8-select-cursor-18-light.png"), default;
+}
+
+/* Select cursor for dropdown controls (dark theme) */
+.dark select,
+.dark option,
+.dark [role="combobox"],
+.dark [role="option"],
+.dark .cursor-default {
+  cursor: url("/icons8-select-cursor-18-dark.png"), default;
+}
+
 /* Text cursor for text inputs (light theme) */
+input:not([type]),
 input[type="text"],
 input[type="email"],
 input[type="search"],
 input[type="password"],
 input[type="url"],
 input[type="tel"],
+input[type="number"],
 textarea,
-[contenteditable="true"] {
+[contenteditable="true"],
+.cursor-text {
   cursor: url("/icons8-text-cursor-19-light.png"), text;
 }
 
 /* Text cursor for text inputs (dark theme) */
+.dark input:not([type]),
 .dark input[type="text"],
 .dark input[type="email"],
 .dark input[type="search"],
 .dark input[type="password"],
 .dark input[type="url"],
 .dark input[type="tel"],
+.dark input[type="number"],
 .dark textarea,
-.dark [contenteditable="true"] {
+.dark [contenteditable="true"],
+.dark .cursor-text {
   cursor: url("/icons8-text-cursor-19-dark.png"), text;
 }
 
