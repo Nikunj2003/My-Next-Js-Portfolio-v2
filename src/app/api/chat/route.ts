@@ -18,7 +18,65 @@ interface ChatCompletionMessageParam {
   content: string;
 }
 
+const RATE_LIMIT = 39;
+const WINDOW_MS = 60_000;
+
+const requestStore = new Map<string, { count: number; resetAt: number }>();
+
+function getClientKey(request: Request): string {
+  const forwardedFor = request.headers.get("x-forwarded-for") || "";
+  const firstIp = forwardedFor.split(",")[0]?.trim();
+  const realIp = request.headers.get("x-real-ip") || "";
+  const ip = firstIp || realIp || "unknown";
+  const userAgent = request.headers.get("user-agent") || "unknown";
+
+  return `${ip}-${userAgent}`;
+}
+
+function checkRateLimit(request: Request): {
+  limited: boolean;
+  remaining: number;
+  retryAfter: number;
+} {
+  const clientKey = getClientKey(request);
+  const now = Date.now();
+  const entry = requestStore.get(clientKey);
+
+  if (!entry || now >= entry.resetAt) {
+    requestStore.set(clientKey, { count: 1, resetAt: now + WINDOW_MS });
+    return { limited: false, remaining: RATE_LIMIT - 1, retryAfter: 0 };
+  }
+
+  const nextCount = entry.count + 1;
+  entry.count = nextCount;
+
+  const limited = nextCount > RATE_LIMIT;
+  const remaining = limited ? 0 : RATE_LIMIT - nextCount;
+  const retryAfter = limited ? Math.max(1, Math.ceil((entry.resetAt - now) / 1000)) : 0;
+
+  return { limited, remaining, retryAfter };
+}
+
 export async function POST(request: Request) {
+  const rateLimitResult = checkRateLimit(request);
+  const rateLimitHeaders = {
+    "X-RateLimit-Limit": String(RATE_LIMIT),
+    "X-RateLimit-Remaining": String(rateLimitResult.remaining),
+  };
+
+  if (rateLimitResult.limited) {
+    return NextResponse.json(
+      { error: "Too many requests. Please wait a minute before trying again." },
+      {
+        status: 429,
+        headers: {
+          ...rateLimitHeaders,
+          "Retry-After": String(rateLimitResult.retryAfter),
+        },
+      }
+    );
+  }
+
   try {
     const body: ChatRequest = await request.json();
     const { message, conversationHistory = [] } = body;
