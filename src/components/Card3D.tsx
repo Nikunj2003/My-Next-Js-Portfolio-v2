@@ -55,7 +55,7 @@ const Card3D = ({ children, className = "" }: Card3DProps) => {
       >
         {children}
         <motion.div
-          className="absolute inset-0 pointer-events-none rounded-2xl z-20 mix-blend-overlay"
+          className="absolute inset-0 pointer-events-none rounded-2xl z-20"
           style={{
             background: useTransform(
               [glareX, glareY],

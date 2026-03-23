@@ -60,8 +60,8 @@ const HeroSection = () => {
       }} />
       
       {/* Massive Glowing Animated Orbs */}
-      <div className="absolute top-1/4 -right-1/4 w-[800px] h-[800px] rounded-full mix-blend-screen animate-[pulse_8s_ease-in-out_infinite] opacity-50 pointer-events-none bg-[radial-gradient(circle,hsl(var(--primary)/0.2)_0%,transparent_70%)]" />
-      <div className="absolute bottom-0 -left-1/4 w-[600px] h-[600px] rounded-full mix-blend-screen animate-[pulse_10s_ease-in-out_infinite_reverse] opacity-40 pointer-events-none bg-[radial-gradient(circle,hsl(var(--accent)/0.2)_0%,transparent_70%)]" />
+      <div className="absolute top-1/4 -right-1/4 w-[800px] h-[800px] rounded-full animate-[pulse_8s_ease-in-out_infinite] opacity-50 pointer-events-none bg-[radial-gradient(circle,hsl(var(--primary)/0.2)_0%,transparent_70%)]" />
+      <div className="absolute bottom-0 -left-1/4 w-[600px] h-[600px] rounded-full animate-[pulse_10s_ease-in-out_infinite_reverse] opacity-40 pointer-events-none bg-[radial-gradient(circle,hsl(var(--accent)/0.2)_0%,transparent_70%)]" />
       
       {/* Smooth fade into the next section */}
       <div className="absolute bottom-0 inset-x-0 h-32 sm:h-64 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none z-0" />

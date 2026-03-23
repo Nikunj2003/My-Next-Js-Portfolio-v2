@@ -5,12 +5,12 @@ const useFluidCursor = (canvas: HTMLCanvasElement | null) => {
 
   const config = {
     SIM_RESOLUTION: 64,
-    DYE_RESOLUTION: 512,
+    DYE_RESOLUTION: 256,
     CAPTURE_RESOLUTION: 512,
     DENSITY_DISSIPATION: 1.5,
     VELOCITY_DISSIPATION: 4,
     PRESSURE: 0.1,
-    PRESSURE_ITERATIONS: 20,
+    PRESSURE_ITERATIONS: 10,
     CURL: 3,
     SPLAT_RADIUS: 0.15,
     SPLAT_FORCE: 4000,
