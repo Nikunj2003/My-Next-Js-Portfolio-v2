@@ -65,6 +65,21 @@ const AITwinChat = () => {
     return () => window.removeEventListener("open-ai-twin", handleOpenTwin);
   }, []);
 
+  useEffect(() => {
+    if (!isOpen || !isMobile) return;
+
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevDocOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevDocOverflow;
+    };
+  }, [isOpen, isMobile]);
+
   const handleSend = async (text?: string) => {
     const msg = text || input.trim();
     if (!msg || isLoading) return;
@@ -132,7 +147,7 @@ const AITwinChat = () => {
 
   // Shared render function for ChatContent (prevents unmount/remount on every keystroke)
   const renderChatContent = () => (
-    <div className="flex flex-col h-full w-full overflow-hidden">
+    <div className="flex flex-col h-full w-full min-h-0 overflow-hidden">
       {/* Header */}
       <div className={cn(
         "flex-none border-b border-border/40 flex items-center justify-between",
@@ -168,11 +183,17 @@ const AITwinChat = () => {
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className={cn(
-        "flex-1 overflow-y-auto overflow-x-hidden space-y-6 scrollbar-thin scrollbar-thumb-primary/10 hover:scrollbar-thumb-primary/20",
-        isMobile ? "px-3 py-4" : "px-4 py-6"
-      )}>
-        {messages.map((msg, i) => (
+      <div
+        ref={scrollRef}
+        data-lenis-prevent
+        onWheelCapture={(e) => e.stopPropagation()}
+        onTouchMoveCapture={(e) => e.stopPropagation()}
+        className={cn(
+          "flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain space-y-6 scrollbar-thin scrollbar-thumb-primary/10 hover:scrollbar-thumb-primary/20",
+          isMobile ? "px-3 py-4" : "px-4 py-6"
+        )}
+      >
+        {messages.map((msg) => (
           <div key={msg.id} className="space-y-4">
             <motion.div
               data-message-id={msg.id}
