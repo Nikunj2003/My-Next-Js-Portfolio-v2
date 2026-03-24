@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🌐 Nikunj Khitha – GenAI Platform Engineer Portfolio
+# 🌐 Nikunj Khitha – Full Stack GenAI Developer Portfolio
 
 An interactive, animated, AI‑augmented portfolio built with **Next.js**, featuring a fluid cursor, global glassmorphism aesthetics, an AI Twin chatbot, and optimized animations across devices.
 

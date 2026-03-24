@@ -4,6 +4,8 @@ import Script from 'next/script'
 import './globals.css'
 import { Providers } from './providers'
 import { SmoothScroll } from '@/components/SmoothScroll'
+import { getPortfolioGraph, toJsonLd } from '@/lib/seo/jsonld'
+import { siteConfig } from '@/lib/seo/site'
 const outfit = Outfit({ 
   subsets: ['latin'],
   variable: '--font-outfit',
@@ -17,35 +19,48 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://nikunj-khitha.vercel.app'),
-  title: 'Nikunj Khitha — GenAI Platform Engineer',
-  description: 'Software Engineer specializing in productionizing Generative AI — GraphRAG engines, multi-agent orchestration, MCP-based automation, and AI infrastructure.',
-  keywords: ['GenAI', 'Platform Engineer', 'GraphRAG', 'Multi-Agent System', 'Software Engineer', 'Nikunj Khitha', 'MCP', 'LangChain', 'FastAPI'],
-  authors: [{ name: 'Nikunj Khitha', url: 'https://github.com/Nikunj2003' }],
-  creator: 'Nikunj Khitha',
+  metadataBase: new URL(siteConfig.siteUrl),
+  title: siteConfig.title,
+  description: siteConfig.description,
+  keywords: [...siteConfig.keywords],
+  authors: [{ name: siteConfig.author, url: siteConfig.github }],
+  creator: siteConfig.creator,
   openGraph: {
     type: 'website',
-    locale: 'en_IN',
-    title: 'Nikunj Khitha — GenAI Platform Engineer',
-    description: 'I productionize Generative AI — building GraphRAG engines, platform agents, AI gateways, and MCP-based automations for enterprise environments.',
-    siteName: 'Nikunj Khitha Portfolio',
-    images: [{
-      url: '/Nikunj_Resume.pdf',
-    }],
+    locale: siteConfig.locale,
+    url: siteConfig.homeUrl,
+    title: siteConfig.title,
+    description: siteConfig.description,
+    siteName: siteConfig.siteName,
+    images: [
+      {
+        url: siteConfig.ogImage,
+        alt: siteConfig.title,
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Nikunj Khitha — GenAI Platform Engineer',
-    description: 'Software Engineer specializing in productionizing Generative AI.',
+    title: siteConfig.title,
+    description: siteConfig.description,
+    images: [siteConfig.ogImage],
   },
   alternates: {
-    canonical: '/',
+    canonical: siteConfig.homeUrl,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
   },
   other: {
-    'geo.region': 'IN-HR',
-    'geo.placename': 'Gurugram',
-    'geo.position': '28.4595;77.0266',
-    'ICBM': '28.4595, 77.0266',
+    'geo.region': siteConfig.geo.region,
+    'geo.placename': siteConfig.geo.placename,
+    'geo.position': siteConfig.geo.position,
+    ICBM: siteConfig.geo.icbm,
   }
 }
 
@@ -60,10 +75,16 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  const portfolioJsonLd = toJsonLd(getPortfolioGraph()).replace(/</g, '\\u003c')
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="color-scheme" content="dark light" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: portfolioJsonLd }}
+        />
       </head>
       <body className={`${outfit.variable} ${jetbrainsMono.variable} font-sans`} suppressHydrationWarning>
         {/* Must be first in body — runs synchronously before any paint */}
