@@ -6,6 +6,12 @@ import logo from "@/assets/logo.png";
 import { personalInfo } from "@/data/portfolio";
 import { ThemeToggle } from "./ThemeToggle";
 
+type LenisWindow = Window & typeof globalThis & {
+  __lenis?: {
+    scrollTo: (target: number | string | HTMLElement, options?: { offset?: number }) => void;
+  };
+};
+
 const navLinks = [
   { href: "#about", label: "About" },
   { href: "#experience", label: "Experience" },
@@ -19,10 +25,42 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
+    let frameId: number | null = null;
+
+    const updateScrolled = () => {
+      frameId = null;
+      const nextScrolled = window.scrollY > 40;
+      setScrolled((prev) => (prev === nextScrolled ? prev : nextScrolled));
+    };
+
+    const onScroll = () => {
+      if (frameId !== null) return;
+      frameId = window.requestAnimationFrame(updateScrolled);
+    };
+
+    updateScrolled();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+
+    return () => {
+      if (frameId !== null) window.cancelAnimationFrame(frameId);
+      window.removeEventListener("scroll", onScroll);
+    };
   }, []);
+
+  const scrollToSection = (href: string) => {
+    const target = document.querySelector(href);
+    if (!(target instanceof HTMLElement)) return;
+
+    const lenis = (window as LenisWindow).__lenis;
+    if (lenis) {
+      lenis.scrollTo(target, { offset: -85 });
+    } else {
+      const top = target.getBoundingClientRect().top + window.scrollY - 85;
+      window.scrollTo({ top, behavior: "smooth" });
+    }
+
+    window.history.pushState(null, "", href);
+  };
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string, isMobile: boolean) => {
     e.preventDefault();
@@ -30,20 +68,10 @@ const Navbar = () => {
       setIsOpen(false);
       // Wait for menu close & iOS gesture end
       setTimeout(() => {
-        const target = document.querySelector(href);
-        if (target) {
-          const top = target.getBoundingClientRect().top + window.scrollY - 85; 
-          window.scrollTo({ top, behavior: "smooth" });
-          window.history.pushState(null, "", href);
-        }
+        scrollToSection(href);
       }, 150);
     } else {
-      const target = document.querySelector(href);
-      if (target) {
-        const top = target.getBoundingClientRect().top + window.scrollY - 85; 
-        window.scrollTo({ top, behavior: "smooth" });
-        window.history.pushState(null, "", href);
-      }
+      scrollToSection(href);
     }
   };
 

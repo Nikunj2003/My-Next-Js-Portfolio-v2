@@ -180,12 +180,13 @@ const ExperienceSection = () => {
   const scrollYProgress = useMotionValue(0);
 
   useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
     let frameId: number | null = null;
+    let isTracking = false;
 
     const updateProgress = () => {
-      const el = ref.current;
-      if (!el) return;
-
       const rect = el.getBoundingClientRect();
       const viewportThreshold = window.innerHeight * 0.8;
       const total = Math.max(rect.height, 1);
@@ -197,18 +198,46 @@ const ExperienceSection = () => {
     };
 
     const requestUpdate = () => {
-      if (frameId !== null) return;
+      if (!isTracking || frameId !== null) return;
       frameId = window.requestAnimationFrame(updateProgress);
     };
 
-    requestUpdate();
-    window.addEventListener("scroll", requestUpdate, { passive: true });
-    window.addEventListener("resize", requestUpdate);
+    const startTracking = () => {
+      if (isTracking) return;
+      isTracking = true;
+      window.addEventListener("scroll", requestUpdate, { passive: true });
+      window.addEventListener("resize", requestUpdate);
+      requestUpdate();
+    };
 
-    return () => {
-      if (frameId !== null) window.cancelAnimationFrame(frameId);
+    const stopTracking = () => {
+      if (!isTracking) return;
+      isTracking = false;
       window.removeEventListener("scroll", requestUpdate);
       window.removeEventListener("resize", requestUpdate);
+
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+        frameId = null;
+      }
+    };
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          startTracking();
+        } else {
+          stopTracking();
+        }
+      },
+      { rootMargin: "20% 0px 20% 0px" }
+    );
+
+    observer.observe(el);
+
+    return () => {
+      observer.disconnect();
+      stopTracking();
     };
   }, [scrollYProgress]);
 

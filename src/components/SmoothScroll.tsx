@@ -3,6 +3,10 @@
 import React, { useEffect } from 'react';
 import Lenis from 'lenis';
 
+type LenisWindow = Window & typeof globalThis & {
+  __lenis?: Lenis;
+};
+
 export function SmoothScroll({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const lenis = new Lenis({
@@ -16,14 +20,83 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
       touchMultiplier: 1.5, // Ignored when syncTouch is false, but safe to keep
     });
 
+    const appWindow = window as LenisWindow;
+    appWindow.__lenis = lenis;
+
+    let rafId: number | null = null;
+
     function raf(time: number) {
       lenis.raf(time);
-      requestAnimationFrame(raf);
+      rafId = window.requestAnimationFrame(raf);
     }
 
-    requestAnimationFrame(raf);
+    const startRaf = () => {
+      if (rafId !== null) return;
+      rafId = window.requestAnimationFrame(raf);
+    };
+
+    const stopRaf = () => {
+      if (rafId === null) return;
+      window.cancelAnimationFrame(rafId);
+      rafId = null;
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        lenis.stop();
+        stopRaf();
+        return;
+      }
+
+      lenis.start();
+      startRaf();
+    };
+
+    const handleHashLinkClick = (event: MouseEvent) => {
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey ||
+        !(event.target instanceof Element)
+      ) {
+        return;
+      }
+
+      const link = event.target.closest('a[href^="#"]');
+      if (!(link instanceof HTMLAnchorElement)) return;
+
+      const href = link.getAttribute('href');
+      if (!href) return;
+
+      if (href === '#') {
+        event.preventDefault();
+        lenis.scrollTo(0);
+        window.history.pushState(null, '', `${window.location.pathname}${window.location.search}`);
+        return;
+      }
+
+      const target = document.querySelector(href);
+      if (!(target instanceof HTMLElement)) return;
+
+      event.preventDefault();
+      lenis.scrollTo(target, { offset: -85 });
+      window.history.pushState(null, '', href);
+    };
+
+    startRaf();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('click', handleHashLinkClick);
 
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('click', handleHashLinkClick);
+      stopRaf();
+      if (appWindow.__lenis === lenis) {
+        delete appWindow.__lenis;
+      }
       lenis.destroy();
     };
   }, []);

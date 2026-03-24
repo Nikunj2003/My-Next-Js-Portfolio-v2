@@ -1,7 +1,7 @@
 "use client";
 import { motion, useMotionTemplate, useMotionValue } from "framer-motion";
 import { useInView } from "react-intersection-observer";
-import { MouseEvent, useState } from "react";
+import { type PointerEvent, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface SpotlightCardProps {
@@ -26,16 +26,62 @@ export function SpotlightCard({
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const [isHovered, setIsHovered] = useState(false);
+  const elementRef = useRef<HTMLDivElement | null>(null);
+  const boundsRef = useRef<DOMRect | null>(null);
+  const pointRef = useRef<{ x: number; y: number } | null>(null);
+  const frameRef = useRef<number | null>(null);
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0, rootMargin: '100px 0px 100px 0px' });
 
-  function handleMouseMove({ currentTarget, clientX, clientY }: MouseEvent) {
-    if (!isHovered) setIsHovered(true);
-    const { left, top } = currentTarget.getBoundingClientRect();
-    mouseX.set(clientX - left);
-    mouseY.set(clientY - top);
+  useEffect(() => {
+    return () => {
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current);
+      }
+    };
+  }, []);
+
+  function flushPointerPosition() {
+    frameRef.current = null;
+
+    const nextBounds = elementRef.current?.getBoundingClientRect() ?? boundsRef.current;
+    if (!nextBounds || !pointRef.current) return;
+
+    boundsRef.current = nextBounds;
+    mouseX.set(pointRef.current.x - nextBounds.left);
+    mouseY.set(pointRef.current.y - nextBounds.top);
   }
 
-  function handleMouseLeave() {
+  function handlePointerEnter({ currentTarget, clientX, clientY }: PointerEvent<HTMLDivElement>) {
+    elementRef.current = currentTarget;
+    boundsRef.current = currentTarget.getBoundingClientRect();
+    pointRef.current = { x: clientX, y: clientY };
+    mouseX.set(clientX - boundsRef.current.left);
+    mouseY.set(clientY - boundsRef.current.top);
+    setIsHovered(true);
+  }
+
+  function handlePointerMove({ currentTarget, clientX, clientY }: PointerEvent<HTMLDivElement>) {
+    elementRef.current = currentTarget;
+    if (!boundsRef.current) {
+      boundsRef.current = currentTarget.getBoundingClientRect();
+    }
+
+    pointRef.current = { x: clientX, y: clientY };
+
+    if (frameRef.current === null) {
+      frameRef.current = window.requestAnimationFrame(flushPointerPosition);
+    }
+  }
+
+  function handlePointerLeave() {
+    if (frameRef.current !== null) {
+      window.cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    }
+
+    elementRef.current = null;
+    boundsRef.current = null;
+    pointRef.current = null;
     setIsHovered(false);
   }
 
@@ -45,8 +91,9 @@ export function SpotlightCard({
       initial={animateOnEnter ? { y: 30 } : false}
       animate={animateOnEnter ? (inView ? { opacity: 1, y: 0 } : {}) : undefined}
       transition={animateOnEnter ? { duration: 0.4, delay: Math.min(delay, 0.2), ease: [0.16, 1, 0.3, 1] } : undefined}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
+      onPointerEnter={handlePointerEnter}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handlePointerLeave}
       className={cn(
         "group relative rounded-3xl border border-border/60 bg-background/55 dark:bg-background/55 backdrop-blur-[22px] backdrop-saturate-150 overflow-hidden",
         className

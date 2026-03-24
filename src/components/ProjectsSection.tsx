@@ -1,10 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { ExternalLink, Github } from "lucide-react";
-import { projects } from "@/data/portfolio";
+import { projects, type Project } from "@/data/portfolio";
 import {
   Carousel,
   CarouselContent,
@@ -15,6 +16,65 @@ import {
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 
 const categories = ["All", ...Array.from(new Set(projects.map((p) => p.category)))];
+const PROJECT_IMAGE_SIZES = "(min-width: 1536px) 42rem, (min-width: 1024px) 40vw, 100vw";
+
+function ProjectPreviewImage({ src, alt, priority = false }: { src: string; alt: string; priority?: boolean }) {
+  return (
+    <div className="aspect-[16/10] w-full bg-zinc-950 p-1">
+      <div className="relative h-full w-full">
+        <Image
+          src={src}
+          alt={alt}
+          fill
+          priority={priority}
+          sizes={PROJECT_IMAGE_SIZES}
+          className="rounded-lg object-contain object-center opacity-90 transition-all duration-500 group-hover/img:opacity-100 pointer-events-none"
+          draggable={false}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ProjectShowcase({ project }: { project: Project }) {
+  const [mediaRef, mediaInView] = useInView({ triggerOnce: true, threshold: 0, rootMargin: "600px 0px" });
+
+  return (
+    <div ref={mediaRef} className="lg:w-1/2 bg-black/40 border-t lg:border-t-0 lg:border-l border-white/5 p-6 sm:p-10 flex items-center justify-center overflow-hidden group/img relative">
+      <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent opacity-50 pointer-events-none" />
+
+      {project.images && project.images.length > 0 ? (
+        mediaInView ? (
+          <Carousel className="w-full relative z-10 rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10 bg-black">
+            <CarouselContent>
+              {project.images.map((img, idx) => (
+                <CarouselItem key={`${project.title}-${img}`}>
+                  <ProjectPreviewImage
+                    src={img}
+                    alt={`${project.title} screenshot ${idx + 1}`}
+                    priority={idx === 0}
+                  />
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <div className="opacity-0 group-hover/img:opacity-100 transition-opacity duration-300">
+              <CarouselPrevious className="left-4 bg-background/80 hover:bg-background border-none w-10 h-10 flex items-center justify-center text-foreground hover:text-primary transition-colors z-20 shadow-xl" />
+              <CarouselNext className="right-4 bg-background/80 hover:bg-background border-none w-10 h-10 flex items-center justify-center text-foreground hover:text-primary transition-colors z-20 shadow-xl" />
+            </div>
+          </Carousel>
+        ) : (
+          <div className="w-full relative z-10 rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10 bg-black">
+            <ProjectPreviewImage src={project.images[0]} alt={`${project.title} preview`} />
+          </div>
+        )
+      ) : (
+        <div className="aspect-[16/10] w-full flex items-center justify-center rounded-xl ring-1 ring-white/10 bg-zinc-950/50 text-muted-foreground text-sm font-mono z-10">
+          {">"} No preview available
+        </div>
+      )}
+    </div>
+  );
+}
 
 const ProjectsSection = () => {
   const [filter, setFilter] = useState("All");
@@ -124,37 +184,7 @@ const ProjectsSection = () => {
                     </div>
 
                     {/* Image / Carousel Showcase Section */}
-                    <div className="lg:w-1/2 bg-black/40 border-t lg:border-t-0 lg:border-l border-white/5 p-6 sm:p-10 flex items-center justify-center overflow-hidden group/img relative">
-                      <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent opacity-50 pointer-events-none" />
-                      
-                      {project.images && project.images.length > 0 ? (
-                        <Carousel className="w-full relative z-10 rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10 bg-black">
-                          <CarouselContent>
-                            {project.images.map((img, idx) => (
-                              <CarouselItem key={idx}>
-                                {/* Using object-contain and an aspect ratio ensures the full uncropped image is visible inside a strict frame */}
-                                <div className="aspect-[16/10] w-full flex items-center justify-center bg-zinc-950 p-1">
-                                  <img
-                                    src={img}
-                                    alt={`${project.title} screenshot ${idx + 1}`}
-                                    className="w-full h-full object-contain object-center opacity-90 group-hover/img:opacity-100 transition-all duration-500 rounded-lg pointer-events-none"
-                                    draggable="false"
-                                  />
-                                </div>
-                              </CarouselItem>
-                            ))}
-                          </CarouselContent>
-                          <div className="opacity-0 group-hover/img:opacity-100 transition-opacity duration-300">
-                            <CarouselPrevious className="left-4 bg-background/80 hover:bg-background border-none w-10 h-10 flex items-center justify-center text-foreground hover:text-primary transition-colors z-20 shadow-xl" />
-                            <CarouselNext className="right-4 bg-background/80 hover:bg-background border-none w-10 h-10 flex items-center justify-center text-foreground hover:text-primary transition-colors z-20 shadow-xl" />
-                          </div>
-                        </Carousel>
-                      ) : (
-                        <div className="aspect-[16/10] w-full flex items-center justify-center rounded-xl ring-1 ring-white/10 bg-zinc-950/50 text-muted-foreground text-sm font-mono z-10">
-                          {">"} No preview available
-                        </div>
-                      )}
-                    </div>
+                    <ProjectShowcase project={project} />
 
                   </div>
                 </SpotlightCard>

@@ -1,3 +1,4 @@
+import { useEffect, useRef, type PointerEvent } from "react";
 import { useMotionValue, useSpring, useTransform, motion } from "framer-motion";
 
 interface Card3DProps {
@@ -8,6 +9,10 @@ interface Card3DProps {
 const Card3D = ({ children, className = "" }: Card3DProps) => {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
+  const elementRef = useRef<HTMLDivElement | null>(null);
+  const boundsRef = useRef<DOMRect | null>(null);
+  const pointRef = useRef<{ x: number; y: number } | null>(null);
+  const frameRef = useRef<number | null>(null);
 
   const mouseXSpring = useSpring(x, { stiffness: 300, damping: 30 });
   const mouseYSpring = useSpring(y, { stiffness: 300, damping: 30 });
@@ -19,17 +24,62 @@ const Card3D = ({ children, className = "" }: Card3DProps) => {
   const glareX = useTransform(mouseXSpring, [-0.5, 0.5], ["0%", "100%"]);
   const glareY = useTransform(mouseYSpring, [-0.5, 0.5], ["0%", "100%"]);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const width = rect.width;
-    const height = rect.height;
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
+  useEffect(() => {
+    return () => {
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current);
+      }
+    };
+  }, []);
+
+  const flushPointerPosition = () => {
+    frameRef.current = null;
+
+    const nextBounds = elementRef.current?.getBoundingClientRect() ?? boundsRef.current;
+    if (!nextBounds || !pointRef.current) return;
+
+    boundsRef.current = nextBounds;
+
+    const width = nextBounds.width;
+    const height = nextBounds.height;
+
+    if (width === 0 || height === 0) return;
+
+    const mouseX = pointRef.current.x - nextBounds.left;
+    const mouseY = pointRef.current.y - nextBounds.top;
     x.set(mouseX / width - 0.5);
     y.set(mouseY / height - 0.5);
   };
 
-  const handleMouseLeave = () => {
+  const handlePointerEnter = ({ currentTarget, clientX, clientY }: PointerEvent<HTMLDivElement>) => {
+    elementRef.current = currentTarget;
+    boundsRef.current = currentTarget.getBoundingClientRect();
+    pointRef.current = { x: clientX, y: clientY };
+    flushPointerPosition();
+  };
+
+  const handlePointerMove = ({ currentTarget, clientX, clientY }: PointerEvent<HTMLDivElement>) => {
+    elementRef.current = currentTarget;
+    if (!boundsRef.current) {
+      boundsRef.current = currentTarget.getBoundingClientRect();
+    }
+
+    pointRef.current = { x: clientX, y: clientY };
+
+    if (frameRef.current === null) {
+      frameRef.current = window.requestAnimationFrame(flushPointerPosition);
+    }
+  };
+
+  const handlePointerLeave = () => {
+    if (frameRef.current !== null) {
+      window.cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    }
+
+    elementRef.current = null;
+    boundsRef.current = null;
+    pointRef.current = null;
     x.set(0);
     y.set(0);
   };
@@ -41,10 +91,11 @@ const Card3D = ({ children, className = "" }: Card3DProps) => {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 1.0, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
       style={{ perspective: 1000 }}
-    >
-      <motion.div
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
+      >
+        <motion.div
+        onPointerEnter={handlePointerEnter}
+        onPointerMove={handlePointerMove}
+        onPointerLeave={handlePointerLeave}
         className="relative rounded-2xl overflow-hidden shadow-2xl shadow-accent/10 will-change-transform"
         style={{ 
           rotateX, 
