@@ -167,15 +167,15 @@ export const projects: Project[] = [
 export const skillCategories = [
   {
     title: "Generative AI & ML",
-    skills: ["RAG", "GraphRAG", "LightRAG", "Agentic AI", "CrewAI", "LangGraph", "LangChain", "MCP", "Prompt Engineering", "AWS Bedrock", "Gemini AI", "Vertex AI", "Claude", "Azure AI Foundry", "Spring AI"],
+    skills: ["RAG", "GraphRAG", "LightRAG", "Agentic AI", "CrewAI", "LangGraph", "LangChain", "LangChain4j", "MCP", "Prompt Engineering", "AWS Bedrock", "Gemini AI", "OpenAI", "Claude", "LLaMA", "NVIDIA NIM", "Vertex AI", "Azure AI Foundry", "Azure Speech SDK", "Spring AI"],
   },
   {
     title: "Full Stack Development",
-    skills: ["Java", "Spring Boot", "Python", "FastAPI", "TypeScript", "Node.js", "Next.js", "React", "Express.js", "Prisma", "Kafka", "RabbitMQ", "SQS"],
+    skills: ["Java", "Spring Boot", "Maven", "Python", "FastAPI", "Go", "Gin", "NestJS", "SQLAlchemy", "TypeScript", "Node.js", "Next.js", "React", "Express.js", "Prisma", "Kafka", "RabbitMQ", "SQS", "Streamlit"],
   },
   {
     title: "Databases & Data",
-    skills: ["Neo4j", "PostgreSQL", "SQLite", "Qdrant", "Pinecone", "Supabase", "AWS S3", "MongoDB", "Elasticsearch", "Firebase", "Redis"],
+    skills: ["Neo4j", "PostgreSQL", "pgvector", "SQLite", "Qdrant", "Pinecone", "Supabase", "AWS S3", "MongoDB", "Elasticsearch", "Azure AI Search", "Firebase", "Redis"],
   },
   {
     title: "DevOps & Infrastructure",
@@ -183,7 +183,7 @@ export const skillCategories = [
   },
   {
     title: "Dev Tools & Platforms",
-    skills: ["LiteLLM", "Claude Code", "Gemini CLI", "Windsurf", "OpenWeb UI", "Vercel", "Swagger", "Auth0", "Postman", "n8n", "Git"],
+    skills: ["LiteLLM", "Claude Code", "Gemini CLI", "Windsurf", "OpenWeb UI", "Vercel", "Vercel AI SDK", "Vite", "Swagger", "Auth0", "Postman", "n8n", "Git", "Recharts"],
   },
 ];
 
