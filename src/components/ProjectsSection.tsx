@@ -61,7 +61,7 @@ const ProjectsSection = () => {
         </motion.div>
 
         {/* Stacked Cards Layout */}
-        <div className="flex flex-col gap-8 relative pb-20 max-w-5xl mx-auto">
+        <div className="flex flex-col gap-8 relative pb-20 max-w-5xl 2xl:max-w-7xl mx-auto">
           {filtered.map((project, i) => {
             const isEven = i % 2 === 0;
             return (

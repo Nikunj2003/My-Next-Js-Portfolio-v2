@@ -83,7 +83,7 @@ const ContactSection = () => {
         </motion.div>
 
         {/* Two equal panels with Spotlight */}
-        <div className="grid lg:grid-cols-2 gap-6 items-stretch max-w-5xl mx-auto">
+        <div className="grid lg:grid-cols-2 gap-6 items-stretch max-w-5xl 2xl:max-w-7xl mx-auto">
 
           {/* Left panel */}
           <SpotlightCard delay={0.1} className="h-full">

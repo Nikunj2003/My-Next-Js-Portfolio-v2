@@ -192,6 +192,12 @@ textarea,
     @apply max-w-6xl mx-auto px-5 sm:px-6 lg:px-8;
   }
 
+  @media (min-width: 1536px) {
+    .container-narrow {
+      max-width: 88rem;
+    }
+  }
+
   .mask-x-fade {
     mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
     -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);

@@ -51,7 +51,7 @@ const Navbar = () => {
     <>
       <div className="fixed top-0 inset-x-0 z-50 flex justify-center px-4 pt-4 sm:pt-6 pointer-events-none">
         <nav
-          className={`pointer-events-auto transition-all duration-500 rounded-2xl sm:rounded-full w-full max-w-6xl flex items-center justify-between px-4 sm:px-6 h-14 sm:h-16 border ${
+          className={`pointer-events-auto transition-all duration-500 rounded-2xl sm:rounded-full w-full max-w-6xl 2xl:max-w-[88rem] flex items-center justify-between px-4 sm:px-6 h-14 sm:h-16 border ${
             scrolled ? "glass-strong shadow-2xl shadow-black/20 border-white/10" : "bg-transparent border-transparent"
           }`}
         >
