@@ -11,6 +11,7 @@ interface SpotlightCardProps {
   glowColor?: string;
   glowSize?: number;
   glowOpacity?: number;
+  animateOnEnter?: boolean;
 }
 
 export function SpotlightCard({
@@ -20,6 +21,7 @@ export function SpotlightCard({
   glowColor = "rgba(41, 214, 185, 0.12)", // Default Teal/Cyan from the theme
   glowSize = 650,
   glowOpacity = 100,
+  animateOnEnter = true,
 }: SpotlightCardProps) {
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -39,10 +41,10 @@ export function SpotlightCard({
 
   return (
     <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 30 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.4, delay: Math.min(delay, 0.2), ease: [0.16, 1, 0.3, 1] }}
+      ref={animateOnEnter ? ref : undefined}
+      initial={animateOnEnter ? { y: 30 } : false}
+      animate={animateOnEnter ? (inView ? { opacity: 1, y: 0 } : {}) : undefined}
+      transition={animateOnEnter ? { duration: 0.4, delay: Math.min(delay, 0.2), ease: [0.16, 1, 0.3, 1] } : undefined}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       className={cn(
