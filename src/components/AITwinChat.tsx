@@ -8,14 +8,46 @@ import { chatSuggestions } from "@/data/portfolio";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { scrollToHash } from "@/lib/scroll";
 import { cn } from "@/lib/utils";
-import { CHAT_MEMORY_WINDOW, CHAT_STORAGE_KEY, WELCOME_MESSAGE } from "@/lib/ai-twin";
+import { CHAT_MEMORY_WINDOW, CHAT_STORAGE_KEY, WELCOME_MESSAGE, trimConversationHistory } from "@/lib/ai-twin";
 
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
   suggestions?: string[];
+  error?: {
+    code: string;
+    retryable: boolean;
+    retryText?: string;
+    userMessageId?: string;
+    isRetrying?: boolean;
+  };
 }
+
+type SendRequest =
+  | string
+  | {
+      text?: string;
+      retryMessageId?: string;
+      retryUserMessageId?: string;
+    };
+
+type ChatApiSuccess = {
+  response?: string;
+  suggestions?: string[];
+};
+
+type ChatApiError = {
+  error?: string;
+  code?: string;
+  retryable?: boolean;
+};
+
+type ChatRequestError = Error & {
+  code?: string;
+  retryable?: boolean;
+  status?: number;
+};
 
 const WELCOME = WELCOME_MESSAGE;
 const INITIAL_MESSAGES: Message[] = [{ id: "welcome", role: "assistant", content: WELCOME }];
@@ -27,6 +59,102 @@ function createMessageId() {
   }
 
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function createChatRequestError(message: string, options: Partial<ChatRequestError> = {}): ChatRequestError {
+  const error = new Error(message) as ChatRequestError;
+  error.code = options.code;
+  error.retryable = options.retryable;
+  error.status = options.status;
+  return error;
+}
+
+function sanitizeMessageError(value: unknown): Message["error"] | undefined {
+  if (!value || typeof value !== "object") return undefined;
+
+  const candidate = value as NonNullable<Message["error"]>;
+
+  if (typeof candidate.code !== "string" || typeof candidate.retryable !== "boolean") {
+    return undefined;
+  }
+
+  if (candidate.retryText !== undefined && typeof candidate.retryText !== "string") {
+    return undefined;
+  }
+
+  if (candidate.userMessageId !== undefined && typeof candidate.userMessageId !== "string") {
+    return undefined;
+  }
+
+  return {
+    code: candidate.code,
+    retryable: candidate.retryable,
+    retryText: candidate.retryText,
+    userMessageId: candidate.userMessageId,
+    isRetrying: false,
+  };
+}
+
+async function buildResponseError(response: Response) {
+  const raw = await response.text();
+  let payload: ChatApiError | null = null;
+
+  try {
+    payload = raw ? (JSON.parse(raw) as ChatApiError) : null;
+  } catch {
+    payload = null;
+  }
+
+  const fallbackMessage =
+    response.status === 429
+      ? "You're sending messages too quickly right now. Please wait a moment and retry."
+      : response.status >= 500
+        ? "The chat service hit a server error. Please retry."
+        : "This message could not be sent.";
+
+  return createChatRequestError(payload?.error || fallbackMessage, {
+    code: payload?.code || `http_${response.status}`,
+    retryable: payload?.retryable ?? (response.status >= 500 || response.status === 429),
+    status: response.status,
+  });
+}
+
+function getErrorState(error: unknown, retryText: string, userMessageId?: string) {
+  if (error instanceof DOMException && error.name === "AbortError") {
+    return {
+      content: "This request timed out before the assistant finished replying. Retry to send the same message again.",
+      error: {
+        code: "client_timeout",
+        retryable: true,
+        retryText,
+        userMessageId,
+      },
+    } satisfies Pick<Message, "content" | "error">;
+  }
+
+  if (error instanceof TypeError) {
+    return {
+      content: "I couldn't reach the chat service just now. Check your connection and retry.",
+      error: {
+        code: "network_error",
+        retryable: true,
+        retryText,
+        userMessageId,
+      },
+    } satisfies Pick<Message, "content" | "error">;
+  }
+
+  const requestError = error as ChatRequestError;
+
+  return {
+    content: requestError.message || "Something went wrong while sending that message.",
+    error: {
+      code: requestError.code || "unknown_error",
+      retryable: requestError.retryable ?? true,
+      retryText,
+      userMessageId,
+    },
+  } satisfies Pick<Message, "content" | "error">;
 }
 
 function sanitizeStoredMessages(value: unknown): Message[] {
@@ -48,9 +176,10 @@ function sanitizeStoredMessages(value: unknown): Message[] {
       suggestions: Array.isArray(message.suggestions)
         ? message.suggestions.filter((suggestion): suggestion is string => typeof suggestion === "string")
         : undefined,
+      error: sanitizeMessageError(message.error),
     }));
 
-  const trimmed = parsed.filter((message) => message.id !== "welcome").slice(-CHAT_MEMORY_WINDOW);
+  const trimmed = trimConversationHistory(parsed, CHAT_MEMORY_WINDOW);
   return trimmed.length > 0 ? [...INITIAL_MESSAGES, ...trimmed] : INITIAL_MESSAGES;
 }
 
@@ -68,19 +197,24 @@ const AITwinChat = () => {
   const dialogRef = useRef<HTMLDivElement>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const wasOpenRef = useRef(false);
-  const handleSendRef = useRef<(text?: string) => Promise<void>>(async () => {});
+  const handleSendRef = useRef<(request?: SendRequest) => Promise<void>>(async () => {});
   const isMobile = useIsMobile();
   const shouldReduceMotion = useReducedMotion();
 
   const getConversationHistory = useCallback(
-    (sourceMessages: Message[]) =>
-      sourceMessages
-        .filter((message) => message.id !== "welcome")
-        .slice(-CHAT_MEMORY_WINDOW)
+    (sourceMessages: Message[], beforeMessageId?: string) => {
+      const endIndex = beforeMessageId ? sourceMessages.findIndex((message) => message.id === beforeMessageId) : -1;
+      const scopedMessages = endIndex >= 0 ? sourceMessages.slice(0, endIndex) : sourceMessages;
+
+      return trimConversationHistory(
+        scopedMessages.filter((message) => !message.error),
+        CHAT_MEMORY_WINDOW
+      )
         .map((message) => ({
           content: message.content,
           sender: message.role === "user" ? "user" : "ai",
-        })),
+        }));
+    },
     []
   );
 
@@ -103,7 +237,7 @@ const AITwinChat = () => {
     try {
       const memoryMessages = [
         ...INITIAL_MESSAGES,
-        ...messages.filter((message) => message.id !== "welcome").slice(-CHAT_MEMORY_WINDOW),
+        ...trimConversationHistory(messages, CHAT_MEMORY_WINDOW),
       ];
 
       window.localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(memoryMessages));
@@ -303,16 +437,41 @@ const AITwinChat = () => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isMobile, isOpen]);
 
-  const handleSend = useCallback(async (text?: string) => {
-    const msg = text || input.trim();
+  const handleSend = useCallback(async (request?: SendRequest) => {
+    const normalizedRequest = typeof request === "string" ? { text: request } : request;
+    const msg = normalizedRequest?.text || input.trim();
     if (!msg || isSendingRef.current) return;
 
     isSendingRef.current = true;
-    const userMsgId = createMessageId();
+    const retryMessageId = normalizedRequest?.retryMessageId;
+    const retryUserMessageId = normalizedRequest?.retryUserMessageId;
+    const isRetry = Boolean(retryMessageId && retryUserMessageId);
+    const userMsgId = retryUserMessageId || createMessageId();
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), 20000);
     setInput("");
-    setMessages((prev) => [...prev, { id: userMsgId, role: "user", content: msg }]);
+
+    if (isRetry && retryMessageId) {
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === retryMessageId
+            ? {
+                ...message,
+                suggestions: undefined,
+                error: message.error
+                  ? {
+                      ...message.error,
+                      isRetrying: true,
+                    }
+                  : undefined,
+              }
+            : message
+        )
+      );
+    } else {
+      setMessages((prev) => [...prev, { id: userMsgId, role: "user", content: msg }]);
+    }
+
     pendingUserMessageIdRef.current = userMsgId;
     setIsLoading(true);
 
@@ -322,37 +481,111 @@ const AITwinChat = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: msg,
-          conversationHistory: getConversationHistory(messages)
+          conversationHistory: getConversationHistory(messages, isRetry ? retryUserMessageId : undefined)
         }),
         signal: controller.signal,
       });
 
-      if (!response.ok) throw new Error("API call failed");
+      if (!response.ok) throw await buildResponseError(response);
 
-      const data = await response.json();
+      const data = (await response.json()) as ChatApiSuccess;
+      const suggestions = Array.isArray(data.suggestions)
+        ? data.suggestions.filter((suggestion): suggestion is string => typeof suggestion === "string")
+        : undefined;
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: createMessageId(),
-          role: "assistant",
-          content: data.response,
-          suggestions: data.suggestions
-        },
-      ]);
+      if (typeof data.response !== "string" || data.response.trim().length === 0) {
+        throw createChatRequestError("The chat service returned an empty response. Please retry.", {
+          code: "empty_response",
+          retryable: true,
+          status: 502,
+        });
+      }
+
+      const assistantContent = data.response;
+
+      if (isRetry && retryMessageId) {
+        setMessages((prev) => {
+          let replaced = false;
+          const next = prev.map((message) => {
+            if (message.id !== retryMessageId) return message;
+
+            replaced = true;
+            return {
+              ...message,
+              content: assistantContent,
+              suggestions,
+              error: undefined,
+            };
+          });
+
+          return replaced
+            ? next
+            : [
+                ...next,
+                {
+                  id: createMessageId(),
+                  role: "assistant",
+                  content: assistantContent,
+                  suggestions,
+                },
+              ];
+        });
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: createMessageId(),
+            role: "assistant",
+            content: assistantContent,
+            suggestions,
+          },
+        ]);
+      }
     } catch (error) {
       console.error("AI Chat Error:", error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: createMessageId(),
-          role: "assistant",
-          content:
-            error instanceof DOMException && error.name === "AbortError"
-              ? "I'm taking longer than expected to respond right now. Please try again in a moment or reach out to Nikunj directly via email."
-              : "I'm having trouble connecting to my brain right now. Please try again or reach out to Nikunj directly via email!"
-        },
-      ]);
+      const nextErrorState = getErrorState(error, msg, userMsgId);
+
+      if (isRetry && retryMessageId) {
+        setMessages((prev) => {
+          let replaced = false;
+          const next = prev.map((message) => {
+            if (message.id !== retryMessageId) return message;
+
+            replaced = true;
+            return {
+              ...message,
+              content: nextErrorState.content,
+              suggestions: undefined,
+              error: {
+                ...nextErrorState.error,
+                isRetrying: false,
+              },
+            };
+          });
+
+          return replaced
+            ? next
+            : [
+                ...next,
+                {
+                  id: createMessageId(),
+                  role: "assistant",
+                  content: nextErrorState.content,
+                  error: nextErrorState.error,
+                },
+              ];
+        });
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: createMessageId(),
+            role: "assistant",
+            content: nextErrorState.content,
+            error: nextErrorState.error,
+          },
+        ]);
+      }
     } finally {
       window.clearTimeout(timeoutId);
       isSendingRef.current = false;
@@ -384,6 +617,16 @@ const AITwinChat = () => {
   const handleSuggestionDoubleClick = (text: string) => {
     setInput(text);
     Promise.resolve().then(() => handleSend(text));
+  };
+
+  const handleRetry = (message: Message) => {
+    if (!message.error?.retryable || !message.error.retryText || !message.error.userMessageId) return;
+
+    void handleSend({
+      text: message.error.retryText,
+      retryMessageId: message.id,
+      retryUserMessageId: message.error.userMessageId,
+    });
   };
 
   const clearChat = () => {
@@ -469,7 +712,9 @@ const AITwinChat = () => {
                 className={`px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm ${
                   msg.role === "user"
                     ? "max-w-[85%] bg-primary text-primary-foreground rounded-tr-none"
-                    : "w-full max-w-[calc(100%-2.75rem)] sm:max-w-[88%] bg-muted/50 dark:bg-muted/20 border border-border/20 rounded-tl-none text-foreground"
+                    : msg.error
+                      ? "w-full max-w-[calc(100%-2.75rem)] sm:max-w-[88%] rounded-tl-none border border-amber-500/30 bg-amber-500/5 text-foreground"
+                      : "w-full max-w-[calc(100%-2.75rem)] sm:max-w-[88%] bg-muted/50 dark:bg-muted/20 border border-border/20 rounded-tl-none text-foreground"
                 }`}
               >
                 {msg.role === "assistant" ? (
@@ -481,6 +726,27 @@ const AITwinChat = () => {
                 )}
               </div>
             </motion.div>
+
+            {msg.role === "assistant" && msg.error?.retryable && (
+              <motion.div
+                className="mt-3 flex items-center gap-2 pl-11"
+                initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: shouldReduceMotion ? 0 : 0.2, duration: shouldReduceMotion ? 0.2 : 0.25 }}
+              >
+                <button
+                  type="button"
+                  onClick={() => handleRetry(msg)}
+                  disabled={isLoading || msg.error.isRetrying}
+                  className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[11px] font-medium text-foreground transition-colors hover:bg-amber-500/15 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {msg.error.isRetrying ? "Retrying..." : "Retry"}
+                </button>
+                <span className="text-[11px] text-muted-foreground">
+                  {msg.error.code === "rate_limited" ? "Wait a moment if it keeps failing." : "Sends the same prompt again."}
+                </span>
+              </motion.div>
+            )}
 
             {/* Suggestions beneath the AI message */}
             {msg.role === "assistant" && msg.suggestions && msg.suggestions.length > 0 && (

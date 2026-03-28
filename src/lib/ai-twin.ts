@@ -5,6 +5,66 @@ export const CHAT_STORAGE_KEY = "nikunj-ai-twin-chat";
 export const PROJECT_ANCHOR_PREFIX = "project-";
 export const WELCOME_MESSAGE = "Hey! I'm Nikunj's AI twin. Ask me anything about his projects, tech stack, or experience - I'll answer as he would. [Jump to projects](#projects) or [download his resume](/Nikunj_Resume.pdf) any time.";
 
+type ConversationWindowMessage = {
+  content: string;
+  id?: string;
+  role?: "user" | "assistant";
+  sender?: "user" | "ai";
+};
+
+function getConversationWindowRole(message: ConversationWindowMessage) {
+  if (message.id === "welcome") return null;
+  if (message.role === "user" || message.role === "assistant") return message.role;
+  if (message.sender === "user" || message.sender === "ai") return message.sender;
+  return null;
+}
+
+export function trimConversationHistory<T extends ConversationWindowMessage>(
+  messages: T[],
+  maxMessages = CHAT_MEMORY_WINDOW
+) {
+  if (maxMessages <= 0) return [];
+
+  const turns: T[][] = [];
+  let currentTurn: T[] = [];
+
+  messages.forEach((message) => {
+    const role = getConversationWindowRole(message);
+
+    if (!role) return;
+
+    if (role === "user") {
+      if (currentTurn.length > 0) {
+        turns.push(currentTurn);
+      }
+
+      currentTurn = [message];
+      return;
+    }
+
+    if (currentTurn.length === 0) return;
+    currentTurn.push(message);
+  });
+
+  if (currentTurn.length > 0) {
+    turns.push(currentTurn);
+  }
+
+  const trimmed: T[] = [];
+
+  for (let index = turns.length - 1; index >= 0; index -= 1) {
+    const turn = turns[index];
+
+    if (trimmed.length + turn.length > maxMessages) {
+      break;
+    }
+
+    trimmed.unshift(...turn);
+  }
+
+  return trimmed;
+}
+
 export function getProjectAnchor(slug: string) {
   return `#${PROJECT_ANCHOR_PREFIX}${slug}`;
 }

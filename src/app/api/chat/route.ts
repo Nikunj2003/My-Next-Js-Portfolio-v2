@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { AI_MODEL, SYSTEM_PROMPT, SUGGESTION_SYSTEM_PROMPT } from "@/lib/ai-config";
-import { CHAT_MEMORY_WINDOW, appendContextualLinks, findMatchingProjects, normalizeText } from "@/lib/ai-twin";
+import { CHAT_MEMORY_WINDOW, appendContextualLinks, findMatchingProjects, normalizeText, trimConversationHistory } from "@/lib/ai-twin";
 import { checkRateLimit, getClientKey, getRateLimitHeaders } from "@/lib/rate-limit";
 
 interface Message {
@@ -13,6 +13,17 @@ interface ChatCompletionMessageParam {
   role: "system" | "user" | "assistant";
   content: string;
 }
+
+type ChatErrorCode =
+  | "invalid_request"
+  | "rate_limited"
+  | "service_unavailable"
+  | "upstream_timeout"
+  | "upstream_rate_limited"
+  | "upstream_auth_error"
+  | "upstream_error"
+  | "upstream_unreachable"
+  | "internal_error";
 
 const RATE_LIMIT = 39;
 const WINDOW_MS = 60_000;
@@ -58,6 +69,26 @@ const unsupportedSuggestionPatterns = [
   /\btwitter\b/i,
   /\bx posts?\b/i,
 ];
+
+function createChatErrorResponse(
+  status: number,
+  code: ChatErrorCode,
+  error: string,
+  headers?: HeadersInit,
+  retryable = true
+) {
+  return NextResponse.json(
+    {
+      error,
+      code,
+      retryable,
+    },
+    {
+      status,
+      headers,
+    }
+  );
+}
 
 function detectCategories(...texts: string[]): Set<string> {
   const categories = new Set<string>();
@@ -235,14 +266,13 @@ export async function POST(request: Request) {
   const rateLimitHeaders = getRateLimitHeaders(RATE_LIMIT, rateLimitResult.remaining);
 
   if (rateLimitResult.limited) {
-    return NextResponse.json(
-      { error: "Too many requests. Please wait a minute before trying again." },
+    return createChatErrorResponse(
+      429,
+      "rate_limited",
+      "Too many requests. Please wait a minute before trying again.",
       {
-        status: 429,
-        headers: {
-          ...rateLimitHeaders,
-          "Retry-After": String(rateLimitResult.retryAfter),
-        },
+        ...rateLimitHeaders,
+        "Retry-After": String(rateLimitResult.retryAfter),
       }
     );
   }
@@ -251,9 +281,12 @@ export async function POST(request: Request) {
     const parsedBody = chatRequestSchema.safeParse(await request.json());
 
     if (!parsedBody.success) {
-      return NextResponse.json(
-        { error: parsedBody.error.issues[0]?.message || "Invalid chat request." },
-        { status: 400, headers: rateLimitHeaders }
+      return createChatErrorResponse(
+        400,
+        "invalid_request",
+        parsedBody.error.issues[0]?.message || "Invalid chat request.",
+        rateLimitHeaders,
+        false
       );
     }
 
@@ -261,8 +294,14 @@ export async function POST(request: Request) {
 
     const apiKey = process.env.LLM_API_KEY;
     if (!apiKey) {
-      console.warn("LLM API key not configured, returning fallback response");
-      return handleFallbackResponse(message, rateLimitHeaders);
+      console.warn("LLM API key not configured");
+      return createChatErrorResponse(
+        503,
+        "service_unavailable",
+        "The AI service is not configured right now. Please contact Nikunj directly if you need help.",
+        rateLimitHeaders,
+        false
+      );
     }
 
     const invokeUrl = process.env.LLM_BASE_URL || "https://integrate.api.nvidia.com/v1/chat/completions";
@@ -272,7 +311,7 @@ export async function POST(request: Request) {
       "Content-Type": "application/json"
     };
 
-    const recentMessages = conversationHistory.slice(-CHAT_MEMORY_WINDOW);
+    const recentMessages = trimConversationHistory(conversationHistory, CHAT_MEMORY_WINDOW);
 
     const messages: ChatCompletionMessageParam[] = [
       { role: "system", content: SYSTEM_PROMPT },
@@ -288,21 +327,69 @@ export async function POST(request: Request) {
     messages.push({ role: "user", content: message });
 
     // 1. Generate primary AI response
-    const response = await postChatCompletion(
-      invokeUrl,
-      headers,
-      {
-        model: AI_MODEL,
-        messages,
-        top_p: 0.7,
-        temperature: 0.7,
-      },
-      PRIMARY_RESPONSE_TIMEOUT_MS
-    );
+    let response: Response;
+
+    try {
+      response = await postChatCompletion(
+        invokeUrl,
+        headers,
+        {
+          model: AI_MODEL,
+          messages,
+          top_p: 0.7,
+          temperature: 0.7,
+        },
+        PRIMARY_RESPONSE_TIMEOUT_MS
+      );
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        return createChatErrorResponse(
+          504,
+          "upstream_timeout",
+          "The AI provider took too long to respond. Please retry.",
+          rateLimitHeaders
+        );
+      }
+
+      console.error("LLM provider request failed:", error);
+      return createChatErrorResponse(
+        502,
+        "upstream_unreachable",
+        "The AI provider could not be reached. Please retry.",
+        rateLimitHeaders
+      );
+    }
 
     if (!response.ok) {
-      console.error("LLM API error:", await response.text());
-      return handleFallbackResponse(message, rateLimitHeaders);
+      const upstreamStatus = response.status;
+      const upstreamBody = await response.text();
+      console.error("LLM API error:", upstreamStatus, upstreamBody);
+
+      if (upstreamStatus === 429) {
+        return createChatErrorResponse(
+          429,
+          "upstream_rate_limited",
+          "The AI provider is rate limiting requests right now. Please retry in a moment.",
+          rateLimitHeaders
+        );
+      }
+
+      if (upstreamStatus === 401 || upstreamStatus === 403) {
+        return createChatErrorResponse(
+          503,
+          "upstream_auth_error",
+          "The AI service is misconfigured right now. Please contact Nikunj if this keeps happening.",
+          rateLimitHeaders,
+          false
+        );
+      }
+
+      return createChatErrorResponse(
+        502,
+        "upstream_error",
+        "The AI provider returned an error. Please retry.",
+        rateLimitHeaders
+      );
     }
 
     const responseData = await response.json();
@@ -328,7 +415,12 @@ export async function POST(request: Request) {
 
   } catch (error: unknown) {
     console.error("AI Response Error:", error);
-    return handleFallbackResponse("fallback", rateLimitHeaders);
+    return createChatErrorResponse(
+      500,
+      "internal_error",
+      "Something went wrong while processing that message. Please retry.",
+      rateLimitHeaders
+    );
   }
 }
 
@@ -474,36 +566,4 @@ function getDefaultSuggestions() {
     "Could you share a standout repo?",
     "What's the best way to connect with you?"
   ];
-}
-
-function handleFallbackResponse(message: string, headers?: HeadersInit) {
-  const lowercaseMsg = message.toLowerCase();
-
-  if (lowercaseMsg.includes("contact") || lowercaseMsg.includes("email")) {
-    return NextResponse.json({
-      response: appendContextualLinks(
-        message,
-        `# Contact Nikunj Khitha\n\nYou can connect with Nikunj through various channels:\n\n## 📧 **Email**\n[njkhitha2003@gmail.com](mailto:njkhitha2003@gmail.com)\n\n## 💼 **LinkedIn**\n[Connect on LinkedIn](https://www.linkedin.com/in/nikunj-khitha)\n\n## 🐙 **GitHub**\n[View Projects on GitHub](https://github.com/Nikunj2003)\n\n---\n\n> **Currently:** Associate Engineer (Platform & GenAI) at ArmorCode\n> \n> Feel free to reach out for collaborations, job opportunities, or tech discussions!`
-      ),
-      suggestions: ["Which project should I open first?", "Could you share a standout repo?"]
-    }, { headers });
-  }
-
-  if (lowercaseMsg.includes("experience") || lowercaseMsg.includes("work")) {
-    return NextResponse.json({
-      response: appendContextualLinks(
-        message,
-        `# Nikunj's Professional Experience\n\n## 🚀 **Associate Engineer at ArmorCode**\n*Jan 2025 - Present*\n- Architected "Nexus", a hybrid GraphRAG engine.\n- Contributed to "Anya" an autonomous security agent.\n- Developed MCP servers in n8n/Go/Python.\n\n## 🤖 **SDE Intern at Xansr Media (Aiko)**\n*Jun 2024 - Dec 2024*\n- Built scalable backend for AIKO voice assistant with 96% accuracy.\n- Engineered ETL pipelines with Azure AI.\n- Developed Fantasy GPT (LangGraph + SQL RAG).\n\n> Would you like to know more about a specific role?`
-      ),
-      suggestions: ["What impact are you driving at ArmorCode?", "Which project best shows your strengths?"]
-    }, { headers });
-  }
-
-  return NextResponse.json({
-    response: appendContextualLinks(
-      message,
-      `# Welcome! I'm the AI Twin for Nikunj Khitha\n\nI'm currently running in an offline or limited capacity, but I can still tell you about Nikunj!\n\n## What would you like to know?\n\n- **Current Role**: Associate Engineer (Platform & GenAI) at ArmorCode\n- **Tech Stack**: GraphRAG, LangGraph, Python, MS+Java, TypeScript\n- **Experience**: Built multi-agent platforms and unified AI gateways\n\n> Ask me about Nikunj's projects, experience, or contact information!`
-    ),
-    suggestions: ["What GenAI work are you doing right now?", "Could you share a standout repo?"]
-  }, { headers });
 }
