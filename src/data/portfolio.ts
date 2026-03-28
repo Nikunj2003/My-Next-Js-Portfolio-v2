@@ -35,15 +35,14 @@ export interface Experience {
 
 export const experiences: Experience[] = [
   {
-    company: "ArmorCode",
-    role: "Associate Engineer (Platform & GenAI)",
-    period: "Jan 2025 – Present",
+    company: "Central Electricity Authority, Government of India",
+    role: "Software Development Intern",
+    period: "May 2023 - July 2023",
     type: "work",
     bullets: [
-      "Architected \"Nexus\", a hybrid GraphRAG engine using FastAPI + Neo4j, integrating 5+ enterprise data sources and improving retrieval precision by ~40%.",
-      "Core contributor to \"Anya\", an autonomous security platform agent using AWS Bedrock, S3 vector stores, LangChain4j, Spring AI, and MCP — serving 200+ enterprise customers.",
-      "Designed a unified multi-provider AI gateway (Gemini, Claude, OpenAI) reducing token costs by 37% through prompt templates, caching, and provider pooling.",
-      "Developed MCP servers in n8n/Go/Python powering SDLC, security, and documentation automations. Received ArmorCode's first \"AI Ninja Award\".",
+      "Enhanced a national renewable energy dashboard for 150+ power stations by integrating data from the National Power Portal in Java, improving accuracy by 30%.",
+      "Built a secure PHP and MySQL file management system with role-based access control and optimized retrieval for 5,000+ files by 25%.",
+      "Developed a full-stack MERN conference room booking system that cut booking time by 60% and reduced scheduling errors by 40%.",
     ],
   },
   {
@@ -52,17 +51,34 @@ export const experiences: Experience[] = [
     period: "Jun 2024 – Dec 2024",
     type: "work",
     bullets: [
-      "Built scalable backend for AIKO (voice-based sports assistant) using FastAPI, NestJS, and async queues achieving ~96% commentary accuracy.",
-      "Engineered ETL pipelines integrating Azure AI Foundry, Azure AI Search, Azure Speech SDK, and SQLAlchemy.",
-      "Developed Fantasy GPT — a multi-step reasoning sports agent with LangGraph, SQL RAG, and fine-tuned LLM resolving ~98% complex sports queries.",
+      "Built Node.js and FastAPI microservices with test-driven development, reaching 100% test coverage and improving API performance by 40%.",
+      "Designed Docker and GitHub Actions CI/CD pipelines that reduced deployment time by 42%.",
+      "Engineered Fantasy GPT with RAG and LangGraph to reach 98% complex-query resolution and built AIKO for personalized sports highlights with 96% commentary accuracy.",
+      "Created scalable MSSQL and Azure ETL pipelines that maintained 100% data accuracy for AI products.",
     ],
   },
   {
-    company: "The NorthCap University",
-    role: "B.Tech Computer Science & Engineering",
-    period: "Aug 2021 – Jun 2025",
-    type: "education",
-    bullets: ["CGPA: 8.16 · Gurugram, India"],
+    company: "Armorcode Inc.",
+    role: "AI Automation Intern",
+    period: "Jan 2025 - Nov 2025",
+    type: "work",
+    bullets: [
+      "Built backend capabilities for the core platform agent with Java and Spring Boot, including new APIs, prompt refinements, and AWS S3 vector knowledge base management.",
+      "Led AI-driven code-to-documentation automation with CrewAI and MCP servers for 250+ security integrations, reducing update latency by 99% from 72 hours to 45 minutes.",
+      "Created an OpenAI-compatible proxy API for Gemini and Claude and deployed LiteLLM to monitor 15+ AI APIs with centralized cost visibility.",
+    ],
+  },
+  {
+    company: "ArmorCode",
+    role: "Associate Engineer (Platform & GenAI)",
+    period: "Jan 2025 – Present",
+    type: "work",
+    bullets: [
+      "Architected enterprise GenAI platforms for 200+ customers and designed a Neo4j plus PGVector GraphRAG platform unifying 500,000+ entities across 5+ systems with 40% better retrieval accuracy.",
+      "Orchestrated GraphRAG and LightRAG ETL pipelines that cut LLM indexing costs by 50% and saved $15,000+ annually.",
+      "Expanded the core Java and Spring Boot backend with 10+ REST APIs serving 5,000+ daily requests at 99.8% uptime.",
+      "Built automation suites across support, QA, HR, and marketing with n8n, Java microservices, and Python, eliminating 200+ manual hours each month.",
+    ],
   },
 ];
 
