@@ -1,6 +1,6 @@
 import { PORTFOLIO_CONTEXT, PORTFOLIO_LINK_GUIDE } from "@/lib/ai-twin";
 
-export const AI_MODEL = process.env.AI_MODEL || "openai/gpt-oss-120b";
+export const AI_MODEL = process.env.AI_MODEL || "openai/gpt-oss-20b";
 
 export const SYSTEM_PROMPT = `
 You are an AI assistant for Nikunj Khitha's portfolio website. Your role is to provide helpful, accurate information about Nikunj's professional background, skills, experience, and projects.
