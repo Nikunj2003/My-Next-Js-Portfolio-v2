@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { ArrowDown, MessageCircle, Download } from "lucide-react";
@@ -139,11 +140,13 @@ const HeroSection = () => {
              <div className="absolute inset-0 bg-[radial-gradient(circle,hsl(var(--primary)/0.15)_0%,transparent_70%)] rounded-full scale-150" />
              <div className="relative z-10 w-full max-w-[500px] xl:max-w-[600px] lg:scale-110 xl:scale-125 lg:origin-right lg:translate-x-4 xl:translate-x-12">
               <Card3D className="w-full">
-                  <img
-                    src={cardImage.src}
+                  <Image
+                    src={cardImage}
                     alt="Nikunj Khitha — Business Card"
                     className="w-full h-auto rounded-3xl border border-white/10 shadow-2xl shadow-black/80 pointer-events-none select-none"
                     draggable={false}
+                    priority
+                    sizes="(min-width: 1280px) 600px, (min-width: 1024px) 500px, 100vw"
                   />
               </Card3D>
              </div>

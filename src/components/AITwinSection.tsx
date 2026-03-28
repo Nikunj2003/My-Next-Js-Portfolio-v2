@@ -57,7 +57,7 @@ const AITwinSection = () => {
                     className="group w-full text-left px-5 py-4 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 hover:border-primary/30 transition-all duration-300 flex items-center justify-between shadow-sm hover:shadow-md"
                   >
                     <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors mr-4">
-                      "{s}"
+                      &ldquo;{s}&rdquo;
                     </span>
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 opacity-50 group-hover:opacity-100 transition-opacity">
                        <Bot className="w-4 h-4 text-primary" />

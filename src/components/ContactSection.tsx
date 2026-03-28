@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
@@ -112,7 +113,13 @@ const ContactSection = () => {
           className="block lg:hidden mb-10 mx-auto w-full max-w-xs sm:max-w-sm"
         >
           <Card3D>
-            <img src={cardImage.src} alt="Business Card" className="w-full h-auto rounded-3xl border border-white/10 shadow-2xl pointer-events-none select-none" draggable={false} />
+            <Image
+              src={cardImage}
+              alt="Business Card"
+              className="w-full h-auto rounded-3xl border border-white/10 shadow-2xl pointer-events-none select-none"
+              draggable={false}
+              sizes="(min-width: 640px) 384px, 100vw"
+            />
           </Card3D>
         </motion.div>
 
@@ -125,9 +132,9 @@ const ContactSection = () => {
               {/* Grows to fill */}
               <div className="flex flex-col gap-6 flex-1">
                 <div>
-                  <h3 className="text-3xl font-bold mb-3 tracking-tight">Let's Build Something</h3>
+                  <h3 className="text-3xl font-bold mb-3 tracking-tight">Let&apos;s Build Something</h3>
                   <p className="text-base text-muted-foreground leading-relaxed" style={{ textWrap: "pretty" }}>
-                    Whether you're looking to hire, collaborate on an open-source project, or just want to chat about GenAI — I'm all ears.
+                    Whether you&apos;re looking to hire, collaborate on an open-source project, or just want to chat about GenAI - I&apos;m all ears.
                   </p>
                 </div>
 
@@ -180,7 +187,7 @@ const ContactSection = () => {
                 <div>
                   <h3 className="text-3xl font-bold mb-3 tracking-tight">Send a Message</h3>
                   <p className="text-base text-muted-foreground leading-relaxed">
-                    Fill in the form and I'll get back to you within 24 hours.
+                    Fill in the form and I&apos;ll get back to you within 24 hours.
                   </p>
                 </div>
 

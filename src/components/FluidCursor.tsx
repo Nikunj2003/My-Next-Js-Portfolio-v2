@@ -1,43 +1,81 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
-import useFluidCursor from "@/hooks/useFluidCursor";
+import { useEffect, useRef, useSyncExternalStore } from "react";
+import initializeFluidCursor from "@/hooks/useFluidCursor";
+
+const subscribeToCursorPreferences = (onStoreChange: () => void) => {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
+  const pointerQuery = window.matchMedia("(pointer: fine)");
+  const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const handleChange = () => onStoreChange();
+
+  pointerQuery.addEventListener("change", handleChange);
+  reducedMotionQuery.addEventListener("change", handleChange);
+  window.addEventListener("resize", handleChange);
+
+  return () => {
+    pointerQuery.removeEventListener("change", handleChange);
+    reducedMotionQuery.removeEventListener("change", handleChange);
+    window.removeEventListener("resize", handleChange);
+  };
+};
+
+const getShouldRenderCursor = () => {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const hasPointer = window.matchMedia("(pointer: fine)").matches;
+  const isDesktop = window.innerWidth >= 1024;
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  return hasPointer && isDesktop && !prefersReducedMotion;
+};
 
 const FluidCursor = () => {
-  const [shouldRender, setShouldRender] = useState(false);
-  const [isActivated, setIsActivated] = useState(false);
+  const shouldRender = useSyncExternalStore(
+    subscribeToCursorPreferences,
+    getShouldRenderCursor,
+    () => false,
+  );
+  const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    // Only render on desktop with pointer devices (not touch-only)
-    const hasPointer = window.matchMedia("(pointer: fine)").matches;
-    const isDesktop = window.innerWidth >= 1024;
-    const prefersReducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
-
-    setShouldRender(hasPointer && isDesktop && !prefersReducedMotion);
-  }, []);
 
   useEffect(() => {
     if (!shouldRender || !canvasRef.current) return;
 
-    setIsActivated(false);
+    const container = containerRef.current;
 
-    let mounted = true;
+    if (container) {
+      container.style.opacity = "0";
+    }
 
-    // Initialize the fluid cursor logic and get cleanup function if provided
-    const cleanup = useFluidCursor(canvasRef.current, () => {
-      if (mounted) setIsActivated(true);
+    const cleanup = initializeFluidCursor(canvasRef.current, () => {
+      if (container) {
+        container.style.opacity = "1";
+      }
     });
 
     return () => {
-      mounted = false;
+      if (container) {
+        container.style.opacity = "0";
+      }
       if (typeof cleanup === 'function') cleanup();
     };
   }, [shouldRender]);
 
+  if (!shouldRender) {
+    return null;
+  }
+
   return (
-    <div className="pointer-events-none fixed inset-0 z-0 h-screen w-screen overflow-hidden" style={{ opacity: isActivated ? 1 : 0 }}>
+    <div
+      ref={containerRef}
+      className="pointer-events-none fixed inset-0 z-0 h-screen w-screen overflow-hidden"
+      style={{ opacity: 0, transition: "opacity 200ms ease" }}
+    >
       <canvas
         ref={canvasRef}
         id="fluid"

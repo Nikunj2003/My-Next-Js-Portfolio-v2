@@ -1,11 +1,10 @@
 "use client";
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, X, Send, Bot, User, Trash2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { chatSuggestions } from "@/data/portfolio";
-import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +28,7 @@ const AITwinChat = () => {
   const pendingUserMessageIdRef = useRef<string | null>(null);
   const isSendingRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const handleSendRef = useRef<(text?: string) => Promise<void>>(async () => {});
   const isMobile = useIsMobile();
 
   // Auto-scroll to bottom or anchor to user message top
@@ -53,20 +53,6 @@ const AITwinChat = () => {
   }, [messages, isLoading]);
 
   useEffect(() => {
-    const handleOpenTwin = (e: Event) => {
-      const customEvent = e as CustomEvent<{ question: string }>;
-      setIsOpen(true);
-      if (customEvent.detail?.question) {
-        setTimeout(() => {
-          handleSend(customEvent.detail.question);
-        }, 100);
-      }
-    };
-    window.addEventListener("open-ai-twin", handleOpenTwin);
-    return () => window.removeEventListener("open-ai-twin", handleOpenTwin);
-  }, []);
-
-  useEffect(() => {
     if (!isOpen || !isMobile) return;
 
     const prevBodyOverflow = document.body.style.overflow;
@@ -81,7 +67,7 @@ const AITwinChat = () => {
     };
   }, [isOpen, isMobile]);
 
-  const handleSend = async (text?: string) => {
+  const handleSend = useCallback(async (text?: string) => {
     const msg = text || input.trim();
     if (!msg || isSendingRef.current) return;
 
@@ -132,7 +118,24 @@ const AITwinChat = () => {
       isSendingRef.current = false;
       setIsLoading(false);
     }
-  };
+  }, [input, messages]);
+
+  handleSendRef.current = handleSend;
+
+  useEffect(() => {
+    const handleOpenTwin = (e: Event) => {
+      const customEvent = e as CustomEvent<{ question: string }>;
+      setIsOpen(true);
+      if (customEvent.detail?.question) {
+        window.setTimeout(() => {
+          void handleSendRef.current(customEvent.detail.question);
+        }, 100);
+      }
+    };
+
+    window.addEventListener("open-ai-twin", handleOpenTwin);
+    return () => window.removeEventListener("open-ai-twin", handleOpenTwin);
+  }, []);
 
   const handleSuggestionClick = (text: string) => {
     setInput(text);
@@ -161,7 +164,7 @@ const AITwinChat = () => {
             <Bot className="w-4 h-4 text-primary" />
           </div>
           <div>
-            <p className="text-sm font-semibold">Nikunj's AI Twin</p>
+            <p className="text-sm font-semibold">Nikunj&apos;s AI Twin</p>
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Assistant Online</p>

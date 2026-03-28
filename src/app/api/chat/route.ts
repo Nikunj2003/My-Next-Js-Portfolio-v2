@@ -151,7 +151,7 @@ export async function POST(request: Request) {
       suggestions: followUpSuggestions.length > 0 ? followUpSuggestions : undefined,
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("AI Response Error:", error);
     return handleFallbackResponse("fallback");
   }
@@ -227,7 +227,7 @@ async function generateAISuggestions(
     
     raw = raw.replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
     
-    let parsed: any = [];
+    let parsed: unknown = [];
     try {
       parsed = JSON.parse(raw);
     } catch {
@@ -244,7 +244,7 @@ async function generateAISuggestions(
     if (!Array.isArray(parsed)) return getDefaultSuggestions();
 
     const cleaned = parsed
-      .filter((v: any) => typeof v === "string")
+      .filter((value: unknown): value is string => typeof value === "string")
       .map((s: string) => s.trim())
       .filter((s: string) => s.length > 0 && s.length <= 120)
       .filter((s: string) => !priorUserTexts.includes(s.toLowerCase()))

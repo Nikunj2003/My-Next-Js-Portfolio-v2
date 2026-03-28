@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 const useFluidCursor = (
   canvas: HTMLCanvasElement | null,
