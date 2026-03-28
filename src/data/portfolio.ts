@@ -67,6 +67,7 @@ export const experiences: Experience[] = [
 ];
 
 export interface Project {
+  slug: string;
   title: string;
   category: string;
   description: string;
@@ -78,6 +79,7 @@ export interface Project {
 
 export const projects: Project[] = [
   {
+    slug: "codenex-backend-v1",
     title: "CodeNex Backend v1",
     category: "Backend / Microservices",
     description: "Production-grade Java backend for the Codenex platform — a microservices-based system automating full-stack-web app generation using LLMs, inspired by Lovable/v0.",
@@ -94,6 +96,7 @@ export const projects: Project[] = [
     github: "https://github.com/Nikunj2003/Codenex-backend-v1",
   },
   {
+    slug: "codenex-ai-api-proxy",
     title: "CodeNex AI API Proxy",
     category: "AI Infrastructure",
     description: "Unified AI gateway bridging local AI tools to the web. Single API interface to multiple LLM providers with protocol translation, provider pooling, health-tracked failover, and streaming.",
@@ -107,6 +110,7 @@ export const projects: Project[] = [
     github: "https://github.com/Nikunj2003/codenex-ai-api-proxy",
   },
   {
+    slug: "serenify",
     title: "Serenify",
     category: "Full Stack / AI Product",
     description: "Open-source mental wellness app combining empathetic AI chat (Gemini 2.5 Flash), mood tracking, journaling, guided wellness sessions, and personal analytics with privacy-first design.",
@@ -124,6 +128,7 @@ export const projects: Project[] = [
     github: "https://github.com/Nikunj2003/Serenify",
   },
   {
+    slug: "codenex-images",
     title: "CodeNex Images",
     category: "AI Product",
     description: "AI-powered image generation and editing platform using Google Gemini models, with Auth0 authentication and a polished editing workspace.",
@@ -135,6 +140,7 @@ export const projects: Project[] = [
     github: "https://github.com/Nikunj2003/codenex-images",
   },
   {
+    slug: "resume-fit-codenex",
     title: "Resume Fit — CodeNex",
     category: "AI Product",
     description: "AI-powered resume analysis & optimization tool with ATS score checking, multi-pillar performance scoring, refinement workflows, and keyword extraction.",
@@ -152,6 +158,7 @@ export const projects: Project[] = [
     github: "https://github.com/Nikunj2003/Resume-Fit-Codenex",
   },
   {
+    slug: "llama-mcp-streamlit",
     title: "LLaMa MCP Streamlit",
     category: "AI / LLM / MCP",
     description: "Interactive AI assistant using Streamlit, NVIDIA NIM's LLaMA 3.3 70B, and Model Context Protocol (MCP) for real-time external tool execution.",

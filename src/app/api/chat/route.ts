@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { AI_MODEL, SYSTEM_PROMPT, SUGGESTION_SYSTEM_PROMPT } from "@/lib/ai-config";
+import { CHAT_MEMORY_WINDOW, appendContextualLinks, findMatchingProjects, normalizeText } from "@/lib/ai-twin";
 
 interface Message {
-  id: string;
   content: string;
   sender: "user" | "ai";
-  timestamp: string;
 }
 
 interface ChatRequest {
@@ -20,8 +19,181 @@ interface ChatCompletionMessageParam {
 
 const RATE_LIMIT = 39;
 const WINDOW_MS = 60_000;
+const TARGET_SUGGESTION_COUNT = 4;
+const MAX_SUGGESTION_LENGTH = 44;
 
 const requestStore = new Map<string, { count: number; resetAt: number }>();
+
+const categoryKeywords: Record<string, RegExp> = {
+  experience: /(experience|role|intern|work|company|job|position|impact|responsibilit)/i,
+  skills: /(skill|stack|technology|tech|framework|language|tool)/i,
+  projects: /(project|build|develop|app|application|platform|system|tool|repo|github)/i,
+  achievements: /(achieve|award|won|improv|result|reduced|increase|coverage|accuracy|milestone)/i,
+  contact: /(contact|reach|email|linkedin|connect|collaborate|hire|resume|cv)/i,
+  career_goals: /(goal|future|plan|aspiration|next|aim|grow)/i,
+};
+
+const unsupportedSuggestionPatterns = [
+  /linkedin posts?/i,
+  /blog posts?/i,
+  /\barticles?\b/i,
+  /\bnewsletters?\b/i,
+  /\bpodcasts?\b/i,
+  /\bconference talks?\b/i,
+  /\btalks?\b/i,
+  /\blive demos?\b/i,
+  /\bdemo links?\b/i,
+  /\byoutube\b/i,
+  /\btwitter\b/i,
+  /\bx posts?\b/i,
+];
+
+function detectCategories(...texts: string[]): Set<string> {
+  const categories = new Set<string>();
+  const corpus = texts.join("\n");
+
+  for (const [category, regex] of Object.entries(categoryKeywords)) {
+    if (regex.test(corpus)) {
+      categories.add(category);
+    }
+  }
+
+  return categories;
+}
+
+function categorizeSuggestion(question: string): string {
+  for (const [category, regex] of Object.entries(categoryKeywords)) {
+    if (regex.test(question)) {
+      return category;
+    }
+  }
+
+  return "other";
+}
+
+function normalizeSuggestion(question: string) {
+  let next = question
+    .trim()
+    .replace(/^[-*]\s*/, "")
+    .replace(/^['"`]+|['"`]+$/g, "")
+    .replace(/\s+/g, " ");
+
+  next = next.replace(/[.!]+$/, "").trim();
+
+  if (next.length > 0 && !/[?!]$/.test(next)) {
+    next = `${next}?`;
+  }
+
+  return next;
+}
+
+function isSupportedSuggestion(question: string) {
+  return !unsupportedSuggestionPatterns.some((pattern) => pattern.test(question));
+}
+
+function getProjectReference(title: string) {
+  return title.split(/[\u2013\u2014-]/)[0]?.trim() || title;
+}
+
+function scoreSuggestion(
+  question: string,
+  currentFocusCategories: string[],
+  currentKeywords: Set<string>,
+  focusProjects: string[]
+) {
+  const normalizedQuestion = normalizeText(question);
+  let score = 0;
+
+  if (/^(how|why|what|which|could|can|would)/i.test(question)) score += 2;
+  if (/^tell me about/i.test(question)) score -= 1;
+
+  for (const projectName of focusProjects) {
+    if (normalizedQuestion.includes(normalizeText(projectName))) {
+      score += 3;
+    }
+  }
+
+  const keywordOverlap = normalizedQuestion
+    .split(" ")
+    .filter((token) => token.length > 3 && currentKeywords.has(token)).length;
+
+  score += Math.min(keywordOverlap, 3);
+
+  const category = categorizeSuggestion(question);
+  if (currentFocusCategories.includes(category)) {
+    score += 2;
+  }
+
+  return score;
+}
+
+function buildFallbackSuggestions(
+  currentMessage: string,
+  aiResponse: string,
+  recentMessages: Message[],
+  priorUserTexts: string[]
+) {
+  const matchedProjects = findMatchingProjects(`${currentMessage}\n${aiResponse}`);
+  const currentFocusCategories = Array.from(detectCategories(currentMessage, aiResponse));
+  const usedCategories = Array.from(
+    detectCategories(...recentMessages.map((message) => message.content), currentMessage, aiResponse)
+  );
+  const orderedCategories = Array.from(
+    new Set([
+      ...currentFocusCategories,
+      ...Object.keys(categoryKeywords).filter((category) => !usedCategories.includes(category)),
+      ...usedCategories,
+      ...Object.keys(categoryKeywords),
+    ])
+  );
+
+  const fallbackByCategory: Record<string, string[]> = {
+    experience: [
+      "What impact are you driving at ArmorCode?",
+      "How did Xansr shape your backend style?",
+    ],
+    skills: [
+      "Which tools do you use most day to day?",
+      "Which skill do you lean on most?",
+    ],
+    projects: [
+      "Which project should I open first?",
+      "Which build best shows your style?",
+    ],
+    achievements: [
+      "Which result are you proudest of?",
+      "What achievement stands out most?",
+    ],
+    contact: [
+      "Could you share your LinkedIn?",
+      "What's the best way to reach you?",
+    ],
+    career_goals: [
+      "What are you building next?",
+      "Where do you want to grow next?",
+    ],
+  };
+
+  const projectSpecificSuggestions = matchedProjects.flatMap((project) => {
+    const reference = getProjectReference(project.title);
+
+    return [
+      `How did you build ${reference}?`,
+      `What was hardest in ${reference}?`,
+      `Could you share the ${reference} repo?`,
+    ];
+  });
+
+  const suggestions = [...projectSpecificSuggestions, ...orderedCategories.flatMap((category) => fallbackByCategory[category] ?? [])]
+    .map(normalizeSuggestion)
+    .filter(isSupportedSuggestion)
+    .filter((question) => question.length > 0 && question.length <= MAX_SUGGESTION_LENGTH)
+    .filter((question) => !priorUserTexts.includes(normalizeText(question)))
+    .filter((question, index, all) => all.findIndex((entry) => entry.toLowerCase() === question.toLowerCase()) === index)
+    .slice(0, TARGET_SUGGESTION_COUNT);
+
+  return suggestions.length > 0 ? suggestions : getDefaultSuggestions();
+}
 
 function getClientKey(request: Request): string {
   const forwardedFor = request.headers.get("x-forwarded-for") || "";
@@ -98,7 +270,7 @@ export async function POST(request: Request) {
       "Content-Type": "application/json"
     };
 
-    const recentMessages = conversationHistory.slice(-10);
+    const recentMessages = conversationHistory.slice(-CHAT_MEMORY_WINDOW);
 
     const messages: ChatCompletionMessageParam[] = [
       { role: "system", content: SYSTEM_PROMPT },
@@ -147,7 +319,7 @@ export async function POST(request: Request) {
     );
 
     return NextResponse.json({
-      response: aiResponse,
+      response: appendContextualLinks(message, aiResponse),
       suggestions: followUpSuggestions.length > 0 ? followUpSuggestions : undefined,
     });
 
@@ -167,31 +339,21 @@ async function generateAISuggestions(
   try {
     const priorUserTexts = recentMessages
       .filter((m) => m.sender === "user")
-      .map((m) => m.content.toLowerCase());
-    
-    priorUserTexts.push(currentMessage.toLowerCase());
+      .map((m) => normalizeText(m.content));
 
-    const categoryKeywords: Record<string, RegExp> = {
-      experience: /(experience|role|intern|work|company|job|position|impact|responsibilit)/i,
-      skills: /(skill|stack|technology|tech|framework|language|tool)/i,
-      projects: /(project|build|develop|app|application|platform|system|tool)/i,
-      achievements: /(achieve|award|won|improv|result|reduced|increase|coverage|accuracy|milestone)/i,
-      contact: /(contact|reach|email|linkedin|connect|collaborate|hire)/i,
-      career_goals: /(goal|future|plan|aspiration|next|aim)/i,
-    };
+    priorUserTexts.push(normalizeText(currentMessage));
 
-    const detectCategoriesFromConversation = (): Set<string> => {
-      const s = new Set<string>();
-      const corpus = [...recentMessages.map((m) => m.content), currentMessage].join("\n");
-      for (const [cat, rx] of Object.entries(categoryKeywords)) {
-        if (rx.test(corpus)) s.add(cat);
-      }
-      return s;
-    };
-
-    const usedCategories = Array.from(detectCategoriesFromConversation());
+    const usedCategories = Array.from(detectCategories(...recentMessages.map((m) => m.content), currentMessage));
+    const currentFocusCategories = Array.from(detectCategories(currentMessage, aiResponse));
     const desiredCategories = Object.keys(categoryKeywords).filter(
       (c) => !usedCategories.includes(c)
+    );
+    const matchedProjects = findMatchingProjects(`${currentMessage}\n${aiResponse}`);
+    const focusProjectNames = matchedProjects.map((project) => getProjectReference(project.title));
+    const currentKeywords = new Set(
+      normalizeText(`${currentMessage} ${aiResponse}`)
+        .split(" ")
+        .filter((token) => token.length > 3)
     );
 
     const suggestionMessages: ChatCompletionMessageParam[] = [
@@ -205,7 +367,22 @@ async function generateAISuggestions(
       { role: "assistant", content: aiResponse.slice(0, 4000) },
       {
         role: "user",
-        content: `Generate ONLY a JSON array of 3-6 diverse follow-up questions now. Ensure topical diversity. Recently covered categories (avoid over-repeating): ${usedCategories.join(",") || "none"}. Prefer including some of: ${desiredCategories.join(",") || "(reuse any with new angle)"}. Remember: no more than 2 in the same category.`,
+        content: `Generate ONLY a JSON array of ${TARGET_SUGGESTION_COUNT} conversational follow-up questions a real visitor would naturally ask next.
+
+Latest user message: ${currentMessage}
+Current focus categories: ${currentFocusCategories.join(", ") || "none"}
+Projects currently in focus: ${focusProjectNames.join(", ") || "none"}
+Recently covered categories: ${usedCategories.join(", ") || "none"}
+Prefer branching into: ${desiredCategories.join(", ") || "reuse any with a fresh angle"}
+
+Rules:
+- Make the first 2 suggestions feel directly connected to the latest exchange.
+- Avoid stiff, repetitive phrasing like repeating "Tell me about...".
+- Prefer natural phrasings such as "How did...", "What was tricky about...", "Could you share...", or "Why did you...".
+- If a project is in focus, include at least 1 suggestion about implementation details, architecture, or the repo.
+- You may include 1 action-oriented prompt about contact, LinkedIn, GitHub, or resume if it fits.
+- Keep every suggestion under ${MAX_SUGGESTION_LENGTH} characters.
+- No more than 2 suggestions from the same category.`,
       },
     ];
 
@@ -220,7 +397,9 @@ async function generateAISuggestions(
       }),
     });
 
-    if (!suggestionResp.ok) return getDefaultSuggestions();
+    if (!suggestionResp.ok) {
+      return buildFallbackSuggestions(currentMessage, aiResponse, recentMessages, priorUserTexts);
+    }
 
     const data = await suggestionResp.json();
     let raw = data.choices?.[0]?.message?.content?.trim() || "[]";
@@ -241,71 +420,55 @@ async function generateAISuggestions(
       }
     }
 
-    if (!Array.isArray(parsed)) return getDefaultSuggestions();
+    if (!Array.isArray(parsed)) {
+      return buildFallbackSuggestions(currentMessage, aiResponse, recentMessages, priorUserTexts);
+    }
 
     const cleaned = parsed
       .filter((value: unknown): value is string => typeof value === "string")
-      .map((s: string) => s.trim())
-      .filter((s: string) => s.length > 0 && s.length <= 120)
-      .filter((s: string) => !priorUserTexts.includes(s.toLowerCase()))
+      .map((question: string) => normalizeSuggestion(question))
+      .filter(isSupportedSuggestion)
+      .filter((question: string) => question.length > 0 && question.length <= MAX_SUGGESTION_LENGTH)
+      .filter((s: string) => !priorUserTexts.includes(normalizeText(s)))
       .filter((s: string, i: number, arr: string[]) => arr.findIndex(t => t.toLowerCase() === s.toLowerCase()) === i)
-      .slice(0, 6);
+      .sort((left, right) => scoreSuggestion(right, currentFocusCategories, currentKeywords, focusProjectNames)
+        - scoreSuggestion(left, currentFocusCategories, currentKeywords, focusProjectNames));
 
-    // Post-process for category diversity
-    const categorize = (q: string): string => {
-      for (const [cat, rx] of Object.entries(categoryKeywords)) {
-        if (rx.test(q)) return cat;
-      }
-      return "other";
-    };
-
-    const maxPerCategory = 1; // strict: only one per category to enforce breadth
     const catCount: Record<string, number> = {};
     const diversified: string[] = [];
-    for (const q of cleaned) {
-      const cat = categorize(q);
+    const getMaxPerCategory = (category: string) => (currentFocusCategories.includes(category) ? 2 : 1);
+
+    for (const question of cleaned) {
+      const cat = categorizeSuggestion(question);
       catCount[cat] = catCount[cat] || 0;
-      if (catCount[cat] < maxPerCategory) {
-        diversified.push(q);
+      if (catCount[cat] < getMaxPerCategory(cat)) {
+        diversified.push(question);
         catCount[cat]++;
       }
-      if (diversified.length >= 6) break;
+      if (diversified.length >= TARGET_SUGGESTION_COUNT) break;
     }
 
-    // Fallback library for missing categories
-    const fallbackByCategory: Record<string, string[]> = {
-      experience: ["What recent impact has Nikunj made in his current role?"],
-      skills: ["Which technical skills does Nikunj use most day to day?"],
-      projects: ["Which project best showcases Nikunj's problem-solving?"],
-      achievements: ["Can you highlight one of Nikunj's standout achievements?"],
-      contact: ["What's the best way to connect with Nikunj for collaboration?"],
-      career_goals: ["What future goals is Nikunj focusing on next?"],
-    };
-
-    if (diversified.length < 3) {
-      // Add fallbacks from unused categories
-      for (const cat of Object.keys(fallbackByCategory)) {
-        if (diversified.length >= 6) break;
-        if (!diversified.some((q) => categorize(q) === cat)) {
-          const fb = fallbackByCategory[cat][0];
-          if (fb) diversified.push(fb);
-        }
-      }
-    }
-
-    return diversified.slice(0, 6);
+    return [...diversified, ...buildFallbackSuggestions(currentMessage, aiResponse, recentMessages, priorUserTexts)]
+      .filter((question, index, all) => all.findIndex((entry) => entry.toLowerCase() === question.toLowerCase()) === index)
+      .slice(0, TARGET_SUGGESTION_COUNT);
   } catch (e) {
     console.warn("Suggestion generation failed:", e);
-    return getDefaultSuggestions();
+    const priorUserTexts = recentMessages
+      .filter((message) => message.sender === "user")
+      .map((message) => normalizeText(message.content));
+
+    priorUserTexts.push(normalizeText(currentMessage));
+
+    return buildFallbackSuggestions(currentMessage, aiResponse, recentMessages, priorUserTexts);
   }
 }
 
 function getDefaultSuggestions() {
   return [
-    "Tell me about your GraphRAG architecture.",
-    "What did you build at ArmorCode?",
-    "Can you share more on Serenify's tech stack?",
-    "How can I contact Nikunj for opportunities?"
+    "What GenAI work are you doing right now?",
+    "Which project should I open first?",
+    "Could you share a standout repo?",
+    "What's the best way to connect with you?"
   ];
 }
 
@@ -314,20 +477,29 @@ function handleFallbackResponse(message: string) {
 
   if (lowercaseMsg.includes("contact") || lowercaseMsg.includes("email")) {
     return NextResponse.json({
-      response: `# Contact Nikunj Khitha\n\nYou can connect with Nikunj through various channels:\n\n## 📧 **Email**\n[njkhitha2003@gmail.com](mailto:njkhitha2003@gmail.com)\n\n## 💼 **LinkedIn**\n[Connect on LinkedIn](https://www.linkedin.com/in/nikunj-khitha)\n\n## 🐙 **GitHub**\n[View Projects on GitHub](https://github.com/Nikunj2003)\n\n---\n\n> **Currently:** Associate Engineer (Platform & GenAI) at ArmorCode\n> \n> Feel free to reach out for collaborations, job opportunities, or tech discussions!`,
-      suggestions: ["What projects have you worked on?", "Tell me about your tech skills."]
+      response: appendContextualLinks(
+        message,
+        `# Contact Nikunj Khitha\n\nYou can connect with Nikunj through various channels:\n\n## 📧 **Email**\n[njkhitha2003@gmail.com](mailto:njkhitha2003@gmail.com)\n\n## 💼 **LinkedIn**\n[Connect on LinkedIn](https://www.linkedin.com/in/nikunj-khitha)\n\n## 🐙 **GitHub**\n[View Projects on GitHub](https://github.com/Nikunj2003)\n\n---\n\n> **Currently:** Associate Engineer (Platform & GenAI) at ArmorCode\n> \n> Feel free to reach out for collaborations, job opportunities, or tech discussions!`
+      ),
+      suggestions: ["Which project should I open first?", "Could you share a standout repo?"]
     });
   }
 
   if (lowercaseMsg.includes("experience") || lowercaseMsg.includes("work")) {
     return NextResponse.json({
-      response: `# Nikunj's Professional Experience\n\n## 🚀 **Associate Engineer at ArmorCode**\n*Jan 2025 - Present*\n- Architected "Nexus", a hybrid GraphRAG engine.\n- Contributed to "Anya" an autonomous security agent.\n- Developed MCP servers in n8n/Go/Python.\n\n## 🤖 **SDE Intern at Xansr Media (Aiko)**\n*Jun 2024 - Dec 2024*\n- Built scalable backend for AIKO voice assistant with 96% accuracy.\n- Engineered ETL pipelines with Azure AI.\n- Developed Fantasy GPT (LangGraph + SQL RAG).\n\n> Would you like to know more about a specific role?`,
-      suggestions: ["What was your role in CodeNex?", "What skills do you actively use?"]
+      response: appendContextualLinks(
+        message,
+        `# Nikunj's Professional Experience\n\n## 🚀 **Associate Engineer at ArmorCode**\n*Jan 2025 - Present*\n- Architected "Nexus", a hybrid GraphRAG engine.\n- Contributed to "Anya" an autonomous security agent.\n- Developed MCP servers in n8n/Go/Python.\n\n## 🤖 **SDE Intern at Xansr Media (Aiko)**\n*Jun 2024 - Dec 2024*\n- Built scalable backend for AIKO voice assistant with 96% accuracy.\n- Engineered ETL pipelines with Azure AI.\n- Developed Fantasy GPT (LangGraph + SQL RAG).\n\n> Would you like to know more about a specific role?`
+      ),
+      suggestions: ["What impact are you driving at ArmorCode?", "Which project best shows your strengths?"]
     });
   }
 
   return NextResponse.json({
-    response: `# Welcome! I'm the AI Twin for Nikunj Khitha\n\nI'm currently running in an offline or limited capacity, but I can still tell you about Nikunj!\n\n## What would you like to know?\n\n- **Current Role**: Associate Engineer (Platform & GenAI) at ArmorCode\n- **Tech Stack**: GraphRAG, LangGraph, Python, MS+Java, TypeScript\n- **Experience**: Built multi-agent platforms and unified AI gateways\n\n> Ask me about Nikunj's projects, experience, or contact information!`,
-    suggestions: ["Tell me about your work at ArmorCode.", "How can I contact Nikunj?"]
+    response: appendContextualLinks(
+      message,
+      `# Welcome! I'm the AI Twin for Nikunj Khitha\n\nI'm currently running in an offline or limited capacity, but I can still tell you about Nikunj!\n\n## What would you like to know?\n\n- **Current Role**: Associate Engineer (Platform & GenAI) at ArmorCode\n- **Tech Stack**: GraphRAG, LangGraph, Python, MS+Java, TypeScript\n- **Experience**: Built multi-agent platforms and unified AI gateways\n\n> Ask me about Nikunj's projects, experience, or contact information!`
+    ),
+    suggestions: ["What GenAI work are you doing right now?", "Could you share a standout repo?"]
   });
 }

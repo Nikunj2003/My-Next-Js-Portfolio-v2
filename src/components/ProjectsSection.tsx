@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { ExternalLink, Github } from "lucide-react";
 import { projects, type Project } from "@/data/portfolio";
+import { PROJECT_ANCHOR_PREFIX } from "@/lib/ai-twin";
 import {
   Carousel,
   CarouselContent,
@@ -127,7 +128,9 @@ const ProjectsSection = () => {
             return (
               <div
                 key={project.title}
-                className="w-full static lg:sticky"
+                id={`${PROJECT_ANCHOR_PREFIX}${project.slug}`}
+                data-project-slug={project.slug}
+                className="scroll-mt-28 w-full static lg:sticky"
                 // The stack offset calculates top position so cards visually overlap like a deck
                 style={{
                   top: `calc(10vh + ${i * 30}px)`,

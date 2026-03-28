@@ -1,12 +1,13 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, X, Send, Bot, User, Trash2 } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { chatSuggestions } from "@/data/portfolio";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { CHAT_MEMORY_WINDOW, CHAT_STORAGE_KEY, WELCOME_MESSAGE } from "@/lib/ai-twin";
 
 interface Message {
   id: string;
@@ -15,21 +16,199 @@ interface Message {
   suggestions?: string[];
 }
 
-const WELCOME = "Hey! I'm Nikunj's AI twin. Ask me anything about his projects, tech stack, or experience — I'll answer as he would. 🤖";
+type LenisWindow = Window & typeof globalThis & {
+  __lenis?: {
+    scrollTo: (target: number | string | HTMLElement, options?: { offset?: number }) => void;
+  };
+};
+
+const WELCOME = WELCOME_MESSAGE;
+const INITIAL_MESSAGES: Message[] = [{ id: "welcome", role: "assistant", content: WELCOME }];
+
+function sanitizeStoredMessages(value: unknown): Message[] {
+  if (!Array.isArray(value)) return INITIAL_MESSAGES;
+
+  const parsed = value
+    .filter((item): item is Message => {
+      if (!item || typeof item !== "object") return false;
+      const candidate = item as Message;
+      return (
+        typeof candidate.id === "string" &&
+        (candidate.role === "user" || candidate.role === "assistant") &&
+        typeof candidate.content === "string" &&
+        (candidate.suggestions === undefined || Array.isArray(candidate.suggestions))
+      );
+    })
+    .map((message) => ({
+      ...message,
+      suggestions: Array.isArray(message.suggestions)
+        ? message.suggestions.filter((suggestion): suggestion is string => typeof suggestion === "string")
+        : undefined,
+    }));
+
+  const trimmed = parsed.filter((message) => message.id !== "welcome").slice(-CHAT_MEMORY_WINDOW);
+  return trimmed.length > 0 ? [...INITIAL_MESSAGES, ...trimmed] : INITIAL_MESSAGES;
+}
 
 const AITwinChat = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    { id: "welcome", role: "assistant", content: WELCOME },
-  ]);
+  const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [hasHydratedHistory, setHasHydratedHistory] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const pendingUserMessageIdRef = useRef<string | null>(null);
   const isSendingRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const handleSendRef = useRef<(text?: string) => Promise<void>>(async () => {});
   const isMobile = useIsMobile();
+
+  const getConversationHistory = useCallback(
+    (sourceMessages: Message[]) =>
+      sourceMessages
+        .filter((message) => message.id !== "welcome")
+        .slice(-CHAT_MEMORY_WINDOW)
+        .map((message) => ({
+          content: message.content,
+          sender: message.role === "user" ? "user" : "ai",
+        })),
+    []
+  );
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(CHAT_STORAGE_KEY);
+      if (stored) {
+        setMessages(sanitizeStoredMessages(JSON.parse(stored)));
+      }
+    } catch (error) {
+      console.warn("Failed to restore AI Twin chat history:", error);
+    } finally {
+      setHasHydratedHistory(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!hasHydratedHistory) return;
+
+    try {
+      const memoryMessages = [
+        ...INITIAL_MESSAGES,
+        ...messages.filter((message) => message.id !== "welcome").slice(-CHAT_MEMORY_WINDOW),
+      ];
+
+      window.localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(memoryMessages));
+    } catch (error) {
+      console.warn("Failed to persist AI Twin chat history:", error);
+    }
+  }, [hasHydratedHistory, messages]);
+
+  const navigateToSection = useCallback(
+    (href: string) => {
+      const performScroll = () => {
+        const target = document.querySelector(href);
+        if (!(target instanceof HTMLElement)) return;
+
+        const lenis = (window as LenisWindow).__lenis;
+        if (lenis) {
+          lenis.scrollTo(target, { offset: -85 });
+        } else {
+          const top = target.getBoundingClientRect().top + window.scrollY - 85;
+          window.scrollTo({ top, behavior: "smooth" });
+        }
+
+        window.history.pushState(null, "", href);
+      };
+
+      if (isMobile) {
+        setIsOpen(false);
+      }
+
+      window.setTimeout(performScroll, isMobile ? 180 : 0);
+    },
+    [isMobile]
+  );
+
+  const markdownComponents = useMemo<Components>(
+    () => ({
+      a: ({ href = "", children, ...props }) => {
+        const isHashLink = href.startsWith("#");
+        const isInternalPath = href.startsWith("/");
+        const isResumeLink = /resume|\.pdf$/i.test(href);
+        const isExternalLink = !isHashLink && !isInternalPath && !href.startsWith("mailto:");
+
+        return (
+          <a
+            {...props}
+            href={href}
+            download={isResumeLink && isInternalPath ? true : undefined}
+            target={isExternalLink ? "_blank" : undefined}
+            rel={isExternalLink ? "noopener noreferrer" : undefined}
+            onClick={(event) => {
+              props.onClick?.(event);
+              if (event.defaultPrevented || !isHashLink) return;
+              event.preventDefault();
+              navigateToSection(href);
+            }}
+            className="font-medium text-primary underline decoration-primary/40 underline-offset-4 transition-colors hover:text-primary/80 break-words"
+          >
+            {children}
+          </a>
+        );
+      },
+      p: ({ children }) => <p className="mb-3 last:mb-0 whitespace-pre-wrap">{children}</p>,
+      ul: ({ children }) => <ul className="mb-3 list-disc space-y-2 pl-5 marker:text-primary last:mb-0">{children}</ul>,
+      ol: ({ children }) => <ol className="mb-3 list-decimal space-y-2 pl-5 marker:text-primary last:mb-0">{children}</ol>,
+      li: ({ children }) => <li className="pl-1">{children}</li>,
+      strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+      em: ({ children }) => <em className="text-foreground/90">{children}</em>,
+      h1: ({ children }) => <h1 className="mb-3 text-base font-semibold tracking-tight text-foreground">{children}</h1>,
+      h2: ({ children }) => <h2 className="mb-3 text-[15px] font-semibold tracking-tight text-foreground">{children}</h2>,
+      h3: ({ children }) => <h3 className="mb-2 text-sm font-semibold tracking-tight text-foreground">{children}</h3>,
+      blockquote: ({ children }) => (
+        <blockquote className="my-4 border-l-2 border-primary/40 pl-3 text-foreground/80">{children}</blockquote>
+      ),
+      hr: () => <hr className="my-4 border-border/40" />,
+      pre: ({ children }) => (
+        <pre className="my-4 overflow-x-auto rounded-xl border border-border/40 bg-background/70 p-3 text-xs leading-6">
+          {children}
+        </pre>
+      ),
+      code: ({ className, children, ...props }) => {
+        const isBlock = Boolean(className);
+
+        return (
+          <code
+            {...props}
+            className={cn(
+              "font-mono",
+              isBlock
+                ? "text-[12px] text-foreground"
+                : "rounded-md bg-background/70 px-1.5 py-0.5 text-[0.82em] text-primary",
+              className
+            )}
+          >
+            {children}
+          </code>
+        );
+      },
+      table: ({ children }) => (
+        <div className="my-4 overflow-x-auto rounded-xl border border-border/40 bg-background/40">
+          <table className="min-w-[34rem] w-full border-collapse text-left text-xs sm:text-sm">{children}</table>
+        </div>
+      ),
+      thead: ({ children }) => <thead className="bg-background/60">{children}</thead>,
+      tbody: ({ children }) => <tbody className="divide-y divide-border/20">{children}</tbody>,
+      tr: ({ children }) => <tr className="align-top">{children}</tr>,
+      th: ({ children }) => (
+        <th className="border-b border-border/40 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-foreground/80 sm:text-xs">
+          {children}
+        </th>
+      ),
+      td: ({ children }) => <td className="px-3 py-2 text-foreground/90">{children}</td>,
+    }),
+    [navigateToSection]
+  );
 
   // Auto-scroll to bottom or anchor to user message top
   useEffect(() => {
@@ -84,10 +263,7 @@ const AITwinChat = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: msg,
-          conversationHistory: messages.map(m => ({
-            content: m.content,
-            sender: m.role === "user" ? "user" : "ai"
-          })).slice(-10)
+          conversationHistory: getConversationHistory(messages)
         }),
       });
 
@@ -118,7 +294,7 @@ const AITwinChat = () => {
       isSendingRef.current = false;
       setIsLoading(false);
     }
-  }, [input, messages]);
+  }, [getConversationHistory, input, messages]);
 
   handleSendRef.current = handleSend;
 
@@ -147,8 +323,9 @@ const AITwinChat = () => {
   };
 
   const clearChat = () => {
-    setMessages([{ id: "welcome", role: "assistant", content: WELCOME }]);
+    setMessages(INITIAL_MESSAGES);
     pendingUserMessageIdRef.current = null;
+    window.localStorage.removeItem(CHAT_STORAGE_KEY);
   };
 
   // Shared render function for ChatContent (prevents unmount/remount on every keystroke)
@@ -213,14 +390,14 @@ const AITwinChat = () => {
                 {msg.role === "assistant" ? <Bot className="w-4 h-4 text-primary" /> : <User className="w-4 h-4" />}
               </div>
               <div
-                className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm ${
+                className={`px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm ${
                   msg.role === "user"
-                    ? "bg-primary text-primary-foreground rounded-tr-none"
-                    : "bg-muted/50 dark:bg-muted/20 border border-border/20 rounded-tl-none prose prose-invert prose-sm"
+                    ? "max-w-[85%] bg-primary text-primary-foreground rounded-tr-none"
+                    : "w-full max-w-[calc(100%-2.75rem)] sm:max-w-[88%] bg-muted/50 dark:bg-muted/20 border border-border/20 rounded-tl-none text-foreground"
                 }`}
               >
                 {msg.role === "assistant" ? (
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                     {msg.content}
                   </ReactMarkdown>
                 ) : (
@@ -242,11 +419,10 @@ const AITwinChat = () => {
                     key={i}
                     onClick={() => handleSuggestionClick(s)}
                     onDoubleClick={() => handleSuggestionDoubleClick(s)}
-                    className="group relative select-none overflow-hidden rounded-full bg-primary/10 px-3 py-1 text-[11px] text-foreground transition-colors hover:bg-primary/20 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="group relative max-w-full select-none overflow-hidden rounded-full bg-primary/10 px-3 py-1 text-[11px] text-foreground transition-colors hover:bg-primary/20 focus:outline-none focus:ring-2 focus:ring-primary/50"
                     aria-label={`Ask: ${s}`}
-                    title="Double-click to send"
                   >
-                    <span className="relative z-10 flex items-center gap-1">
+                    <span className="relative z-10 flex max-w-full items-center gap-1 overflow-hidden whitespace-nowrap">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 24 24"
@@ -260,7 +436,7 @@ const AITwinChat = () => {
                         <path d="M12 19l-7-7 7-7" />
                         <path d="M19 19l-7-7 7-7" />
                       </svg>
-                      {s}
+                      <span className="truncate">{s}</span>
                     </span>
                   </button>
                 ))}
@@ -301,10 +477,9 @@ const AITwinChat = () => {
                 key={s}
                 onClick={() => handleSuggestionClick(s)}
                 onDoubleClick={() => handleSuggestionDoubleClick(s)}
-                className="select-none rounded-full bg-primary/10 px-3 py-1 text-xs text-foreground transition-colors hover:bg-primary/20"
-                title="Double-click to send"
+                className="max-w-full select-none overflow-hidden rounded-full bg-primary/10 px-3 py-1 text-xs text-foreground transition-colors hover:bg-primary/20"
               >
-                {s}
+                <span className="block truncate whitespace-nowrap">{s}</span>
               </button>
             ))}
           </motion.div>
