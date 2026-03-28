@@ -155,7 +155,7 @@ const ContactSection = () => {
               </div>
 
               {/* Pinned to bottom */}
-              <div className="flex flex-col gap-4 mt-auto">
+              <div className="mt-auto flex min-h-[122px] flex-col justify-between gap-4">
                 <a
                   href={personalInfo.resumeUrl}
                   download
@@ -252,7 +252,7 @@ const ContactSection = () => {
               </div>
 
               {/* Pinned to bottom */}
-              <div className="flex flex-col gap-4 mt-auto">
+              <div className="mt-auto flex min-h-[122px] flex-col justify-between gap-4">
                 <button
                   type="submit"
                   disabled={isSubmitting}
