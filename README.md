@@ -1,10 +1,10 @@
 <div align="center">
 
-# 🌐 Nikunj Khitha - Full-Stack GenAI Engineer Portfolio
+# 🌐 Nikunj Khitha - GenAI Platform Engineer Portfolio
 
-Production-grade portfolio for a software engineer focused on GraphRAG, multi-agent systems, AI gateways, MCP tooling, and full-stack AI products.
+Production-grade portfolio for a software engineer focused on GraphRAG, LightRAG, AI automation, and full-stack AI products built with TypeScript/Node.js, Go/Gin, Java/Spring, and Python/FastAPI.
 
-Built with **Next.js**, the site combines a polished interactive experience with a recruiter-friendly showcase of enterprise GenAI work, platform engineering, and product development.
+Built with **Next.js**, the site combines a polished interactive experience with a recruiter-friendly showcase of enterprise GenAI work, platform engineering, automation, and product development.
 
 <!-- ![Homepage Screenshot](public/static/home.png) -->
 

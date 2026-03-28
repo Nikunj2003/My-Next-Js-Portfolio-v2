@@ -29,7 +29,7 @@ const SkillsSection = () => {
                 <span className="text-gradient">Arsenal</span>
               </h2>
               <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-md">
-                A carefully curated stack of 60+ technologies. I focus on building scalable architectures, integrating cutting-edge Generative AI models, and shipping beautiful, performant interfaces.
+                A production-tested stack shaped by TypeScript/Node.js, Go/Gin, GraphRAG, AI automation, backend platforms, CI/CD, and polished full-stack product delivery.
               </p>
             </div>
           </div>

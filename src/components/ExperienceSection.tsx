@@ -254,7 +254,7 @@ const ExperienceSection = () => {
                 <span className="text-gradient">Experience</span>
               </h2>
               <p className="mb-8 max-w-md leading-relaxed text-muted-foreground">
-                My path from internships to building enterprise-scale AI platforms and production systems.
+                From public-sector software to enterprise GenAI platforms, I focus on measurable gains in retrieval quality, cost, uptime, and team productivity.
               </p>
 
               <div className="hidden lg:block">

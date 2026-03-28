@@ -1,7 +1,7 @@
 export const personalInfo = {
   name: "Nikunj Khitha",
-  role: "Software Engineer · Full-Stack GenAI, GraphRAG & Agents",
-  tagline: "I ship production-grade Generative AI systems - GraphRAG engines, multi-agent workflows, AI gateways, and MCP automations for enterprise products.",
+  role: "Associate Engineer - GenAI Platform Engineering",
+  tagline: "I build full-stack GenAI platforms with TypeScript/Node.js, Go/Gin, Java/Spring, and Python/FastAPI - from GraphRAG and AI gateways to backend APIs and workflow automation.",
   email: "njkhitha2003@gmail.com",
   linkedin: "https://www.linkedin.com/in/nikunj-khitha/",
   github: "https://github.com/Nikunj2003",
@@ -9,19 +9,19 @@ export const personalInfo = {
 };
 
 export const stats = [
-  { value: 2, suffix: "+", label: "Years Experience" },
-  { value: 7, suffix: "+", label: "Production Projects" },
-  { value: 60, suffix: "+", label: "Technologies" },
-  { value: 1, suffix: "", label: "AI Ninja Award 🏆" },
+  { value: 200, suffix: "+", label: "Customers Supported" },
+  { value: 500, suffix: "K+", label: "Entities Unified" },
+  { value: 15, suffix: "K+", label: "Annual Savings" },
+  { value: 200, suffix: "+", label: "Hours Saved/Month" },
 ];
 
 export const about = {
-  summary: "I am a software engineer focused on taking Generative AI from prototype to production. I build GraphRAG systems, multi-agent workflows, ETL and data pipelines, AI gateways, and MCP-based tooling, then ship the backend, infrastructure, and product experiences that make them useful at scale.",
+  summary: "I build full-stack GenAI platforms that improve retrieval quality, lower model cost, and eliminate manual work. My work spans GraphRAG and LightRAG pipelines, TypeScript/Node.js and Go/Gin services, Java/Spring and Python/FastAPI backends, AI gateways and observability, and the automation systems that make enterprise AI reliable at scale. I enjoy owning the stack end to end - from data and APIs to infrastructure and polished product experiences.",
   highlights: [
-    "At ArmorCode, building enterprise AI systems across GraphRAG, agentic workflows, AI gateways, and automation.",
-    "Delivered measurable impact: 40% better retrieval precision, 37% lower token cost, and 80% lower MTTR on production AI initiatives.",
-    "Previously built AIKO and Fantasy GPT at Xansr Media with 96% commentary accuracy and 98% complex-query resolution.",
-    "AI Ninja Award recipient with end-to-end ownership from backend infra to polished product experiences.",
+    "Architected GenAI platforms for 200+ customers, including a GraphRAG system unifying 500K+ entities across 5+ enterprise systems.",
+    "Cut indexing cost by 50%, saving $15K+ annually, while improving retrieval accuracy by 40%.",
+    "Built automations across support, QA, HR, and marketing that eliminate 200+ manual hours every month.",
+    "Led documentation automation for 250+ integrations, reducing update latency by 99% from 72 hours to 45 minutes.",
   ],
 };
 
@@ -40,8 +40,8 @@ export const experiences: Experience[] = [
     period: "May 2023 - July 2023",
     type: "work",
     bullets: [
-      "Enhanced a national renewable energy dashboard for 150+ power stations by integrating data from the National Power Portal in Java, improving accuracy by 30%.",
-      "Built a secure PHP and MySQL file management system with role-based access control and optimized retrieval for 5,000+ files by 25%.",
+      "Enhanced a national renewable energy dashboard for 150+ power stations by integrating National Power Portal data in Java, improving accuracy by 30%.",
+      "Built a secure PHP and MySQL file management system with role-based access control, improving retrieval efficiency by 25% across 5,000+ files.",
       "Developed a full-stack MERN conference room booking system that cut booking time by 60% and reduced scheduling errors by 40%.",
     ],
   },
@@ -51,21 +51,21 @@ export const experiences: Experience[] = [
     period: "Jun 2024 – Dec 2024",
     type: "work",
     bullets: [
-      "Built Node.js and FastAPI microservices with test-driven development, reaching 100% test coverage and improving API performance by 40%.",
+      "Built Node.js and FastAPI microservices with test-driven development, achieving 100% test coverage and improving API performance by 40%.",
       "Designed Docker and GitHub Actions CI/CD pipelines that reduced deployment time by 42%.",
-      "Engineered Fantasy GPT with RAG and LangGraph to reach 98% complex-query resolution and built AIKO for personalized sports highlights with 96% commentary accuracy.",
+      "Engineered Fantasy GPT with RAG and LangGraph to achieve 98% complex-query resolution, and built AIKO for personalized sports highlights with 96% commentary accuracy.",
       "Created scalable MSSQL and Azure ETL pipelines that maintained 100% data accuracy for AI products.",
     ],
   },
   {
-    company: "Armorcode Inc.",
+    company: "ArmorCode",
     role: "AI Automation Intern",
     period: "Jan 2025 - Nov 2025",
     type: "work",
     bullets: [
-      "Built backend capabilities for the core platform agent with Java and Spring Boot, including new APIs, prompt refinements, and AWS S3 vector knowledge base management.",
+      "Built backend capabilities for the core platform agent with Java and Spring Boot, including new APIs, prompt refinements, and AWS S3 vector knowledge base workflows.",
       "Led AI-driven code-to-documentation automation with CrewAI and MCP servers for 250+ security integrations, reducing update latency by 99% from 72 hours to 45 minutes.",
-      "Created an OpenAI-compatible proxy API for Gemini and Claude and deployed LiteLLM to monitor 15+ AI APIs with centralized cost visibility.",
+      "Created an OpenAI-compatible proxy for Gemini and Claude, and deployed LiteLLM to monitor 15+ AI APIs with centralized cost visibility.",
     ],
   },
   {
@@ -74,7 +74,7 @@ export const experiences: Experience[] = [
     period: "Jan 2025 – Present",
     type: "work",
     bullets: [
-      "Architected enterprise GenAI platforms for 200+ customers and designed a Neo4j plus PGVector GraphRAG platform unifying 500,000+ entities across 5+ systems with 40% better retrieval accuracy.",
+      "Architected enterprise GenAI platforms for 200+ customers, including a Neo4j + PGVector GraphRAG system unifying 500,000+ entities across 5+ systems with 40% better retrieval accuracy.",
       "Orchestrated GraphRAG and LightRAG ETL pipelines that cut LLM indexing costs by 50% and saved $15,000+ annually.",
       "Expanded the core Java and Spring Boot backend with 10+ REST APIs serving 5,000+ daily requests at 99.8% uptime.",
       "Built automation suites across support, QA, HR, and marketing with n8n, Java microservices, and Python, eliminating 200+ manual hours each month.",
@@ -95,13 +95,14 @@ export interface Project {
 
 export const projects: Project[] = [
   {
-    slug: "codenex-backend-v1",
-    title: "CodeNex Backend v1",
-    category: "Backend / Microservices",
+    slug: "codenex",
+    title: "CodeNex",
+    category: "Full Stack / AI Product",
     description: "Production-grade Java backend for the Codenex platform — a microservices-based system automating full-stack-web app generation using LLMs, inspired by Lovable/v0.",
     images: [
       "/images/projects/codenex/landing-page-light.png",
       "/images/projects/codenex/landing-page-dark.png",
+      "/images/projects/codenex/system-architecture-dark.png",
       "/images/projects/codenex/dashboard-overview-light.png",
       "/images/projects/codenex/dashboard-overview-dark.png",
       "/images/projects/codenex/dashboard-usage-dark.png",
@@ -168,7 +169,6 @@ export const projects: Project[] = [
       "/images/projects/resumefit/api-key-entry-dark.png",
       "/images/projects/resumefit/upload-resume-empty-dark.png",
       "/images/projects/resumefit/upload-resume-filled-dark.png",
-      "/images/projects/resumefit/system-architecture-dark.png",
     ],
     tech: ["React", "TypeScript", "Gemini AI", "Vercel AI SDK", "Recharts"],
     github: "https://github.com/Nikunj2003/Resume-Fit-Codenex",
@@ -194,7 +194,7 @@ export const skillCategories = [
   },
   {
     title: "Full Stack Development",
-    skills: ["Java", "Spring Boot", "Maven", "Python", "FastAPI", "Go", "Gin", "NestJS", "SQLAlchemy", "TypeScript", "Node.js", "Next.js", "React", "Express.js", "Prisma", "Kafka", "RabbitMQ", "SQS", "Streamlit"],
+    skills: ["TypeScript", "Node.js", "Go", "Gin", "Java", "Spring Boot", "Maven", "Python", "FastAPI", "NestJS", "SQLAlchemy", "Next.js", "React", "Express.js", "Prisma", "Kafka", "RabbitMQ", "SQS", "Streamlit"],
   },
   {
     title: "Databases & Data",
@@ -211,8 +211,8 @@ export const skillCategories = [
 ];
 
 export const chatSuggestions = [
-  "Explain your GraphRAG engine architecture",
-  "How does your AI gateway pool providers?",
-  "Walk me through Serenify's RAG pipeline",
-  "What's your experience with MCP?",
+  "How did you unify 500K entities with GraphRAG?",
+  "What cut your indexing cost by 50%?",
+  "How did you automate docs for 250+ integrations?",
+  "How do you balance AI infra and product work?",
 ];
