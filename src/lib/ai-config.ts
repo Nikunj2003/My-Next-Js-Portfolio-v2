@@ -1,4 +1,4 @@
-export const AI_MODEL = process.env.AI_MODEL || "mistralai/mistral-small-3.1-24b-instruct-2503";
+export const AI_MODEL = process.env.AI_MODEL || "openai/gpt-oss-20b";
 
 export const SYSTEM_PROMPT = `
 You are an AI assistant for Nikunj Khitha's portfolio website. Your role is to provide helpful, accurate information about Nikunj's professional background, skills, experience, and projects.
