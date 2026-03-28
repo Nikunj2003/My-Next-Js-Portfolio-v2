@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { Mail, Linkedin, Github, Send, Download, ArrowUpRight } from "lucide-react";
 import { personalInfo } from "@/data/portfolio";
+import { toast } from "@/components/ui/sonner";
+import { CONTACT_REASONS, contactSchema, type ContactFormData } from "@/lib/contact";
 import Card3D from "./Card3D";
 import cardImage from "@/assets/card.png";
 
@@ -31,21 +33,53 @@ const SOCIAL_LINKS = [
   },
 ];
 
-const REASONS = ["Hiring", "Collaboration", "Open Source", "Other"];
-
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 
-// ... [Keep SOCIAL_LINKS, REASONS, etc.] ...
+const INITIAL_FORM: ContactFormData = {
+  name: "",
+  email: "",
+  reason: CONTACT_REASONS[0],
+  message: "",
+};
 
 const ContactSection = () => {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
-  const [form, setForm] = useState({ name: "", email: "", reason: "Hiring", message: "" });
+  const [form, setForm] = useState<ContactFormData>(INITIAL_FORM);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const subject = encodeURIComponent(`[${form.reason}] ${form.name}`);
-    const body = encodeURIComponent(`Hi Nikunj,\n\n${form.message}\n\n— ${form.name} (${form.email})`);
-    window.open(`mailto:${personalInfo.email}?subject=${subject}&body=${body}`);
+
+    const parsed = contactSchema.safeParse(form);
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message || "Please check the form and try again.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(parsed.data),
+      });
+
+      const data = (await response.json().catch(() => null)) as { error?: string } | null;
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Unable to send your message right now.");
+      }
+
+      setForm(INITIAL_FORM);
+      toast.success("Message sent. I will get back to you soon.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to send your message right now.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -155,6 +189,10 @@ const ContactSection = () => {
                     <label className="text-xs font-mono font-medium text-foreground/70 mb-2 block uppercase tracking-wider">Name</label>
                     <input
                       required
+                      minLength={2}
+                      maxLength={80}
+                      autoComplete="name"
+                      disabled={isSubmitting}
                       value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
                       className="w-full px-4 py-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-sm outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/40"
@@ -166,6 +204,9 @@ const ContactSection = () => {
                     <input
                       type="email"
                       required
+                      maxLength={120}
+                      autoComplete="email"
+                      disabled={isSubmitting}
                       value={form.email}
                       onChange={(e) => setForm({ ...form, email: e.target.value })}
                       className="w-full px-4 py-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-sm outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/40"
@@ -178,11 +219,12 @@ const ContactSection = () => {
                   <label className="text-xs font-mono font-medium text-foreground/70 mb-2 block uppercase tracking-wider">Reason</label>
                   <div className="relative">
                     <select
+                      disabled={isSubmitting}
                       value={form.reason}
-                      onChange={(e) => setForm({ ...form, reason: e.target.value })}
+                      onChange={(e) => setForm({ ...form, reason: e.target.value as ContactFormData["reason"] })}
                       className="w-full px-4 py-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-sm outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all appearance-none"
                     >
-                      {REASONS.map((r) => (
+                      {CONTACT_REASONS.map((r) => (
                         <option key={r} value={r} className="bg-background text-foreground">{r}</option>
                       ))}
                     </select>
@@ -198,6 +240,9 @@ const ContactSection = () => {
                   <label className="text-xs font-mono font-medium text-foreground/70 mb-2 block uppercase tracking-wider">Message</label>
                   <textarea
                     required
+                    minLength={10}
+                    maxLength={2000}
+                    disabled={isSubmitting}
                     value={form.message}
                     onChange={(e) => setForm({ ...form, message: e.target.value })}
                     className="flex-1 w-full px-4 py-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-sm outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all resize-none placeholder:text-muted-foreground/40"
@@ -210,13 +255,14 @@ const ContactSection = () => {
               <div className="flex flex-col gap-4 mt-auto">
                 <button
                   type="submit"
-                  className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground font-bold text-sm tracking-wide hover:bg-black/10 dark:hover:bg-white/10 transition-all duration-300 active:scale-[0.98]"
+                  disabled={isSubmitting}
+                  className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground font-bold text-sm tracking-wide hover:bg-black/10 dark:hover:bg-white/10 transition-all duration-300 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <Send className="w-4 h-4 text-primary" />
-                  Send Message
+                  {isSubmitting ? "Sending..." : "Send Message"}
                 </button>
                 <p className="text-[11px] font-medium text-muted-foreground/60 text-center border-t border-black/10 dark:border-white/5 pt-4">
-                  Opens your email client with a pre-filled message
+                  Messages are sent securely to {personalInfo.email} with your email set as the reply-to.
                 </p>
               </div>
             </form>

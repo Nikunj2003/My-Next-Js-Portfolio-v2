@@ -42,7 +42,7 @@ Leveraging **Framer Motion** for highly performant animations:
 ### 6. 💼 Modular Section Architecture
 - Reusable modular components: Hero, About, Experience, Projects, Skills, Contact.
 - Built via React Server / Client Components, prioritizing maintainability and separation of logic.
-- Forms managed with Zod validation + React Hook Form + Shadcn UI components.
+- Contact form now posts to a live Next.js API route with server-side validation and Resend-backed inbox delivery.
 
 ---
 
@@ -60,14 +60,15 @@ Leveraging **Framer Motion** for highly performant animations:
 ---
 
 ## 🔐 Environment Variables
-Create a `.env.local` to securely store keys for the AI Chatbot or contact email systems.
+Create a `.env.local` to securely store keys for the AI Chatbot and Resend-backed contact form.
 
 ```bash
 # Example environment variables 
 # -----------------------------
-# Contact / Nodemailer
-NODEMAILER_USER=your-email@example.com
-NODEMAILER_PASS=your-app-password
+# Contact / Resend
+RESEND_API_KEY=re_your_resend_api_key
+CONTACT_EMAIL_FROM="Nikunj Portfolio <contact@portfolio.codenex.dev>"
+CONTACT_EMAIL_TO=njkhitha2003@gmail.com
 
 # -----------------------------
 # LLM / AI Provider
@@ -75,6 +76,8 @@ LLM_API_KEY=your-llm-api-key
 ```
 
 > Never commit real credentials. Configure them in your hosting provider's dashboard (e.g. Vercel) for production.
+
+To send from a custom address like `contact@portfolio.codenex.dev`, verify that domain/subdomain inside Resend and add the SPF/DKIM DNS records Resend provides.
 
 ---
 
