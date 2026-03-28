@@ -48,7 +48,7 @@ const AboutSection = () => {
               className="prose prose-invert prose-lg max-w-none text-muted-foreground leading-relaxed"
             >
               <p className="text-xl sm:text-2xl font-medium text-foreground tracking-tight leading-snug mb-6" style={{ textWrap: "pretty" }}>
-                I am a passionate Full Stack Developer focused on architecting intelligent systems and seamless user experiences.
+                I ship full-stack GenAI systems - from retrieval and agents to APIs, infrastructure, and product experiences.
               </p>
               <p style={{ textWrap: "pretty" }}>
                 {about.summary}

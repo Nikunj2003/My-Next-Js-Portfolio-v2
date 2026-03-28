@@ -115,12 +115,12 @@ const HeroSection = () => {
                 {personalInfo.name}
               </motion.h1>
               <motion.h2 variants={item} className="text-xl sm:text-4xl font-semibold tracking-tight text-muted-foreground mt-2">
-                Crafting <span className="text-gradient">Intelligent</span> Experiences
+                Building <span className="text-gradient">GenAI</span> Systems That Ship
               </motion.h2>
             </div>
 
             <motion.p variants={item} className="text-muted-foreground text-base sm:text-lg leading-relaxed max-w-xl font-medium" style={{ textWrap: "pretty" }}>
-              {personalInfo.tagline} I specialize in Full-Stack capabilities and Generative AI, building production-ready scalable systems.
+              {personalInfo.tagline} From backend architecture to polished product experiences.
             </motion.p>
 
             <motion.div variants={item} className="flex flex-col sm:flex-row flex-wrap gap-4 mt-2">

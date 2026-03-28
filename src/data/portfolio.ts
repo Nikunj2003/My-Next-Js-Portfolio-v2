@@ -1,7 +1,7 @@
 export const personalInfo = {
   name: "Nikunj Khitha",
-  role: "Software Engineer · GenAI Platforms & Multi-Agent Systems",
-  tagline: "I productionize Generative AI — building GraphRAG engines, platform agents, AI gateways, and MCP-based automations for real enterprise environments.",
+  role: "Software Engineer · Full-Stack GenAI, GraphRAG & Agents",
+  tagline: "I ship production-grade Generative AI systems - GraphRAG engines, multi-agent workflows, AI gateways, and MCP automations for enterprise products.",
   email: "njkhitha2003@gmail.com",
   linkedin: "https://www.linkedin.com/in/nikunj-khitha/",
   github: "https://github.com/Nikunj2003",
@@ -16,12 +16,12 @@ export const stats = [
 ];
 
 export const about = {
-  summary: "I'm a software engineer at the intersection of AI, automation, and platform engineering. I specialize in architecting GraphRAG systems, multi-agent orchestrations (LangGraph/LangChain), ETL pipelines, vector stores, and MCP-based tooling — taking them from prototype to production at enterprise scale.",
+  summary: "I am a software engineer focused on taking Generative AI from prototype to production. I build GraphRAG systems, multi-agent workflows, ETL and data pipelines, AI gateways, and MCP-based tooling, then ship the backend, infrastructure, and product experiences that make them useful at scale.",
   highlights: [
-    "Currently an Associate Engineer (Platform & GenAI) at ArmorCode, building enterprise AI infrastructure that serves 200+ customers.",
-    "Previously built voice-based sports AI assistants at Xansr Media (Aiko), achieving 96% commentary accuracy.",
-    "End-to-end ownership from backend infra to polished products — Serenify, Resume Fit, Codenex Images, and more.",
-    "B.Tech CSE graduate from The NorthCap University (CGPA 8.16).",
+    "At ArmorCode, building enterprise AI systems across GraphRAG, agentic workflows, AI gateways, and automation.",
+    "Delivered measurable impact: 40% better retrieval precision, 37% lower token cost, and 80% lower MTTR on production AI initiatives.",
+    "Previously built AIKO and Fantasy GPT at Xansr Media with 96% commentary accuracy and 98% complex-query resolution.",
+    "AI Ninja Award recipient with end-to-end ownership from backend infra to polished product experiences.",
   ],
 };
 
