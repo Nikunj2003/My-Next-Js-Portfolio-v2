@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { Mail, Linkedin, Github, Send, Download, ArrowUpRight } from "lucide-react";
 import { personalInfo } from "@/data/portfolio";
@@ -16,21 +16,18 @@ const SOCIAL_LINKS = [
     label: "Email",
     value: personalInfo.email,
     href: `mailto:${personalInfo.email}`,
-    desc: "Drop me a line anytime",
   },
   {
     icon: Linkedin,
     label: "LinkedIn",
     value: "nikunj-khitha",
     href: personalInfo.linkedin,
-    desc: "Let's connect professionally",
   },
   {
     icon: Github,
     label: "GitHub",
     value: "Nikunj2003",
     href: personalInfo.github,
-    desc: "Explore my open-source work",
   },
 ];
 
@@ -47,6 +44,7 @@ const ContactSection = () => {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
   const [form, setForm] = useState<ContactFormData>(INITIAL_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +55,9 @@ const ContactSection = () => {
       return;
     }
 
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 15000);
+
     try {
       setIsSubmitting(true);
 
@@ -66,6 +67,7 @@ const ContactSection = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(parsed.data),
+        signal: controller.signal,
       });
 
       const data = (await response.json().catch(() => null)) as { error?: string } | null;
@@ -77,8 +79,15 @@ const ContactSection = () => {
       setForm(INITIAL_FORM);
       toast.success("Message sent. I will get back to you soon.");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to send your message right now.");
+      toast.error(
+        error instanceof DOMException && error.name === "AbortError"
+          ? "The request took too long. Please try again."
+          : error instanceof Error
+            ? error.message
+            : "Unable to send your message right now."
+      );
     } finally {
+      window.clearTimeout(timeoutId);
       setIsSubmitting(false);
     }
   };
@@ -89,9 +98,9 @@ const ContactSection = () => {
 
         {/* Heading */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 20 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: shouldReduceMotion ? 0.2 : 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="text-center mb-14"
         >
           <div className="inline-flex items-center px-3 py-1.5 rounded-full glass-subtle border border-primary/20 text-xs font-mono text-primary mb-6">
@@ -107,15 +116,16 @@ const ContactSection = () => {
 
         {/* Mobile-only card */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 16 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, delay: 0.05 }}
+          transition={{ duration: shouldReduceMotion ? 0.2 : 0.6, delay: shouldReduceMotion ? 0 : 0.05 }}
           className="block lg:hidden mb-10 mx-auto w-full max-w-xs sm:max-w-sm"
         >
           <Card3D>
             <Image
               src={cardImage}
-              alt="Business Card"
+              alt=""
+              aria-hidden="true"
               className="w-full h-auto rounded-3xl border border-white/10 shadow-2xl pointer-events-none select-none"
               draggable={false}
               sizes="(min-width: 640px) 384px, 100vw"
@@ -172,7 +182,7 @@ const ContactSection = () => {
                   Download Resume
                 </a>
                 <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground border-t border-black/10 dark:border-white/5 pt-4">
-                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0 shadow-[0_0_8px_rgba(41,214,185,0.5)]" />
+                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse motion-reduce:animate-none shrink-0 shadow-[0_0_8px_rgba(41,214,185,0.5)]" />
                   Available for new opportunities
                 </div>
               </div>
@@ -181,7 +191,7 @@ const ContactSection = () => {
 
           {/* Right panel — Form */}
           <SpotlightCard delay={0.2} className="h-full">
-            <form onSubmit={handleSubmit} className="p-6 sm:p-8 md:p-10 flex flex-col gap-6 h-full">
+            <form onSubmit={handleSubmit} className="p-6 sm:p-8 md:p-10 flex flex-col gap-6 h-full" aria-busy={isSubmitting}>
               {/* Grows to fill */}
               <div className="flex flex-col gap-6 flex-1">
                 <div>
@@ -193,8 +203,9 @@ const ContactSection = () => {
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-mono font-medium text-foreground/70 mb-2 block uppercase tracking-wider">Name</label>
+                    <label htmlFor="contact-name" className="text-xs font-mono font-medium text-foreground/70 mb-2 block uppercase tracking-wider">Name</label>
                     <input
+                      id="contact-name"
                       required
                       minLength={2}
                       maxLength={80}
@@ -207,8 +218,9 @@ const ContactSection = () => {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-mono font-medium text-foreground/70 mb-2 block uppercase tracking-wider">Email</label>
+                    <label htmlFor="contact-email" className="text-xs font-mono font-medium text-foreground/70 mb-2 block uppercase tracking-wider">Email</label>
                     <input
+                      id="contact-email"
                       type="email"
                       required
                       maxLength={120}
@@ -223,9 +235,10 @@ const ContactSection = () => {
                 </div>
 
                 <div>
-                  <label className="text-xs font-mono font-medium text-foreground/70 mb-2 block uppercase tracking-wider">Reason</label>
+                  <label htmlFor="contact-reason" className="text-xs font-mono font-medium text-foreground/70 mb-2 block uppercase tracking-wider">Reason</label>
                   <div className="relative">
                     <select
+                      id="contact-reason"
                       disabled={isSubmitting}
                       value={form.reason}
                       onChange={(e) => setForm({ ...form, reason: e.target.value as ContactFormData["reason"] })}
@@ -244,8 +257,9 @@ const ContactSection = () => {
                 </div>
 
                 <div className="flex-1 flex flex-col min-h-[140px]">
-                  <label className="text-xs font-mono font-medium text-foreground/70 mb-2 block uppercase tracking-wider">Message</label>
+                  <label htmlFor="contact-message" className="text-xs font-mono font-medium text-foreground/70 mb-2 block uppercase tracking-wider">Message</label>
                   <textarea
+                    id="contact-message"
                     required
                     minLength={10}
                     maxLength={2000}

@@ -2,53 +2,31 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { personalInfo } from "@/data/portfolio";
 import { contactSchema } from "@/lib/contact";
+import { checkRateLimit, getClientKey, getRateLimitHeaders } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
 const RATE_LIMIT = 5;
 const WINDOW_MS = 10 * 60_000;
+const RESEND_TIMEOUT_MS = 15_000;
 
 const requestStore = new Map<string, { count: number; resetAt: number }>();
 
-function getClientKey(request: Request): string {
-  const forwardedFor = request.headers.get("x-forwarded-for") || "";
-  const firstIp = forwardedFor.split(",")[0]?.trim();
-  const realIp = request.headers.get("x-real-ip") || "";
-  const ip = firstIp || realIp || "unknown";
-  const userAgent = request.headers.get("user-agent") || "unknown";
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number) {
+  return new Promise<T>((resolve, reject) => {
+    const timeoutId = setTimeout(() => reject(new Error("Email request timed out.")), timeoutMs);
 
-  return `${ip}-${userAgent}`;
-}
-
-function checkRateLimit(request: Request): {
-  limited: boolean;
-  remaining: number;
-  retryAfter: number;
-} {
-  const clientKey = getClientKey(request);
-  const now = Date.now();
-  const entry = requestStore.get(clientKey);
-
-  if (!entry || now >= entry.resetAt) {
-    requestStore.set(clientKey, { count: 1, resetAt: now + WINDOW_MS });
-    return { limited: false, remaining: RATE_LIMIT - 1, retryAfter: 0 };
-  }
-
-  entry.count += 1;
-
-  if (entry.count > RATE_LIMIT) {
-    return {
-      limited: true,
-      remaining: 0,
-      retryAfter: Math.max(1, Math.ceil((entry.resetAt - now) / 1000)),
-    };
-  }
-
-  return {
-    limited: false,
-    remaining: RATE_LIMIT - entry.count,
-    retryAfter: 0,
-  };
+    promise.then(
+      (value) => {
+        clearTimeout(timeoutId);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timeoutId);
+        reject(error);
+      }
+    );
+  });
 }
 
 function escapeHtml(value: string) {
@@ -61,11 +39,11 @@ function escapeHtml(value: string) {
 }
 
 export async function POST(request: Request) {
-  const rateLimitResult = checkRateLimit(request);
-  const rateLimitHeaders = {
-    "X-RateLimit-Limit": String(RATE_LIMIT),
-    "X-RateLimit-Remaining": String(rateLimitResult.remaining),
-  };
+  const rateLimitResult = checkRateLimit(requestStore, getClientKey(request), {
+    limit: RATE_LIMIT,
+    windowMs: WINDOW_MS,
+  });
+  const rateLimitHeaders = getRateLimitHeaders(RATE_LIMIT, rateLimitResult.remaining);
 
   if (rateLimitResult.limited) {
     return NextResponse.json(
@@ -106,36 +84,39 @@ export async function POST(request: Request) {
     const { name, email, reason, message } = parsed.data;
     const safeMessage = escapeHtml(message).replace(/\n/g, "<br />");
 
-    const { data, error } = await resend.emails.send({
-      from: sender,
-      to: [recipient],
-      replyTo: email,
-      subject: `[Portfolio] ${reason} inquiry from ${name}`,
-      text: [
-        "New portfolio contact form submission",
-        "",
-        `Name: ${name}`,
-        `Email: ${email}`,
-        `Reason: ${reason}`,
-        "",
-        "Message:",
-        message,
-      ].join("\n"),
-      html: `
-        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827;">
-          <h2 style="margin-bottom: 16px;">New portfolio contact form submission</h2>
-          <p style="margin: 0 0 8px;"><strong>Name:</strong> ${escapeHtml(name)}</p>
-          <p style="margin: 0 0 8px;"><strong>Email:</strong> ${escapeHtml(email)}</p>
-          <p style="margin: 0 0 8px;"><strong>Reason:</strong> ${escapeHtml(reason)}</p>
-          <p style="margin: 24px 0 8px;"><strong>Message:</strong></p>
-          <div style="padding: 16px; border-radius: 12px; background: #f3f4f6;">${safeMessage}</div>
-        </div>
-      `,
-      tags: [
-        { name: "source", value: "portfolio_contact" },
-        { name: "channel", value: "website" },
-      ],
-    });
+    const { data, error } = await withTimeout(
+      resend.emails.send({
+        from: sender,
+        to: [recipient],
+        replyTo: email,
+        subject: `[Portfolio] ${reason} inquiry from ${name}`,
+        text: [
+          "New portfolio contact form submission",
+          "",
+          `Name: ${name}`,
+          `Email: ${email}`,
+          `Reason: ${reason}`,
+          "",
+          "Message:",
+          message,
+        ].join("\n"),
+        html: `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827;">
+            <h2 style="margin-bottom: 16px;">New portfolio contact form submission</h2>
+            <p style="margin: 0 0 8px;"><strong>Name:</strong> ${escapeHtml(name)}</p>
+            <p style="margin: 0 0 8px;"><strong>Email:</strong> ${escapeHtml(email)}</p>
+            <p style="margin: 0 0 8px;"><strong>Reason:</strong> ${escapeHtml(reason)}</p>
+            <p style="margin: 24px 0 8px;"><strong>Message:</strong></p>
+            <div style="padding: 16px; border-radius: 12px; background: #f3f4f6;">${safeMessage}</div>
+          </div>
+        `,
+        tags: [
+          { name: "source", value: "portfolio_contact" },
+          { name: "channel", value: "website" },
+        ],
+      }),
+      RESEND_TIMEOUT_MS
+    );
 
     if (error) {
       console.error("Resend contact email error:", error);

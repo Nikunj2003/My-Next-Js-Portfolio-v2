@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { AI_MODEL, SYSTEM_PROMPT, SUGGESTION_SYSTEM_PROMPT } from "@/lib/ai-config";
 import { CHAT_MEMORY_WINDOW, appendContextualLinks, findMatchingProjects, normalizeText } from "@/lib/ai-twin";
+import { checkRateLimit, getClientKey, getRateLimitHeaders } from "@/lib/rate-limit";
 
 interface Message {
   content: string;
   sender: "user" | "ai";
-}
-
-interface ChatRequest {
-  message: string;
-  conversationHistory?: Message[];
 }
 
 interface ChatCompletionMessageParam {
@@ -21,8 +18,22 @@ const RATE_LIMIT = 39;
 const WINDOW_MS = 60_000;
 const TARGET_SUGGESTION_COUNT = 4;
 const MAX_SUGGESTION_LENGTH = 44;
+const MAX_MESSAGE_LENGTH = 1200;
+const MAX_HISTORY_MESSAGE_LENGTH = 4000;
+const PRIMARY_RESPONSE_TIMEOUT_MS = 18_000;
+const SUGGESTION_TIMEOUT_MS = 10_000;
 
 const requestStore = new Map<string, { count: number; resetAt: number }>();
+
+const chatHistoryMessageSchema = z.object({
+  content: z.string().trim().min(1).max(MAX_HISTORY_MESSAGE_LENGTH),
+  sender: z.enum(["user", "ai"]),
+});
+
+const chatRequestSchema = z.object({
+  message: z.string().trim().min(1, "Message is required").max(MAX_MESSAGE_LENGTH),
+  conversationHistory: z.array(chatHistoryMessageSchema).max(CHAT_MEMORY_WINDOW).optional().default([]),
+});
 
 const categoryKeywords: Record<string, RegExp> = {
   experience: /(experience|role|intern|work|company|job|position|impact|responsibilit)/i,
@@ -195,46 +206,33 @@ function buildFallbackSuggestions(
   return suggestions.length > 0 ? suggestions : getDefaultSuggestions();
 }
 
-function getClientKey(request: Request): string {
-  const forwardedFor = request.headers.get("x-forwarded-for") || "";
-  const firstIp = forwardedFor.split(",")[0]?.trim();
-  const realIp = request.headers.get("x-real-ip") || "";
-  const ip = firstIp || realIp || "unknown";
-  const userAgent = request.headers.get("user-agent") || "unknown";
+async function postChatCompletion(
+  invokeUrl: string,
+  headers: Record<string, string>,
+  body: object,
+  timeoutMs: number
+) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  return `${ip}-${userAgent}`;
-}
-
-function checkRateLimit(request: Request): {
-  limited: boolean;
-  remaining: number;
-  retryAfter: number;
-} {
-  const clientKey = getClientKey(request);
-  const now = Date.now();
-  const entry = requestStore.get(clientKey);
-
-  if (!entry || now >= entry.resetAt) {
-    requestStore.set(clientKey, { count: 1, resetAt: now + WINDOW_MS });
-    return { limited: false, remaining: RATE_LIMIT - 1, retryAfter: 0 };
+  try {
+    return await fetch(invokeUrl, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  const nextCount = entry.count + 1;
-  entry.count = nextCount;
-
-  const limited = nextCount > RATE_LIMIT;
-  const remaining = limited ? 0 : RATE_LIMIT - nextCount;
-  const retryAfter = limited ? Math.max(1, Math.ceil((entry.resetAt - now) / 1000)) : 0;
-
-  return { limited, remaining, retryAfter };
 }
 
 export async function POST(request: Request) {
-  const rateLimitResult = checkRateLimit(request);
-  const rateLimitHeaders = {
-    "X-RateLimit-Limit": String(RATE_LIMIT),
-    "X-RateLimit-Remaining": String(rateLimitResult.remaining),
-  };
+  const rateLimitResult = checkRateLimit(requestStore, getClientKey(request), {
+    limit: RATE_LIMIT,
+    windowMs: WINDOW_MS,
+  });
+  const rateLimitHeaders = getRateLimitHeaders(RATE_LIMIT, rateLimitResult.remaining);
 
   if (rateLimitResult.limited) {
     return NextResponse.json(
@@ -250,17 +248,21 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body: ChatRequest = await request.json();
-    const { message, conversationHistory = [] } = body;
+    const parsedBody = chatRequestSchema.safeParse(await request.json());
 
-    if (!message || typeof message !== "string") {
-      return NextResponse.json({ error: "Message is required" }, { status: 400 });
+    if (!parsedBody.success) {
+      return NextResponse.json(
+        { error: parsedBody.error.issues[0]?.message || "Invalid chat request." },
+        { status: 400, headers: rateLimitHeaders }
+      );
     }
+
+    const { message, conversationHistory } = parsedBody.data;
 
     const apiKey = process.env.LLM_API_KEY;
     if (!apiKey) {
       console.warn("LLM API key not configured, returning fallback response");
-      return handleFallbackResponse(message);
+      return handleFallbackResponse(message, rateLimitHeaders);
     }
 
     const invokeUrl = process.env.LLM_BASE_URL || "https://integrate.api.nvidia.com/v1/chat/completions";
@@ -286,20 +288,21 @@ export async function POST(request: Request) {
     messages.push({ role: "user", content: message });
 
     // 1. Generate primary AI response
-    const response = await fetch(invokeUrl, {
-      method: "POST",
+    const response = await postChatCompletion(
+      invokeUrl,
       headers,
-      body: JSON.stringify({
+      {
         model: AI_MODEL,
         messages,
         top_p: 0.7,
         temperature: 0.7,
-      }),
-    });
+      },
+      PRIMARY_RESPONSE_TIMEOUT_MS
+    );
 
     if (!response.ok) {
       console.error("LLM API error:", await response.text());
-      return handleFallbackResponse(message);
+      return handleFallbackResponse(message, rateLimitHeaders);
     }
 
     const responseData = await response.json();
@@ -321,11 +324,11 @@ export async function POST(request: Request) {
     return NextResponse.json({
       response: appendContextualLinks(message, aiResponse),
       suggestions: followUpSuggestions.length > 0 ? followUpSuggestions : undefined,
-    });
+    }, { headers: rateLimitHeaders });
 
   } catch (error: unknown) {
     console.error("AI Response Error:", error);
-    return handleFallbackResponse("fallback");
+    return handleFallbackResponse("fallback", rateLimitHeaders);
   }
 }
 
@@ -386,16 +389,17 @@ Rules:
       },
     ];
 
-    const suggestionResp = await fetch(invokeUrl, {
-      method: "POST",
+    const suggestionResp = await postChatCompletion(
+      invokeUrl,
       headers,
-      body: JSON.stringify({
+      {
         model: AI_MODEL,
         messages: suggestionMessages,
         temperature: 0.7,
         top_p: 0.9,
-      }),
-    });
+      },
+      SUGGESTION_TIMEOUT_MS
+    );
 
     if (!suggestionResp.ok) {
       return buildFallbackSuggestions(currentMessage, aiResponse, recentMessages, priorUserTexts);
@@ -472,7 +476,7 @@ function getDefaultSuggestions() {
   ];
 }
 
-function handleFallbackResponse(message: string) {
+function handleFallbackResponse(message: string, headers?: HeadersInit) {
   const lowercaseMsg = message.toLowerCase();
 
   if (lowercaseMsg.includes("contact") || lowercaseMsg.includes("email")) {
@@ -482,7 +486,7 @@ function handleFallbackResponse(message: string) {
         `# Contact Nikunj Khitha\n\nYou can connect with Nikunj through various channels:\n\n## 📧 **Email**\n[njkhitha2003@gmail.com](mailto:njkhitha2003@gmail.com)\n\n## 💼 **LinkedIn**\n[Connect on LinkedIn](https://www.linkedin.com/in/nikunj-khitha)\n\n## 🐙 **GitHub**\n[View Projects on GitHub](https://github.com/Nikunj2003)\n\n---\n\n> **Currently:** Associate Engineer (Platform & GenAI) at ArmorCode\n> \n> Feel free to reach out for collaborations, job opportunities, or tech discussions!`
       ),
       suggestions: ["Which project should I open first?", "Could you share a standout repo?"]
-    });
+    }, { headers });
   }
 
   if (lowercaseMsg.includes("experience") || lowercaseMsg.includes("work")) {
@@ -492,7 +496,7 @@ function handleFallbackResponse(message: string) {
         `# Nikunj's Professional Experience\n\n## 🚀 **Associate Engineer at ArmorCode**\n*Jan 2025 - Present*\n- Architected "Nexus", a hybrid GraphRAG engine.\n- Contributed to "Anya" an autonomous security agent.\n- Developed MCP servers in n8n/Go/Python.\n\n## 🤖 **SDE Intern at Xansr Media (Aiko)**\n*Jun 2024 - Dec 2024*\n- Built scalable backend for AIKO voice assistant with 96% accuracy.\n- Engineered ETL pipelines with Azure AI.\n- Developed Fantasy GPT (LangGraph + SQL RAG).\n\n> Would you like to know more about a specific role?`
       ),
       suggestions: ["What impact are you driving at ArmorCode?", "Which project best shows your strengths?"]
-    });
+    }, { headers });
   }
 
   return NextResponse.json({
@@ -501,5 +505,5 @@ function handleFallbackResponse(message: string) {
       `# Welcome! I'm the AI Twin for Nikunj Khitha\n\nI'm currently running in an offline or limited capacity, but I can still tell you about Nikunj!\n\n## What would you like to know?\n\n- **Current Role**: Associate Engineer (Platform & GenAI) at ArmorCode\n- **Tech Stack**: GraphRAG, LangGraph, Python, MS+Java, TypeScript\n- **Experience**: Built multi-agent platforms and unified AI gateways\n\n> Ask me about Nikunj's projects, experience, or contact information!`
     ),
     suggestions: ["What GenAI work are you doing right now?", "Could you share a standout repo?"]
-  });
+  }, { headers });
 }

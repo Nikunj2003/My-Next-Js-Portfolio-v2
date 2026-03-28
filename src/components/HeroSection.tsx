@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import { useEffect, useState, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { ArrowDown, MessageCircle, Download } from "lucide-react";
 import { personalInfo, stats } from "@/data/portfolio";
 import Card3D from "./Card3D";
@@ -11,28 +11,43 @@ const AnimatedCounter = ({ value, suffix }: { value: number; suffix: string }) =
   const [count, setCount] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
   const started = useRef(false);
+  const frameRef = useRef<number | null>(null);
+  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !started.current) {
           started.current = true;
+
+          if (shouldReduceMotion) {
+            setCount(value);
+            return;
+          }
+
           const duration = 1200;
           const start = performance.now();
           const step = (now: number) => {
             const progress = Math.min((now - start) / duration, 1);
             const eased = 1 - Math.pow(1 - progress, 3);
             setCount(Math.round(eased * value));
-            if (progress < 1) requestAnimationFrame(step);
+            if (progress < 1) {
+              frameRef.current = window.requestAnimationFrame(step);
+            }
           };
-          requestAnimationFrame(step);
+          frameRef.current = window.requestAnimationFrame(step);
         }
       },
       { threshold: 0.5 }
     );
     if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [value]);
+    return () => {
+      observer.disconnect();
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current);
+      }
+    };
+  }, [shouldReduceMotion, value]);
 
   return (
     <span ref={ref} className="tabular-nums">
@@ -41,19 +56,35 @@ const AnimatedCounter = ({ value, suffix }: { value: number; suffix: string }) =
   );
 };
 
-const container = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.12, delayChildren: 0.3 } },
-};
-
-const item = {
-  hidden: { opacity: 0, y: 24, filter: "blur(4px)" },
-  show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] as const } },
-};
-
 const HeroSection = () => {
+  const shouldReduceMotion = useReducedMotion();
+
+  const container = {
+    hidden: {},
+    show: {
+      transition: shouldReduceMotion
+        ? { staggerChildren: 0.04, delayChildren: 0.1 }
+        : { staggerChildren: 0.12, delayChildren: 0.3 },
+    },
+  };
+
+  const item = {
+    hidden: shouldReduceMotion
+      ? { opacity: 0 }
+      : { opacity: 0, y: 24, filter: "blur(4px)" },
+    show: {
+      opacity: 1,
+      y: 0,
+      filter: "blur(0px)",
+      transition: {
+        duration: shouldReduceMotion ? 0.2 : 0.7,
+        ease: [0.16, 1, 0.3, 1] as const,
+      },
+    },
+  };
+
   return (
-    <section className="relative min-h-screen flex items-center pt-20 overflow-hidden">
+    <section id="hero" className="relative min-h-screen flex items-center pt-20 overflow-hidden">
       {/* Subtle background grid & Animated Glow Orb */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
         backgroundImage: "radial-gradient(hsl(var(--accent)) 1px, transparent 1px)",
@@ -61,8 +92,8 @@ const HeroSection = () => {
       }} />
       
       {/* Massive Glowing Animated Orbs */}
-      <div className="absolute top-1/4 -right-1/4 w-[800px] h-[800px] rounded-full animate-[pulse_8s_ease-in-out_infinite] opacity-50 pointer-events-none bg-[radial-gradient(circle,hsl(var(--primary)/0.2)_0%,transparent_70%)]" />
-      <div className="absolute bottom-0 -left-1/4 w-[600px] h-[600px] rounded-full animate-[pulse_10s_ease-in-out_infinite_reverse] opacity-40 pointer-events-none bg-[radial-gradient(circle,hsl(var(--accent)/0.2)_0%,transparent_70%)]" />
+      <div className="absolute top-1/4 -right-1/4 w-[800px] h-[800px] rounded-full animate-[pulse_8s_ease-in-out_infinite] motion-reduce:animate-none opacity-50 pointer-events-none bg-[radial-gradient(circle,hsl(var(--primary)/0.2)_0%,transparent_70%)]" />
+      <div className="absolute bottom-0 -left-1/4 w-[600px] h-[600px] rounded-full animate-[pulse_10s_ease-in-out_infinite_reverse] motion-reduce:animate-none opacity-40 pointer-events-none bg-[radial-gradient(circle,hsl(var(--accent)/0.2)_0%,transparent_70%)]" />
       
       {/* Smooth fade into the next section */}
       <div className="absolute bottom-0 inset-x-0 h-32 sm:h-64 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none z-0" />
@@ -74,7 +105,7 @@ const HeroSection = () => {
           <motion.div variants={container} initial="hidden" animate="show" className="flex flex-col gap-8 lg:col-span-7">
             <motion.div variants={item}>
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono font-bold glass-subtle border border-primary/20 text-primary tracking-wide shadow-[0_0_15px_rgba(41,214,185,0.15)]">
-                <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-primary animate-pulse motion-reduce:animate-none" />
                 Available for New Opportunities
               </span>
             </motion.div>
@@ -132,18 +163,19 @@ const HeroSection = () => {
 
           {/* Right - 3D Card wrapped in a delicate glow */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1.2, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: shouldReduceMotion ? 0.2 : 1.2, delay: shouldReduceMotion ? 0 : 0.4, ease: [0.16, 1, 0.3, 1] }}
             className="hidden lg:flex justify-end lg:col-span-5 relative"
           >
              <div className="absolute inset-0 bg-[radial-gradient(circle,hsl(var(--primary)/0.15)_0%,transparent_70%)] rounded-full scale-150" />
              <div className="relative z-10 w-full max-w-[500px] xl:max-w-[600px] lg:scale-110 xl:scale-125 lg:origin-right lg:translate-x-4 xl:translate-x-12">
               <Card3D className="w-full">
                   <Image
-                    src={cardImage}
-                    alt="Nikunj Khitha — Business Card"
-                    className="w-full h-auto rounded-3xl border border-white/10 shadow-2xl shadow-black/80 pointer-events-none select-none"
+                     src={cardImage}
+                     alt=""
+                     aria-hidden="true"
+                     className="w-full h-auto rounded-3xl border border-white/10 shadow-2xl shadow-black/80 pointer-events-none select-none"
                     draggable={false}
                     priority
                     sizes="(min-width: 1280px) 600px, (min-width: 1024px) 500px, 100vw"

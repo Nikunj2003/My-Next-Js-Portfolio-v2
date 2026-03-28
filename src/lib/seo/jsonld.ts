@@ -2,6 +2,7 @@ import { about, personalInfo, projects } from "@/data/portfolio";
 import { siteConfig } from "./site";
 
 const websiteId = `${siteConfig.siteUrl}#website`;
+const webpageId = `${siteConfig.siteUrl}#webpage`;
 const personId = `${siteConfig.siteUrl}#person`;
 const projectListId = `${siteConfig.siteUrl}#projects`;
 
@@ -22,6 +23,28 @@ export function getWebsiteSchema(): JsonLd {
     about: {
       "@id": personId,
     },
+  };
+}
+
+export function getWebPageSchema(): JsonLd {
+  return {
+    "@type": "WebPage",
+    "@id": webpageId,
+    url: siteConfig.homeUrl,
+    name: siteConfig.title,
+    description: siteConfig.description,
+    isPartOf: {
+      "@id": websiteId,
+    },
+    about: {
+      "@id": personId,
+    },
+    primaryImageOfPage: {
+      "@type": "ImageObject",
+      url: `${siteConfig.siteUrl}${siteConfig.ogImage}`,
+    },
+    inLanguage: siteConfig.locale,
+    dateModified: siteConfig.updatedAt,
   };
 }
 
@@ -70,6 +93,6 @@ export function getProjectsItemListSchema(): JsonLd {
 export function getPortfolioGraph(): JsonLd {
   return {
     "@context": "https://schema.org",
-    "@graph": [getWebsiteSchema(), getPersonSchema(), getProjectsItemListSchema()],
+    "@graph": [getWebsiteSchema(), getWebPageSchema(), getPersonSchema(), getProjectsItemListSchema()],
   };
 }

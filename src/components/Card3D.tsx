@@ -1,5 +1,5 @@
-import { useEffect, useRef, type PointerEvent } from "react";
-import { useMotionValue, useSpring, useTransform, motion } from "framer-motion";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { motion, useMotionTemplate, useMotionValue, useReducedMotion, useSpring, useTransform } from "framer-motion";
 
 interface Card3DProps {
   children: React.ReactNode;
@@ -13,6 +13,8 @@ const Card3D = ({ children, className = "" }: Card3DProps) => {
   const boundsRef = useRef<DOMRect | null>(null);
   const pointRef = useRef<{ x: number; y: number } | null>(null);
   const frameRef = useRef<number | null>(null);
+  const [isInteractive, setIsInteractive] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
 
   const mouseXSpring = useSpring(x, { stiffness: 300, damping: 30 });
   const mouseYSpring = useSpring(y, { stiffness: 300, damping: 30 });
@@ -23,6 +25,8 @@ const Card3D = ({ children, className = "" }: Card3DProps) => {
   const glareOpacity = useTransform(mouseXSpring, (v) => Math.abs(v) + Math.abs(y.get()));
   const glareX = useTransform(mouseXSpring, [-0.5, 0.5], ["0%", "100%"]);
   const glareY = useTransform(mouseYSpring, [-0.5, 0.5], ["0%", "100%"]);
+  const glareBackground = useMotionTemplate`radial-gradient(circle at ${glareX} ${glareY}, rgba(255,255,255,0.4) 0%, transparent 60%)`;
+  const glareVisibility = useTransform(glareOpacity, (v) => Math.min(v * 1.5, 1));
 
   useEffect(() => {
     return () => {
@@ -31,6 +35,23 @@ const Card3D = ({ children, className = "" }: Card3DProps) => {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (shouldReduceMotion) {
+      setIsInteractive(false);
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const updateInteractivity = (event?: MediaQueryListEvent) => {
+      setIsInteractive(event ? event.matches : mediaQuery.matches);
+    };
+
+    updateInteractivity();
+    mediaQuery.addEventListener("change", updateInteractivity);
+
+    return () => mediaQuery.removeEventListener("change", updateInteractivity);
+  }, [shouldReduceMotion]);
 
   const flushPointerPosition = () => {
     frameRef.current = null;
@@ -87,32 +108,29 @@ const Card3D = ({ children, className = "" }: Card3DProps) => {
   return (
     <motion.div
       className={`relative ${className}`}
-      initial={{ opacity: 0, scale: 0.95 }}
+      initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 1.0, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: shouldReduceMotion ? 0.2 : 1.0, delay: shouldReduceMotion ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
       style={{ perspective: 1000 }}
-      >
-        <motion.div
-        onPointerEnter={handlePointerEnter}
-        onPointerMove={handlePointerMove}
-        onPointerLeave={handlePointerLeave}
+    >
+      <motion.div
+        onPointerEnter={isInteractive ? handlePointerEnter : undefined}
+        onPointerMove={isInteractive ? handlePointerMove : undefined}
+        onPointerLeave={isInteractive ? handlePointerLeave : undefined}
         className="relative rounded-2xl overflow-hidden shadow-2xl shadow-accent/10 will-change-transform"
-        style={{ 
-          rotateX, 
-          rotateY, 
-          transformStyle: "preserve-3d" 
+        style={{
+          rotateX: isInteractive ? rotateX : "0deg",
+          rotateY: isInteractive ? rotateY : "0deg",
+          transformStyle: "preserve-3d"
         }}
-        whileHover={{ scale: 1.02 }}
+        whileHover={isInteractive ? { scale: 1.02 } : undefined}
       >
         {children}
         <motion.div
           className="absolute inset-0 pointer-events-none rounded-2xl z-20"
           style={{
-            background: useTransform(
-              [glareX, glareY],
-              ([gx, gy]) => `radial-gradient(circle at ${gx} ${gy}, rgba(255,255,255,0.4) 0%, transparent 60%)`
-            ),
-            opacity: useTransform(glareOpacity, (v) => Math.min(v * 1.5, 1)),
+            background: glareBackground,
+            opacity: isInteractive ? glareVisibility : 0,
           }}
         />
       </motion.div>

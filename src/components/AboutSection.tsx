@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { about } from "@/data/portfolio";
 import logo from "@/assets/logo.png";
@@ -9,6 +9,7 @@ import { SpotlightCard } from "@/components/ui/spotlight-card";
 
 const AboutSection = () => {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
+  const shouldReduceMotion = useReducedMotion();
 
   return (
     <section id="about" className="section-padding relative z-10">
@@ -18,14 +19,14 @@ const AboutSection = () => {
           {/* Left Column: Sticky Header */}
           <div className="lg:w-1/3 lg:sticky lg:top-32 shrink-0">
             <motion.div
-              initial={{ opacity: 0, x: -30 }}
+              initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: -30 }}
               animate={inView ? { opacity: 1, x: 0 } : {}}
-              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: shouldReduceMotion ? 0.2 : 0.7, ease: [0.16, 1, 0.3, 1] }}
             >
               <div className="flex items-center gap-3 mb-6">
                 <div className="relative">
                   <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
-                  <Image src={logo} alt="NK" className="w-12 h-12 opacity-80 relative z-10 pointer-events-none" draggable={false} />
+                  <Image src={logo} alt="" aria-hidden="true" className="w-12 h-12 opacity-80 relative z-10 pointer-events-none" draggable={false} />
                 </div>
                 <div className="inline-flex items-center px-3 py-1.5 rounded-full glass-subtle border border-primary/20 text-xs font-mono text-primary">
                   Profile
@@ -41,9 +42,9 @@ const AboutSection = () => {
           {/* Right Column: Content */}
           <div className="lg:w-2/3 flex flex-col gap-10">
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
+              initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 30 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.7, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: shouldReduceMotion ? 0.2 : 0.7, delay: shouldReduceMotion ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
               className="prose prose-invert prose-lg max-w-none text-muted-foreground leading-relaxed"
             >
               <p className="text-xl sm:text-2xl font-medium text-foreground tracking-tight leading-snug mb-6" style={{ textWrap: "pretty" }}>

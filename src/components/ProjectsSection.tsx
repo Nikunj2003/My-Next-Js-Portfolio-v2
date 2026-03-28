@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { ExternalLink, Github } from "lucide-react";
 import { projects, type Project } from "@/data/portfolio";
@@ -37,7 +37,7 @@ function ProjectPreviewImage({ src, alt, priority = false }: { src: string; alt:
   );
 }
 
-function ProjectShowcase({ project }: { project: Project }) {
+function ProjectShowcase({ project, priority }: { project: Project; priority: boolean }) {
   const [mediaRef, mediaInView] = useInView({ triggerOnce: true, threshold: 0, rootMargin: "600px 0px" });
 
   return (
@@ -53,12 +53,12 @@ function ProjectShowcase({ project }: { project: Project }) {
                   <ProjectPreviewImage
                     src={img}
                     alt={`${project.title} screenshot ${idx + 1}`}
-                    priority={idx === 0}
+                    priority={priority && idx === 0}
                   />
                 </CarouselItem>
               ))}
             </CarouselContent>
-            <div className="opacity-0 group-hover/img:opacity-100 transition-opacity duration-300">
+            <div className="opacity-100 lg:opacity-0 lg:group-hover/img:opacity-100 lg:group-focus-within/img:opacity-100 transition-opacity duration-300">
               <CarouselPrevious className="left-4 bg-background/80 hover:bg-background border-none w-10 h-10 flex items-center justify-center text-foreground hover:text-primary transition-colors z-20 shadow-xl" />
               <CarouselNext className="right-4 bg-background/80 hover:bg-background border-none w-10 h-10 flex items-center justify-center text-foreground hover:text-primary transition-colors z-20 shadow-xl" />
             </div>
@@ -80,6 +80,7 @@ function ProjectShowcase({ project }: { project: Project }) {
 const ProjectsSection = () => {
   const [filter, setFilter] = useState("All");
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
+  const shouldReduceMotion = useReducedMotion();
 
   const filtered = filter === "All" ? projects : projects.filter((p) => p.category === filter);
 
@@ -88,9 +89,9 @@ const ProjectsSection = () => {
       <div className="container-narrow" ref={ref}>
         {/* Centered Header */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 20 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: shouldReduceMotion ? 0.2 : 0.7, ease: [0.16, 1, 0.3, 1] }}
           className="text-center mb-16 flex flex-col items-center"
         >
           <div className="inline-flex items-center px-3 py-1.5 rounded-full glass-subtle border border-primary/20 text-xs font-mono text-primary mb-6">
@@ -127,7 +128,7 @@ const ProjectsSection = () => {
             const isEven = i % 2 === 0;
             return (
               <div
-                key={project.title}
+                key={project.slug}
                 id={`${PROJECT_ANCHOR_PREFIX}${project.slug}`}
                 data-project-slug={project.slug}
                 className="scroll-mt-28 w-full static lg:sticky"
@@ -187,7 +188,7 @@ const ProjectsSection = () => {
                     </div>
 
                     {/* Image / Carousel Showcase Section */}
-                    <ProjectShowcase project={project} />
+                    <ProjectShowcase project={project} priority={i === 0} />
 
                   </div>
                 </SpotlightCard>
@@ -198,9 +199,9 @@ const ProjectsSection = () => {
 
         {/* View more on GitHub */}
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.5 }}
+          transition={shouldReduceMotion ? { duration: 0.2 } : { delay: 0.5 }}
           className="flex justify-center mt-12"
         >
           <a

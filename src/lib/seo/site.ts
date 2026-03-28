@@ -6,6 +6,7 @@ export const siteConfig = {
   siteUrl,
   homeUrl: `${siteUrl}/`,
   resumeUrl: `${siteUrl}${personalInfo.resumeUrl}`,
+  updatedAt: "2026-03-28T00:00:00.000Z",
   siteName: "Nikunj Khitha Portfolio",
   title: `${personalInfo.name} — Full Stack GenAI Developer`,
   description: personalInfo.tagline,
@@ -42,4 +43,4 @@ export const siteConfig = {
   aboutSummary: about.summary,
 } as const;
 
-export const canonicalPages = [siteConfig.homeUrl, siteConfig.resumeUrl] as const;
+export const canonicalPages = [siteConfig.homeUrl] as const;

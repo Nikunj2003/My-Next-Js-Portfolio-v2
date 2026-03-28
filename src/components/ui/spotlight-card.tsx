@@ -1,5 +1,5 @@
 "use client";
-import { motion, useMotionTemplate, useMotionValue } from "framer-motion";
+import { motion, useMotionTemplate, useMotionValue, useReducedMotion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { type PointerEvent, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -26,11 +26,20 @@ export function SpotlightCard({
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const [isHovered, setIsHovered] = useState(false);
+  const [isInteractive, setIsInteractive] = useState(false);
   const elementRef = useRef<HTMLDivElement | null>(null);
   const boundsRef = useRef<DOMRect | null>(null);
   const pointRef = useRef<{ x: number; y: number } | null>(null);
   const frameRef = useRef<number | null>(null);
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0, rootMargin: '100px 0px 100px 0px' });
+  const shouldReduceMotion = useReducedMotion();
+  const spotlightBackground = useMotionTemplate`
+    radial-gradient(
+      ${glowSize}px circle at ${mouseX}px ${mouseY}px,
+      ${glowColor},
+      transparent 80%
+    )
+  `;
 
   useEffect(() => {
     return () => {
@@ -39,6 +48,23 @@ export function SpotlightCard({
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (shouldReduceMotion) {
+      setIsInteractive(false);
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const updateInteractivity = (event?: MediaQueryListEvent) => {
+      setIsInteractive(event ? event.matches : mediaQuery.matches);
+    };
+
+    updateInteractivity();
+    mediaQuery.addEventListener("change", updateInteractivity);
+
+    return () => mediaQuery.removeEventListener("change", updateInteractivity);
+  }, [shouldReduceMotion]);
 
   function flushPointerPosition() {
     frameRef.current = null;
@@ -52,6 +78,7 @@ export function SpotlightCard({
   }
 
   function handlePointerEnter({ currentTarget, clientX, clientY }: PointerEvent<HTMLDivElement>) {
+    if (!isInteractive) return;
     elementRef.current = currentTarget;
     boundsRef.current = currentTarget.getBoundingClientRect();
     pointRef.current = { x: clientX, y: clientY };
@@ -61,6 +88,7 @@ export function SpotlightCard({
   }
 
   function handlePointerMove({ currentTarget, clientX, clientY }: PointerEvent<HTMLDivElement>) {
+    if (!isInteractive) return;
     elementRef.current = currentTarget;
     if (!boundsRef.current) {
       boundsRef.current = currentTarget.getBoundingClientRect();
@@ -74,6 +102,7 @@ export function SpotlightCard({
   }
 
   function handlePointerLeave() {
+    if (!isInteractive) return;
     if (frameRef.current !== null) {
       window.cancelAnimationFrame(frameRef.current);
       frameRef.current = null;
@@ -85,15 +114,23 @@ export function SpotlightCard({
     setIsHovered(false);
   }
 
+  const setRefs = (node: HTMLDivElement | null) => {
+    elementRef.current = node;
+
+    if (animateOnEnter) {
+      ref(node);
+    }
+  };
+
   return (
     <motion.div
-      ref={animateOnEnter ? ref : undefined}
-      initial={animateOnEnter ? { y: 30 } : false}
+      ref={setRefs}
+      initial={animateOnEnter ? (shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 30 }) : false}
       animate={animateOnEnter ? (inView ? { opacity: 1, y: 0 } : {}) : undefined}
-      transition={animateOnEnter ? { duration: 0.4, delay: Math.min(delay, 0.2), ease: [0.16, 1, 0.3, 1] } : undefined}
-      onPointerEnter={handlePointerEnter}
-      onPointerMove={handlePointerMove}
-      onPointerLeave={handlePointerLeave}
+      transition={animateOnEnter ? { duration: shouldReduceMotion ? 0.2 : 0.4, delay: shouldReduceMotion ? 0 : Math.min(delay, 0.2), ease: [0.16, 1, 0.3, 1] } : undefined}
+      onPointerEnter={isInteractive ? handlePointerEnter : undefined}
+      onPointerMove={isInteractive ? handlePointerMove : undefined}
+      onPointerLeave={isInteractive ? handlePointerLeave : undefined}
       className={cn(
         "group relative rounded-3xl border border-border/60 bg-background/55 dark:bg-background/55 backdrop-blur-[22px] backdrop-saturate-150 overflow-hidden",
         className
@@ -102,16 +139,10 @@ export function SpotlightCard({
       {/* Spotlight hover effect */}
       <motion.div
         className="pointer-events-none absolute -inset-px rounded-3xl"
-        animate={{ opacity: isHovered ? glowOpacity / 100 : 0 }}
-        transition={{ duration: 0.5 }}
+        animate={{ opacity: isInteractive && isHovered ? glowOpacity / 100 : 0 }}
+        transition={{ duration: shouldReduceMotion ? 0.2 : 0.5 }}
         style={{
-          background: useMotionTemplate`
-            radial-gradient(
-              ${glowSize}px circle at ${mouseX}px ${mouseY}px,
-              ${glowColor},
-              transparent 80%
-            )
-          `,
+          background: spotlightBackground,
         }}
       />
       

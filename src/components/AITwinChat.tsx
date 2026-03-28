@@ -1,11 +1,12 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { MessageCircle, X, Send, Bot, User, Trash2 } from "lucide-react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { chatSuggestions } from "@/data/portfolio";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { scrollToHash } from "@/lib/scroll";
 import { cn } from "@/lib/utils";
 import { CHAT_MEMORY_WINDOW, CHAT_STORAGE_KEY, WELCOME_MESSAGE } from "@/lib/ai-twin";
 
@@ -16,14 +17,17 @@ interface Message {
   suggestions?: string[];
 }
 
-type LenisWindow = Window & typeof globalThis & {
-  __lenis?: {
-    scrollTo: (target: number | string | HTMLElement, options?: { offset?: number }) => void;
-  };
-};
-
 const WELCOME = WELCOME_MESSAGE;
 const INITIAL_MESSAGES: Message[] = [{ id: "welcome", role: "assistant", content: WELCOME }];
+const FOCUSABLE_SELECTOR = 'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function createMessageId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
 
 function sanitizeStoredMessages(value: unknown): Message[] {
   if (!Array.isArray(value)) return INITIAL_MESSAGES;
@@ -60,8 +64,13 @@ const AITwinChat = () => {
   const pendingUserMessageIdRef = useRef<string | null>(null);
   const isSendingRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const launcherButtonRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
+  const wasOpenRef = useRef(false);
   const handleSendRef = useRef<(text?: string) => Promise<void>>(async () => {});
   const isMobile = useIsMobile();
+  const shouldReduceMotion = useReducedMotion();
 
   const getConversationHistory = useCallback(
     (sourceMessages: Message[]) =>
@@ -106,27 +115,16 @@ const AITwinChat = () => {
   const navigateToSection = useCallback(
     (href: string) => {
       const performScroll = () => {
-        const target = document.querySelector(href);
-        if (!(target instanceof HTMLElement)) return;
-
-        const lenis = (window as LenisWindow).__lenis;
-        if (lenis) {
-          lenis.scrollTo(target, { offset: -85 });
-        } else {
-          const top = target.getBoundingClientRect().top + window.scrollY - 85;
-          window.scrollTo({ top, behavior: "smooth" });
-        }
-
-        window.history.pushState(null, "", href);
+        scrollToHash(href);
       };
 
       if (isMobile) {
         setIsOpen(false);
       }
 
-      window.setTimeout(performScroll, isMobile ? 180 : 0);
+      window.setTimeout(performScroll, isMobile && !shouldReduceMotion ? 180 : 0);
     },
-    [isMobile]
+    [isMobile, shouldReduceMotion]
   );
 
   const markdownComponents = useMemo<Components>(
@@ -217,19 +215,45 @@ const AITwinChat = () => {
     // If we have a pending user message, anchor to it when response arrives
     if (pendingUserMessageIdRef.current && !isLoading) {
       const userMsgEl = scrollRef.current.querySelector(`[data-message-id="${pendingUserMessageIdRef.current}"]`) as HTMLElement;
-      if (userMsgEl) {
-        scrollRef.current.scrollTo({
-          top: userMsgEl.offsetTop - 16,
-          behavior: "smooth"
-        });
-        pendingUserMessageIdRef.current = null;
-        return;
+        if (userMsgEl) {
+          scrollRef.current.scrollTo({
+            top: userMsgEl.offsetTop - 16,
+            behavior: shouldReduceMotion ? "auto" : "smooth"
+          });
+          pendingUserMessageIdRef.current = null;
+          return;
       }
     }
 
     // Default: scroll to bottom
     scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages, isLoading]);
+  }, [isLoading, messages, shouldReduceMotion]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      if (wasOpenRef.current) {
+        const focusTarget = restoreFocusRef.current ?? launcherButtonRef.current;
+        if (focusTarget && document.contains(focusTarget)) {
+          focusTarget.focus();
+        }
+      }
+
+      wasOpenRef.current = false;
+      return;
+    }
+
+    wasOpenRef.current = true;
+    const activeElement = document.activeElement;
+    if (activeElement instanceof HTMLElement && activeElement !== document.body) {
+      restoreFocusRef.current = activeElement;
+    }
+
+    const focusTimer = window.setTimeout(() => {
+      inputRef.current?.focus();
+    }, isMobile && !shouldReduceMotion ? 220 : 40);
+
+    return () => window.clearTimeout(focusTimer);
+  }, [isMobile, isOpen, shouldReduceMotion]);
 
   useEffect(() => {
     if (!isOpen || !isMobile) return;
@@ -246,12 +270,47 @@ const AITwinChat = () => {
     };
   }, [isOpen, isMobile]);
 
+  useEffect(() => {
+    if (!isOpen || !isMobile || !dialogRef.current) return;
+
+    const dialogNode = dialogRef.current;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setIsOpen(false);
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+
+      const focusable = Array.from(dialogNode.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isMobile, isOpen]);
+
   const handleSend = useCallback(async (text?: string) => {
     const msg = text || input.trim();
     if (!msg || isSendingRef.current) return;
 
     isSendingRef.current = true;
-    const userMsgId = Date.now().toString();
+    const userMsgId = createMessageId();
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 20000);
     setInput("");
     setMessages((prev) => [...prev, { id: userMsgId, role: "user", content: msg }]);
     pendingUserMessageIdRef.current = userMsgId;
@@ -265,6 +324,7 @@ const AITwinChat = () => {
           message: msg,
           conversationHistory: getConversationHistory(messages)
         }),
+        signal: controller.signal,
       });
 
       if (!response.ok) throw new Error("API call failed");
@@ -274,7 +334,7 @@ const AITwinChat = () => {
       setMessages((prev) => [
         ...prev,
         {
-          id: (Date.now() + 1).toString(),
+          id: createMessageId(),
           role: "assistant",
           content: data.response,
           suggestions: data.suggestions
@@ -285,12 +345,16 @@ const AITwinChat = () => {
       setMessages((prev) => [
         ...prev,
         {
-          id: (Date.now() + 1).toString(),
+          id: createMessageId(),
           role: "assistant",
-          content: "I'm having trouble connecting to my brain right now. Please try again or reach out to Nikunj directly via email!"
+          content:
+            error instanceof DOMException && error.name === "AbortError"
+              ? "I'm taking longer than expected to respond right now. Please try again in a moment or reach out to Nikunj directly via email."
+              : "I'm having trouble connecting to my brain right now. Please try again or reach out to Nikunj directly via email!"
         },
       ]);
     } finally {
+      window.clearTimeout(timeoutId);
       isSendingRef.current = false;
       setIsLoading(false);
     }
@@ -325,7 +389,12 @@ const AITwinChat = () => {
   const clearChat = () => {
     setMessages(INITIAL_MESSAGES);
     pendingUserMessageIdRef.current = null;
-    window.localStorage.removeItem(CHAT_STORAGE_KEY);
+
+    try {
+      window.localStorage.removeItem(CHAT_STORAGE_KEY);
+    } catch (error) {
+      console.warn("Failed to clear AI Twin chat history:", error);
+    }
   };
 
   // Shared render function for ChatContent (prevents unmount/remount on every keystroke)
@@ -341,24 +410,28 @@ const AITwinChat = () => {
             <Bot className="w-4 h-4 text-primary" />
           </div>
           <div>
-            <p className="text-sm font-semibold">Nikunj&apos;s AI Twin</p>
+            <p id="ai-twin-title" className="text-sm font-semibold">Nikunj&apos;s AI Twin</p>
             <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Assistant Online</p>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse motion-reduce:animate-none" />
+              <p id="ai-twin-status" className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Assistant Online</p>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-1">
           <button
+            type="button"
             onClick={clearChat}
             className="p-2 transition-colors hover:bg-muted rounded-full"
             title="Clear chat"
+            aria-label="Clear chat history"
           >
             <Trash2 className="w-4 h-4 text-muted-foreground" />
           </button>
           <button
+            type="button"
             onClick={() => setIsOpen(false)}
             className="p-2 transition-colors hover:bg-muted rounded-full"
+            aria-label="Close AI chat"
           >
             <X className="w-4 h-4 text-muted-foreground" />
           </button>
@@ -371,6 +444,9 @@ const AITwinChat = () => {
         data-lenis-prevent
         onWheelCapture={(e) => e.stopPropagation()}
         onTouchMoveCapture={(e) => e.stopPropagation()}
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions text"
         className={cn(
           "flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain space-y-6 scrollbar-thin scrollbar-thumb-primary/10 hover:scrollbar-thumb-primary/20",
           isMobile ? "px-3 py-4" : "px-4 py-6"
@@ -380,7 +456,7 @@ const AITwinChat = () => {
           <div key={msg.id} className="space-y-4">
             <motion.div
               data-message-id={msg.id}
-              initial={{ opacity: 0, y: 10 }}
+              initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : "justify-start"}`}
             >
@@ -410,12 +486,13 @@ const AITwinChat = () => {
             {msg.role === "assistant" && msg.suggestions && msg.suggestions.length > 0 && (
               <motion.div
                 className="mt-3 flex flex-wrap gap-2 pl-11"
-                initial={{ opacity: 0, y: 8 }}
+                initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.55, duration: 0.3 }}
+                transition={{ delay: shouldReduceMotion ? 0 : 0.55, duration: shouldReduceMotion ? 0.2 : 0.3 }}
               >
                 {msg.suggestions.map((s, i) => (
                   <button
+                    type="button"
                     key={i}
                     onClick={() => handleSuggestionClick(s)}
                     onDoubleClick={() => handleSuggestionDoubleClick(s)}
@@ -450,9 +527,9 @@ const AITwinChat = () => {
               <Bot className="w-4 h-4 text-primary" />
             </div>
             <div className="bg-muted/50 dark:bg-muted/20 border border-border/20 px-4 py-3 rounded-2xl rounded-tl-none flex gap-1.5 items-center shadow-sm">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.3s]" />
-              <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.15s]" />
-              <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce" />
+              <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce motion-reduce:animate-none [animation-delay:-0.3s]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce motion-reduce:animate-none [animation-delay:-0.15s]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce motion-reduce:animate-none" />
             </div>
           </div>
         )}
@@ -469,11 +546,12 @@ const AITwinChat = () => {
         {messages.length <= 1 && !isLoading && (
           <motion.div
             className="mb-4 flex flex-wrap gap-2"
-            initial={{ opacity: 0, y: 10 }}
+            initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
           >
             {chatSuggestions.map((s) => (
               <button
+                type="button"
                 key={s}
                 onClick={() => handleSuggestionClick(s)}
                 onDoubleClick={() => handleSuggestionDoubleClick(s)}
@@ -493,12 +571,16 @@ const AITwinChat = () => {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
             placeholder="Type a message..."
+            aria-label="Message Nikunj's AI twin"
+            autoComplete="off"
             className="flex-1 bg-background/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all placeholder:text-muted-foreground/50"
           />
           <button
+            type="button"
             onClick={() => handleSend()}
             disabled={!input.trim() || isLoading}
             className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 shadow-lg shadow-primary/20"
+            aria-label="Send message"
           >
             <Send className="w-4 h-4" />
           </button>
@@ -511,36 +593,40 @@ const AITwinChat = () => {
     <>
       {/* Floating Button */}
       <motion.button
-        initial={{ scale: 0, opacity: 0 }}
+        ref={launcherButtonRef}
+        type="button"
+        initial={shouldReduceMotion ? { opacity: 0 } : { scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 260, damping: 20 }}
+        transition={shouldReduceMotion ? { duration: 0.2 } : { type: "spring", stiffness: 260, damping: 20 }}
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           "fixed z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl flex items-center justify-center transition-all duration-300 ease-in-out border-2 border-primary/20 group cursor-pointer",
           isMobile ? "bottom-4 right-4" : "bottom-6 right-6"
         )}
-        whileHover={{ scale: 1.1 }}
+        whileHover={shouldReduceMotion ? undefined : { scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
         aria-label="Toggle AI chat"
+        aria-expanded={isOpen}
+        aria-controls="ai-twin-dialog"
       >
         <motion.div
           className="relative"
           animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={{ type: "spring", stiffness: 260, damping: 20 }}
+          transition={shouldReduceMotion ? { duration: 0.2 } : { type: "spring", stiffness: 260, damping: 20 }}
         >
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.div
               key={isOpen ? "close" : "chat"}
-              initial={{ rotate: -90, opacity: 0, scale: 0.4 }}
+              initial={shouldReduceMotion ? { opacity: 0 } : { rotate: -90, opacity: 0, scale: 0.4 }}
               animate={{ rotate: 0, opacity: 1, scale: 1 }}
-              exit={{ rotate: 90, opacity: 0, scale: 0.4 }}
-              transition={{ type: "spring", stiffness: 340, damping: 24 }}
+              exit={shouldReduceMotion ? { opacity: 0 } : { rotate: 90, opacity: 0, scale: 0.4 }}
+              transition={shouldReduceMotion ? { duration: 0.2 } : { type: "spring", stiffness: 340, damping: 24 }}
               className="flex items-center justify-center"
             >
               {isOpen ? (
                 <X size={24} />
               ) : (
-                <motion.span whileHover={{ y: -2 }}>
+                <motion.span whileHover={shouldReduceMotion ? undefined : { y: -2 }}>
                   <MessageCircle size={24} />
                 </motion.span>
               )}
@@ -563,18 +649,25 @@ const AITwinChat = () => {
                 exit={{ opacity: 0 }}
                 onClick={() => setIsOpen(false)}
                 className="fixed inset-0 z-50 bg-black/80"
+                aria-hidden="true"
               />
 
               {/* Chat Content */}
               <motion.div
+                id="ai-twin-dialog"
+                ref={dialogRef}
                 key="chat-content"
-                initial={{ opacity: 0, y: "100%" }}
+                initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: "100%" }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: "100%" }}
-                transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: "100%" }}
+                transition={shouldReduceMotion ? { duration: 0.2 } : { type: "spring", damping: 30, stiffness: 300 }}
                 className="fixed inset-0 z-50 flex flex-col bg-background"
                 style={{ height: '100dvh', maxHeight: '100dvh' }}
                 onClick={(e) => e.stopPropagation()}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="ai-twin-title"
+                aria-describedby="ai-twin-status"
               >
                 {renderChatContent()}
               </motion.div>
@@ -586,11 +679,12 @@ const AITwinChat = () => {
         <AnimatePresence>
           {isOpen && (
             <motion.div
+              id="ai-twin-dialog"
               layout
               layoutId="chat-window"
-              initial={{ opacity: 0, scale: 0.8, y: 20, rotateX: -15 }}
+              initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.8, y: 20, rotateX: -15 }}
               animate={{ opacity: 1, scale: 1, y: 0, rotateX: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 10, rotateX: 10 }}
+              exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 10, rotateX: 10 }}
               transition={{
                 layout: {
                   type: "spring",
@@ -598,10 +692,14 @@ const AITwinChat = () => {
                   damping: 34,
                   mass: 0.7,
                 },
-                type: "spring",
-                stiffness: 260,
-                damping: 34,
-                mass: 0.7
+                ...(shouldReduceMotion
+                  ? { duration: 0.2 }
+                  : {
+                      type: "spring" as const,
+                      stiffness: 260,
+                      damping: 34,
+                      mass: 0.7,
+                    })
               }}
               className="fixed bottom-24 right-6 z-50 w-80 sm:w-96 bg-background/55 dark:bg-background/55 backdrop-blur-[22px] backdrop-saturate-150 border border-border/60 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
               style={{
@@ -611,6 +709,7 @@ const AITwinChat = () => {
                 transformStyle: "preserve-3d",
                 willChange: "width,height,transform,border-radius,box-shadow,backdrop-filter"
               }}
+              aria-labelledby="ai-twin-title"
             >
               {renderChatContent()}
             </motion.div>

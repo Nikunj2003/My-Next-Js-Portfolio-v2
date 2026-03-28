@@ -15,7 +15,7 @@ export default function Home() {
     <>
       <FluidCursor />
       <Navbar />
-      <main>
+      <main id="main-content" tabIndex={-1}>
         <HeroSection />
         <AboutSection />
         <ExperienceSection />

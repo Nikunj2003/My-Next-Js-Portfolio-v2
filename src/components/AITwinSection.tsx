@@ -1,5 +1,5 @@
 "use client";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { Bot, MessageCircle } from "lucide-react";
 import { chatSuggestions } from "@/data/portfolio";
@@ -7,6 +7,7 @@ import { SpotlightCard } from "@/components/ui/spotlight-card";
 
 const AITwinSection = () => {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.2 });
+  const shouldReduceMotion = useReducedMotion();
 
   const handlePromptClick = (question: string) => {
     window.dispatchEvent(new CustomEvent("open-ai-twin", { detail: { question } }));
@@ -16,9 +17,9 @@ const AITwinSection = () => {
     <section id="ai-twin" className="section-padding relative z-10">
       <div className="container-narrow" ref={ref}>
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: shouldReduceMotion ? 0.2 : 0.8, ease: [0.16, 1, 0.3, 1] }}
         >
           <SpotlightCard className="w-full relative shadow-2xl shadow-black/50">
             <div className="relative p-6 sm:p-8 md:p-12 lg:p-16 flex flex-col lg:flex-row items-center gap-12 lg:gap-16 text-center lg:text-left">
@@ -28,7 +29,7 @@ const AITwinSection = () => {
               {/* Left Content */}
               <div className="flex-1 relative z-10">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-subtle border border-black/10 dark:border-white/10 text-xs font-mono text-primary mb-6">
-                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(41,214,185,0.8)]" />
+                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse motion-reduce:animate-none shadow-[0_0_8px_rgba(41,214,185,0.8)]" />
                   Interactive Mode
                 </div>
                 <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-6">

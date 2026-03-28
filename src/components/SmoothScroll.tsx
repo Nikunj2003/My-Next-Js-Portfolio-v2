@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import Lenis from 'lenis';
+import { scrollToHash, scrollToTop } from '@/lib/scroll';
 
 type LenisWindow = Window & typeof globalThis & {
   __lenis?: Lenis;
@@ -9,6 +10,10 @@ type LenisWindow = Window & typeof globalThis & {
 
 export function SmoothScroll({ children }: { children: React.ReactNode }) {
   useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+
     const lenis = new Lenis({
       duration: 1.2, // Slower duration for a buttery feel
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // Easing function
@@ -73,17 +78,12 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
 
       if (href === '#') {
         event.preventDefault();
-        lenis.scrollTo(0);
-        window.history.pushState(null, '', `${window.location.pathname}${window.location.search}`);
+        scrollToTop();
         return;
       }
 
-      const target = document.querySelector(href);
-      if (!(target instanceof HTMLElement)) return;
-
       event.preventDefault();
-      lenis.scrollTo(target, { offset: -85 });
-      window.history.pushState(null, '', href);
+      scrollToHash(href);
     };
 
     startRaf();
