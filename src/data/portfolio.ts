@@ -96,9 +96,9 @@ export interface Project {
 export const projects: Project[] = [
   {
     slug: "codenex",
-    title: "CodeNex",
+    title: "CodeNex: AI Builder",
     category: "Full Stack / AI Product",
-    description: "Production-grade Java backend for the Codenex platform — a microservices-based system automating full-stack-web app generation using LLMs, inspired by Lovable/v0.",
+    description: "AI-assisted full-stack app builder inspired by Lovable/v0, built as a complete product platform with a microservices Java backend and connected frontend workflows for auth, dashboards, usage views, and project building.",
     images: [
       "/images/projects/codenex/landing-page-light.png",
       "/images/projects/codenex/landing-page-dark.png",
@@ -109,7 +109,7 @@ export const projects: Project[] = [
       "/images/projects/codenex/project-builder-dark.png",
       "/images/projects/codenex/login-page-dark.png",
     ],
-    tech: ["Java", "Spring Boot", "Maven", "Docker", "Kubernetes", "Redis", "Kafka"],
+    tech: ["Java", "Spring Boot", "React", "TypeScript", "Docker", "Kubernetes", "Redis", "Kafka"],
     github: "https://github.com/Nikunj2003/Codenex-backend-v1",
   },
   {
