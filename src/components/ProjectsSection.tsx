@@ -1,10 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
-import { ExternalLink, Github } from "lucide-react";
+import { ExternalLink, Github, Maximize2 } from "lucide-react";
 import { projects, type Project } from "@/data/portfolio";
 import { PROJECT_ANCHOR_PREFIX } from "@/lib/ai-twin";
 import {
@@ -15,6 +15,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
+import ProjectImageViewer from "@/components/ProjectImageViewer";
 
 const categories = ["All", ...Array.from(new Set(projects.map((p) => p.category)))];
 const PROJECT_IMAGE_SIZES = "(min-width: 1536px) 42rem, (min-width: 1024px) 40vw, 100vw";
@@ -39,6 +40,34 @@ function ProjectPreviewImage({ src, alt, priority = false }: { src: string; alt:
 
 function ProjectShowcase({ project, priority }: { project: Project; priority: boolean }) {
   const [mediaRef, mediaInView] = useInView({ triggerOnce: true, threshold: 0, rootMargin: "600px 0px" });
+  const [viewerState, setViewerState] = useState({ open: false, index: 0 });
+  const hasPrefetchedRef = useRef(false);
+
+  const prefetchProjectImages = useCallback(() => {
+    if (hasPrefetchedRef.current || project.images.length === 0 || typeof window === "undefined") {
+      return;
+    }
+
+    hasPrefetchedRef.current = true;
+
+    for (const src of project.images) {
+      const image = new window.Image();
+      image.decoding = "async";
+      image.src = src;
+    }
+  }, [project.images]);
+
+  useEffect(() => {
+    if (!mediaInView || project.images.length === 0) return;
+
+    const timeoutId = window.setTimeout(prefetchProjectImages, 180);
+    return () => window.clearTimeout(timeoutId);
+  }, [mediaInView, prefetchProjectImages, project.images.length]);
+
+  const openViewer = (index: number) => {
+    prefetchProjectImages();
+    setViewerState({ open: true, index });
+  };
 
   return (
     <div ref={mediaRef} className="lg:w-1/2 bg-black/40 border-t lg:border-t-0 lg:border-l border-white/5 p-6 sm:p-10 flex items-center justify-center overflow-hidden group/img relative">
@@ -50,11 +79,31 @@ function ProjectShowcase({ project, priority }: { project: Project; priority: bo
             <CarouselContent>
               {project.images.map((img, idx) => (
                 <CarouselItem key={`${project.title}-${img}`}>
-                  <ProjectPreviewImage
-                    src={img}
-                    alt={`${project.title} screenshot ${idx + 1}`}
-                    priority={priority && idx === 0}
-                  />
+                  <button
+                    type="button"
+                    onClick={() => openViewer(idx)}
+                    onMouseEnter={prefetchProjectImages}
+                    onFocus={prefetchProjectImages}
+                    onTouchStart={prefetchProjectImages}
+                    className="group/viewer relative block w-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                    aria-label={`Open ${project.title} screenshot ${idx + 1} in viewer`}
+                  >
+                    <ProjectPreviewImage
+                      src={img}
+                      alt={`${project.title} screenshot ${idx + 1}`}
+                      priority={priority && idx === 0}
+                    />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-100 sm:opacity-0 sm:group-hover/viewer:opacity-100 transition-opacity duration-300" />
+                    <div className="pointer-events-none absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/45 px-3 py-2 text-xs font-mono text-white/90 backdrop-blur-md shadow-lg">
+                      <Maximize2 className="h-3.5 w-3.5" />
+                      {project.images.length > 1 ? "View gallery" : "View image"}
+                    </div>
+                    {project.images.length > 1 && (
+                      <div className="pointer-events-none absolute right-4 top-4 rounded-full border border-white/10 bg-black/45 px-2.5 py-1 text-[11px] font-mono text-white/80 backdrop-blur-md">
+                        {idx + 1}/{project.images.length}
+                      </div>
+                    )}
+                  </button>
                 </CarouselItem>
               ))}
             </CarouselContent>
@@ -64,14 +113,40 @@ function ProjectShowcase({ project, priority }: { project: Project; priority: bo
             </div>
           </Carousel>
         ) : (
-          <div className="w-full relative z-10 rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10 bg-black">
+          <button
+            type="button"
+            onClick={() => openViewer(0)}
+            onMouseEnter={prefetchProjectImages}
+            onFocus={prefetchProjectImages}
+            onTouchStart={prefetchProjectImages}
+            className="group/viewer w-full relative z-10 rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10 bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+            aria-label={`Open ${project.title} preview in viewer`}
+          >
             <ProjectPreviewImage src={project.images[0]} alt={`${project.title} preview`} />
-          </div>
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-100 sm:opacity-0 sm:group-hover/viewer:opacity-100 transition-opacity duration-300" />
+            <div className="pointer-events-none absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/45 px-3 py-2 text-xs font-mono text-white/90 backdrop-blur-md shadow-lg">
+              <Maximize2 className="h-3.5 w-3.5" />
+              {project.images.length > 1 ? "View gallery" : "View image"}
+            </div>
+          </button>
         )
       ) : (
         <div className="aspect-[16/10] w-full flex items-center justify-center rounded-xl ring-1 ring-white/10 bg-zinc-950/50 text-muted-foreground text-sm font-mono z-10">
           {">"} No preview available
         </div>
+      )}
+
+      {project.images.length > 0 && (
+        <ProjectImageViewer
+          projectTitle={project.title}
+          images={project.images}
+          open={viewerState.open}
+          currentIndex={viewerState.index}
+          onIndexChange={(index) => setViewerState((current) => ({ ...current, index }))}
+          onOpenChange={(open) => {
+            setViewerState((current) => ({ ...current, open }));
+          }}
+        />
       )}
     </div>
   );
