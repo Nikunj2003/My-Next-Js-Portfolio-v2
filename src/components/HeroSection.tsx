@@ -84,7 +84,10 @@ const HeroSection = () => {
   };
 
   return (
-    <section id="hero" className="relative min-h-screen flex items-center pt-20 overflow-hidden">
+    <section
+      id="hero"
+      className="relative flex min-h-[100svh] items-start overflow-hidden pt-[calc(5rem+env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))] sm:pt-[calc(5.5rem+env(safe-area-inset-top))] sm:pb-[max(2.5rem,env(safe-area-inset-bottom))] lg:min-h-screen lg:items-center lg:pt-20 lg:pb-0"
+    >
       {/* Subtle background grid & Animated Glow Orb */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
         backgroundImage: "radial-gradient(hsl(var(--accent)) 1px, transparent 1px)",
@@ -102,7 +105,7 @@ const HeroSection = () => {
         <div className="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
           
           {/* Left - Content */}
-          <motion.div variants={container} initial="hidden" animate="show" className="flex flex-col gap-8 lg:col-span-7">
+          <motion.div variants={container} initial="hidden" animate="show" className="flex flex-col gap-6 sm:gap-8 lg:col-span-7">
             <motion.div variants={item}>
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono font-bold glass-subtle border border-primary/20 text-primary tracking-wide shadow-[0_0_15px_rgba(41,214,185,0.15)]">
                 <span className="w-2 h-2 rounded-full bg-primary animate-pulse motion-reduce:animate-none" />
@@ -123,7 +126,7 @@ const HeroSection = () => {
               {personalInfo.tagline}
             </motion.p>
 
-            <motion.div variants={item} className="flex flex-col sm:flex-row flex-wrap gap-4 mt-2">
+            <motion.div variants={item} className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 mt-1 sm:mt-2">
               <a
                 href="#projects"
                 className="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-8 py-3.5 rounded-full bg-primary text-primary-foreground font-bold text-sm tracking-wide shadow-[0_0_25px_rgba(41,214,185,0.3)] hover:shadow-[0_0_35px_rgba(41,214,185,0.4)] transition-all duration-300 active:scale-95"
@@ -149,7 +152,7 @@ const HeroSection = () => {
             </motion.div>
 
             {/* Stats */}
-            <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
+            <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 sm:mt-6">
               {stats.map((stat) => (
                 <div key={stat.label} className="border-l-2 border-primary/30 pl-4 py-1">
                   <div className="text-2xl font-bold tracking-tighter text-foreground">
