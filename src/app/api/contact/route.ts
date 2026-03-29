@@ -38,6 +38,15 @@ function escapeHtml(value: string) {
     .replace(/'/g, "&#39;");
 }
 
+function getRecipients(recipientList?: string) {
+  const recipients = recipientList
+    ?.split(/[;,]/)
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  return recipients && recipients.length > 0 ? [...new Set(recipients)] : [personalInfo.email];
+}
+
 export async function POST(request: Request) {
   const rateLimitResult = checkRateLimit(requestStore, getClientKey(request), {
     limit: RATE_LIMIT,
@@ -71,7 +80,7 @@ export async function POST(request: Request) {
 
     const apiKey = process.env.RESEND_API_KEY?.trim();
     const sender = process.env.CONTACT_EMAIL_FROM?.trim();
-    const recipient = process.env.CONTACT_EMAIL_TO?.trim() || personalInfo.email;
+    const recipients = getRecipients(process.env.CONTACT_EMAIL_TO);
 
     if (!apiKey || !sender) {
       return NextResponse.json(
@@ -87,7 +96,7 @@ export async function POST(request: Request) {
     const { data, error } = await withTimeout(
       resend.emails.send({
         from: sender,
-        to: [recipient],
+        to: recipients,
         replyTo: email,
         subject: `[Portfolio] ${reason} inquiry from ${name}`,
         text: [

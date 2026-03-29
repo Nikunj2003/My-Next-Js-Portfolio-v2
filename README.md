@@ -70,7 +70,7 @@ Create a `.env.local` to securely store keys for the AI Chatbot and Resend-backe
 # Contact / Resend
 RESEND_API_KEY=re_your_resend_api_key
 CONTACT_EMAIL_FROM="Nikunj Portfolio <contact@portfolio.codenex.dev>"
-CONTACT_EMAIL_TO=njkhitha2003@gmail.com
+CONTACT_EMAIL_TO=njkhitha2003@gmail.com,info.portfolio.nikunj@gmail.com
 
 # -----------------------------
 # LLM / AI Provider
@@ -78,6 +78,8 @@ LLM_API_KEY=your-llm-api-key
 ```
 
 > Never commit real credentials. Configure them in your hosting provider's dashboard (e.g. Vercel) for production.
+
+`CONTACT_EMAIL_TO` supports a comma-separated list if you want contact form emails delivered to multiple inboxes.
 
 To send from a custom address like `contact@portfolio.codenex.dev`, verify that domain/subdomain inside Resend and add the SPF/DKIM DNS records Resend provides.
 
