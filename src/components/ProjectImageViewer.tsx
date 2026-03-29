@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Drawer as DrawerPrimitive } from "vaul";
 import { ChevronLeft, ChevronRight, RotateCcw, X, ZoomIn, ZoomOut } from "lucide-react";
@@ -126,6 +125,7 @@ export default function ProjectImageViewer({
   const [scale, setScale] = useState(MIN_ZOOM);
   const [offset, setOffset] = useState<Point>({ x: 0, y: 0 });
   const [viewportSize, setViewportSize] = useState<Size>({ width: 0, height: 0 });
+  const [showThumbnailRail, setShowThumbnailRail] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [imageSizes, setImageSizes] = useState<Record<string, Size>>({});
 
@@ -166,9 +166,18 @@ export default function ProjectImageViewer({
     if (!open) return;
 
     const updateViewportSize = () => {
-      const rect = viewportRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      setViewportSize({ width: rect.width, height: rect.height });
+      const node = viewportRef.current;
+      const rect = node?.getBoundingClientRect();
+      if (!node || !rect) return;
+
+      const styles = window.getComputedStyle(node);
+      const horizontalPadding = parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
+      const verticalPadding = parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom);
+
+      setViewportSize({
+        width: Math.max(rect.width - horizontalPadding, 0),
+        height: Math.max(rect.height - verticalPadding, 0),
+      });
     };
 
     updateViewportSize();
@@ -616,6 +625,22 @@ export default function ProjectImageViewer({
   }, [activeImage, activeIndex, images, open, prefetchImage]);
 
   useEffect(() => {
+    if (!open || showThumbnailRail) return;
+
+    let timer = 0;
+    const frame = window.requestAnimationFrame(() => {
+      timer = window.setTimeout(() => {
+        setShowThumbnailRail(true);
+      }, 170);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [open, showThumbnailRail]);
+
+  useEffect(() => {
     if (!open) return;
 
     const handleNativeWheel = (event: WheelEvent) => {
@@ -696,14 +721,14 @@ export default function ProjectImageViewer({
       shouldScaleBackground={false}
     >
       <DrawerPrimitive.Portal>
-        <DrawerPrimitive.Overlay className="fixed inset-0 z-50 bg-[radial-gradient(circle_at_top,rgba(41,214,185,0.16),transparent_38%),linear-gradient(180deg,rgba(3,7,18,0.82),rgba(3,7,18,0.95))] backdrop-blur-lg [will-change:opacity] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <DrawerPrimitive.Overlay className="fixed inset-0 z-50 bg-[radial-gradient(circle_at_top,rgba(41,214,185,0.12),transparent_36%),linear-gradient(180deg,rgba(3,7,18,0.84),rgba(3,7,18,0.96))] backdrop-blur-0 sm:backdrop-blur-sm [will-change:opacity] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
 
         <DrawerPrimitive.Content
           ref={contentRef}
           tabIndex={-1}
           onKeyDown={(event) => handleKeyControls(event)}
           style={{ top: "max(env(safe-area-inset-top), 0.75rem)" }}
-          className="fixed inset-x-0 bottom-0 z-[60] mx-auto flex w-[min(calc(100vw-0.75rem),96rem)] transform-gpu flex-col overflow-hidden rounded-t-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06))] shadow-[0_-24px_80px_rgba(0,0,0,0.45)] outline-none [will-change:transform] backdrop-blur-xl backdrop-saturate-150 sm:w-[min(calc(100vw-1.5rem),96rem)]"
+          className="fixed inset-x-0 bottom-0 z-[60] mx-auto flex w-[min(calc(100vw-0.75rem),96rem)] transform-gpu flex-col overflow-hidden rounded-t-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(17,24,39,0.97),rgba(12,18,32,0.98))] shadow-[0_-18px_48px_rgba(0,0,0,0.32)] outline-none [will-change:transform] backdrop-blur-0 sm:bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.05))] sm:shadow-[0_-24px_80px_rgba(0,0,0,0.45)] sm:backdrop-blur-lg sm:backdrop-saturate-150 sm:w-[min(calc(100vw-1.5rem),96rem)]"
         >
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/80 to-transparent" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-white/10 to-transparent" />
@@ -818,8 +843,9 @@ export default function ProjectImageViewer({
                       alt={`${projectTitle} screenshot ${activeIndex + 1}`}
                       draggable={false}
                       loading="eager"
-                      decoding="sync"
-                      className="pointer-events-none block h-full w-full select-none rounded-[1.2rem] object-contain shadow-[0_30px_80px_rgba(0,0,0,0.45)]"
+                      decoding="async"
+                      fetchPriority="high"
+                      className="pointer-events-none block h-full w-full select-none rounded-[1.2rem] object-contain shadow-[0_18px_40px_rgba(0,0,0,0.28)] sm:shadow-[0_30px_80px_rgba(0,0,0,0.45)]"
                       onLoad={(event) => {
                         const { naturalWidth, naturalHeight } = event.currentTarget;
 
@@ -925,8 +951,8 @@ export default function ProjectImageViewer({
               )}
             </div>
 
-            {images.length > 1 && (
-              <div className="flex gap-3 overflow-x-auto pb-1">
+            {images.length > 1 && showThumbnailRail && (
+              <div className="z-10 flex gap-3 overflow-x-auto overscroll-x-contain pb-1 touch-pan-x">
                 {images.map((image, index) => {
                   const isActive = index === activeIndex;
 
@@ -935,8 +961,12 @@ export default function ProjectImageViewer({
                       key={`${projectTitle}-${image}`}
                       type="button"
                       onClick={() => goToIndex(index)}
+                      onTouchEnd={(event) => {
+                        event.preventDefault();
+                        goToIndex(index);
+                      }}
                       className={cn(
-                        "group relative h-16 w-24 shrink-0 overflow-hidden rounded-2xl border bg-black/35 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:h-20 sm:w-32",
+                        "group relative h-16 w-24 shrink-0 touch-manipulation overflow-hidden rounded-2xl border bg-black/35 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:h-20 sm:w-32",
                         isActive
                           ? "border-primary/70 shadow-[0_0_0_1px_rgba(41,214,185,0.45),0_14px_32px_rgba(0,0,0,0.35)]"
                           : "border-white/10 hover:border-white/20 hover:bg-white/5",
@@ -944,14 +974,15 @@ export default function ProjectImageViewer({
                       aria-label={`Open screenshot ${index + 1}`}
                       aria-pressed={isActive}
                     >
-                      <Image
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
                         src={image}
                         alt={`${projectTitle} thumbnail ${index + 1}`}
-                        fill
-                        sizes="128px"
                         draggable={false}
+                        loading="lazy"
+                        decoding="async"
                         className={cn(
-                          "object-cover transition duration-300 group-hover:scale-[1.03]",
+                          "h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]",
                           isActive ? "opacity-100" : "opacity-75 group-hover:opacity-95",
                         )}
                       />

@@ -38,9 +38,16 @@ function ProjectPreviewImage({ src, alt, priority = false }: { src: string; alt:
   );
 }
 
-function ProjectShowcase({ project, priority }: { project: Project; priority: boolean }) {
+function ProjectShowcase({
+  project,
+  priority,
+  onOpenViewer,
+}: {
+  project: Project;
+  priority: boolean;
+  onOpenViewer: (project: Project, index: number) => void;
+}) {
   const [mediaRef, mediaInView] = useInView({ triggerOnce: true, threshold: 0, rootMargin: "600px 0px" });
-  const [viewerState, setViewerState] = useState({ open: false, index: 0 });
   const hasPrefetchedRef = useRef(false);
 
   const prefetchProjectImages = useCallback(() => {
@@ -64,11 +71,6 @@ function ProjectShowcase({ project, priority }: { project: Project; priority: bo
     return () => window.clearTimeout(timeoutId);
   }, [mediaInView, prefetchProjectImages, project.images.length]);
 
-  const openViewer = (index: number) => {
-    prefetchProjectImages();
-    setViewerState({ open: true, index });
-  };
-
   return (
     <div ref={mediaRef} className="lg:w-1/2 bg-black/40 border-t lg:border-t-0 lg:border-l border-white/5 p-6 sm:p-10 flex items-center justify-center overflow-hidden group/img relative">
       <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent opacity-50 pointer-events-none" />
@@ -81,7 +83,10 @@ function ProjectShowcase({ project, priority }: { project: Project; priority: bo
                 <CarouselItem key={`${project.title}-${img}`}>
                   <button
                     type="button"
-                    onClick={() => openViewer(idx)}
+                    onClick={() => {
+                      prefetchProjectImages();
+                      onOpenViewer(project, idx);
+                    }}
                     onMouseEnter={prefetchProjectImages}
                     onFocus={prefetchProjectImages}
                     onTouchStart={prefetchProjectImages}
@@ -115,7 +120,10 @@ function ProjectShowcase({ project, priority }: { project: Project; priority: bo
         ) : (
           <button
             type="button"
-            onClick={() => openViewer(0)}
+            onClick={() => {
+              prefetchProjectImages();
+              onOpenViewer(project, 0);
+            }}
             onMouseEnter={prefetchProjectImages}
             onFocus={prefetchProjectImages}
             onTouchStart={prefetchProjectImages}
@@ -136,28 +144,26 @@ function ProjectShowcase({ project, priority }: { project: Project; priority: bo
         </div>
       )}
 
-      {project.images.length > 0 && (
-        <ProjectImageViewer
-          projectTitle={project.title}
-          images={project.images}
-          open={viewerState.open}
-          currentIndex={viewerState.index}
-          onIndexChange={(index) => setViewerState((current) => ({ ...current, index }))}
-          onOpenChange={(open) => {
-            setViewerState((current) => ({ ...current, open }));
-          }}
-        />
-      )}
     </div>
   );
 }
 
 const ProjectsSection = () => {
   const [filter, setFilter] = useState("All");
+  const [viewerState, setViewerState] = useState<{ open: boolean; project: Project | null; index: number }>({
+    open: false,
+    project: null,
+    index: 0,
+  });
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
   const shouldReduceMotion = useReducedMotion();
 
   const filtered = filter === "All" ? projects : projects.filter((p) => p.category === filter);
+  const activeViewerProject = viewerState.project;
+
+  const handleOpenViewer = useCallback((project: Project, index: number) => {
+    setViewerState({ open: true, project, index });
+  }, []);
 
   return (
     <section id="projects" className="section-padding relative z-10">
@@ -263,7 +269,7 @@ const ProjectsSection = () => {
                     </div>
 
                     {/* Image / Carousel Showcase Section */}
-                    <ProjectShowcase project={project} priority={i === 0} />
+                    <ProjectShowcase project={project} priority={i === 0} onOpenViewer={handleOpenViewer} />
 
                   </div>
                 </SpotlightCard>
@@ -289,6 +295,17 @@ const ProjectsSection = () => {
             Explore more repositories
           </a>
         </motion.div>
+
+        {activeViewerProject && (
+          <ProjectImageViewer
+            projectTitle={activeViewerProject.title}
+            images={activeViewerProject.images}
+            open={viewerState.open}
+            currentIndex={viewerState.index}
+            onIndexChange={(index) => setViewerState((current) => ({ ...current, index }))}
+            onOpenChange={(open) => setViewerState((current) => ({ ...current, open }))}
+          />
+        )}
       </div>
     </section>
   );
