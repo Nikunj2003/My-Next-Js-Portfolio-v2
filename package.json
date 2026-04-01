@@ -1,16 +1,39 @@
 {
   "name": "my-next-js-portfolio-v2",
   "version": "1.0.0",
-  "description": "",
+  "description": "A modern Next.js portfolio for Nikunj Khitha showcasing GenAI platform engineering work, projects, experience, and interactive AI-powered features.",
   "type": "module",
+  "homepage": "https://nikunj.codenex.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nikunj2003/My-Next-Js-Portfolio-v2.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Nikunj2003/My-Next-Js-Portfolio-v2/issues"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint ."
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "portfolio",
+    "nextjs",
+    "react",
+    "typescript",
+    "tailwindcss",
+    "genai",
+    "rag",
+    "graphrag",
+    "ai-platform",
+    "full-stack"
+  ],
+  "author": {
+    "name": "Nikunj Khitha",
+    "email": "njkhitha2003@gmail.com",
+    "url": "https://nikunj.codenex.dev"
+  },
   "license": "ISC",
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
