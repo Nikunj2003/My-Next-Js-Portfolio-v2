@@ -13,6 +13,7 @@ const navLinks = [
   { href: "#experience", label: "Experience" },
   { href: "#projects", label: "Projects" },
   { href: "#skills", label: "Skills" },
+  { href: "#ai-twin", label: "AI Twin" },
   { href: "#contact", label: "Contact" },
 ];
 
@@ -157,7 +158,7 @@ const Navbar = () => {
             scrolled ? "glass-strong shadow-2xl shadow-black/20 border-white/10" : "bg-transparent border-transparent"
           }`}
         >
-          <a href="#hero" className="flex items-center gap-2 group">
+          <a href="#hero" aria-label="Go to hero section" className="flex items-center gap-2 group">
             <Image src={logo} alt="" aria-hidden="true" className="w-10 h-10 sm:w-12 sm:h-12 transition-transform duration-300 group-hover:scale-110 pointer-events-none" draggable={false} />
             <span className="font-bold text-lg tracking-wide hidden sm:block">Nikunj Khitha</span>
           </a>
@@ -212,7 +213,7 @@ const Navbar = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => closeMenu()}
-              className="md:hidden fixed inset-0 z-[90] bg-transparent"
+              className="md:hidden fixed inset-0 z-[90] bg-black/40 backdrop-blur-[2px]"
               aria-hidden="true"
             />
             <motion.div
@@ -234,7 +235,12 @@ const Navbar = () => {
                   ref={link === navLinks[0] ? firstMobileLinkRef : undefined}
                   href={link.href}
                   onClick={(e) => handleNavClick(e, link.href, true)}
-                  className="block px-4 py-3 text-sm rounded-lg hover:bg-white/5 transition-colors font-medium text-muted-foreground hover:text-foreground w-full"
+                  aria-current={activeSection === link.href ? "location" : undefined}
+                  className={`block px-4 py-3 text-sm rounded-lg transition-colors font-medium w-full ${
+                    activeSection === link.href
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  }`}
                 >
                   {link.label}
                 </a>

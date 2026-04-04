@@ -405,7 +405,7 @@ const AITwinChat = () => {
   }, [isOpen, isMobile]);
 
   useEffect(() => {
-    if (!isOpen || !isMobile || !dialogRef.current) return;
+    if (!isOpen || !dialogRef.current) return;
 
     const dialogNode = dialogRef.current;
 
@@ -435,7 +435,7 @@ const AITwinChat = () => {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isMobile, isOpen]);
+  }, [isOpen]);
 
   const handleSend = useCallback(async (request?: SendRequest) => {
     const normalizedRequest = typeof request === "string" ? { text: request } : request;
@@ -612,10 +612,6 @@ const AITwinChat = () => {
 
   const handleSuggestionClick = (text: string) => {
     setInput(text);
-  };
-
-  const handleSuggestionDoubleClick = (text: string) => {
-    setInput(text);
     Promise.resolve().then(() => handleSend(text));
   };
 
@@ -761,7 +757,6 @@ const AITwinChat = () => {
                     type="button"
                     key={i}
                     onClick={() => handleSuggestionClick(s)}
-                    onDoubleClick={() => handleSuggestionDoubleClick(s)}
                     className="group relative max-w-full select-none overflow-hidden rounded-full bg-primary/10 px-3 py-1 text-[11px] text-foreground transition-colors hover:bg-primary/20 focus:outline-none focus:ring-2 focus:ring-primary/50"
                     aria-label={`Ask: ${s}`}
                   >
@@ -820,7 +815,6 @@ const AITwinChat = () => {
                 type="button"
                 key={s}
                 onClick={() => handleSuggestionClick(s)}
-                onDoubleClick={() => handleSuggestionDoubleClick(s)}
                 className="max-w-full select-none overflow-hidden rounded-full bg-primary/10 px-3 py-1 text-xs text-foreground transition-colors hover:bg-primary/20"
               >
                 <span className="block truncate whitespace-nowrap">{s}</span>
@@ -835,7 +829,11 @@ const AITwinChat = () => {
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
+              e.preventDefault();
+              void handleSend();
+            }}
             placeholder="Type a message..."
             aria-label="Message Nikunj's AI twin"
             autoComplete="off"
@@ -971,11 +969,11 @@ const AITwinChat = () => {
               style={{
                 height: "32rem",
                 maxHeight: "calc(100vh - 8rem)",
-                perspective: "1000px",
-                transformStyle: "preserve-3d",
-                willChange: "width,height,transform,border-radius,box-shadow,backdrop-filter"
               }}
               aria-labelledby="ai-twin-title"
+              aria-describedby="ai-twin-status"
+              role="dialog"
+              aria-modal="false"
             >
               {renderChatContent()}
             </motion.div>

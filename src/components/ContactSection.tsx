@@ -40,9 +40,13 @@ const INITIAL_FORM: ContactFormData = {
   message: "",
 };
 
+type ContactField = keyof ContactFormData;
+type ContactErrors = Partial<Record<ContactField, string>>;
+
 const ContactSection = () => {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
   const [form, setForm] = useState<ContactFormData>(INITIAL_FORM);
+  const [errors, setErrors] = useState<ContactErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const shouldReduceMotion = useReducedMotion();
 
@@ -51,9 +55,20 @@ const ContactSection = () => {
 
     const parsed = contactSchema.safeParse(form);
     if (!parsed.success) {
+      const nextErrors = parsed.error.issues.reduce<ContactErrors>((acc, issue) => {
+        const field = issue.path[0];
+        if (typeof field === "string" && !(field in acc)) {
+          acc[field as ContactField] = issue.message;
+        }
+        return acc;
+      }, {});
+
+      setErrors(nextErrors);
       toast.error(parsed.error.issues[0]?.message || "Please check the form and try again.");
       return;
     }
+
+    setErrors({});
 
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), 15000);
@@ -77,6 +92,7 @@ const ContactSection = () => {
       }
 
       setForm(INITIAL_FORM);
+      setErrors({});
       toast.success("Message sent. I will get back to you soon.");
     } catch (error) {
       toast.error(
@@ -191,7 +207,7 @@ const ContactSection = () => {
 
           {/* Right panel — Form */}
           <SpotlightCard delay={0.2} className="h-full">
-            <form onSubmit={handleSubmit} className="p-6 sm:p-8 md:p-10 flex flex-col gap-6 h-full" aria-busy={isSubmitting}>
+            <form onSubmit={handleSubmit} className="p-6 sm:p-8 md:p-10 flex flex-col gap-6 h-full" aria-busy={isSubmitting} noValidate>
               {/* Grows to fill */}
               <div className="flex flex-col gap-6 flex-1">
                 <div>
@@ -212,10 +228,22 @@ const ContactSection = () => {
                       autoComplete="name"
                       disabled={isSubmitting}
                       value={form.name}
-                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      onChange={(e) => {
+                        setForm({ ...form, name: e.target.value });
+                        if (errors.name) {
+                          setErrors((current) => ({ ...current, name: undefined }));
+                        }
+                      }}
+                      aria-invalid={Boolean(errors.name)}
+                      aria-describedby={errors.name ? "contact-name-error" : undefined}
                       className="w-full px-4 py-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-sm outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/40"
                       placeholder="Your name"
                     />
+                    {errors.name && (
+                      <p id="contact-name-error" className="mt-2 text-sm text-destructive">
+                        {errors.name}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label htmlFor="contact-email" className="text-xs font-mono font-medium text-foreground/70 mb-2 block uppercase tracking-wider">Email</label>
@@ -227,10 +255,22 @@ const ContactSection = () => {
                       autoComplete="email"
                       disabled={isSubmitting}
                       value={form.email}
-                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      onChange={(e) => {
+                        setForm({ ...form, email: e.target.value });
+                        if (errors.email) {
+                          setErrors((current) => ({ ...current, email: undefined }));
+                        }
+                      }}
+                      aria-invalid={Boolean(errors.email)}
+                      aria-describedby={errors.email ? "contact-email-error" : undefined}
                       className="w-full px-4 py-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-sm outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/40"
                       placeholder="you@company.com"
                     />
+                    {errors.email && (
+                      <p id="contact-email-error" className="mt-2 text-sm text-destructive">
+                        {errors.email}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -241,7 +281,14 @@ const ContactSection = () => {
                       id="contact-reason"
                       disabled={isSubmitting}
                       value={form.reason}
-                      onChange={(e) => setForm({ ...form, reason: e.target.value as ContactFormData["reason"] })}
+                      onChange={(e) => {
+                        setForm({ ...form, reason: e.target.value as ContactFormData["reason"] });
+                        if (errors.reason) {
+                          setErrors((current) => ({ ...current, reason: undefined }));
+                        }
+                      }}
+                      aria-invalid={Boolean(errors.reason)}
+                      aria-describedby={errors.reason ? "contact-reason-error" : undefined}
                       className="w-full px-4 py-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-sm outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all appearance-none"
                     >
                       {CONTACT_REASONS.map((r) => (
@@ -254,6 +301,11 @@ const ContactSection = () => {
                       </svg>
                     </div>
                   </div>
+                  {errors.reason && (
+                    <p id="contact-reason-error" className="mt-2 text-sm text-destructive">
+                      {errors.reason}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex-1 flex flex-col min-h-[140px]">
@@ -265,10 +317,22 @@ const ContactSection = () => {
                     maxLength={2000}
                     disabled={isSubmitting}
                     value={form.message}
-                    onChange={(e) => setForm({ ...form, message: e.target.value })}
+                    onChange={(e) => {
+                      setForm({ ...form, message: e.target.value });
+                      if (errors.message) {
+                        setErrors((current) => ({ ...current, message: undefined }));
+                      }
+                    }}
+                    aria-invalid={Boolean(errors.message)}
+                    aria-describedby={errors.message ? "contact-message-error" : undefined}
                     className="flex-1 w-full px-4 py-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-sm outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all resize-none placeholder:text-muted-foreground/40"
                     placeholder="Tell me about the opportunity or idea..."
                   />
+                  {errors.message && (
+                    <p id="contact-message-error" className="mt-2 text-sm text-destructive">
+                      {errors.message}
+                    </p>
+                  )}
                 </div>
               </div>
 

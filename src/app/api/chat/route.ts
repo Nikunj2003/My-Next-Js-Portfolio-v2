@@ -263,7 +263,7 @@ export async function POST(request: Request) {
     limit: RATE_LIMIT,
     windowMs: WINDOW_MS,
   });
-  const rateLimitHeaders = getRateLimitHeaders(RATE_LIMIT, rateLimitResult.remaining);
+  const rateLimitHeaders = getRateLimitHeaders(RATE_LIMIT, rateLimitResult.remaining, rateLimitResult.resetAt);
 
   if (rateLimitResult.limited) {
     return createChatErrorResponse(
@@ -351,7 +351,7 @@ export async function POST(request: Request) {
         );
       }
 
-      console.error("LLM provider request failed:", error);
+      console.error("LLM provider request failed");
       return createChatErrorResponse(
         502,
         "upstream_unreachable",
@@ -362,8 +362,8 @@ export async function POST(request: Request) {
 
     if (!response.ok) {
       const upstreamStatus = response.status;
-      const upstreamBody = await response.text();
-      console.error("LLM API error:", upstreamStatus, upstreamBody);
+      await response.text();
+      console.error("LLM API error", upstreamStatus);
 
       if (upstreamStatus === 429) {
         return createChatErrorResponse(
@@ -413,8 +413,8 @@ export async function POST(request: Request) {
       suggestions: followUpSuggestions.length > 0 ? followUpSuggestions : undefined,
     }, { headers: rateLimitHeaders });
 
-  } catch (error: unknown) {
-    console.error("AI Response Error:", error);
+  } catch {
+    console.error("AI response handling failed");
     return createChatErrorResponse(
       500,
       "internal_error",

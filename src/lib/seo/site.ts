@@ -1,6 +1,7 @@
 import { about, personalInfo } from "@/data/portfolio";
 
 const siteUrl = "https://nikunj.codenex.dev";
+export const ogLocale = "en_IN";
 
 export const siteConfig = {
   siteUrl,
@@ -15,7 +16,8 @@ export const siteConfig = {
   email: personalInfo.email,
   github: personalInfo.github,
   linkedin: personalInfo.linkedin,
-  locale: "en_IN",
+  locale: "en-IN",
+  ogLocale,
   ogImage: "/images/projects/codenex/landing-page-light.png",
   keywords: [
     "Nikunj Khitha",

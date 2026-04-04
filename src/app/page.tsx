@@ -1,3 +1,4 @@
+import dynamic from "next/dynamic";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
 import AboutSection from "@/components/AboutSection";
@@ -7,8 +8,9 @@ import SkillsSection from "@/components/SkillsSection";
 import AITwinSection from "@/components/AITwinSection";
 import ContactSection from "@/components/ContactSection";
 import Footer from "@/components/Footer";
-import FluidCursor from "@/components/FluidCursor";
-import AITwinChat from "@/components/AITwinChat";
+
+const FluidCursor = dynamic(() => import("@/components/FluidCursor"));
+const AITwinChat = dynamic(() => import("@/components/AITwinChat"));
 
 export default function Home() {
   return (

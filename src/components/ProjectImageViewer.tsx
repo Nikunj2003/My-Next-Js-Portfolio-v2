@@ -628,17 +628,18 @@ export default function ProjectImageViewer({
     if (!open || showThumbnailRail) return;
 
     let timer = 0;
+    const railDelay = isMobile ? 170 : 320;
     const frame = window.requestAnimationFrame(() => {
       timer = window.setTimeout(() => {
         setShowThumbnailRail(true);
-      }, 170);
+      }, railDelay);
     });
 
     return () => {
       window.cancelAnimationFrame(frame);
       window.clearTimeout(timer);
     };
-  }, [open, showThumbnailRail]);
+  }, [isMobile, open, showThumbnailRail]);
 
   useEffect(() => {
     if (!open) return;
@@ -721,14 +722,14 @@ export default function ProjectImageViewer({
       shouldScaleBackground={false}
     >
       <DrawerPrimitive.Portal>
-        <DrawerPrimitive.Overlay className="fixed inset-0 z-50 bg-[radial-gradient(circle_at_top,rgba(41,214,185,0.12),transparent_36%),linear-gradient(180deg,rgba(3,7,18,0.84),rgba(3,7,18,0.96))] backdrop-blur-0 sm:backdrop-blur-sm [will-change:opacity] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <DrawerPrimitive.Overlay className="fixed inset-0 z-50 bg-[radial-gradient(circle_at_top,rgba(41,214,185,0.12),transparent_36%),linear-gradient(180deg,rgba(3,7,18,0.84),rgba(3,7,18,0.96))] [will-change:opacity] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
 
         <DrawerPrimitive.Content
           ref={contentRef}
           tabIndex={-1}
           onKeyDown={(event) => handleKeyControls(event)}
           style={{ top: "max(env(safe-area-inset-top), 0.75rem)" }}
-          className="fixed inset-x-0 bottom-0 z-[60] mx-auto flex w-[min(calc(100vw-0.75rem),96rem)] transform-gpu flex-col overflow-hidden rounded-t-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(17,24,39,0.97),rgba(12,18,32,0.98))] shadow-[0_-18px_48px_rgba(0,0,0,0.32)] outline-none [will-change:transform] backdrop-blur-0 sm:bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.05))] sm:shadow-[0_-24px_80px_rgba(0,0,0,0.45)] sm:backdrop-blur-lg sm:backdrop-saturate-150 sm:w-[min(calc(100vw-1.5rem),96rem)]"
+          className="fixed inset-x-0 bottom-0 z-[60] mx-auto flex w-[min(calc(100vw-0.75rem),96rem)] transform-gpu flex-col overflow-hidden rounded-t-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(17,24,39,0.97),rgba(12,18,32,0.98))] shadow-[0_-18px_48px_rgba(0,0,0,0.32)] outline-none [will-change:transform] sm:w-[min(calc(100vw-1.5rem),96rem)]"
         >
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/80 to-transparent" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-white/10 to-transparent" />

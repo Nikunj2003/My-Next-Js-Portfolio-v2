@@ -5,7 +5,7 @@ import './globals.css'
 import { Providers } from './providers'
 import { SmoothScroll } from '@/components/SmoothScroll'
 import { getPortfolioGraph, toJsonLd } from '@/lib/seo/jsonld'
-import { siteConfig } from '@/lib/seo/site'
+import { siteConfig, ogLocale } from '@/lib/seo/site'
 const outfit = Outfit({ 
   subsets: ['latin'],
   variable: '--font-outfit',
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   creator: siteConfig.creator,
   openGraph: {
     type: 'website',
-    locale: siteConfig.locale,
+    locale: ogLocale,
     url: siteConfig.homeUrl,
     title: siteConfig.title,
     description: siteConfig.description,
@@ -101,15 +101,17 @@ export default function RootLayout({
             __html: `
               (function() {
                 try {
-                  var theme = localStorage.getItem('theme');
+                  var storedTheme = localStorage.getItem('theme');
                   var root = document.documentElement;
-                  if (theme === 'light') {
-                    root.classList.remove('dark');
-                  } else {
-                    root.classList.add('dark');
-                  }
+                  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  var shouldUseDark = storedTheme ? storedTheme === 'dark' : prefersDark;
+
+                  root.classList.toggle('dark', shouldUseDark);
                 } catch(e) {
-                  document.documentElement.classList.add('dark');
+                  document.documentElement.classList.toggle(
+                    'dark',
+                    window.matchMedia('(prefers-color-scheme: dark)').matches
+                  );
                 }
               })();
             `,

@@ -52,7 +52,7 @@ export async function POST(request: Request) {
     limit: RATE_LIMIT,
     windowMs: WINDOW_MS,
   });
-  const rateLimitHeaders = getRateLimitHeaders(RATE_LIMIT, rateLimitResult.remaining);
+  const rateLimitHeaders = getRateLimitHeaders(RATE_LIMIT, rateLimitResult.remaining, rateLimitResult.resetAt);
 
   if (rateLimitResult.limited) {
     return NextResponse.json(
@@ -128,7 +128,7 @@ export async function POST(request: Request) {
     );
 
     if (error) {
-      console.error("Resend contact email error:", error);
+      console.error("Resend contact email failed");
 
       return NextResponse.json(
         { error: "Something went wrong while sending your message. Please try again later." },
@@ -140,8 +140,8 @@ export async function POST(request: Request) {
       { success: true, message: "Message sent successfully.", id: data?.id },
       { headers: rateLimitHeaders }
     );
-  } catch (error) {
-    console.error("Contact form error:", error);
+  } catch {
+      console.error("Contact form request failed");
 
     return NextResponse.json(
       { error: "Something went wrong while sending your message. Please try again later." },

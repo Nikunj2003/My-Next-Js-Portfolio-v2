@@ -29,6 +29,8 @@ function ProjectPreviewImage({ src, alt, priority = false }: { src: string; alt:
           alt={alt}
           fill
           priority={priority}
+          loading={priority ? "eager" : undefined}
+          fetchPriority={priority ? "high" : undefined}
           sizes={PROJECT_IMAGE_SIZES}
           className="rounded-lg object-contain object-center opacity-90 transition-all duration-500 group-hover/img:opacity-100 pointer-events-none"
           draggable={false}
@@ -50,14 +52,21 @@ function ProjectShowcase({
   const [mediaRef, mediaInView] = useInView({ triggerOnce: true, threshold: 0, rootMargin: "600px 0px" });
   const hasPrefetchedRef = useRef(false);
 
-  const prefetchProjectImages = useCallback(() => {
+  const prefetchProjectImages = useCallback((targetIndex?: number) => {
     if (hasPrefetchedRef.current || project.images.length === 0 || typeof window === "undefined") {
       return;
     }
 
     hasPrefetchedRef.current = true;
 
-    for (const src of project.images) {
+    const indexes = typeof targetIndex === "number"
+      ? [targetIndex - 1, targetIndex, targetIndex + 1]
+      : [0, 1];
+
+    for (const index of indexes) {
+      const src = project.images[index];
+      if (!src) continue;
+
       const image = new window.Image();
       image.decoding = "async";
       image.src = src;
@@ -84,12 +93,12 @@ function ProjectShowcase({
                   <button
                     type="button"
                     onClick={() => {
-                      prefetchProjectImages();
+                      prefetchProjectImages(idx);
                       onOpenViewer(project, idx);
                     }}
-                    onMouseEnter={prefetchProjectImages}
-                    onFocus={prefetchProjectImages}
-                    onTouchStart={prefetchProjectImages}
+                    onMouseEnter={() => prefetchProjectImages(idx)}
+                    onFocus={() => prefetchProjectImages(idx)}
+                    onTouchStart={() => prefetchProjectImages(idx)}
                     className="group/viewer relative block w-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                     aria-label={`Open ${project.title} screenshot ${idx + 1} in viewer`}
                   >
@@ -121,12 +130,12 @@ function ProjectShowcase({
           <button
             type="button"
             onClick={() => {
-              prefetchProjectImages();
+              prefetchProjectImages(0);
               onOpenViewer(project, 0);
             }}
-            onMouseEnter={prefetchProjectImages}
-            onFocus={prefetchProjectImages}
-            onTouchStart={prefetchProjectImages}
+            onMouseEnter={() => prefetchProjectImages(0)}
+            onFocus={() => prefetchProjectImages(0)}
+            onTouchStart={() => prefetchProjectImages(0)}
             className="group/viewer w-full relative z-10 rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10 bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black"
             aria-label={`Open ${project.title} preview in viewer`}
           >
@@ -190,7 +199,9 @@ const ProjectsSection = () => {
             {categories.map((cat) => (
               <button
                 key={cat}
+                type="button"
                 onClick={() => setFilter(cat)}
+                aria-pressed={filter === cat}
                 className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 active:scale-95 border ${
                   filter === cat
                     ? "bg-primary text-primary-foreground border-primary shadow-[0_0_20px_rgba(41,214,185,0.4)]"

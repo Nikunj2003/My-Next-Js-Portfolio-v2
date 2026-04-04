@@ -1,16 +1,15 @@
-"use client";
-
-import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 
+export const metadata: Metadata = {
+  title: "Page not found",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
+
 export default function NotFound() {
-  const pathname = usePathname();
-
-  useEffect(() => {
-    console.error("404 Error: User attempted to access non-existent route:", pathname);
-  }, [pathname]);
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted">
       <div className="text-center">
