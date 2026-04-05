@@ -9,7 +9,7 @@ export const siteConfig = {
   resumeUrl: `${siteUrl}${personalInfo.resumeUrl}`,
   updatedAt: "2026-03-28T00:00:00.000Z",
   siteName: "Nikunj Khitha Portfolio",
-  title: `${personalInfo.name} — GenAI Platform Engineer`,
+  title: `${personalInfo.name} — Full-Stack GenAI Engineer`,
   description: personalInfo.tagline,
   author: personalInfo.name,
   creator: personalInfo.name,
@@ -21,6 +21,7 @@ export const siteConfig = {
   ogImage: "/images/projects/codenex/landing-page-light.png",
   keywords: [
     "Nikunj Khitha",
+    "Full-Stack GenAI Engineer",
     "GenAI Platform Engineer",
     "Full-Stack GenAI Engineer",
     "Software Engineer",
