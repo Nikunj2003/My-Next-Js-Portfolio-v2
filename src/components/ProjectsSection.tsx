@@ -20,7 +20,7 @@ import ProjectImageViewer from "@/components/ProjectImageViewer";
 const categories = ["All", ...Array.from(new Set(projects.map((p) => p.category)))];
 const PROJECT_IMAGE_SIZES = "(min-width: 1536px) 42rem, (min-width: 1024px) 40vw, 100vw";
 
-function ProjectPreviewImage({ src, alt, priority = false }: { src: string; alt: string; priority?: boolean }) {
+function ProjectPreviewImage({ src, alt, priority = false, eager = false }: { src: string; alt: string; priority?: boolean; eager?: boolean }) {
   return (
     <div className="aspect-[16/10] w-full bg-zinc-950 p-1">
       <div className="relative h-full w-full">
@@ -29,7 +29,7 @@ function ProjectPreviewImage({ src, alt, priority = false }: { src: string; alt:
           alt={alt}
           fill
           priority={priority}
-          loading={priority ? "eager" : undefined}
+          loading={eager ? "eager" : undefined}
           fetchPriority={priority ? "high" : undefined}
           sizes={PROJECT_IMAGE_SIZES}
           className="rounded-lg object-contain object-center opacity-90 transition-all duration-500 group-hover/img:opacity-100 pointer-events-none"
@@ -106,6 +106,7 @@ function ProjectShowcase({
                       src={img}
                       alt={`${project.title} screenshot ${idx + 1}`}
                       priority={priority && idx === 0}
+                      eager={priority && idx === 0}
                     />
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-100 sm:opacity-0 sm:group-hover/viewer:opacity-100 transition-opacity duration-300" />
                     <div className="pointer-events-none absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/45 px-3 py-2 text-xs font-mono text-white/90 backdrop-blur-md shadow-lg">
