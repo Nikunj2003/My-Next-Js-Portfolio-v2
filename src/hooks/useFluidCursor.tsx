@@ -53,11 +53,14 @@ const useFluidCursor = (
   }
 
   // Observe theme (class 'dark') toggles to rebuild palette & subtly recolor pointers
-  const themeObserver = new MutationObserver(() => {
-    refreshAccentPalette();
-    pointers.forEach((p) => (p.color = generateColor()));
-  });
-  themeObserver.observe(document.documentElement, {
+  const themeObserver =
+    typeof MutationObserver !== "undefined"
+      ? new MutationObserver(() => {
+          refreshAccentPalette();
+          pointers.forEach((p) => (p.color = generateColor()));
+        })
+      : null;
+  themeObserver?.observe(document.documentElement, {
     attributes: true,
     attributeFilter: ["class"],
   });
@@ -83,6 +86,11 @@ const useFluidCursor = (
 
   const { gl, ext } = getWebGLContext(canvas);
 
+  if (!gl || !ext) {
+    themeObserver?.disconnect();
+    return;
+  }
+
   if (!ext.supportLinearFiltering) {
     config.DYE_RESOLUTION = 256;
     config.SHADING = false;
@@ -104,6 +112,10 @@ const useFluidCursor = (
         canvas.getContext("webgl", params) ||
         canvas.getContext("experimental-webgl", params);
 
+    if (!gl) {
+      return { gl: null, ext: null };
+    }
+
     let halfFloat;
     let supportLinearFiltering;
     if (isWebGL2) {
@@ -112,6 +124,10 @@ const useFluidCursor = (
     } else {
       halfFloat = gl.getExtension("OES_texture_half_float");
       supportLinearFiltering = gl.getExtension("OES_texture_half_float_linear");
+
+      if (!halfFloat) {
+        return { gl: null, ext: null };
+      }
     }
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -136,6 +152,10 @@ const useFluidCursor = (
       formatRGBA = getSupportedFormat(gl, gl.RGBA, gl.RGBA, halfFloatTexType);
       formatRG = getSupportedFormat(gl, gl.RGBA, gl.RGBA, halfFloatTexType);
       formatR = getSupportedFormat(gl, gl.RGBA, gl.RGBA, halfFloatTexType);
+    }
+
+    if (!formatRGBA || !formatRG || !formatR) {
+      return { gl: null, ext: null };
     }
 
     return {
@@ -1224,7 +1244,7 @@ const useFluidCursor = (
     if (isDisposed) return;
     isDisposed = true;
     cancelAnimationFrame(animationId);
-    themeObserver.disconnect();
+    themeObserver?.disconnect();
     listeners.forEach(({ target, type, fn, opts }) => {
       target.removeEventListener(type, fn, opts);
     });

@@ -71,7 +71,7 @@ export const experiences: Experience[] = [
   {
     company: "ArmorCode",
     role: "Associate Engineer (Platform & GenAI)",
-    period: "Jan 2025 – Present",
+    period: "Dec 2025 – Present",
     type: "work",
     bullets: [
       "Architected enterprise GenAI platforms for 200+ customers, including a Neo4j + PGVector GraphRAG system unifying 500,000+ entities across 5+ systems with 40% better retrieval accuracy.",

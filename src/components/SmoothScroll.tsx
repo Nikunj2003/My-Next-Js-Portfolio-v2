@@ -82,8 +82,13 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      event.preventDefault();
-      scrollToHash(href);
+      const handled = scrollToHash(href, {
+        focusTarget: link.dataset.focusTarget === 'true',
+      });
+
+      if (handled) {
+        event.preventDefault();
+      }
     };
 
     startRaf();

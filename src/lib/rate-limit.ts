@@ -54,7 +54,7 @@ export function checkRateLimit(
 
   const entry = store.get(clientKey);
 
-  if (!entry) {
+  if (!entry || now >= entry.resetAt) {
     const resetAt = now + windowMs;
     store.set(clientKey, { count: 1, resetAt });
     return { limited: false, remaining: Math.max(limit - 1, 0), retryAfter: 0, resetAt };

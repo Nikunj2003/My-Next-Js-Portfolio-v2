@@ -1,22 +1,10 @@
 import type { Metadata, Viewport } from 'next'
-import { JetBrains_Mono, Outfit } from 'next/font/google'
 import Script from 'next/script'
 import './globals.css'
 import { Providers } from './providers'
 import { SmoothScroll } from '@/components/SmoothScroll'
 import { getPortfolioGraph, toJsonLd } from '@/lib/seo/jsonld'
 import { siteConfig, ogLocale } from '@/lib/seo/site'
-const outfit = Outfit({ 
-  subsets: ['latin'],
-  variable: '--font-outfit',
-  weight: ['300', '400', '500', '600', '700', '800']
-})
-
-const jetbrainsMono = JetBrains_Mono({ 
-  subsets: ['latin'],
-  variable: '--font-jetbrains-mono',
-  weight: ['400', '500', '600', '700']
-})
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.siteUrl),
@@ -87,9 +75,10 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: portfolioJsonLd }}
         />
       </head>
-      <body className={`${outfit.variable} ${jetbrainsMono.variable} font-sans`} suppressHydrationWarning>
+      <body className="font-sans" suppressHydrationWarning>
         <a
           href="#main-content"
+          data-focus-target="true"
           className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[120] focus:rounded-full focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary/40"
         >
           Skip to content

@@ -9,6 +9,7 @@ type ScrollWindow = Window & typeof globalThis & {
 type ScrollToHashOptions = {
   offset?: number;
   updateHash?: boolean;
+  focusTarget?: boolean;
 };
 
 export const SECTION_SCROLL_OFFSET = 85;
@@ -23,7 +24,11 @@ function updateHash(href: string) {
 }
 
 export function scrollToHash(href: string, options: ScrollToHashOptions = {}) {
-  const { offset = SECTION_SCROLL_OFFSET, updateHash: shouldUpdateHash = true } = options;
+  const {
+    offset = SECTION_SCROLL_OFFSET,
+    updateHash: shouldUpdateHash = true,
+    focusTarget = false,
+  } = options;
 
   if (typeof window === "undefined" || !href.startsWith("#")) {
     return false;
@@ -32,6 +37,10 @@ export function scrollToHash(href: string, options: ScrollToHashOptions = {}) {
   const target = document.querySelector(href);
   if (!(target instanceof HTMLElement)) {
     return false;
+  }
+
+  if (focusTarget) {
+    target.focus({ preventScroll: true });
   }
 
   const lenis = (window as ScrollWindow).__lenis;
