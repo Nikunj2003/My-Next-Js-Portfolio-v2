@@ -1,7 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion, useMotionValue, useReducedMotion, useSpring } from "framer-motion";
+import {
+  AnimatePresence,
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useSpring,
+  useTransform,
+  type MotionValue,
+} from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { Briefcase, CalendarDays, GraduationCap } from "lucide-react";
 import { experiences, type Experience } from "@/data/portfolio";
@@ -78,75 +86,114 @@ function FlipChapter() {
   );
 }
 
-function TimelineIcon({ iconRef }: { iconRef: React.RefObject<HTMLLIElement | null> }) {
-  const [inView, setInView] = useState(false);
-  const pathLength = useSpring(0, { stiffness: 100, damping: 20 });
+function TimelineIcon({
+  timelineRef,
+  lineProgress,
+}: {
+  timelineRef: React.RefObject<HTMLDivElement | null>;
+  lineProgress: MotionValue<number>;
+}) {
+  const figureRef = useRef<HTMLElement>(null);
+  const shouldReduceMotion = useReducedMotion();
+  const [fillWindow, setFillWindow] = useState({ start: 0, end: 1 });
 
   useEffect(() => {
-    const element = iconRef.current;
-    if (!element) return;
+    const timeline = timelineRef.current;
+    const figure = figureRef.current;
+    if (!timeline || !figure) return;
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setInView(entry.isIntersecting);
-        pathLength.set(entry.isIntersecting ? 1 : 0);
-      },
-      { threshold: 0.5 }
-    );
+    const measure = () => {
+      const timelineRect = timeline.getBoundingClientRect();
+      const figureRect = figure.getBoundingClientRect();
+      const totalHeight = Math.max(timelineRect.height, 1);
+      const start = Math.max(0, Math.min(1, (figureRect.top - timelineRect.top) / totalHeight));
+      const end = Math.max(start + 0.001, Math.min(1, (figureRect.bottom - timelineRect.top) / totalHeight));
 
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [iconRef, pathLength]);
+      setFillWindow({ start, end });
+    };
+
+    measure();
+
+    const resizeObserver = new ResizeObserver(measure);
+    resizeObserver.observe(timeline);
+    resizeObserver.observe(figure);
+    window.addEventListener("resize", measure);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [timelineRef]);
+
+  const rawPathLength = useTransform(lineProgress, [fillWindow.start, fillWindow.end], [0, 1], {
+    clamp: true,
+  });
+  const pathLength = useSpring(rawPathLength, { stiffness: 180, damping: 24, mass: 0.25 });
+  const fillOpacity = useTransform(pathLength, [0.82, 1], [0, 1], { clamp: true });
 
   return (
-    <figure className="absolute left-[25px] top-2 flex h-[50px] w-[50px] -translate-x-1/2 items-center justify-center stroke-foreground sm:left-[45px] sm:h-[75px] sm:w-[75px] md:top-4">
+    <figure
+      ref={figureRef}
+      className="absolute left-[25px] top-2 flex h-[50px] w-[50px] -translate-x-1/2 items-center justify-center stroke-foreground sm:left-[45px] sm:h-[75px] sm:w-[75px] md:top-4"
+    >
       <svg viewBox="0 0 100 100" className="h-full w-full rotate-[-90deg]">
         <circle cx="50" cy="50" r="20" className="fill-background stroke-primary/20 stroke-1" />
         <motion.circle
-          style={{ pathLength }}
+          style={{ pathLength: shouldReduceMotion ? 1 : pathLength }}
           cx="50"
           cy="50"
           r="20"
           className="fill-none stroke-primary stroke-[5px]"
         />
-        <circle
+        <motion.circle
           cx="50"
           cy="50"
           r="10"
-          className={`fill-primary stroke-1 transition-opacity duration-500 ${inView ? "opacity-100" : "opacity-0"}`}
+          style={{ opacity: shouldReduceMotion ? 1 : fillOpacity }}
+          className="fill-primary stroke-1"
         />
       </svg>
     </figure>
   );
 }
 
-function ExperienceItem({ exp, index }: { exp: Experience; index: number }) {
+function ExperienceItem({
+  exp,
+  index,
+  timelineRef,
+  lineProgress,
+}: {
+  exp: Experience;
+  index: number;
+  timelineRef: React.RefObject<HTMLDivElement | null>;
+  lineProgress: MotionValue<number>;
+}) {
   const ref = useRef<HTMLLIElement>(null);
   const MetaIcon = exp.type === "education" ? GraduationCap : Briefcase;
   const metaLabel = exp.type === "education" ? "Education" : "Experience";
 
   return (
     <li ref={ref} className="relative mb-12 flex w-full flex-col gap-1 pl-[50px] sm:mb-16 sm:pl-[90px]">
-      <TimelineIcon iconRef={ref} />
+      <TimelineIcon timelineRef={timelineRef} lineProgress={lineProgress} />
       <SpotlightCard delay={index * 0.05} className="h-full">
         <div className="p-6 md:p-8">
-	          <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-	            <div>
-	              <h3 className="text-xl font-bold text-foreground md:text-2xl">{exp.role}</h3>
-	              <span className="mt-1 block font-medium text-primary">{exp.company}</span>
-	            </div>
-	
-	            <div className="flex w-full flex-col items-end gap-2 md:w-auto md:flex-none">
-	              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-mono font-medium uppercase tracking-wide text-muted-foreground">
-	                <MetaIcon className="h-3.5 w-3.5" />
-	                {metaLabel}
-	              </span>
-	              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-mono font-medium text-muted-foreground">
-	                <CalendarDays className="h-3.5 w-3.5" />
-	                {exp.period}
-	              </span>
-	            </div>
-	          </div>
+          <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <h3 className="text-xl font-bold text-foreground md:text-2xl">{exp.role}</h3>
+              <span className="mt-1 block font-medium text-primary">{exp.company}</span>
+            </div>
+
+            <div className="flex w-full flex-col items-end gap-2 md:w-auto md:flex-none">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-mono font-medium uppercase tracking-wide text-muted-foreground">
+                <MetaIcon className="h-3.5 w-3.5" />
+                {metaLabel}
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-mono font-medium text-muted-foreground">
+                <CalendarDays className="h-3.5 w-3.5" />
+                {exp.period}
+              </span>
+            </div>
+          </div>
 
           <ul className="space-y-3 text-sm leading-relaxed text-muted-foreground md:text-base">
             {exp.bullets.map((bullet) => (
@@ -277,6 +324,8 @@ const ExperienceSection = () => {
                   key={`${experience.company}-${experience.period}`}
                   exp={experience}
                   index={index}
+                  timelineRef={timelineRef}
+                  lineProgress={scrollYProgress}
                 />
               ))}
             </ul>
