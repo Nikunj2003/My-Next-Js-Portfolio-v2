@@ -5,7 +5,13 @@ import { MessageCircle, X, Send, Bot, User, Trash2 } from "lucide-react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { chatSuggestions } from "@/data/portfolio";
+import { CHAT_CLIENT_TIMEOUT_MS } from "@/lib/chat-contract";
+import {
+  createStoredChatEnvelope,
+  parseStoredChatEnvelope,
+} from "@/lib/chat-storage";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useChatAvailability } from "@/hooks/useChatAvailability";
 import { scrollToHash } from "@/lib/scroll";
 import { cn } from "@/lib/utils";
 import { CHAT_MEMORY_WINDOW, CHAT_STORAGE_KEY, WELCOME_MESSAGE, trimConversationHistory } from "@/lib/ai-twin";
@@ -52,6 +58,7 @@ type ChatRequestError = Error & {
 const WELCOME = WELCOME_MESSAGE;
 const INITIAL_MESSAGES: Message[] = [{ id: "welcome", role: "assistant", content: WELCOME }];
 const FOCUSABLE_SELECTOR = 'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])';
+const OFFLINE_ASSISTANT_MESSAGE = "Nikunj's AI twin is offline right now. You can still browse the projects, use the contact section, or download the resume while the service is unavailable.";
 
 function createMessageId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -200,6 +207,7 @@ const AITwinChat = () => {
   const handleSendRef = useRef<(request?: SendRequest) => Promise<void>>(async () => {});
   const isMobile = useIsMobile();
   const shouldReduceMotion = useReducedMotion();
+  const { status: chatAvailabilityStatus } = useChatAvailability();
 
   const getConversationHistory = useCallback(
     (sourceMessages: Message[], beforeMessageId?: string) => {
@@ -222,7 +230,13 @@ const AITwinChat = () => {
     try {
       const stored = window.localStorage.getItem(CHAT_STORAGE_KEY);
       if (stored) {
-        setMessages(sanitizeStoredMessages(JSON.parse(stored)));
+        const parsedEnvelope = parseStoredChatEnvelope<Message>(JSON.parse(stored));
+
+        if (parsedEnvelope) {
+          setMessages(sanitizeStoredMessages(parsedEnvelope.messages));
+        } else {
+          window.localStorage.removeItem(CHAT_STORAGE_KEY);
+        }
       }
     } catch (error) {
       console.warn("Failed to restore AI Twin chat history:", error);
@@ -240,7 +254,10 @@ const AITwinChat = () => {
         ...trimConversationHistory(messages, CHAT_MEMORY_WINDOW),
       ];
 
-      window.localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(memoryMessages));
+      window.localStorage.setItem(
+        CHAT_STORAGE_KEY,
+        JSON.stringify(createStoredChatEnvelope(memoryMessages)),
+      );
     } catch (error) {
       console.warn("Failed to persist AI Twin chat history:", error);
     }
@@ -442,13 +459,35 @@ const AITwinChat = () => {
     const msg = normalizedRequest?.text || input.trim();
     if (!msg || isSendingRef.current) return;
 
+    if (chatAvailabilityStatus === "unavailable") {
+      setMessages((prev) => {
+        const lastMessage = prev[prev.length - 1];
+        if (
+          lastMessage?.role === "assistant" &&
+          lastMessage.content === OFFLINE_ASSISTANT_MESSAGE
+        ) {
+          return prev;
+        }
+
+        return [
+          ...prev,
+          {
+            id: createMessageId(),
+            role: "assistant",
+            content: OFFLINE_ASSISTANT_MESSAGE,
+          },
+        ];
+      });
+      return;
+    }
+
     isSendingRef.current = true;
     const retryMessageId = normalizedRequest?.retryMessageId;
     const retryUserMessageId = normalizedRequest?.retryUserMessageId;
     const isRetry = Boolean(retryMessageId && retryUserMessageId);
     const userMsgId = retryUserMessageId || createMessageId();
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 20000);
+    const timeoutId = window.setTimeout(() => controller.abort(), CHAT_CLIENT_TIMEOUT_MS);
     setInput("");
 
     if (isRetry && retryMessageId) {
@@ -591,7 +630,7 @@ const AITwinChat = () => {
       isSendingRef.current = false;
       setIsLoading(false);
     }
-  }, [getConversationHistory, input, messages]);
+  }, [chatAvailabilityStatus, getConversationHistory, input, messages]);
 
   handleSendRef.current = handleSend;
 
@@ -636,6 +675,20 @@ const AITwinChat = () => {
     }
   };
 
+  const chatStatusLabel =
+    chatAvailabilityStatus === "available"
+      ? "Assistant Online"
+      : chatAvailabilityStatus === "checking"
+        ? "Checking service"
+        : "Assistant Offline";
+  const chatStatusDotClass =
+    chatAvailabilityStatus === "available"
+      ? "bg-emerald-500 animate-pulse"
+      : chatAvailabilityStatus === "checking"
+        ? "bg-amber-400 animate-pulse"
+        : "bg-muted-foreground/60";
+  const canSendMessages = chatAvailabilityStatus !== "unavailable";
+
   // Shared render function for ChatContent (prevents unmount/remount on every keystroke)
   const renderChatContent = () => (
     <div className="flex flex-col h-full w-full min-h-0 overflow-hidden">
@@ -651,8 +704,8 @@ const AITwinChat = () => {
           <div>
             <p id="ai-twin-title" className="text-sm font-semibold">Nikunj&apos;s AI Twin</p>
             <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse motion-reduce:animate-none" />
-              <p id="ai-twin-status" className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Assistant Online</p>
+              <span className={`w-1.5 h-1.5 rounded-full motion-reduce:animate-none ${chatStatusDotClass}`} />
+              <p id="ai-twin-status" className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">{chatStatusLabel}</p>
             </div>
           </div>
         </div>
@@ -757,7 +810,12 @@ const AITwinChat = () => {
                     type="button"
                     key={i}
                     onClick={() => handleSuggestionClick(s)}
-                    className="group relative max-w-full select-none overflow-hidden rounded-full bg-primary/10 px-3 py-1 text-[11px] text-foreground transition-colors hover:bg-primary/20 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    disabled={!canSendMessages}
+                    className={`group relative max-w-full select-none overflow-hidden rounded-full px-3 py-1 text-[11px] transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                      canSendMessages
+                        ? "bg-primary/10 text-foreground hover:bg-primary/20"
+                        : "bg-muted/50 text-muted-foreground cursor-not-allowed"
+                    }`}
                     aria-label={`Ask: ${s}`}
                   >
                     <span className="relative z-10 flex max-w-full items-center gap-1 overflow-hidden whitespace-nowrap">
@@ -815,12 +873,23 @@ const AITwinChat = () => {
                 type="button"
                 key={s}
                 onClick={() => handleSuggestionClick(s)}
-                className="max-w-full select-none overflow-hidden rounded-full bg-primary/10 px-3 py-1 text-xs text-foreground transition-colors hover:bg-primary/20"
+                disabled={!canSendMessages}
+                className={`max-w-full select-none overflow-hidden rounded-full px-3 py-1 text-xs transition-colors ${
+                  canSendMessages
+                    ? "bg-primary/10 text-foreground hover:bg-primary/20"
+                    : "bg-muted/50 text-muted-foreground cursor-not-allowed"
+                }`}
               >
                 <span className="block truncate whitespace-nowrap">{s}</span>
               </button>
             ))}
           </motion.div>
+        )}
+
+        {chatAvailabilityStatus === "unavailable" && (
+          <div className="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs text-muted-foreground">
+            The live assistant is unavailable right now. You can still use the contact section or resume while the service is down.
+          </div>
         )}
 
         {/* Input */}
@@ -834,21 +903,25 @@ const AITwinChat = () => {
               e.preventDefault();
               void handleSend();
             }}
-            placeholder="Type a message..."
+            placeholder={canSendMessages ? "Type a message..." : "AI chat is currently unavailable."}
             aria-label="Message Nikunj's AI twin"
             autoComplete="off"
-            className="flex-1 bg-background/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all placeholder:text-muted-foreground/50"
+            disabled={!canSendMessages || isLoading}
+            className="flex-1 bg-background/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all placeholder:text-muted-foreground/50 disabled:cursor-not-allowed disabled:opacity-60"
           />
           <button
             type="button"
             onClick={() => handleSend()}
-            disabled={!input.trim() || isLoading}
+            disabled={!input.trim() || isLoading || !canSendMessages}
             className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 shadow-lg shadow-primary/20"
             aria-label="Send message"
           >
             <Send className="w-4 h-4" />
           </button>
         </div>
+        <p className="mt-2 text-[11px] text-muted-foreground/60">
+          Chat history stays on this device for 7 days. Use Clear chat to remove it sooner.
+        </p>
       </div>
     </div>
   );
@@ -872,6 +945,7 @@ const AITwinChat = () => {
         aria-label="Toggle AI chat"
         aria-expanded={isOpen}
         aria-controls="ai-twin-dialog"
+        title={chatStatusLabel}
       >
         <motion.div
           className="relative"

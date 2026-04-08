@@ -118,7 +118,7 @@ const HeroSection = () => {
                 {personalInfo.name}
               </motion.h1>
               <motion.h2 variants={item} className="text-xl sm:text-4xl font-semibold tracking-tight text-muted-foreground mt-2">
-                Shipping <span className="text-gradient">GenAI</span> Platforms
+                Full-Stack <span className="text-gradient">GenAI</span> Engineer
               </motion.h2>
             </div>
 

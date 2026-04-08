@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { personalInfo } from "@/data/portfolio";
-import { contactSchema } from "@/lib/contact";
+import {
+  CONTACT_REQUEST_TIMEOUT_MS,
+  contactRequestSchema,
+  getContactSubmissionIssue,
+} from "@/lib/contact";
 import { checkRateLimit, getClientKey, getRateLimitHeaders } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
 const RATE_LIMIT = 5;
 const WINDOW_MS = 10 * 60_000;
-const RESEND_TIMEOUT_MS = 15_000;
+const RESEND_TIMEOUT_MS = CONTACT_REQUEST_TIMEOUT_MS;
 
 const requestStore = new Map<string, { count: number; resetAt: number }>();
 
@@ -69,11 +73,26 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const parsed = contactSchema.safeParse(body);
+    const parsed = contactRequestSchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json(
         { error: parsed.error.issues[0]?.message || "Invalid contact form submission." },
+        { status: 400, headers: rateLimitHeaders }
+      );
+    }
+
+    const submissionIssue = getContactSubmissionIssue(parsed.data);
+    if (submissionIssue) {
+      if (submissionIssue.kind === "honeypot") {
+        return NextResponse.json(
+          { success: true, message: "Message sent successfully." },
+          { headers: rateLimitHeaders }
+        );
+      }
+
+      return NextResponse.json(
+        { error: submissionIssue.message },
         { status: 400, headers: rateLimitHeaders }
       );
     }
@@ -128,7 +147,7 @@ export async function POST(request: Request) {
     );
 
     if (error) {
-      console.error("Resend contact email failed");
+      console.error("Resend contact email failed", error);
 
       return NextResponse.json(
         { error: "Something went wrong while sending your message. Please try again later." },
@@ -140,8 +159,8 @@ export async function POST(request: Request) {
       { success: true, message: "Message sent successfully.", id: data?.id },
       { headers: rateLimitHeaders }
     );
-  } catch {
-      console.error("Contact form request failed");
+  } catch (error) {
+    console.error("Contact form request failed", error);
 
     return NextResponse.json(
       { error: "Something went wrong while sending your message. Please try again later." },

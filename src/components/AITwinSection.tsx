@@ -3,15 +3,31 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { Bot, MessageCircle } from "lucide-react";
 import { chatSuggestions } from "@/data/portfolio";
+import { useChatAvailability } from "@/hooks/useChatAvailability";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 
 const AITwinSection = () => {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.2 });
   const shouldReduceMotion = useReducedMotion();
+  const { isAvailable, status } = useChatAvailability();
 
   const handlePromptClick = (question: string) => {
     window.dispatchEvent(new CustomEvent("open-ai-twin", { detail: { question } }));
   };
+
+  const statusLabel =
+    status === "available"
+      ? "Live Assistant"
+      : status === "checking"
+        ? "Checking availability"
+        : "Assistant offline";
+
+  const primaryButtonLabel =
+    status === "available"
+      ? "Open AI Chat"
+      : status === "checking"
+        ? "Checking AI Chat..."
+        : "View Chat Status";
 
   return (
     <section id="ai-twin" className="section-padding relative z-10">
@@ -29,22 +45,38 @@ const AITwinSection = () => {
               {/* Left Content */}
               <div className="flex-1 relative z-10">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-subtle border border-black/10 dark:border-white/10 text-xs font-mono text-primary mb-6">
-                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse motion-reduce:animate-none shadow-[0_0_8px_rgba(41,214,185,0.8)]" />
-                  Interactive Mode
+                  <span
+                    className={`w-2 h-2 rounded-full motion-reduce:animate-none shadow-[0_0_8px_rgba(41,214,185,0.8)] ${
+                      status === "available"
+                        ? "bg-primary animate-pulse"
+                        : status === "checking"
+                          ? "bg-amber-400 animate-pulse"
+                          : "bg-muted-foreground/60"
+                    }`}
+                  />
+                  {statusLabel}
                 </div>
                 <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-6">
                   Talk to my <br className="hidden lg:block"/>
                   <span className="text-gradient">AI Twin</span>
                 </h2>
                 <p className="text-muted-foreground text-lg leading-relaxed mb-8 max-w-xl text-pretty lg:mx-0 mx-auto">
-                  Curious about my work? My AI twin can walk you through my projects, architecture decisions, and experience — just like I would.
+                  {isAvailable
+                    ? "Curious about my work? My AI twin can walk you through my projects, architecture decisions, and experience — just like I would."
+                    : status === "checking"
+                      ? "Checking whether the live assistant is available right now. You can still open the chat panel while the status loads."
+                      : "The live assistant is temporarily unavailable. You can still browse the portfolio and open the chat panel for status details."}
                 </p>
                 <button 
                   onClick={() => handlePromptClick("")}
-                  className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-primary text-primary-foreground font-bold text-sm tracking-wide shadow-[0_0_20px_rgba(41,214,185,0.3)] hover:shadow-[0_0_30px_rgba(41,214,185,0.4)] transition-all duration-300 active:scale-95"
+                  className={`inline-flex items-center gap-2 px-8 py-4 rounded-full font-bold text-sm tracking-wide transition-all duration-300 active:scale-95 ${
+                    isAvailable
+                      ? "bg-primary text-primary-foreground shadow-[0_0_20px_rgba(41,214,185,0.3)] hover:shadow-[0_0_30px_rgba(41,214,185,0.4)]"
+                      : "bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground"
+                  }`}
                 >
                   <MessageCircle className="w-4 h-4" />
-                  Open AI Chat
+                  {primaryButtonLabel}
                 </button>
               </div>
 
@@ -55,7 +87,12 @@ const AITwinSection = () => {
                   <button
                     key={s}
                     onClick={() => handlePromptClick(s)}
-                    className="group w-full text-left px-5 py-4 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 hover:border-primary/30 transition-all duration-300 flex items-center justify-between shadow-sm hover:shadow-md"
+                    disabled={!isAvailable}
+                    className={`group w-full text-left px-5 py-4 rounded-2xl border transition-all duration-300 flex items-center justify-between shadow-sm ${
+                      isAvailable
+                        ? "bg-black/5 dark:bg-white/5 border-black/5 dark:border-white/5 hover:border-primary/30 hover:shadow-md"
+                        : "bg-black/5 dark:bg-white/[0.03] border-black/5 dark:border-white/5 opacity-60 cursor-not-allowed"
+                    }`}
                   >
                     <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors mr-4">
                       &ldquo;{s}&rdquo;

@@ -5,11 +5,11 @@ import { SpotlightCard } from "@/components/ui/spotlight-card";
 
 // Icons for each category
 const CATEGORY_ICONS: Record<string, React.ElementType> = {
-  "Generative AI & ML": Brain,
-  "Full Stack Development": Layers,
+  "Full-Stack Engineering": Layers,
+  "GenAI & LLM Systems": Brain,
   "Databases & Data": Database,
   "DevOps & Infrastructure": Server,
-  "Dev Tools & Platforms": Wrench,
+  "Tooling & Delivery": Wrench,
 };
 
 const SkillsSection = () => {
@@ -26,10 +26,10 @@ const SkillsSection = () => {
               </div>
               <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6">
                 Technical <br className="hidden lg:block" />
-                <span className="text-gradient">Arsenal</span>
+                <span className="text-gradient">Stack</span>
               </h2>
               <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-md">
-                A production-tested stack shaped by TypeScript/Node.js, Go/Gin, GraphRAG, AI automation, backend platforms, CI/CD, and polished full-stack product delivery.
+                A full-stack GenAI stack spanning product UI, backend systems, retrieval, AI gateways, automation, data, and production infrastructure.
               </p>
             </div>
           </div>

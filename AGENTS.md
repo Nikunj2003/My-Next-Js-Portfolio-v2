@@ -16,24 +16,25 @@ Evidence:
 - Install deps: `npm install`
 - Dev server: `npm run dev`
 - Lint repo: `npm run lint`
+- Test repo: `npm test`
 - Lint one file: `npx eslint src/components/Navbar.tsx`
 - Lint several files: `npx eslint src/app/page.tsx src/app/api/contact/route.ts`
 - Production build: `npm run build`
 - Start built app: `npm run start`
 ## Test Status
-There is no test runner configured right now.
+The repo now includes a lightweight Node test runner for pure utility tests.
 Observed state:
-- No `test` script in `package.json`
-- No Jest, Vitest, Playwright, or Cypress config files
-- No `*.test.*` or `*.spec.*` files in the repo
+- `package.json` defines `npm test`
+- The test command uses Node's built-in test runner with `--experimental-strip-types`
+- Tests currently live under `tests/*.test.ts`
 Implications:
-- Do not claim tests passed unless you added and ran a test framework
-- Current validation is `npm run lint` and `npm run build`
+- UI and route integration coverage is still not configured
+- Current validation is `npm test`, `npm run lint`, and `npm run build`
 Single-test command:
-- Not available yet because the repo has no test harness
-- If a test runner is added later, update this file with the exact single-test command
+- `node --test --experimental-strip-types tests/rate-limit.test.ts`
 ## Verified While Writing This File
 These commands were run successfully:
+- `npm test`
 - `npm run lint`
 - `npm run build`
 ## Project Layout

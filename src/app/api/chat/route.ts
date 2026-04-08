@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { AI_MODEL, SYSTEM_PROMPT, SUGGESTION_SYSTEM_PROMPT } from "@/lib/ai-config";
+import {
+  CHAT_PRIMARY_RESPONSE_TIMEOUT_MS,
+  CHAT_SUGGESTION_TIMEOUT_MS,
+  CHAT_TOTAL_RESPONSE_BUDGET_MS,
+  type ChatAvailabilityResponse,
+} from "@/lib/chat-contract";
 import { CHAT_MEMORY_WINDOW, appendContextualLinks, findMatchingProjects, normalizeText, trimConversationHistory } from "@/lib/ai-twin";
 import { checkRateLimit, getClientKey, getRateLimitHeaders } from "@/lib/rate-limit";
 
@@ -31,8 +37,6 @@ const TARGET_SUGGESTION_COUNT = 4;
 const MAX_SUGGESTION_LENGTH = 44;
 const MAX_MESSAGE_LENGTH = 1200;
 const MAX_HISTORY_MESSAGE_LENGTH = 4000;
-const PRIMARY_RESPONSE_TIMEOUT_MS = 18_000;
-const SUGGESTION_TIMEOUT_MS = 10_000;
 
 const requestStore = new Map<string, { count: number; resetAt: number }>();
 
@@ -237,6 +241,16 @@ function buildFallbackSuggestions(
   return suggestions.length > 0 ? suggestions : getDefaultSuggestions();
 }
 
+function getPriorUserTexts(recentMessages: Message[], currentMessage: string) {
+  const priorUserTexts = recentMessages
+    .filter((message) => message.sender === "user")
+    .map((message) => normalizeText(message.content));
+
+  priorUserTexts.push(normalizeText(currentMessage));
+
+  return priorUserTexts;
+}
+
 async function postChatCompletion(
   invokeUrl: string,
   headers: Record<string, string>,
@@ -258,7 +272,24 @@ async function postChatCompletion(
   }
 }
 
+function isChatConfigured() {
+  return Boolean(process.env.LLM_API_KEY?.trim());
+}
+
+export async function GET() {
+  const payload: ChatAvailabilityResponse = {
+    available: isChatConfigured(),
+  };
+
+  return NextResponse.json(payload, {
+    headers: {
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
 export async function POST(request: Request) {
+  const requestStartedAt = Date.now();
   const rateLimitResult = checkRateLimit(requestStore, getClientKey(request), {
     limit: RATE_LIMIT,
     windowMs: WINDOW_MS,
@@ -292,7 +323,7 @@ export async function POST(request: Request) {
 
     const { message, conversationHistory } = parsedBody.data;
 
-    const apiKey = process.env.LLM_API_KEY;
+    const apiKey = process.env.LLM_API_KEY?.trim();
     if (!apiKey) {
       console.warn("LLM API key not configured");
       return createChatErrorResponse(
@@ -304,7 +335,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const invokeUrl = process.env.LLM_BASE_URL || "https://integrate.api.nvidia.com/v1/chat/completions";
+    const invokeUrl = process.env.LLM_BASE_URL?.trim() || "https://integrate.api.nvidia.com/v1/chat/completions";
     const headers = {
       "Authorization": `Bearer ${apiKey}`,
       "Accept": "application/json",
@@ -339,7 +370,7 @@ export async function POST(request: Request) {
           top_p: 0.7,
           temperature: 0.7,
         },
-        PRIMARY_RESPONSE_TIMEOUT_MS
+        CHAT_PRIMARY_RESPONSE_TIMEOUT_MS
       );
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
@@ -399,14 +430,23 @@ export async function POST(request: Request) {
       aiResponse = "I apologize, but I'm having trouble responding right now. Please try asking your question again.";
     }
 
-    // 2. Generate Follow-up suggestions
-    const followUpSuggestions = await generateAISuggestions(
-      message,
-      aiResponse,
-      recentMessages,
-      invokeUrl,
-      headers
-    );
+    // 2. Generate follow-up suggestions without exceeding the client timeout budget.
+    const elapsedMs = Date.now() - requestStartedAt;
+    const remainingBudgetMs = CHAT_TOTAL_RESPONSE_BUDGET_MS - elapsedMs;
+    const priorUserTexts = getPriorUserTexts(recentMessages, message);
+
+    const followUpSuggestions =
+      remainingBudgetMs >= 1_200
+        ? await generateAISuggestions(
+            message,
+            aiResponse,
+            recentMessages,
+            invokeUrl,
+            headers,
+            Math.min(CHAT_SUGGESTION_TIMEOUT_MS, remainingBudgetMs - 250),
+            priorUserTexts,
+          )
+        : buildFallbackSuggestions(message, aiResponse, recentMessages, priorUserTexts);
 
     return NextResponse.json({
       response: appendContextualLinks(message, aiResponse),
@@ -429,15 +469,11 @@ async function generateAISuggestions(
   aiResponse: string,
   recentMessages: Message[],
   invokeUrl: string,
-  headers: Record<string, string>
+  headers: Record<string, string>,
+  timeoutMs: number,
+  priorUserTexts: string[],
 ): Promise<string[]> {
   try {
-    const priorUserTexts = recentMessages
-      .filter((m) => m.sender === "user")
-      .map((m) => normalizeText(m.content));
-
-    priorUserTexts.push(normalizeText(currentMessage));
-
     const usedCategories = Array.from(detectCategories(...recentMessages.map((m) => m.content), currentMessage));
     const currentFocusCategories = Array.from(detectCategories(currentMessage, aiResponse));
     const desiredCategories = Object.keys(categoryKeywords).filter(
@@ -490,7 +526,7 @@ Rules:
         temperature: 0.7,
         top_p: 0.9,
       },
-      SUGGESTION_TIMEOUT_MS
+      timeoutMs
     );
 
     if (!suggestionResp.ok) {

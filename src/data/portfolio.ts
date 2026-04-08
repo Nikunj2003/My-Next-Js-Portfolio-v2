@@ -1,7 +1,7 @@
 export const personalInfo = {
   name: "Nikunj Khitha",
-  role: "Associate Engineer - GenAI Platform Engineering",
-  tagline: "I build full-stack GenAI platforms with TypeScript/Node.js, Go/Gin, Java/Spring, and Python/FastAPI - from GraphRAG and AI gateways to backend APIs and workflow automation.",
+  role: "Full-Stack GenAI Engineer",
+  tagline: "I build production GenAI products and systems end to end with TypeScript/Node.js, Go/Gin, Java/Spring, and Python/FastAPI - from GraphRAG pipelines and AI gateways to backend APIs, automation, and product UX.",
   email: "njkhitha2003@gmail.com",
   linkedin: "https://www.linkedin.com/in/nikunj-khitha/",
   github: "https://github.com/Nikunj2003",
@@ -16,12 +16,12 @@ export const stats = [
 ];
 
 export const about = {
-  summary: "I build full-stack GenAI platforms that improve retrieval quality, lower model cost, and eliminate manual work. My work spans GraphRAG and LightRAG pipelines, TypeScript/Node.js and Go/Gin services, Java/Spring and Python/FastAPI backends, AI gateways and observability, and the automation systems that make enterprise AI reliable at scale. I enjoy owning the stack end to end - from data and APIs to infrastructure and polished product experiences.",
+  summary: "I build full-stack GenAI products and systems that improve retrieval quality, lower model cost, and eliminate manual work. My work spans GraphRAG and LightRAG pipelines, TypeScript/Node.js and Go/Gin services, Java/Spring and Python/FastAPI backends, AI gateways, observability, automation, and the product experiences on top. I enjoy owning the stack end to end - from data and APIs to infrastructure and polished UX that makes AI genuinely useful.",
   highlights: [
-    "Architected GenAI platforms for 200+ customers, including a GraphRAG system unifying 500K+ entities across 5+ enterprise systems.",
+    "Architected GenAI systems for 200+ customers, including a GraphRAG platform unifying 500K+ entities across 5+ enterprise systems.",
     "Cut indexing cost by 50%, saving $15K+ annually, while improving retrieval accuracy by 40%.",
-    "Built automations across support, QA, HR, and marketing that eliminate 200+ manual hours every month.",
-    "Led documentation automation for 250+ integrations, reducing update latency by 99% from 72 hours to 45 minutes.",
+    "Built backend and automation systems across support, QA, HR, and marketing that eliminate 200+ manual hours every month.",
+    "Led AI-driven documentation automation for 250+ integrations and shipped multi-model gateway tooling with centralized observability.",
   ],
 };
 
@@ -70,13 +70,13 @@ export const experiences: Experience[] = [
   },
   {
     company: "ArmorCode",
-    role: "Associate Engineer (Platform & GenAI)",
+    role: "Associate Engineer (Full-Stack GenAI)",
     period: "Dec 2025 – Present",
     type: "work",
     bullets: [
       "Architected enterprise GenAI platforms for 200+ customers, including a Neo4j + PGVector GraphRAG system unifying 500,000+ entities across 5+ systems with 40% better retrieval accuracy.",
       "Orchestrated GraphRAG and LightRAG ETL pipelines that cut LLM indexing costs by 50% and saved $15,000+ annually.",
-      "Expanded the core Java and Spring Boot backend with 10+ REST APIs serving 5,000+ daily requests at 99.8% uptime.",
+      "Expanded the core Java and Spring Boot backend with 10+ REST APIs serving 5,000+ daily requests at 99.8% uptime and powering GenAI product workflows.",
       "Built automation suites across support, QA, HR, and marketing with n8n, Java microservices, and Python, eliminating 200+ manual hours each month.",
     ],
   },
@@ -97,8 +97,8 @@ export const projects: Project[] = [
   {
     slug: "codenex",
     title: "CodeNex: AI Builder",
-    category: "Full Stack / AI Product",
-    description: "AI-assisted full-stack app builder inspired by Lovable/v0, built as a complete product platform with a microservices Java backend and connected frontend workflows for auth, dashboards, usage views, and project building.",
+    category: "Full-Stack AI Product",
+    description: "AI-assisted full-stack app builder inspired by Lovable/v0, designed as a complete GenAI product with a Java microservices backend, authentication, dashboards, usage views, and a builder workflow backed by Redis, Kafka, Docker, and Kubernetes.",
     images: [
       "/images/projects/codenex/landing-page-light.png",
       "/images/projects/codenex/landing-page-dark.png",
@@ -115,8 +115,8 @@ export const projects: Project[] = [
   {
     slug: "codenex-ai-api-proxy",
     title: "CodeNex AI API Proxy",
-    category: "AI Infrastructure",
-    description: "Unified AI gateway bridging local AI tools to the web. Single API interface to multiple LLM providers with protocol translation, provider pooling, health-tracked failover, and streaming.",
+    category: "AI Gateway & Infra",
+    description: "Unified AI gateway that abstracts multiple model providers behind a single API surface with protocol translation, provider pooling, health-aware failover, streaming, and web tooling for cross-provider control.",
     images: [
       "/images/projects/codenex-proxy/dashbord.png",
       "/images/projects/codenex-proxy/providers.png",
@@ -129,8 +129,8 @@ export const projects: Project[] = [
   {
     slug: "serenify",
     title: "Serenify",
-    category: "Full Stack / AI Product",
-    description: "Open-source mental wellness app combining empathetic AI chat (Gemini 2.5 Flash), mood tracking, journaling, guided wellness sessions, and personal analytics with privacy-first design.",
+    category: "Full-Stack AI Product",
+    description: "Open-source AI wellness platform that combines empathetic chat, mood tracking, journaling, guided sessions, and privacy-first analytics into a usable consumer-style product rather than a demo chatbot.",
     images: [
       "/images/projects/serenify/landing-page-light.png",
       "/images/projects/serenify/dashboard-light.png",
@@ -147,8 +147,8 @@ export const projects: Project[] = [
   {
     slug: "codenex-images",
     title: "CodeNex Images",
-    category: "AI Product",
-    description: "AI-powered image generation and editing platform using Google Gemini models, with Auth0 authentication and a polished editing workspace.",
+    category: "Full-Stack AI Product",
+    description: "AI image generation and editing product built around Gemini models, Auth0, and a focused creative workflow, with a polished workspace instead of a thin prompt box over an API.",
     images: [
       "/images/projects/codenex-images/login-page-dark.png",
       "/images/projects/codenex-images/generation-workspace-dark.png",
@@ -160,7 +160,7 @@ export const projects: Project[] = [
     slug: "resume-fit-codenex",
     title: "Resume Fit — CodeNex",
     category: "AI Product",
-    description: "AI-powered resume analysis & optimization tool with ATS score checking, multi-pillar performance scoring, refinement workflows, and keyword extraction.",
+    description: "AI resume analysis and optimization tool with ATS-style scoring, keyword extraction, and guided refinement workflows built like a practical career product rather than a single-upload demo.",
     images: [
       "/images/projects/resumefit/landing-page-light.png",
       "/images/projects/resumefit/landing-page-dark.png",
@@ -176,8 +176,8 @@ export const projects: Project[] = [
   {
     slug: "llama-mcp-streamlit",
     title: "LLaMa MCP Streamlit",
-    category: "AI / LLM / MCP",
-    description: "Interactive AI assistant using Streamlit, NVIDIA NIM's LLaMA 3.3 70B, and Model Context Protocol (MCP) for real-time external tool execution.",
+    category: "LLM Tooling / MCP",
+    description: "Interactive AI assistant that pairs NVIDIA NIM-hosted LLaMA 3.3 70B with MCP for real-time external tool execution, showing how LLM interfaces can move beyond chat into tool-aware workflows.",
     images: [
       "/images/projects/llama-mcp-streamlit/configuration-dark.png",
       "/images/projects/llama-mcp-streamlit/tools-list-dark.png",
@@ -189,12 +189,12 @@ export const projects: Project[] = [
 
 export const skillCategories = [
   {
-    title: "Generative AI & ML",
-    skills: ["RAG", "GraphRAG", "LightRAG", "Agentic AI", "CrewAI", "LangGraph", "LangChain", "LangChain4j", "MCP", "Prompt Engineering", "AWS Bedrock", "Gemini AI", "OpenAI", "Claude", "LLaMA", "NVIDIA NIM", "Vertex AI", "Azure AI Foundry", "Azure Speech SDK", "Spring AI"],
+    title: "Full-Stack Engineering",
+    skills: ["TypeScript", "Node.js", "Go", "Gin", "Java", "Spring Boot", "Maven", "Python", "FastAPI", "NestJS", "SQLAlchemy", "Next.js", "React", "Express.js", "Prisma", "Kafka", "RabbitMQ", "SQS", "Streamlit"],
   },
   {
-    title: "Full Stack Development",
-    skills: ["TypeScript", "Node.js", "Go", "Gin", "Java", "Spring Boot", "Maven", "Python", "FastAPI", "NestJS", "SQLAlchemy", "Next.js", "React", "Express.js", "Prisma", "Kafka", "RabbitMQ", "SQS", "Streamlit"],
+    title: "GenAI & LLM Systems",
+    skills: ["RAG", "GraphRAG", "LightRAG", "Agentic AI", "CrewAI", "LangGraph", "LangChain", "LangChain4j", "MCP", "Prompt Engineering", "AWS Bedrock", "Gemini AI", "OpenAI", "Claude", "LLaMA", "NVIDIA NIM", "Vertex AI", "Azure AI Foundry", "Azure Speech SDK", "Spring AI"],
   },
   {
     title: "Databases & Data",
@@ -205,7 +205,7 @@ export const skillCategories = [
     skills: ["AWS", "Azure", "Google Cloud", "Docker", "Kubernetes", "CI/CD", "GitHub Actions", "Nginx", "Grafana", "Jenkins", "Traefik"],
   },
   {
-    title: "Dev Tools & Platforms",
+    title: "Tooling & Delivery",
     skills: ["LiteLLM", "Claude Code", "Gemini CLI", "Windsurf", "OpenWeb UI", "Vercel", "Vercel AI SDK", "Vite", "Swagger", "Auth0", "Postman", "n8n", "Git", "Recharts"],
   },
 ];

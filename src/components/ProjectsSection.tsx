@@ -192,7 +192,7 @@ const ProjectsSection = () => {
             Featured <span className="text-gradient">Work</span>
           </h2>
           <p className="text-muted-foreground leading-relaxed mb-10 max-w-xl text-lg">
-            Production-grade systems, AI platforms, and scalable applications built to solve complex problems.
+            End-to-end GenAI products, AI gateways, and backend systems spanning UX, APIs, retrieval, automation, and production infrastructure.
           </p>
 
           {/* Filters */}

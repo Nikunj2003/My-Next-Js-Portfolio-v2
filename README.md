@@ -1,10 +1,10 @@
 <div align="center">
 
-# 🌐 Nikunj Khitha - GenAI Platform Engineer Portfolio
+# 🌐 Nikunj Khitha - Full-Stack GenAI Engineer Portfolio
 
-Production-grade portfolio for a software engineer focused on GraphRAG, LightRAG, AI automation, and full-stack AI products built with TypeScript/Node.js, Go/Gin, Java/Spring, and Python/FastAPI.
+Production-grade portfolio for a full-stack GenAI engineer focused on GraphRAG, LightRAG, AI automation, AI gateways, backend systems, and product-grade applications built with TypeScript/Node.js, Go/Gin, Java/Spring, and Python/FastAPI.
 
-Built with **Next.js**, the site combines a polished interactive experience with a recruiter-friendly showcase of enterprise GenAI work, platform engineering, automation, and product development.
+Built with **Next.js**, the site combines a polished interactive experience with a recruiter-friendly showcase of enterprise GenAI systems, end-to-end engineering, automation, and product development.
 
 <!-- ![Homepage Screenshot](public/static/home.png) -->
 
@@ -16,7 +16,7 @@ Built with **Next.js**, the site combines a polished interactive experience with
 
 ### 1. 🤖 AI Twin Chatbot Integration
 Interactive AI chatbot (`src/components/AITwinChat.tsx`) integrated into the portfolio:
-- Floating widget positioned at the bottom-left corner.
+- Floating widget positioned at the bottom-right corner.
 - Context-aware responses regarding professional background, skills, and projects.
 - Provides a seamless, immediate conversational experience for visitors.
 
@@ -56,7 +56,7 @@ Leveraging **Framer Motion** for highly performant animations:
 - **Framer Motion** – Declarative React animations
 - **Radix UI components / Shadcn UI** – Accessible unstyled UI primitives
 - **Lucide React** – Consistent iconography
-- **Zod & React Hook Form** – Robust form validation
+- **Zod** – Runtime validation for chat and contact flows
 - **Embla Carousel / Recharts** – Specialized UI elements
 
 ---
@@ -75,6 +75,8 @@ CONTACT_EMAIL_TO=njkhitha2003@gmail.com,info.portfolio.nikunj@gmail.com
 # -----------------------------
 # LLM / AI Provider
 LLM_API_KEY=your-llm-api-key
+LLM_BASE_URL=https://integrate.api.nvidia.com/v1/chat/completions
+AI_MODEL=openai/gpt-oss-20b
 ```
 
 > Never commit real credentials. Configure them in your hosting provider's dashboard (e.g. Vercel) for production.
@@ -104,6 +106,9 @@ Visit: http://localhost:3000
 ```bash
 # Run the linter
 npm run lint
+
+# Run the unit tests
+npm test
 
 # Build for production
 npm run build

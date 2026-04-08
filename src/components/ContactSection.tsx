@@ -6,7 +6,14 @@ import { useInView } from "react-intersection-observer";
 import { Mail, Linkedin, Github, Send, Download, ArrowUpRight } from "lucide-react";
 import { personalInfo } from "@/data/portfolio";
 import { toast } from "@/components/ui/sonner";
-import { CONTACT_REASONS, contactSchema, type ContactFormData } from "@/lib/contact";
+import {
+  CONTACT_CLIENT_TIMEOUT_MS,
+  CONTACT_HONEYPOT_FIELD,
+  CONTACT_REASONS,
+  contactSchema,
+  type ContactFormData,
+} from "@/lib/contact";
+import { SpotlightCard } from "@/components/ui/spotlight-card";
 import Card3D from "./Card3D";
 import cardImage from "@/assets/card.png";
 
@@ -31,8 +38,6 @@ const SOCIAL_LINKS = [
   },
 ];
 
-import { SpotlightCard } from "@/components/ui/spotlight-card";
-
 const INITIAL_FORM: ContactFormData = {
   name: "",
   email: "",
@@ -46,6 +51,8 @@ type ContactErrors = Partial<Record<ContactField, string>>;
 const ContactSection = () => {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
   const [form, setForm] = useState<ContactFormData>(INITIAL_FORM);
+  const [honeypot, setHoneypot] = useState("");
+  const [startedAt, setStartedAt] = useState(() => Date.now());
   const [errors, setErrors] = useState<ContactErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const shouldReduceMotion = useReducedMotion();
@@ -71,7 +78,7 @@ const ContactSection = () => {
     setErrors({});
 
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 15000);
+    const timeoutId = window.setTimeout(() => controller.abort(), CONTACT_CLIENT_TIMEOUT_MS);
 
     try {
       setIsSubmitting(true);
@@ -81,7 +88,11 @@ const ContactSection = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(parsed.data),
+        body: JSON.stringify({
+          ...parsed.data,
+          startedAt,
+          [CONTACT_HONEYPOT_FIELD]: honeypot,
+        }),
         signal: controller.signal,
       });
 
@@ -92,6 +103,8 @@ const ContactSection = () => {
       }
 
       setForm(INITIAL_FORM);
+      setHoneypot("");
+      setStartedAt(Date.now());
       setErrors({});
       toast.success("Message sent. I will get back to you soon.");
     } catch (error) {
@@ -207,7 +220,19 @@ const ContactSection = () => {
 
           {/* Right panel — Form */}
           <SpotlightCard delay={0.2} className="h-full">
-            <form onSubmit={handleSubmit} className="p-6 sm:p-8 md:p-10 flex flex-col gap-6 h-full" aria-busy={isSubmitting} noValidate>
+            <form onSubmit={handleSubmit} className="relative p-6 sm:p-8 md:p-10 flex flex-col gap-6 h-full" aria-busy={isSubmitting} noValidate>
+              <div className="absolute left-[-10000px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
+                <label htmlFor="contact-website">Website</label>
+                <input
+                  id="contact-website"
+                  name={CONTACT_HONEYPOT_FIELD}
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeypot}
+                  onChange={(event) => setHoneypot(event.target.value)}
+                />
+              </div>
+
               {/* Grows to fill */}
               <div className="flex flex-col gap-6 flex-1">
                 <div>

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useMotionValue, useReducedMotion, useSpring } from "framer-motion";
 import { useInView } from "react-intersection-observer";
-import { Briefcase, GraduationCap } from "lucide-react";
+import { Briefcase, CalendarDays, GraduationCap } from "lucide-react";
 import { experiences, type Experience } from "@/data/portfolio";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 
@@ -130,23 +130,23 @@ function ExperienceItem({ exp, index }: { exp: Experience; index: number }) {
       <TimelineIcon iconRef={ref} />
       <SpotlightCard delay={index * 0.05} className="h-full">
         <div className="p-6 md:p-8">
-          <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
-              <h3 className="text-xl font-bold text-foreground md:text-2xl">{exp.role}</h3>
-              <span className="mt-1 block font-medium text-primary">{exp.company}</span>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-mono font-medium uppercase tracking-wide text-muted-foreground">
-                <MetaIcon className="h-3.5 w-3.5" />
-                {metaLabel}
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-mono font-medium text-muted-foreground">
-                <Briefcase className="h-3.5 w-3.5" />
-                {exp.period}
-              </span>
-            </div>
-          </div>
+	          <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+	            <div>
+	              <h3 className="text-xl font-bold text-foreground md:text-2xl">{exp.role}</h3>
+	              <span className="mt-1 block font-medium text-primary">{exp.company}</span>
+	            </div>
+	
+	            <div className="flex w-full flex-col items-end gap-2 md:w-auto md:flex-none">
+	              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-mono font-medium uppercase tracking-wide text-muted-foreground">
+	                <MetaIcon className="h-3.5 w-3.5" />
+	                {metaLabel}
+	              </span>
+	              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-mono font-medium text-muted-foreground">
+	                <CalendarDays className="h-3.5 w-3.5" />
+	                {exp.period}
+	              </span>
+	            </div>
+	          </div>
 
           <ul className="space-y-3 text-sm leading-relaxed text-muted-foreground md:text-base">
             {exp.bullets.map((bullet) => (
@@ -254,7 +254,7 @@ const ExperienceSection = () => {
                 <span className="text-gradient">Experience</span>
               </h2>
               <p className="mb-8 max-w-md leading-relaxed text-muted-foreground">
-                From public-sector software to enterprise GenAI platforms, I focus on measurable gains in retrieval quality, cost, uptime, and team productivity.
+                From public-sector software to enterprise GenAI engineering, I focus on shipping end-to-end systems with measurable gains in retrieval quality, cost, uptime, and team productivity.
               </p>
 
               <div className="hidden lg:block">
