@@ -1,4 +1,4 @@
-import { about, personalInfo, projects } from "@/data/portfolio";
+import { personalInfo, projects } from "@/data/portfolio";
 import { siteConfig } from "./site";
 
 const websiteId = `${siteConfig.siteUrl}#website`;
@@ -54,8 +54,8 @@ export function getPersonSchema(): JsonLd {
     "@id": personId,
     name: personalInfo.name,
     url: siteConfig.homeUrl,
-    description: about.summary,
-    email: personalInfo.email,
+    description: personalInfo.tagline,
+    email: undefined,
     jobTitle: personalInfo.role,
     sameAs: siteConfig.sameAs,
     homeLocation: {
@@ -76,10 +76,11 @@ export function getProjectsItemListSchema(): JsonLd {
       "@type": "ListItem",
       position: index + 1,
       item: {
-        "@type": "CreativeWork",
+        "@type": "SoftwareSourceCode",
         name: project.title,
-        description: project.description,
+        description: `${project.summary} ${project.impact}`,
         url: project.live ?? project.github,
+        codeRepository: project.github,
         image: project.images[0] ? `${siteConfig.siteUrl}${project.images[0]}` : undefined,
         creator: {
           "@id": personId,

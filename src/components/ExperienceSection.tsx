@@ -196,9 +196,13 @@ function ExperienceItem({
           </div>
 
           <ul className="space-y-3 text-sm leading-relaxed text-muted-foreground md:text-base">
+            <li className="flex gap-3 text-foreground/90">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+              <span>{exp.summary}</span>
+            </li>
             {exp.bullets.map((bullet) => (
               <li key={bullet} className="flex gap-3 text-pretty">
-                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/70" />
                 <span>{bullet}</span>
               </li>
             ))}
@@ -301,7 +305,7 @@ const ExperienceSection = () => {
                 <span className="text-gradient">Experience</span>
               </h2>
               <p className="mb-8 max-w-md leading-relaxed text-muted-foreground">
-                From public-sector software to enterprise GenAI engineering, I focus on shipping end-to-end systems with measurable gains in retrieval quality, cost, uptime, and team productivity.
+                I’ve grown from building public-sector software into shipping enterprise GenAI systems where retrieval quality, cost control, backend reliability, and product usability all have to work together.
               </p>
 
               <div className="hidden lg:block">

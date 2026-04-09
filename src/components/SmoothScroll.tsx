@@ -15,14 +15,14 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
     }
 
     const lenis = new Lenis({
-      duration: 1.2, // Slower duration for a buttery feel
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // Easing function
+      duration: 1.05,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       orientation: 'vertical',
       gestureOrientation: 'vertical',
       smoothWheel: true,
-      wheelMultiplier: 0.8, // Slightly lower multiplier makes it feel heavier and smoother
-      syncTouch: false, // Let native iOS/Android handle mobile scrolling for the best performance and feel
-      touchMultiplier: 1.5, // Ignored when syncTouch is false, but safe to keep
+      wheelMultiplier: 0.9,
+      syncTouch: false,
+      touchMultiplier: 1.2,
     });
 
     const appWindow = window as LenisWindow;

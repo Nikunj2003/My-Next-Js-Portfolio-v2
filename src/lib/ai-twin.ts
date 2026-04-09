@@ -3,7 +3,7 @@ import { about, experiences, personalInfo, projects, skillCategories, stats } fr
 export const CHAT_MEMORY_WINDOW = 10;
 export const CHAT_STORAGE_KEY = "nikunj-ai-twin-chat";
 export const PROJECT_ANCHOR_PREFIX = "project-";
-export const WELCOME_MESSAGE = "Hey! I'm Nikunj's AI twin. Ask me anything about his projects, tech stack, or experience - I'll answer as he would. [Jump to projects](#projects) or [download his resume](/Nikunj_Resume.pdf) any time.";
+export const WELCOME_MESSAGE = "Hi — I’m Nikunj’s AI twin. I can give you a quick recruiter summary, walk through a project, or explain how he approaches GenAI, backend systems, and product engineering. You can also [jump to projects](#projects) or [download the resume](/Nikunj_Resume.pdf).";
 
 type ConversationWindowMessage = {
   content: string;

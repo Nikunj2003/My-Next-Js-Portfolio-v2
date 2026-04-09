@@ -27,13 +27,13 @@ const SOCIAL_LINKS = [
   {
     icon: Linkedin,
     label: "LinkedIn",
-    value: "nikunj-khitha",
+    value: "linkedin.com/in/nikunj-khitha",
     href: personalInfo.linkedin,
   },
   {
     icon: Github,
     label: "GitHub",
-    value: "Nikunj2003",
+    value: "github.com/Nikunj2003",
     href: personalInfo.github,
   },
 ];
@@ -138,8 +138,8 @@ const ContactSection = () => {
           <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
             Get in <span className="text-gradient">Touch</span>
           </h2>
-          <p className="text-muted-foreground max-w-md mx-auto text-base leading-relaxed">
-            Open to new opportunities, collaborations, and interesting conversations.
+          <p className="text-muted-foreground max-w-xl mx-auto text-base leading-relaxed">
+            Open to full-stack GenAI, AI platform, and backend product engineering opportunities, as well as thoughtful collaborations.
           </p>
         </motion.div>
 
@@ -173,7 +173,7 @@ const ContactSection = () => {
                 <div>
                   <h3 className="text-3xl font-bold mb-3 tracking-tight">Let&apos;s Build Something</h3>
                   <p className="text-base text-muted-foreground leading-relaxed" style={{ textWrap: "pretty" }}>
-                    Whether you&apos;re looking to hire, collaborate on an open-source project, or just want to chat about GenAI - I&apos;m all ears.
+                    If you&apos;re hiring for GenAI, AI platform, or backend product engineering work, I&apos;d love to talk. I&apos;m also open to thoughtful collaborations and open-source conversations.
                   </p>
                 </div>
 
@@ -238,7 +238,7 @@ const ContactSection = () => {
                 <div>
                   <h3 className="text-3xl font-bold mb-3 tracking-tight">Send a Message</h3>
                   <p className="text-base text-muted-foreground leading-relaxed">
-                    Fill in the form and I&apos;ll get back to you within 24 hours.
+                    Share the role, team, problem space, or product idea and I&apos;ll reply with context that&apos;s actually useful.
                   </p>
                 </div>
 

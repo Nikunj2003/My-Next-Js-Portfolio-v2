@@ -1,0 +1,56 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" rx="40" fill="#08111E"/>
+  <rect x="24" y="24" width="1152" height="582" rx="32" fill="url(#bg)" stroke="rgba(255,255,255,0.08)"/>
+  <circle cx="973" cy="142" r="194" fill="url(#orb1)" opacity="0.45"/>
+  <circle cx="1034" cy="496" r="224" fill="url(#orb2)" opacity="0.26"/>
+  <circle cx="163" cy="112" r="168" fill="url(#orb3)" opacity="0.18"/>
+
+  <g opacity="0.22">
+    <path d="M93 106H431" stroke="#29D6B9" stroke-width="2" stroke-linecap="round"/>
+    <path d="M93 146H361" stroke="#29D6B9" stroke-width="2" stroke-linecap="round"/>
+    <path d="M93 186H285" stroke="#29D6B9" stroke-width="2" stroke-linecap="round"/>
+  </g>
+
+  <rect x="82" y="236" width="164" height="42" rx="21" fill="rgba(41,214,185,0.12)" stroke="rgba(41,214,185,0.28)"/>
+  <text x="164" y="262" text-anchor="middle" fill="#8FF2E4" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="0.14em">PORTFOLIO</text>
+
+  <text x="82" y="348" fill="#F4FBF9" font-family="Inter, Arial, sans-serif" font-size="68" font-weight="800">Nikunj Khitha</text>
+  <text x="82" y="414" fill="#A7F5E6" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="700">Full-Stack GenAI Engineer</text>
+
+  <text x="82" y="484" fill="#D2E4E2" font-family="Inter, Arial, sans-serif" font-size="25" font-weight="500">
+    I build production GenAI platforms, backend systems, and product experiences
+  </text>
+  <text x="82" y="522" fill="#D2E4E2" font-family="Inter, Arial, sans-serif" font-size="25" font-weight="500">
+    that improve retrieval quality, reduce model cost, and automate work at scale.
+  </text>
+
+  <g>
+    <rect x="82" y="555" width="210" height="48" rx="24" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)"/>
+    <text x="187" y="585" text-anchor="middle" fill="#EEF8F6" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="700">200+ customers served</text>
+
+    <rect x="308" y="555" width="210" height="48" rx="24" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)"/>
+    <text x="413" y="585" text-anchor="middle" fill="#EEF8F6" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="700">500K+ entities unified</text>
+
+    <rect x="534" y="555" width="226" height="48" rx="24" fill="rgba(41,214,185,0.12)" stroke="rgba(41,214,185,0.22)"/>
+    <text x="647" y="585" text-anchor="middle" fill="#8FF2E4" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="700">50% indexing cost cut</text>
+  </g>
+
+  <defs>
+    <linearGradient id="bg" x1="88" y1="56" x2="1126" y2="606" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0C1728"/>
+      <stop offset="1" stop-color="#0B1321"/>
+    </linearGradient>
+    <radialGradient id="orb1" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(973 142) rotate(90) scale(194)">
+      <stop stop-color="#29D6B9"/>
+      <stop offset="1" stop-color="#29D6B9" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orb2" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1034 496) rotate(90) scale(224)">
+      <stop stop-color="#7A6DFF"/>
+      <stop offset="1" stop-color="#7A6DFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orb3" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(163 112) rotate(90) scale(168)">
+      <stop stop-color="#29D6B9"/>
+      <stop offset="1" stop-color="#29D6B9" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+</svg>

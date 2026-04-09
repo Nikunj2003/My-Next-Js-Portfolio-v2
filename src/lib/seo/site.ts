@@ -18,7 +18,7 @@ export const siteConfig = {
   linkedin: personalInfo.linkedin,
   locale: "en-IN",
   ogLocale,
-  ogImage: "/images/projects/codenex/landing-page-light.png",
+  ogImage: "/og-image.svg",
   keywords: [
     "Nikunj Khitha",
     "Full-Stack GenAI Engineer",

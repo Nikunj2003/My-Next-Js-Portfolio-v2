@@ -60,12 +60,15 @@ const AITwinSection = () => {
                   Talk to my <br className="hidden lg:block"/>
                   <span className="text-gradient">AI Twin</span>
                 </h2>
-                <p className="text-muted-foreground text-lg leading-relaxed mb-8 max-w-xl text-pretty lg:mx-0 mx-auto">
+                <p className="text-muted-foreground text-lg leading-relaxed mb-4 max-w-xl text-pretty lg:mx-0 mx-auto">
                   {isAvailable
-                    ? "Curious about my work? My AI twin can walk you through my projects, architecture decisions, and experience — just like I would."
+                    ? "Want the fast version? My AI twin can summarize my fit for a role, walk through a project, or explain how I think about backend, GenAI, and platform work."
                     : status === "checking"
                       ? "Checking whether the live assistant is available right now. You can still open the chat panel while the status loads."
                       : "The live assistant is temporarily unavailable. You can still browse the portfolio and open the chat panel for status details."}
+                </p>
+                <p className="text-sm text-foreground/75 mb-8 max-w-lg lg:mx-0 mx-auto">
+                  Best for recruiter summaries, architecture deep-dives, and guided project walkthroughs.
                 </p>
                 <button 
                   onClick={() => handlePromptClick("")}

@@ -29,7 +29,7 @@ const SkillsSection = () => {
                 <span className="text-gradient">Stack</span>
               </h2>
               <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-md">
-                A full-stack GenAI stack spanning product UI, backend systems, retrieval, AI gateways, automation, data, and production infrastructure.
+                The technologies I reach for most often when building production GenAI products, backend systems, retrieval pipelines, and the infrastructure around them.
               </p>
             </div>
           </div>
@@ -50,6 +50,10 @@ const SkillsSection = () => {
                         <p className="text-xs text-muted-foreground mt-1 font-mono">{cat.skills.length} technologies</p>
                       </div>
                     </div>
+
+                    <p className="mb-6 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                      {cat.description}
+                    </p>
 
                     <div className="flex flex-wrap gap-2.5">
                       {cat.skills.map((skill) => (

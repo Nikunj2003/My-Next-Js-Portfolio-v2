@@ -132,7 +132,7 @@ export function SpotlightCard({
       onPointerMove={isInteractive ? handlePointerMove : undefined}
       onPointerLeave={isInteractive ? handlePointerLeave : undefined}
       className={cn(
-        "group relative rounded-3xl border border-border/60 bg-background/55 dark:bg-background/55 backdrop-blur-[22px] backdrop-saturate-150 overflow-hidden",
+        "group relative rounded-3xl border border-border/60 bg-background/65 dark:bg-background/68 backdrop-blur-[18px] backdrop-saturate-140 overflow-hidden",
         className
       )}
     >
@@ -147,7 +147,7 @@ export function SpotlightCard({
       />
       
       {/* Subtle ambient glow always active */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black/[0.03] dark:from-white/[0.03] to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-br from-black/[0.02] dark:from-white/[0.02] to-transparent pointer-events-none" />
 
       {/* Card Content */}
       <div className="relative z-10 w-full h-full">

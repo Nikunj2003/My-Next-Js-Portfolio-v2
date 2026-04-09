@@ -2,62 +2,57 @@
 import Image from "next/image";
 import { useEffect, useState, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import { useInView } from "react-intersection-observer";
 import { ArrowDown, MessageCircle, Download } from "lucide-react";
 import { personalInfo, stats } from "@/data/portfolio";
 import Card3D from "./Card3D";
 import cardImage from "@/assets/card.png";
 
-const AnimatedCounter = ({ value, suffix }: { value: number; suffix: string }) => {
+const AnimatedCounter = ({ value, suffix, start }: { value: number; suffix: string; start: boolean }) => {
   const [count, setCount] = useState(0);
-  const ref = useRef<HTMLDivElement>(null);
   const started = useRef(false);
   const frameRef = useRef<number | null>(null);
   const shouldReduceMotion = useReducedMotion();
+  const displayCount = shouldReduceMotion && start ? value : count;
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !started.current) {
-          started.current = true;
+    if (!start || started.current || shouldReduceMotion) return;
 
-          if (shouldReduceMotion) {
-            setCount(value);
-            return;
-          }
+    started.current = true;
 
-          const duration = 1200;
-          const start = performance.now();
-          const step = (now: number) => {
-            const progress = Math.min((now - start) / duration, 1);
-            const eased = 1 - Math.pow(1 - progress, 3);
-            setCount(Math.round(eased * value));
-            if (progress < 1) {
-              frameRef.current = window.requestAnimationFrame(step);
-            }
-          };
-          frameRef.current = window.requestAnimationFrame(step);
-        }
-      },
-      { threshold: 0.5 }
-    );
-    if (ref.current) observer.observe(ref.current);
+    const duration = 2600;
+    const startTime = performance.now();
+    const step = (now: number) => {
+      const progress = Math.min((now - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.round(eased * value));
+      if (progress < 1) {
+        frameRef.current = window.requestAnimationFrame(step);
+      }
+    };
+
+    frameRef.current = window.requestAnimationFrame(step);
+
     return () => {
-      observer.disconnect();
       if (frameRef.current !== null) {
         window.cancelAnimationFrame(frameRef.current);
       }
     };
-  }, [shouldReduceMotion, value]);
+  }, [shouldReduceMotion, start, value]);
 
-  return (
-    <span ref={ref} className="tabular-nums">
-      {count}{suffix}
-    </span>
-  );
+  return <span className="tabular-nums">{displayCount}{suffix}</span>;
 };
 
 const HeroSection = () => {
   const shouldReduceMotion = useReducedMotion();
+  const [statsTriggerRef, statsInView] = useInView({
+    triggerOnce: true,
+    threshold: 0.05,
+    rootMargin: "0px 0px -2% 0px",
+  });
+  const [statsRevealStarted, setStatsRevealStarted] = useState(false);
+
+  const shouldStartStats = Boolean(statsInView && (shouldReduceMotion || statsRevealStarted));
 
   const container = {
     hidden: {},
@@ -152,11 +147,16 @@ const HeroSection = () => {
             </motion.div>
 
             {/* Stats */}
-            <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 sm:mt-6">
+            <motion.div
+              ref={statsTriggerRef}
+              variants={item}
+              onAnimationStart={() => setStatsRevealStarted(true)}
+              className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 sm:mt-6"
+            >
               {stats.map((stat) => (
                 <div key={stat.label} className="border-l-2 border-primary/30 pl-4 py-1">
                   <div className="text-2xl font-bold tracking-tighter text-foreground">
-                    <AnimatedCounter value={stat.value} suffix={stat.suffix} />
+                    <AnimatedCounter value={stat.value} suffix={stat.suffix} start={shouldStartStats} />
                   </div>
                   <div className="text-xs font-medium text-muted-foreground mt-1 uppercase tracking-wider">{stat.label}</div>
                 </div>

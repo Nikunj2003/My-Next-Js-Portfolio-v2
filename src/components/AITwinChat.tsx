@@ -868,7 +868,7 @@ const AITwinChat = () => {
             initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            {chatSuggestions.map((s) => (
+            {chatSuggestions.filter((suggestion) => suggestion !== "How do you balance product UX and AI infra?").map((s) => (
               <button
                 type="button"
                 key={s}

@@ -83,56 +83,33 @@
   }
 }
 
-/* ===== Custom Cursor Icons ===== */
-/* Default cursor for light theme */
+/* Custom cursors */
 body {
-  cursor: url("/icons8-select-cursor-18-light.png"), auto;
+  cursor: url("/icons8-select-cursor-18-light.png") 3 2, auto;
 }
 
-/* Default cursor for dark theme */
 .dark body {
-  cursor: url("/icons8-select-cursor-18-dark.png"), auto;
+  cursor: url("/icons8-select-cursor-18-dark.png") 3 2, auto;
 }
 
-/* Hand cursor for interactive elements (light theme) */
 a,
 button,
 [role="button"],
 input[type="submit"],
 input[type="button"],
 .cursor-pointer {
-  cursor: url("/icons8-hand-cursor-18-light.png"), pointer;
+  cursor: url("/icons8-hand-cursor-18-light.png") 4 2, pointer;
 }
 
-/* Hand cursor for interactive elements (dark theme) */
 .dark a,
 .dark button,
 .dark [role="button"],
 .dark input[type="submit"],
 .dark input[type="button"],
 .dark .cursor-pointer {
-  cursor: url("/icons8-hand-cursor-18-dark.png"), pointer;
+  cursor: url("/icons8-hand-cursor-18-dark.png") 4 2, pointer;
 }
 
-/* Select cursor for dropdown controls (light theme) */
-select,
-option,
-[role="combobox"],
-[role="option"],
-.cursor-default {
-  cursor: url("/icons8-select-cursor-18-light.png"), default;
-}
-
-/* Select cursor for dropdown controls (dark theme) */
-.dark select,
-.dark option,
-.dark [role="combobox"],
-.dark [role="option"],
-.dark .cursor-default {
-  cursor: url("/icons8-select-cursor-18-dark.png"), default;
-}
-
-/* Text cursor for text inputs (light theme) */
 input:not([type]),
 input[type="text"],
 input[type="email"],
@@ -144,10 +121,9 @@ input[type="number"],
 textarea,
 [contenteditable="true"],
 .cursor-text {
-  cursor: url("/icons8-text-cursor-19-light.png"), text;
+  cursor: url("/icons8-text-cursor-19-light.png") 9 9, text;
 }
 
-/* Text cursor for text inputs (dark theme) */
 .dark input:not([type]),
 .dark input[type="text"],
 .dark input[type="email"],
@@ -159,20 +135,20 @@ textarea,
 .dark textarea,
 .dark [contenteditable="true"],
 .dark .cursor-text {
-  cursor: url("/icons8-text-cursor-19-dark.png"), text;
+  cursor: url("/icons8-text-cursor-19-dark.png") 9 9, text;
 }
 
 @layer utilities {
   .glass {
-    @apply bg-white/10 dark:bg-white/[0.04] backdrop-blur-xl border border-white/20 dark:border-white/[0.08];
+    @apply bg-white/9 dark:bg-white/[0.035] backdrop-blur-xl border border-white/18 dark:border-white/[0.08];
   }
 
   .glass-strong {
-    @apply bg-white/20 dark:bg-white/[0.08] backdrop-blur-2xl border border-white/30 dark:border-white/[0.12];
+    @apply bg-white/16 dark:bg-white/[0.065] backdrop-blur-xl border border-white/24 dark:border-white/[0.11];
   }
 
   .glass-subtle {
-    @apply bg-white/5 dark:bg-white/[0.02] backdrop-blur-lg border border-white/10 dark:border-white/[0.05];
+    @apply bg-white/4 dark:bg-white/[0.02] backdrop-blur-md border border-white/8 dark:border-white/[0.05];
   }
 
   .text-gradient {

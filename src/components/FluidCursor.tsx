@@ -28,7 +28,7 @@ const getShouldRenderCursor = () => {
   }
 
   const hasPointer = window.matchMedia("(pointer: fine)").matches;
-  const isDesktop = window.innerWidth >= 1024;
+  const isDesktop = window.innerWidth >= 1280;
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   return hasPointer && isDesktop && !prefersReducedMotion;

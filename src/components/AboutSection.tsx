@@ -48,7 +48,7 @@ const AboutSection = () => {
               className="prose prose-invert prose-lg max-w-none text-muted-foreground leading-relaxed"
             >
               <p className="text-xl sm:text-2xl font-medium text-foreground tracking-tight leading-snug mb-6" style={{ textWrap: "pretty" }}>
-                I build production GenAI systems end to end - retrieval, APIs, AI gateways, automation, infrastructure, and product UX.
+                I build AI products and platform systems where accuracy, cost, reliability, and user experience all matter at the same time.
               </p>
               <p style={{ textWrap: "pretty" }}>
                 {about.summary}

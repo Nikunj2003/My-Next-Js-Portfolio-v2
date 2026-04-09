@@ -251,6 +251,13 @@ function getPriorUserTexts(recentMessages: Message[], currentMessage: string) {
   return priorUserTexts;
 }
 
+function isAbortError(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+
+  const candidate = error as { name?: string; code?: number | string };
+  return candidate.name === "AbortError" || candidate.code === 20 || candidate.code === "ABORT_ERR";
+}
+
 async function postChatCompletion(
   invokeUrl: string,
   headers: Record<string, string>,
@@ -584,7 +591,9 @@ Rules:
       .filter((question, index, all) => all.findIndex((entry) => entry.toLowerCase() === question.toLowerCase()) === index)
       .slice(0, TARGET_SUGGESTION_COUNT);
   } catch (e) {
-    console.warn("Suggestion generation failed:", e);
+    if (!isAbortError(e)) {
+      console.warn("Suggestion generation failed:", e);
+    }
     const priorUserTexts = recentMessages
       .filter((message) => message.sender === "user")
       .map((message) => normalizeText(message.content));
