@@ -18,7 +18,7 @@ export function SpotlightCard({
   children,
   delay = 0,
   className,
-  glowColor = "rgba(41, 214, 185, 0.12)", // Default Teal/Cyan from the theme
+  glowColor = "rgba(41, 214, 185, 0.08)", // Default teal accent glow
   glowSize = 650,
   glowOpacity = 100,
   animateOnEnter = true,
@@ -132,7 +132,7 @@ export function SpotlightCard({
       onPointerMove={isInteractive ? handlePointerMove : undefined}
       onPointerLeave={isInteractive ? handlePointerLeave : undefined}
       className={cn(
-        "group relative rounded-3xl border border-border/60 bg-background/65 dark:bg-background/68 backdrop-blur-[18px] backdrop-saturate-140 overflow-hidden",
+        "group relative rounded-3xl border border-border/60 bg-background/65 dark:bg-background/68 backdrop-blur-[18px] backdrop-saturate-140 overflow-hidden shadow-accent-card",
         className
       )}
     >

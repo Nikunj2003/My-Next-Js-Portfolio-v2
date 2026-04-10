@@ -155,7 +155,7 @@ const Navbar = () => {
       <div className="fixed top-0 inset-x-0 z-50 flex justify-center px-4 pt-[max(1rem,env(safe-area-inset-top))] sm:pt-[max(1.5rem,env(safe-area-inset-top))] pointer-events-none">
         <nav
           className={`pointer-events-auto transition-all duration-500 rounded-2xl sm:rounded-full w-full max-w-6xl 2xl:max-w-[88rem] flex items-center justify-between px-4 sm:px-6 h-14 sm:h-16 border ${
-            scrolled ? "glass-strong shadow-2xl shadow-black/20 border-white/10" : "bg-transparent border-transparent"
+            scrolled ? "glass-strong shadow-accent-card border-white/10" : "bg-transparent border-transparent"
           }`}
         >
           <a href="#hero" aria-label="Go to hero section" className="flex items-center gap-2 group">
@@ -172,7 +172,7 @@ const Navbar = () => {
                 aria-current={activeSection === link.href ? "location" : undefined}
                 className={`px-3 py-2 text-sm font-medium transition-all duration-200 rounded-full ${
                   activeSection === link.href
-                    ? "bg-primary/10 text-primary shadow-[0_0_18px_rgba(41,214,185,0.14)]"
+                    ? "bg-primary/10 text-primary shadow-[0_0_14px_rgba(41,214,185,0.1)]"
                     : "text-muted-foreground hover:text-foreground hover:bg-white/10"
                 }`}
               >
@@ -223,7 +223,7 @@ const Navbar = () => {
               animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, height: "auto", y: 0 }}
               exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, height: 0, y: -10 }}
               transition={mobileMenuTransition}
-              className="md:hidden fixed top-[calc(max(1rem,env(safe-area-inset-top))+3.5rem)] inset-x-4 z-[100] glass-strong border border-white/10 overflow-hidden rounded-2xl shadow-2xl sm:top-[calc(max(1.5rem,env(safe-area-inset-top))+4rem)]"
+              className="md:hidden fixed top-[calc(max(1rem,env(safe-area-inset-top))+3.5rem)] inset-x-4 z-[100] glass-strong border border-white/10 overflow-hidden rounded-2xl shadow-accent-card sm:top-[calc(max(1.5rem,env(safe-area-inset-top))+4rem)]"
               role="dialog"
               aria-modal="true"
               aria-label="Mobile navigation"

@@ -156,7 +156,19 @@ textarea,
   }
 
   .glow-accent {
-    box-shadow: 0 0 30px hsl(var(--accent) / 0.15), 0 0 60px hsl(var(--accent) / 0.05);
+    box-shadow: 0 0 24px rgba(41, 214, 185, 0.1), 0 0 48px rgba(41, 214, 185, 0.035);
+  }
+
+  .shadow-accent-soft {
+    box-shadow: 0 10px 24px rgba(41, 214, 185, 0.12);
+  }
+
+  .shadow-accent-card {
+    box-shadow: 0 16px 48px rgba(41, 214, 185, 0.16);
+  }
+
+  .shadow-accent-strong {
+    box-shadow: 0 22px 68px rgba(41, 214, 185, 0.2);
   }
 
   .section-padding {

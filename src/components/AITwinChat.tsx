@@ -758,7 +758,7 @@ const AITwinChat = () => {
                 {msg.role === "assistant" ? <Bot className="w-4 h-4 text-primary" /> : <User className="w-4 h-4" />}
               </div>
               <div
-                className={`px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm ${
+                className={`px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-accent-soft ${
                   msg.role === "user"
                     ? "max-w-[85%] bg-primary text-primary-foreground rounded-tr-none"
                     : msg.error
@@ -845,7 +845,7 @@ const AITwinChat = () => {
             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-1">
               <Bot className="w-4 h-4 text-primary" />
             </div>
-            <div className="bg-muted/50 dark:bg-muted/20 border border-border/20 px-4 py-3 rounded-2xl rounded-tl-none flex gap-1.5 items-center shadow-sm">
+            <div className="bg-muted/50 dark:bg-muted/20 border border-border/20 px-4 py-3 rounded-2xl rounded-tl-none flex gap-1.5 items-center shadow-accent-soft">
               <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce motion-reduce:animate-none [animation-delay:-0.3s]" />
               <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce motion-reduce:animate-none [animation-delay:-0.15s]" />
               <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce motion-reduce:animate-none" />
@@ -868,7 +868,7 @@ const AITwinChat = () => {
             initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            {chatSuggestions.map((s) => (
+            {(isMobile ? chatSuggestions : chatSuggestions.slice(0, 4)).map((s) => (
               <button
                 type="button"
                 key={s}
@@ -913,7 +913,7 @@ const AITwinChat = () => {
             type="button"
             onClick={() => handleSend()}
             disabled={!input.trim() || isLoading || !canSendMessages}
-            className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 shadow-lg shadow-primary/20"
+            className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 shadow-accent-soft"
             aria-label="Send message"
           >
             <Send className="w-4 h-4" />
@@ -937,7 +937,7 @@ const AITwinChat = () => {
         transition={shouldReduceMotion ? { duration: 0.2 } : { type: "spring", stiffness: 260, damping: 20 }}
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "fixed z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl flex items-center justify-center transition-all duration-300 ease-in-out border-2 border-primary/20 group cursor-pointer",
+          "fixed z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-accent-card hover:shadow-[0_16px_36px_rgba(41,214,185,0.22)] flex items-center justify-center transition-all duration-300 ease-in-out border-2 border-primary/20 group cursor-pointer",
           isMobile ? "bottom-4 right-4" : "bottom-6 right-6"
         )}
         whileHover={shouldReduceMotion ? undefined : { scale: 1.1 }}
@@ -1039,7 +1039,7 @@ const AITwinChat = () => {
                       mass: 0.7,
                     })
               }}
-              className="fixed bottom-24 right-6 z-50 w-80 sm:w-96 bg-background/55 dark:bg-background/55 backdrop-blur-[22px] backdrop-saturate-150 border border-border/60 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+              className="fixed bottom-24 right-6 z-50 w-80 sm:w-96 bg-background/55 dark:bg-background/55 backdrop-blur-[22px] backdrop-saturate-150 border border-border/60 rounded-2xl shadow-accent-card flex flex-col overflow-hidden"
               style={{
                 height: "32rem",
                 maxHeight: "calc(100vh - 8rem)",

@@ -319,7 +319,7 @@ const ExperienceSection = () => {
 
             <motion.div
               style={{ scaleY: shouldReduceMotion ? 1 : scrollYProgress }}
-              className="absolute bottom-0 left-[24px] top-0 w-[2px] origin-top rounded-full bg-primary shadow-[0_0_8px_rgba(41,214,185,0.4)] sm:left-[44px] sm:shadow-[0_0_15px_rgba(41,214,185,0.6)]"
+              className="absolute bottom-0 left-[24px] top-0 w-[2px] origin-top rounded-full bg-primary shadow-[0_0_6px_rgba(41,214,185,0.18)] sm:left-[44px] sm:shadow-[0_0_12px_rgba(41,214,185,0.24)]"
             />
 
             <ul className="relative w-full py-4">

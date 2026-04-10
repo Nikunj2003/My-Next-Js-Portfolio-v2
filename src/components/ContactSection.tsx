@@ -155,7 +155,7 @@ const ContactSection = () => {
               src={cardImage}
               alt=""
               aria-hidden="true"
-              className="w-full h-auto rounded-3xl border border-white/10 shadow-2xl pointer-events-none select-none"
+              className="w-full h-auto rounded-3xl border border-white/10 shadow-accent-strong pointer-events-none select-none"
               draggable={false}
               sizes="(min-width: 640px) 384px, 100vw"
             />
@@ -205,13 +205,13 @@ const ContactSection = () => {
                 <a
                   href={personalInfo.resumeUrl}
                   download
-                  className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-primary text-primary-foreground font-bold text-sm tracking-wide shadow-[0_0_20px_rgba(41,214,185,0.2)] hover:shadow-[0_0_30px_rgba(41,214,185,0.3)] transition-all duration-300 active:scale-[0.98]"
+                  className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-primary text-primary-foreground font-bold text-sm tracking-wide shadow-[0_0_16px_rgba(41,214,185,0.14)] hover:shadow-[0_0_24px_rgba(41,214,185,0.2)] transition-all duration-300 active:scale-[0.98]"
                 >
                   <Download className="w-4 h-4" />
                   Download Resume
                 </a>
                 <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground border-t border-black/10 dark:border-white/5 pt-4">
-                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse motion-reduce:animate-none shrink-0 shadow-[0_0_8px_rgba(41,214,185,0.5)]" />
+                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse motion-reduce:animate-none shrink-0 shadow-[0_0_6px_rgba(41,214,185,0.28)]" />
                   Available for new opportunities
                 </div>
               </div>

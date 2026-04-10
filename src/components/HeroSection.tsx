@@ -102,7 +102,7 @@ const HeroSection = () => {
           {/* Left - Content */}
           <motion.div variants={container} initial="hidden" animate="show" className="flex flex-col gap-6 sm:gap-8 lg:col-span-7">
             <motion.div variants={item}>
-              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono font-bold glass-subtle border border-primary/20 text-primary tracking-wide shadow-[0_0_15px_rgba(41,214,185,0.15)]">
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono font-bold glass-subtle border border-primary/20 text-primary tracking-wide shadow-[0_0_12px_rgba(41,214,185,0.1)]">
                 <span className="w-2 h-2 rounded-full bg-primary animate-pulse motion-reduce:animate-none" />
                 Available for New Opportunities
               </span>
@@ -124,7 +124,7 @@ const HeroSection = () => {
             <motion.div variants={item} className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 mt-1 sm:mt-2">
               <a
                 href="#projects"
-                className="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-8 py-3.5 rounded-full bg-primary text-primary-foreground font-bold text-sm tracking-wide shadow-[0_0_25px_rgba(41,214,185,0.3)] hover:shadow-[0_0_35px_rgba(41,214,185,0.4)] transition-all duration-300 active:scale-95"
+                className="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-8 py-3.5 rounded-full bg-primary text-primary-foreground font-bold text-sm tracking-wide shadow-[0_0_20px_rgba(41,214,185,0.18)] hover:shadow-[0_0_28px_rgba(41,214,185,0.24)] transition-all duration-300 active:scale-95"
               >
                 View Projects
                 <ArrowDown className="w-4 h-4 ml-1" />
@@ -178,7 +178,7 @@ const HeroSection = () => {
                      src={cardImage}
                      alt=""
                      aria-hidden="true"
-                     className="w-full h-auto rounded-3xl border border-white/10 shadow-2xl shadow-black/80 pointer-events-none select-none"
+                     className="w-full h-auto rounded-3xl border border-white/10 shadow-accent-strong pointer-events-none select-none"
                     draggable={false}
                     priority
                     sizes="(min-width: 1280px) 600px, (min-width: 1024px) 500px, 100vw"
