@@ -71,7 +71,9 @@ const ContactSection = () => {
       }, {});
 
       setErrors(nextErrors);
-      toast.error(parsed.error.issues[0]?.message || "Please check the form and try again.");
+      toast.error("Please review the form", {
+        description: parsed.error.issues[0]?.message || "Check the highlighted fields and try again.",
+      });
       return;
     }
 
@@ -106,15 +108,18 @@ const ContactSection = () => {
       setHoneypot("");
       setStartedAt(Date.now());
       setErrors({});
-      toast.success("Message sent. I will get back to you soon.");
+      toast.success("Message sent", {
+        description: "Thanks for reaching out. I will get back to you soon.",
+      });
     } catch (error) {
-      toast.error(
-        error instanceof DOMException && error.name === "AbortError"
-          ? "The request took too long. Please try again."
-          : error instanceof Error
-            ? error.message
-            : "Unable to send your message right now."
-      );
+      toast.error("Unable to send your message", {
+        description:
+          error instanceof DOMException && error.name === "AbortError"
+            ? "The request took too long. Please try again."
+            : error instanceof Error
+              ? error.message
+              : "Unable to send your message right now.",
+      });
     } finally {
       window.clearTimeout(timeoutId);
       setIsSubmitting(false);
