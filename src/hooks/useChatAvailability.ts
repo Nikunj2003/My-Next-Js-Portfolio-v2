@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   CHAT_AVAILABILITY_CACHE_MS,
+  CHAT_ENDPOINT,
   type ChatAvailabilityResponse,
 } from "@/lib/chat-contract";
 
-type ChatAvailabilityStatus = "checking" | "available" | "unavailable";
+type ChatAvailabilityStatus = "checking" | "available" | "unavailable" | "unknown";
 
 type AvailabilityCache = {
   available: boolean;
@@ -43,14 +44,16 @@ export function useChatAvailability() {
     setStatus("checking");
 
     try {
-      const response = await fetch("/api/chat", {
+      const response = await fetch(CHAT_ENDPOINT, {
         method: "GET",
         cache: "no-store",
+        redirect: "error",
         signal,
       });
 
       if (!response.ok) {
-        throw new Error(`Chat availability request failed with ${response.status}`);
+        setStatus("unknown");
+        return;
       }
 
       const data = (await response.json()) as Partial<ChatAvailabilityResponse>;
@@ -67,21 +70,26 @@ export function useChatAvailability() {
         return;
       }
 
-      setStatus("unavailable");
+      setStatus("unknown");
     }
   }, []);
 
   useEffect(() => {
     const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      void refresh(controller.signal);
+    }, 0);
 
-    void refresh(controller.signal);
-
-    return () => controller.abort();
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
   }, [refresh]);
 
   return {
     status,
     isAvailable: status === "available",
+    canAttemptChat: status !== "unavailable",
     refresh,
   };
 }

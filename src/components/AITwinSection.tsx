@@ -9,7 +9,7 @@ import { SpotlightCard } from "@/components/ui/spotlight-card";
 const AITwinSection = () => {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.2 });
   const shouldReduceMotion = useReducedMotion();
-  const { isAvailable, status } = useChatAvailability();
+  const { isAvailable, status, canAttemptChat } = useChatAvailability();
 
   const handlePromptClick = (question: string) => {
     window.dispatchEvent(new CustomEvent("open-ai-twin", { detail: { question } }));
@@ -20,6 +20,8 @@ const AITwinSection = () => {
       ? "Live Assistant"
       : status === "checking"
         ? "Checking availability"
+        : status === "unknown"
+          ? "Status unknown"
         : "Assistant offline";
 
   const primaryButtonLabel =
@@ -27,6 +29,8 @@ const AITwinSection = () => {
       ? "Open AI Chat"
       : status === "checking"
         ? "Checking AI Chat..."
+        : status === "unknown"
+          ? "Try AI Chat"
         : "View Chat Status";
 
   return (
@@ -51,6 +55,8 @@ const AITwinSection = () => {
                         ? "bg-primary animate-pulse"
                         : status === "checking"
                           ? "bg-amber-400 animate-pulse"
+                          : status === "unknown"
+                            ? "bg-amber-400/70"
                           : "bg-muted-foreground/60"
                     }`}
                   />
@@ -65,6 +71,8 @@ const AITwinSection = () => {
                     ? "Want the fast version? My AI twin can summarize my fit for a role, walk through a project, or explain how I think about backend systems, full-stack product work, platform decisions, and AI products."
                     : status === "checking"
                       ? "Checking whether the live assistant is available right now. You can still open the chat panel while the status loads."
+                      : status === "unknown"
+                        ? "This browser could not verify the live assistant ahead of time. You can still open the chat and try sending a message."
                       : "The live assistant is temporarily unavailable. You can still browse the portfolio and open the chat panel for status details."}
                 </p>
                 <p className="text-sm text-foreground/75 mb-8 max-w-lg lg:mx-0 mx-auto">
@@ -90,9 +98,9 @@ const AITwinSection = () => {
                   <button
                     key={s}
                     onClick={() => handlePromptClick(s)}
-                    disabled={!isAvailable}
+                    disabled={!canAttemptChat}
                     className={`group w-full text-left px-5 py-4 rounded-2xl border transition-all duration-300 flex items-center justify-between shadow-accent-soft ${
-                      isAvailable
+                      canAttemptChat
                         ? "bg-black/5 dark:bg-white/5 border-black/5 dark:border-white/5 hover:border-primary/30 hover:shadow-[0_14px_40px_rgba(41,214,185,0.14)]"
                         : "bg-black/5 dark:bg-white/[0.03] border-black/5 dark:border-white/5 opacity-60 cursor-not-allowed"
                     }`}

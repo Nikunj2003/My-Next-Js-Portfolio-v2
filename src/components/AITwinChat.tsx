@@ -5,7 +5,7 @@ import { MessageCircle, X, Send, Bot, User, Trash2 } from "lucide-react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { chatSuggestions } from "@/data/portfolio";
-import { CHAT_CLIENT_TIMEOUT_MS } from "@/lib/chat-contract";
+import { CHAT_CLIENT_TIMEOUT_MS, CHAT_ENDPOINT } from "@/lib/chat-contract";
 import {
   createStoredChatEnvelope,
   parseStoredChatEnvelope,
@@ -515,13 +515,14 @@ const AITwinChat = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/chat", {
+      const response = await fetch(CHAT_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: msg,
           conversationHistory: getConversationHistory(messages, isRetry ? retryUserMessageId : undefined)
         }),
+        redirect: "error",
         signal: controller.signal,
       });
 
@@ -680,12 +681,16 @@ const AITwinChat = () => {
       ? "Assistant Online"
       : chatAvailabilityStatus === "checking"
         ? "Checking service"
+        : chatAvailabilityStatus === "unknown"
+          ? "Status unknown"
         : "Assistant Offline";
   const chatStatusDotClass =
     chatAvailabilityStatus === "available"
       ? "bg-emerald-500 animate-pulse"
       : chatAvailabilityStatus === "checking"
         ? "bg-amber-400 animate-pulse"
+        : chatAvailabilityStatus === "unknown"
+          ? "bg-amber-400/70"
         : "bg-muted-foreground/60";
   const canSendMessages = chatAvailabilityStatus !== "unavailable";
 
@@ -884,6 +889,12 @@ const AITwinChat = () => {
               </button>
             ))}
           </motion.div>
+        )}
+
+        {chatAvailabilityStatus === "unknown" && (
+          <div className="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs text-muted-foreground">
+            This browser could not verify the live assistant ahead of time. You can still try sending a message below.
+          </div>
         )}
 
         {chatAvailabilityStatus === "unavailable" && (
