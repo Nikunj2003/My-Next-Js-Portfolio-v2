@@ -55,7 +55,7 @@ export function getPersonSchema(): JsonLd {
     name: personalInfo.name,
     url: siteConfig.homeUrl,
     description: personalInfo.tagline,
-    email: undefined,
+    email: siteConfig.email,
     jobTitle: personalInfo.role,
     sameAs: siteConfig.sameAs,
     homeLocation: {

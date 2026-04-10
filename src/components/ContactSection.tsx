@@ -139,7 +139,7 @@ const ContactSection = () => {
             Get in <span className="text-gradient">Touch</span>
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto text-base leading-relaxed">
-            Open to full-stack GenAI, AI platform, and backend product engineering opportunities, as well as thoughtful collaborations.
+            Open to backend, full-stack, platform, and AI product engineering opportunities, as well as thoughtful collaborations.
           </p>
         </motion.div>
 

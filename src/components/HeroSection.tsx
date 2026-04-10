@@ -113,7 +113,7 @@ const HeroSection = () => {
                 {personalInfo.name}
               </motion.h1>
               <motion.h2 variants={item} className="text-xl sm:text-4xl font-semibold tracking-tight text-muted-foreground mt-2">
-                Full-Stack <span className="text-gradient">GenAI</span> Engineer
+                {personalInfo.role.split(" ").slice(0, -1).join(" ")} <span className="text-gradient">{personalInfo.role.split(" ").slice(-1)[0]}</span>
               </motion.h2>
             </div>
 

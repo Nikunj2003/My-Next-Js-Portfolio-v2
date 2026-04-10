@@ -606,9 +606,9 @@ Rules:
 
 function getDefaultSuggestions() {
   return [
-    "What GenAI work are you doing right now?",
-    "Which project should I open first?",
-    "Could you share a standout repo?",
+    "Which project best shows your backend depth?",
+    "How do you approach platform reliability?",
+    "Which build shows end-to-end ownership?",
     "What's the best way to connect with you?"
   ];
 }

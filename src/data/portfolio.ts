@@ -1,8 +1,8 @@
 export const personalInfo = {
   name: "Nikunj Khitha",
   role: "Full-Stack GenAI Engineer",
-  tagline: "I build production GenAI platforms, backend systems, and product experiences that improve retrieval quality, reduce model cost, and automate work at real scale.",
-  focus: "Open to full-stack GenAI, AI platform, and backend product engineering roles where I can own architecture, delivery, and measurable outcomes.",
+  tagline: "I build backend systems, full-stack products, and production AI platforms that improve reliability, reduce model cost, and turn complex workflows into useful software.",
+  focus: "Open to backend, full-stack, platform, and AI product engineering roles where I can own architecture, delivery, and measurable outcomes.",
   email: "njkhitha2003@gmail.com",
   linkedin: "https://www.linkedin.com/in/nikunj-khitha/",
   github: "https://github.com/Nikunj2003",
@@ -11,18 +11,18 @@ export const personalInfo = {
 
 export const stats = [
   { value: 200, suffix: "+", label: "Customers Served" },
-  { value: 500, suffix: "K+", label: "Entities Unified" },
+  { value: 5, suffix: "K+", label: "Daily API Requests" },
+  { value: 42, suffix: "%", label: "Deploy Time Cut" },
   { value: 40, suffix: "%", label: "Retrieval Lift" },
-  { value: 50, suffix: "%", label: "Indexing Cost Cut" },
 ];
 
 export const about = {
-  summary: "I work best on products and platforms where AI has to be useful, reliable, and cost-aware — not just impressive in a demo. My sweet spot is owning the system end to end: shaping the product experience, building the backend and retrieval layer, wiring the infrastructure, and turning model behavior into something teams can trust in production.",
+  summary: "I work best on products and platforms where backend systems have to be reliable, AI has to be useful, and the user experience has to earn trust in production. My sweet spot is owning the system end to end: shaping the product experience, building the backend and retrieval layer, wiring the infrastructure, and turning model behavior into something teams can trust.",
   highlights: [
     "Architected a GraphRAG platform for 200+ customers that unified 500K+ entities across 5+ enterprise systems and improved retrieval accuracy by 40%.",
-    "Reduced LLM indexing cost by 50%, saving $15K+ annually, by redesigning ingestion and retrieval workflows instead of simply scaling spend.",
     "Built backend APIs, automation systems, and internal tooling that removed 200+ manual hours per month across support, QA, HR, and marketing.",
     "Led AI-driven documentation automation for 250+ integrations and shipped multi-model gateway tooling with centralized observability and control.",
+    "Reduced LLM indexing cost by 50%, saving $15K+ annually, by redesigning ingestion and retrieval workflows instead of simply scaling spend.",
   ],
 };
 
@@ -257,9 +257,9 @@ export const skillCategories = [
 ];
 
 export const chatSuggestions = [
-  "What impact are you driving at ArmorCode?",
   "Which project best shows your backend depth?",
-  "How did you cut indexing cost by 50%?",
-  "What kind of roles are you targeting next?",
-  "How do you balance product UX and AI infra?",
+  "How do you approach platform reliability?",
+  "What impact are you driving at ArmorCode?",
+  "Which build best shows end-to-end ownership?",
+  "How do you balance AI products with system design?",
 ];

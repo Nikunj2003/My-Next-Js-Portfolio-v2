@@ -5,11 +5,11 @@ import { SpotlightCard } from "@/components/ui/spotlight-card";
 
 // Icons for each category
 const CATEGORY_ICONS: Record<string, React.ElementType> = {
-  "Full-Stack Engineering": Layers,
-  "GenAI & LLM Systems": Brain,
-  "Databases & Data": Database,
-  "DevOps & Infrastructure": Server,
-  "Tooling & Delivery": Wrench,
+  "Backend & Product Engineering": Layers,
+  "GenAI, Agents & Retrieval": Brain,
+  "Data & Search Infrastructure": Database,
+  "Platform, DevOps & Delivery": Server,
+  "Product Tooling & UX": Wrench,
 };
 
 const SkillsSection = () => {
@@ -29,7 +29,7 @@ const SkillsSection = () => {
                 <span className="text-gradient">Stack</span>
               </h2>
               <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-md">
-                The technologies I reach for most often when building production GenAI products, backend systems, retrieval pipelines, and the infrastructure around them.
+                The technologies I reach for most often when building backend systems, full-stack products, production infrastructure, and AI-powered workflows.
               </p>
             </div>
           </div>

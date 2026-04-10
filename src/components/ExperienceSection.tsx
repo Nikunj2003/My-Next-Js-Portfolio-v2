@@ -305,7 +305,7 @@ const ExperienceSection = () => {
                 <span className="text-gradient">Experience</span>
               </h2>
               <p className="mb-8 max-w-md leading-relaxed text-muted-foreground">
-                I’ve grown from building public-sector software into shipping enterprise GenAI systems where retrieval quality, cost control, backend reliability, and product usability all have to work together.
+                I’ve grown from building public-sector software into shipping backend systems, platform tooling, and AI products where reliability, delivery speed, retrieval quality, and usability all have to work together.
               </p>
 
               <div className="hidden lg:block">

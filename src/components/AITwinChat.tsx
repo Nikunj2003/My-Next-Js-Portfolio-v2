@@ -58,7 +58,7 @@ type ChatRequestError = Error & {
 const WELCOME = WELCOME_MESSAGE;
 const INITIAL_MESSAGES: Message[] = [{ id: "welcome", role: "assistant", content: WELCOME }];
 const FOCUSABLE_SELECTOR = 'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])';
-const OFFLINE_ASSISTANT_MESSAGE = "Nikunj's AI twin is offline right now. You can still browse the projects, use the contact section, or download the resume while the service is unavailable.";
+const OFFLINE_ASSISTANT_MESSAGE = "Nikunj's AI twin is offline right now. You can still browse the projects, review backend and platform work, use the contact section, or download the resume while the service is unavailable.";
 
 function createMessageId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -868,7 +868,7 @@ const AITwinChat = () => {
             initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            {chatSuggestions.filter((suggestion) => suggestion !== "How do you balance product UX and AI infra?").map((s) => (
+            {chatSuggestions.map((s) => (
               <button
                 type="button"
                 key={s}
