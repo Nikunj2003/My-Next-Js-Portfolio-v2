@@ -48,7 +48,7 @@ function FlipChapter() {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: shouldReduceMotion ? 0.2 : 0.5 }}
-      className="mt-10 text-left text-base font-semibold text-foreground sm:text-xl md:text-2xl"
+      className="mt-10 whitespace-nowrap text-left text-base font-semibold text-foreground sm:text-lg md:text-xl"
     >
       And a new{" "}
       <AnimatePresence onExitComplete={() => setIsAnimating(false)}>
@@ -296,20 +296,28 @@ const ExperienceSection = () => {
               initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: -30 }}
               animate={inView ? { opacity: 1, x: 0 } : {}}
               transition={{ duration: shouldReduceMotion ? 0.2 : 0.7, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full"
             >
-              <div className="mb-6 inline-flex items-center rounded-full border border-primary/20 glass-subtle px-3 py-1.5 text-xs font-mono text-primary">
-                Journey
-              </div>
-              <h2 className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl">
-                Professional <br className="hidden lg:block" />
-                <span className="text-gradient">Experience</span>
-              </h2>
-              <p className="mb-8 max-w-md leading-relaxed text-muted-foreground">
-                I’ve grown from building public-sector software into shipping backend systems, platform tooling, and AI products where reliability, delivery speed, retrieval quality, and usability all have to work together.
-              </p>
+              <div className="relative overflow-hidden rounded-[2rem] border border-white/10 glass-subtle p-6 shadow-[0_0_40px_rgba(41,214,185,0.08)] sm:p-7 lg:p-8">
+                <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/15 blur-3xl" />
+                <div className="absolute -bottom-20 left-6 h-32 w-32 rounded-full bg-accent/10 blur-3xl" />
 
-              <div className="hidden lg:block">
-                <FlipChapter />
+                <div className="relative">
+                  <div className="mb-6 inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-mono text-primary">
+                    Journey
+                  </div>
+                  <h2 className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl">
+                    Professional <br className="hidden lg:block" />
+                    <span className="text-gradient">Experience</span>
+                  </h2>
+                  <p className="mb-8 max-w-md leading-relaxed text-muted-foreground">
+                    I’ve grown from building public-sector software into shipping backend systems, platform tooling, and AI products where reliability, delivery speed, retrieval quality, and usability all have to work together.
+                  </p>
+
+                  <div className="hidden lg:block">
+                    <FlipChapter />
+                  </div>
+                </div>
               </div>
             </motion.div>
           </div>

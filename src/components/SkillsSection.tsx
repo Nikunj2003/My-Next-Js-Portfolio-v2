@@ -92,19 +92,24 @@ const SkillsSection = () => {
 
           {/* Left Column: Sticky Header */}
           <div className="lg:w-1/3 lg:sticky lg:top-32 shrink-0">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-subtle border border-primary/20 text-xs font-mono text-primary mb-6">
-                Expertise
-              </div>
-              <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6">
-                Technical <br className="hidden lg:block" />
-                <span className="text-gradient">Stack</span>
-              </h2>
-              <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-md">
-                The technologies I reach for most often when building backend systems, full-stack products, production infrastructure, and AI-powered workflows.
-              </p>
+            <div className="relative overflow-hidden rounded-[2rem] border border-white/10 glass-subtle p-6 shadow-[0_0_40px_rgba(41,214,185,0.08)] sm:p-7 lg:p-8">
+              <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/15 blur-3xl" />
+              <div className="absolute -bottom-20 left-6 h-32 w-32 rounded-full bg-accent/10 blur-3xl" />
 
-              <FlipSkill />
+              <div className="relative">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs font-mono text-primary mb-6">
+                  Expertise
+                </div>
+                <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6">
+                  Technical <br className="hidden lg:block" />
+                  <span className="text-gradient">Stack</span>
+                </h2>
+                <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-md">
+                  The technologies I reach for most often when building backend systems, full-stack products, production infrastructure, and AI-powered workflows.
+                </p>
+
+                <FlipSkill />
+              </div>
             </div>
           </div>
 
