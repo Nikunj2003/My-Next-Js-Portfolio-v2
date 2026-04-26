@@ -1,7 +1,79 @@
 "use client";
-import { skillCategories } from "@/data/portfolio";
+
+import { useCallback, useEffect, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Brain, Layers, Database, Server, Wrench } from "lucide-react";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
+import { skillCategories } from "@/data/portfolio";
+
+const SKILL_LINES = ["Learning fast.", "Building deep.", "Shipping reliably."];
+
+function FlipSkill() {
+  const [currentLine, setCurrentLine] = useState(SKILL_LINES[0]);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const shouldReduceMotion = useReducedMotion();
+
+  const startAnimation = useCallback(() => {
+    const line = SKILL_LINES[SKILL_LINES.indexOf(currentLine) + 1] || SKILL_LINES[0];
+    setCurrentLine(line);
+    setIsAnimating(true);
+  }, [currentLine]);
+
+  useEffect(() => {
+    const handler = () => setIsVisible(!document.hidden);
+    document.addEventListener("visibilitychange", handler);
+    return () => document.removeEventListener("visibilitychange", handler);
+  }, []);
+
+  useEffect(() => {
+    if (!isAnimating && isVisible) {
+      const id = window.setTimeout(() => startAnimation(), 3000);
+      return () => window.clearTimeout(id);
+    }
+  }, [isAnimating, isVisible, startAnimation]);
+
+  return (
+    <motion.h3
+      initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: shouldReduceMotion ? 0.2 : 0.5 }}
+      className="mt-10 text-left text-base font-semibold text-foreground sm:text-xl md:text-2xl"
+    >
+      <AnimatePresence onExitComplete={() => setIsAnimating(false)}>
+        <motion.span
+          key={currentLine}
+          initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={
+            shouldReduceMotion
+              ? { duration: 0.2 }
+              : { type: "spring", stiffness: 100, damping: 10 }
+          }
+          exit={
+            shouldReduceMotion
+              ? { opacity: 0 }
+              : { opacity: 0, y: -40, x: 40, filter: "blur(8px)", scale: 2, position: "absolute" }
+          }
+          className="relative inline-block text-left text-primary"
+        >
+          {currentLine.split("").map((letter, index) => (
+            <motion.span
+              key={`${currentLine}-${index}`}
+              initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10, filter: "blur(8px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              transition={{ delay: index * (shouldReduceMotion ? 0.02 : 0.08), duration: shouldReduceMotion ? 0.18 : 0.4 }}
+              className="inline-block"
+            >
+              {letter === " " ? "\u00A0" : letter}
+            </motion.span>
+          ))}
+        </motion.span>
+      </AnimatePresence>
+    </motion.h3>
+  );
+}
 
 // Icons for each category
 const CATEGORY_ICONS: Record<string, React.ElementType> = {
@@ -31,6 +103,8 @@ const SkillsSection = () => {
               <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-md">
                 The technologies I reach for most often when building backend systems, full-stack products, production infrastructure, and AI-powered workflows.
               </p>
+
+              <FlipSkill />
             </div>
           </div>
 
