@@ -8,6 +8,8 @@ import logo from "@/assets/logo.png";
 
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 
+const profileFocus = ["Production GenAI", "Backend platforms", "Automation systems"];
+
 const AboutSection = () => {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
   const shouldReduceMotion = useReducedMotion();
@@ -18,45 +20,44 @@ const AboutSection = () => {
         <div className="flex flex-col lg:flex-row gap-12 lg:gap-20 items-start">
           
           {/* Left Column: Sticky Header */}
-          <div className="lg:w-1/3 lg:sticky lg:top-32 shrink-0">
+          <div className="w-full lg:w-1/3 lg:sticky lg:top-32 shrink-0">
             <motion.div
               initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: -30 }}
               animate={inView ? { opacity: 1, x: 0 } : {}}
               transition={{ duration: shouldReduceMotion ? 0.2 : 0.7, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full"
             >
-              <div className="relative overflow-hidden rounded-[2rem] border border-white/10 glass-subtle p-6 shadow-[0_0_40px_rgba(41,214,185,0.08)] sm:p-7 lg:p-8">
-                <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/15 blur-3xl" />
-                <div className="absolute -bottom-20 left-6 h-32 w-32 rounded-full bg-accent/10 blur-3xl" />
+              <div className="relative overflow-hidden rounded-[2rem] border border-white/10 glass-subtle p-6 shadow-[0_0_40px_rgba(41,214,185,0.08)]">
+                <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
+                <div className="absolute -bottom-20 -left-16 h-40 w-40 rounded-full bg-accent/10 blur-3xl" />
 
                 <div className="relative">
-                  <div className="mb-8 flex items-center justify-between gap-4">
-                    <div className="relative">
-                      <div className="absolute inset-0 rounded-full bg-primary/25 blur-xl" />
-                      <div className="relative rounded-2xl border border-primary/20 bg-background/40 p-2 shadow-[0_0_24px_rgba(41,214,185,0.12)]">
-                        <Image src={logo} alt="" aria-hidden="true" className="h-12 w-12 opacity-90 pointer-events-none" draggable={false} />
-                      </div>
+                  <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-mono font-bold text-primary shadow-[0_0_12px_rgba(41,214,185,0.1)]">
+                    <span className="h-2 w-2 rounded-full bg-primary shadow-[0_0_12px_rgba(41,214,185,0.6)]" />
+                    Profile
+                  </div>
+
+                  <div className="mb-6 flex items-center gap-4">
+                    <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl border border-primary/20 bg-primary/10">
+                      <div className="absolute inset-0 rounded-3xl bg-primary/20 blur-xl" />
+                      <Image src={logo} alt="" aria-hidden="true" className="relative z-10 h-12 w-12 opacity-90 pointer-events-none" draggable={false} />
                     </div>
-                    <div className="inline-flex items-center px-3 py-1.5 rounded-full border border-primary/20 bg-primary/10 text-xs font-mono text-primary">
-                      Profile
+
+                    <div>
+                      <p className="mb-1 font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground">About</p>
+                      <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">
+                        <span className="text-gradient">Nikunj</span>
+                      </h2>
                     </div>
                   </div>
 
-                  <p className="mb-3 font-mono text-xs uppercase tracking-[0.28em] text-primary/80">
-                    {personalInfo.role}
-                  </p>
-                  <h2 className="mb-5 text-4xl font-bold tracking-tight sm:text-5xl">
-                    About <br className="hidden lg:block" />
-                    <span className="text-gradient">Nikunj</span>
-                  </h2>
-                  <p className="max-w-sm text-sm leading-relaxed text-muted-foreground sm:text-base">
-                    I turn AI experiments into production systems with backend depth, product sense, and a bias for measurable impact.
+                  <p className="mb-6 text-sm font-medium leading-relaxed text-foreground/85 sm:text-base">
+                    {personalInfo.role} focused on reliable AI products, retrieval systems, and backend architecture.
                   </p>
 
-                  <div className="mt-6 flex flex-wrap gap-2">
-                    {["AI Products", "Backend Depth", "Platform Systems"].map((tag) => (
-                      <span key={tag} className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-foreground/80">
-                        {tag}
+                  <div className="flex flex-wrap gap-2">
+                    {profileFocus.map((item) => (
+                      <span key={item} className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-muted-foreground">
+                        {item}
                       </span>
                     ))}
                   </div>

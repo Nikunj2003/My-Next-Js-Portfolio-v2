@@ -48,7 +48,7 @@ function FlipChapter() {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: shouldReduceMotion ? 0.2 : 0.5 }}
-      className="mt-10 whitespace-nowrap text-left text-base font-semibold text-foreground sm:text-lg md:text-xl"
+      className="mt-10 text-left text-base font-semibold text-foreground sm:text-xl md:text-2xl"
     >
       And a new{" "}
       <AnimatePresence onExitComplete={() => setIsAnimating(false)}>
@@ -291,19 +291,18 @@ const ExperienceSection = () => {
     <section id="experience" className="section-padding relative z-10">
       <div className="container-narrow" ref={sectionRef}>
         <div className="flex flex-col items-start gap-12 lg:flex-row lg:gap-20">
-          <div className="shrink-0 lg:sticky lg:top-32 lg:w-1/3">
+          <div className="w-full shrink-0 lg:sticky lg:top-32 lg:w-1/3">
             <motion.div
               initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: -30 }}
               animate={inView ? { opacity: 1, x: 0 } : {}}
               transition={{ duration: shouldReduceMotion ? 0.2 : 0.7, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full"
             >
-              <div className="relative overflow-hidden rounded-[2rem] border border-white/10 glass-subtle p-6 shadow-[0_0_40px_rgba(41,214,185,0.08)] sm:p-7 lg:p-8">
-                <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/15 blur-3xl" />
-                <div className="absolute -bottom-20 left-6 h-32 w-32 rounded-full bg-accent/10 blur-3xl" />
+              <div className="relative overflow-hidden rounded-[2rem] border border-white/10 glass-subtle p-6 shadow-[0_0_40px_rgba(41,214,185,0.08)]">
+                <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
+                <div className="absolute -bottom-20 -left-16 h-40 w-40 rounded-full bg-accent/10 blur-3xl" />
 
                 <div className="relative">
-                  <div className="mb-6 inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-mono text-primary">
+                  <div className="mb-6 inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-mono text-primary">
                     Journey
                   </div>
                   <h2 className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl">
