@@ -81,6 +81,7 @@ export const experiences: Experience[] = [
     summary: "Own end-to-end GenAI product and platform work across retrieval, backend APIs, automation, and production reliability for enterprise customers.",
     bullets: [
       "Architected enterprise GenAI platforms for 200+ customers, including a Neo4j + PGVector GraphRAG system that unified 500,000+ entities across 5+ systems and improved retrieval accuracy by 40%.",
+      "Implemented Graphiti-based temporal graph memory for Anya, ArmorCode's multi-step reasoning agent, with session-scoped memory and person-level long-term GraphRAG recall.",
       "Orchestrated GraphRAG and LightRAG ETL pipelines that cut LLM indexing costs by 50% and saved $15,000+ annually.",
       "Expanded the core Java and Spring Boot backend with 10+ REST APIs serving 5,000+ daily requests at 99.8% uptime for GenAI product workflows.",
       "Built automation suites across support, QA, HR, and marketing with n8n, Java microservices, and Python, eliminating 200+ manual hours per month.",
@@ -237,7 +238,7 @@ export const skillCategories = [
   {
     title: "GenAI, Agents & Retrieval",
     description: "The AI, orchestration, and retrieval stack I use to build production-grade GenAI systems and agent workflows.",
-    skills: ["RAG", "GraphRAG", "LightRAG", "Agentic AI", "Multi-Agent Systems", "LangGraph", "LangChain", "LangChain4j", "Spring AI", "CrewAI", "MCP", "Prompt Engineering", "Vercel AI SDK", "Claude", "Gemini AI", "OpenAI", "LLaMA", "NVIDIA NIM", "AWS Bedrock", "Vertex AI"],
+    skills: ["RAG", "GraphRAG", "LightRAG", "Graphiti", "Temporal Graph Memory", "Agentic AI", "Multi-Step Reasoning Agents", "Multi-Agent Systems", "LangGraph", "LangChain", "LangChain4j", "Spring AI", "CrewAI", "MCP", "Prompt Engineering", "Vercel AI SDK", "Claude", "Gemini AI", "OpenAI", "LLaMA", "NVIDIA NIM", "AWS Bedrock", "Vertex AI"],
   },
   {
     title: "Data & Search Infrastructure",
