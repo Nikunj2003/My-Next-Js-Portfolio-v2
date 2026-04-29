@@ -37,3 +37,40 @@ test("parseStoredChatEnvelope rejects legacy array payloads", () => {
 
   assert.equal(parsed, null);
 });
+
+test("parseStoredChatEnvelope rejects malformed envelope metadata", () => {
+  assert.equal(parseStoredChatEnvelope(null, Date.now()), null);
+  assert.equal(
+    parseStoredChatEnvelope(
+      {
+        version: CHAT_STORAGE_VERSION + 1,
+        savedAt: 1_000,
+        messages: [{ id: "1" }],
+      },
+      1_500,
+    ),
+    null,
+  );
+  assert.equal(
+    parseStoredChatEnvelope(
+      {
+        version: CHAT_STORAGE_VERSION,
+        savedAt: Number.NaN,
+        messages: [{ id: "1" }],
+      },
+      1_500,
+    ),
+    null,
+  );
+  assert.equal(
+    parseStoredChatEnvelope(
+      {
+        version: CHAT_STORAGE_VERSION,
+        savedAt: 1_000,
+        messages: "not-an-array",
+      },
+      1_500,
+    ),
+    null,
+  );
+});

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { checkRateLimit, getClientKey } from "../src/lib/rate-limit.ts";
+import { checkRateLimit, getClientKey, getRateLimitHeaders } from "../src/lib/rate-limit.ts";
 
 function createRequest(headers: Record<string, string>) {
   return new Request("https://example.com/api/chat", { headers });
@@ -27,6 +27,19 @@ test("getClientKey falls back to a hashed fingerprint when IP headers are missin
   );
 
   assert.match(key, /^fingerprint:[a-f0-9]{32}$/);
+});
+
+test("getClientKey returns anonymous when no identifying headers exist", () => {
+  assert.equal(getClientKey(createRequest({})), "anonymous");
+});
+
+test("getRateLimitHeaders serializes standard no-store headers", () => {
+  assert.deepEqual(getRateLimitHeaders(39, 12, 1_700_000_123_456), {
+    "X-RateLimit-Limit": "39",
+    "X-RateLimit-Remaining": "12",
+    "X-RateLimit-Reset": "1700000124",
+    "Cache-Control": "no-store",
+  });
 });
 
 test("checkRateLimit limits requests after the configured threshold", () => {
@@ -59,4 +72,21 @@ test("checkRateLimit evicts the oldest active entry when the memory store is ful
   assert.equal(store.size, 500);
   assert.equal(store.has("client-0"), false);
   assert.equal(store.has("new-client"), true);
+});
+
+test("checkRateLimit starts a new window after reset", () => {
+  const store = new Map<string, { count: number; resetAt: number }>();
+
+  store.set("client-1", {
+    count: 10,
+    resetAt: Date.now() - 1,
+  });
+
+  const result = checkRateLimit(store, "client-1", { limit: 3, windowMs: 60_000 });
+  const entry = store.get("client-1");
+
+  assert.equal(result.limited, false);
+  assert.equal(result.remaining, 2);
+  assert.equal(entry?.count, 1);
+  assert.ok((entry?.resetAt ?? 0) > Date.now());
 });

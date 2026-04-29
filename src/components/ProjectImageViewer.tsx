@@ -5,10 +5,23 @@ import { Drawer as DrawerPrimitive } from "vaul";
 import { ChevronLeft, ChevronRight, RotateCcw, X, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  BUTTON_ZOOM_STEP,
+  FALLBACK_IMAGE_SIZE,
+  MAX_ZOOM,
+  MIN_ZOOM,
+  WHEEL_ZOOM_SENSITIVITY,
+  clamp,
+  clampOffsetToBounds,
+  getContainedSize,
+  getDistance,
+  getMidpoint,
+  roundZoom,
+  type Point,
+  type Size,
+} from "@/lib/project-image-viewer";
 import { cn } from "@/lib/utils";
 
-type Point = { x: number; y: number };
-type Size = { width: number; height: number };
 type GestureNativeEvent = Event & { scale: number; clientX: number; clientY: number };
 type SwipeState = {
   pointerId: number;
@@ -39,63 +52,6 @@ interface ProjectImageViewerProps {
   currentIndex: number;
   onIndexChange: (index: number) => void;
   onOpenChange: (open: boolean) => void;
-}
-
-const MIN_ZOOM = 1;
-const MAX_ZOOM = 5;
-const BUTTON_ZOOM_STEP = 0.35;
-const WHEEL_ZOOM_SENSITIVITY = 0.0014;
-const FALLBACK_IMAGE_SIZE: Size = { width: 16, height: 10 };
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max);
-}
-
-function roundZoom(value: number) {
-  const rounded = Number(value.toFixed(3));
-  return Math.abs(rounded - MIN_ZOOM) < 0.025 ? MIN_ZOOM : rounded;
-}
-
-function getDistance(a: Point, b: Point) {
-  return Math.hypot(b.x - a.x, b.y - a.y);
-}
-
-function getMidpoint(a: Point, b: Point): Point {
-  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-}
-
-function getContainedSize(image: Size, viewport: Size): Size {
-  if (!viewport.width || !viewport.height) {
-    return { width: 0, height: 0 };
-  }
-
-  if (!image.width || !image.height) {
-    return {
-      width: viewport.width,
-      height: viewport.height,
-    };
-  }
-
-  const ratio = Math.min(viewport.width / image.width, viewport.height / image.height);
-
-  return {
-    width: image.width * ratio,
-    height: image.height * ratio,
-  };
-}
-
-function clampOffsetToBounds(offset: Point, scale: number, content: Size, viewport: Size): Point {
-  if (scale <= MIN_ZOOM || !content.width || !content.height || !viewport.width || !viewport.height) {
-    return { x: 0, y: 0 };
-  }
-
-  const maxX = Math.max(0, (content.width * scale - viewport.width) / 2);
-  const maxY = Math.max(0, (content.height * scale - viewport.height) / 2);
-
-  return {
-    x: clamp(offset.x, -maxX, maxX),
-    y: clamp(offset.y, -maxY, maxY),
-  };
 }
 
 export default function ProjectImageViewer({
