@@ -7,6 +7,14 @@ description: Refresh or create Nikunj Khitha's ATS-friendly LaTeX resume from th
 
 Use this workflow to create or update the base resume from the latest portfolio information.
 
+## Trigger Examples
+
+- `$portfolio-resume-refresh`
+- `Use the portfolio-resume-refresh skill.`
+- `Refresh my base one-page LaTeX resume from my latest portfolio.`
+
+Add `with subagents` when the user wants the full optimized multi-agent flow. Codex docs require explicit permission before spawning subagents.
+
 ## Inputs
 
 - Default portfolio root: current repository.
@@ -25,6 +33,7 @@ Use this workflow to create or update the base resume from the latest portfolio 
 2. If the user explicitly asks for subagents or parallel work, spawn:
    - `portfolio_resume_miner` for facts
    - `resume_practice_researcher` for current ATS and summary guidance
+   - `resume_latex_writer` for drafting/updating the LaTeX resume
    - `final_resume_reviewer` only after a draft exists
 3. Build a verified-facts map:
    - Identity and contact

@@ -5,16 +5,17 @@ This package is designed for Nikunj Khitha's portfolio repository.
 It follows the current Codex guidance:
 - Custom agents live in `.codex/agents/`.
 - Repo-discoverable skills live in `.agents/skills/`.
-- Custom prompts are deprecated in favor of skills, but reusable prompt templates are kept in `.codex/prompts/` for copy/paste or manual migration to `~/.codex/prompts/`.
+- Custom prompts are deprecated in favor of skills, so skills are the only workflow entrypoints.
+- Subagents are spawned only when explicitly requested, so use `with subagents` for the full optimized version.
 
 ## Flow 1: Base Portfolio Resume Refresh
 
 Use when the resume should reflect the latest portfolio data, not a specific job.
 
-Prompt:
+Skill trigger:
 
 ```text
-Use the portfolio-resume-refresh skill. Spawn the resume subagents. Update Nikunj_Khitha_ATS_Resume_2026.tex from the latest portfolio facts and current ATS best practices. Keep it one page.
+$portfolio-resume-refresh with subagents
 ```
 
 Agents:
@@ -32,10 +33,10 @@ Outputs:
 
 Use when applying to a specific company/role.
 
-Prompt:
+Skill trigger:
 
 ```text
-Use the jd-tailored-resume skill. Spawn the resume subagents. Tailor Nikunj_Khitha_ATS_Resume_2026.tex for this JD:
+$jd-tailored-resume with subagents
 
 <paste JD here>
 ```
@@ -60,10 +61,10 @@ Outputs:
 
 Use before editing, or when comparing the current resume against a JD.
 
-Prompt:
+Skill trigger:
 
 ```text
-Use the resume-scorecard skill. Score Nikunj_Khitha_ATS_Resume_2026.tex against this JD, but do not edit files:
+$resume-scorecard with subagents
 
 <paste JD here>
 ```
@@ -79,10 +80,10 @@ Outputs:
 
 Use when the resume needs facts that are not yet present in the portfolio.
 
-Prompt:
+Skill trigger:
 
 ```text
-Scan the portfolio for resume facts and identify missing data that would improve job applications. Do not edit the resume yet.
+$portfolio-fact-gap-audit with subagents
 ```
 
 Typical missing facts:
@@ -98,10 +99,12 @@ Typical missing facts:
 
 Use after the tailored resume is ready.
 
-Prompt:
+Skill trigger:
 
 ```text
-Using the tailored resume and JD, draft a concise cover letter, LinkedIn outreach message, recruiter email, and 5 interview talking points. Keep claims consistent with the resume.
+$application-packet with subagents
+
+<paste JD here>
 ```
 
 Outputs:
@@ -111,20 +114,34 @@ Outputs:
 - Interview talking points.
 - Follow-up email draft.
 
+Agents:
+- `jd_keyword_analyst`: role priorities and language.
+- `company_researcher`: company/product context.
+- `portfolio_resume_miner`: verified facts.
+- `application_packet_writer`: drafts collateral.
+- `final_resume_reviewer`: checks consistency.
+
 ## Flow 6: Interview Story Bank
 
 Use once for preparation across many applications.
 
-Prompt:
+Skill trigger:
 
 ```text
-Build a STAR story bank from my portfolio and resume for backend, GenAI, platform, ownership, debugging, leadership, conflict, and failure questions.
+$interview-story-bank with subagents
 ```
 
 Outputs:
 - 8-12 STAR stories.
 - Metrics and technologies per story.
 - Which job families each story supports.
+
+Agents:
+- `portfolio_resume_miner`: verified facts.
+- `jd_keyword_analyst`: target role themes when a JD is supplied.
+- `company_researcher`: company-specific interview angles when available.
+- `interview_story_builder`: drafts STAR stories.
+- `final_resume_reviewer`: checks unsupported claims.
 
 ## Guardrails
 

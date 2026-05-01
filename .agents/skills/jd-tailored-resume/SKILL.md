@@ -7,6 +7,14 @@ description: Rewrite Nikunj Khitha's ATS-friendly LaTeX resume for a specific jo
 
 Use this workflow when the user supplies a job description or asks to tailor the resume for a company/role.
 
+## Trigger Examples
+
+- `$jd-tailored-resume`
+- `Use the jd-tailored-resume skill.`
+- `Tailor my resume to this JD: <paste JD>`
+
+Add `with subagents` when the user wants the full optimized multi-agent flow. Codex docs require explicit permission before spawning subagents.
+
 ## Required Input
 
 - Job description text, URL, or attachment.
@@ -29,6 +37,7 @@ Use this workflow when the user supplies a job description or asks to tailor the
    - `jd_keyword_analyst`: must-have requirements, exact keywords, gaps
    - `company_researcher`: company products, domain, stack signals, recent context
    - `resume_practice_researcher`: current ATS and resume-summary best practices
+   - `resume_latex_writer`: targeted LaTeX rewrite
 3. Build a targeting brief:
    - Target role title and seniority
    - Top 10 exact ATS keywords from the JD

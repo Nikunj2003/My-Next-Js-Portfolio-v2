@@ -12,16 +12,22 @@
 8. Interview story bank from portfolio/resume facts.
 9. Portfolio fact-gap audit for missing metrics, dates, certifications, and links.
 
+## Skill Entrypoints
+
+- `$portfolio-resume-refresh with subagents`
+- `$jd-tailored-resume with subagents`
+- `$resume-scorecard with subagents`
+- `$application-packet with subagents`
+- `$interview-story-bank with subagents`
+- `$portfolio-fact-gap-audit with subagents`
+
 ## Recommended Future Flows
 
 1. `job-tracker-update`: Maintain a `.context/job-tracker.md` table with company, role, JD link, resume version, score, status, follow-up date, and notes.
 2. `resume-versioning`: Save tailored resumes under `.context/generated-resumes/<company>-<role>.tex` so the base resume stays clean.
-3. `cover-letter-tailor`: Build cover letters only after the tailored resume score is above 80.
-4. `linkedin-profile-sync`: Compare the resume with LinkedIn headline/about/experience and suggest profile updates.
-5. `github-project-proof`: For each target job, map resume projects to GitHub repositories, README quality, screenshots, and demo links.
-6. `interview-prep-company`: Generate interview talking points using the final resume, company research, and JD themes.
-7. `cold-outreach-pack`: Produce recruiter, hiring manager, founder, and referral-request versions.
-8. `post-application-followup`: Generate follow-up messages for 3, 7, and 14 days after application.
+3. `linkedin-profile-sync`: Compare the resume with LinkedIn headline/about/experience and suggest profile updates.
+4. `github-project-proof`: For each target job, map resume projects to GitHub repositories, README quality, screenshots, and demo links.
+5. `job-tracker-update`: Record each tailored resume score, outreach status, follow-up date, and interview notes.
 
 ## Scenario Guardrails
 
