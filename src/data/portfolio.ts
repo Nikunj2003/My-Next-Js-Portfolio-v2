@@ -55,12 +55,14 @@ export const experiences: Experience[] = [
     role: "SDE Intern (Backend/AI)",
     period: "Jun 2024 – Dec 2024",
     type: "work",
-    summary: "Shipped backend and AI systems for sports products, with strong emphasis on service quality, delivery speed, and retrieval-backed user experiences.",
+    summary: "Shipped full-stack, backend, GenAI, and data systems for AIKO and Fantasy GPT, powering personalized sports experiences, voice AI, and retrieval-backed cricket intelligence.",
     bullets: [
-      "Built Node.js and FastAPI microservices with test-driven development, reaching 100% test coverage and improving API performance by 40%.",
+      "Built Node.js and FastAPI microservices with test-driven development, reaching 92% test coverage and improving API performance by 40%.",
       "Designed Docker and GitHub Actions delivery pipelines that reduced deployment time by 42% and improved release confidence.",
-      "Engineered Fantasy GPT with RAG and LangGraph to resolve 98% of complex sports queries and built AIKO to deliver personalized highlights with 96% commentary accuracy.",
-      "Created scalable MSSQL and Azure ETL pipelines that maintained 100% data accuracy for AI product workflows.",
+      "Worked across the backend and frontend of AIKO, a voice-based sports companion using Azure Speech SDK for text-to-speech and speech-to-text, user-level personalization, and live AI-generated commentary in 20+ languages.",
+      "Built AIKO personalization features for on-the-fly highlight reels, where AI agents stitched sports moments based on each user's profile and interests; the product was presented at IBC 2024 in Amsterdam.",
+      "Engineered Fantasy GPT with RAG, LangGraph, backend APIs, and a multi-agent layer to resolve 98% of complex sports queries, then evaluated answer quality with DeepEval.",
+      "Created scalable ETL pipelines with SQLAlchemy to transform cricket data into MSSQL for the SQL RAG agent, maintaining 100% data accuracy across AI product workflows.",
     ],
   },
   {
