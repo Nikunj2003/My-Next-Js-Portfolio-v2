@@ -116,6 +116,21 @@ npm run build
 
 ---
 
+## 🤖 Codex Job Hunt Toolkit
+
+This repo includes Codex skills and subagents for resume and job-search workflows:
+
+- `$portfolio-resume-refresh with subagents` refreshes the base one-page ATS LaTeX resume from the latest portfolio facts.
+- `$jd-tailored-resume with subagents` rewrites the resume for a specific job description using portfolio facts, JD keywords, company research, and ATS best practices.
+- `$resume-scorecard with subagents` scores the resume against a JD without editing.
+- `$application-packet with subagents` creates cover letters, recruiter messages, LinkedIn notes, referral asks, and follow-ups.
+- `$interview-story-bank with subagents` builds STAR interview stories from verified portfolio and resume facts.
+- `$portfolio-fact-gap-audit with subagents` finds missing metrics, links, dates, and evidence that would improve applications.
+
+Detailed instructions live in `.codex/job-hunt/INSTRUCTIONS.md`.
+
+---
+
 ## 🧱 Project Structure (Excerpt)
 ```
 src/

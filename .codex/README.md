@@ -27,6 +27,8 @@ The entrypoint is the skill. Add `with subagents` when you want the full multi-a
 
 ## Fast Commands To Ask Codex
 
+Use skills as the entrypoint. Add `with subagents` for the full specialist-agent flow.
+
 Base resume:
 
 ```text
@@ -68,3 +70,14 @@ Portfolio fact gaps:
 ```text
 $portfolio-fact-gap-audit with subagents
 ```
+
+## Flow Summary
+
+- `portfolio-resume-refresh`: updates the base ATS LaTeX resume from portfolio facts.
+- `jd-tailored-resume`: rewrites the resume for a specific JD with company research and keyword mapping.
+- `resume-scorecard`: scores resume/JD fit without editing files.
+- `application-packet`: creates cover letter and outreach collateral.
+- `interview-story-bank`: builds STAR stories for interviews.
+- `portfolio-fact-gap-audit`: finds missing portfolio evidence that would make future applications stronger.
+
+Detailed instructions: `.codex/job-hunt/INSTRUCTIONS.md`.
