@@ -8,7 +8,7 @@ import logo from "@/assets/logo.png";
 
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 
-const profileFocus = ["Production GenAI", "Backend platforms", "Automation systems"];
+const profileFocus = ["Backend systems", "Full-stack platforms", "Production GenAI"];
 
 const AboutSection = () => {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
@@ -51,7 +51,7 @@ const AboutSection = () => {
                   </div>
 
                   <p className="mb-6 text-sm font-medium leading-relaxed text-foreground/85 sm:text-base">
-                    {personalInfo.role} focused on reliable AI products, retrieval systems, and backend architecture.
+                    {personalInfo.role} focused on backend architecture, full-stack product delivery, AI security, and reliable agent systems.
                   </p>
 
                   <div className="flex flex-wrap gap-2">
@@ -75,7 +75,7 @@ const AboutSection = () => {
               className="prose prose-invert prose-lg max-w-none text-muted-foreground leading-relaxed"
             >
               <p className="text-xl sm:text-2xl font-medium text-foreground tracking-tight leading-snug mb-6" style={{ textWrap: "pretty" }}>
-                I build AI products and platform systems where accuracy, cost, reliability, and user experience all matter at the same time.
+                I build backend-heavy AI products and platform systems where APIs, reliability, security, observability, retrieval quality, and user experience all matter at the same time.
               </p>
               <p style={{ textWrap: "pretty" }}>
                 {about.summary}

@@ -105,7 +105,7 @@ const SkillsSection = () => {
                   <span className="text-gradient">Stack</span>
                 </h2>
                 <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-md">
-                  The technologies I reach for most often when building backend systems, full-stack products, production infrastructure, and AI-powered workflows.
+                  The technologies I reach for most often when building backend systems, full-stack products, gateways, production infrastructure, and AI-powered workflows.
                 </p>
 
                 <FlipSkill />
