@@ -46,7 +46,7 @@ export const experiences: Experience[] = [
     summary: "Built public-sector software that improved data reliability, internal operations, and workflow speed across government systems.",
     bullets: [
       "Integrated National Power Portal data into a national renewable energy dashboard serving 150+ power stations and improved reporting accuracy by 30%.",
-      "Built a secure PHP/MySQL file management system with role-based access control that improved retrieval efficiency by 25% across 5,000+ files.",
+      "Built a secure Java/PostgreSQL file management system with role-based access control that improved retrieval efficiency by 25% across 5,000+ files.",
       "Developed a MERN conference room booking system that cut booking time by 60% and reduced scheduling errors by 40%.",
     ],
   },
