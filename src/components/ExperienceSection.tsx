@@ -51,36 +51,38 @@ function FlipChapter() {
       className="mt-6 inline-flex flex-nowrap items-baseline whitespace-nowrap text-left text-[0.95rem] font-semibold text-foreground min-[380px]:text-base sm:text-xl md:text-2xl lg:mt-8 lg:text-lg xl:text-xl 2xl:text-2xl"
     >
       And a new{" "}
-      <AnimatePresence onExitComplete={() => setIsAnimating(false)}>
-        <motion.span
-          key={currentWord}
-          initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={
-            shouldReduceMotion
-              ? { duration: 0.2 }
-              : { type: "spring", stiffness: 100, damping: 10 }
-          }
-          exit={
-            shouldReduceMotion
-              ? { opacity: 0 }
-              : { opacity: 0, y: -40, x: 40, filter: "blur(8px)", scale: 2, position: "absolute" }
-          }
-          className="relative inline-block w-[9ch] px-2 text-center text-primary"
-        >
-          {currentWord.split("").map((letter, index) => (
-            <motion.span
-              key={`${currentWord}-${index}`}
-              initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10, filter: "blur(8px)" }}
-              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              transition={{ delay: index * (shouldReduceMotion ? 0.02 : 0.08), duration: shouldReduceMotion ? 0.18 : 0.4 }}
-              className="inline-block"
-            >
-              {letter}
-            </motion.span>
-          ))}
-        </motion.span>
-      </AnimatePresence>{" "}
+      <span className="relative inline-grid w-[9ch] overflow-hidden px-2 text-center text-primary">
+        <AnimatePresence initial={false} onExitComplete={() => setIsAnimating(false)}>
+          <motion.span
+            key={currentWord}
+            initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={
+              shouldReduceMotion
+                ? { duration: 0.2 }
+                : { type: "spring", stiffness: 100, damping: 10 }
+            }
+            exit={
+              shouldReduceMotion
+                ? { opacity: 0 }
+                : { opacity: 0, y: -40, filter: "blur(8px)", scale: 1.15 }
+            }
+            className="col-start-1 row-start-1 inline-block"
+          >
+            {currentWord.split("").map((letter, index) => (
+              <motion.span
+                key={`${currentWord}-${index}`}
+                initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10, filter: "blur(8px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                transition={{ delay: index * (shouldReduceMotion ? 0.02 : 0.08), duration: shouldReduceMotion ? 0.18 : 0.4 }}
+                className="inline-block"
+              >
+                {letter}
+              </motion.span>
+            ))}
+          </motion.span>
+        </AnimatePresence>
+      </span>{" "}
       ahead
     </motion.h3>
   );
