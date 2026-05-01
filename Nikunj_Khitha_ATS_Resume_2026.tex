@@ -1,0 +1,115 @@
+\documentclass[letterpaper,10pt]{article}
+
+\usepackage[empty]{fullpage}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[hidelinks]{hyperref}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\input{glyphtounicode}
+
+\pdfgentounicode=1
+\urlstyle{same}
+\raggedright
+\raggedbottom
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+
+\addtolength{\oddsidemargin}{-0.55in}
+\addtolength{\evensidemargin}{-0.55in}
+\addtolength{\textwidth}{1.10in}
+\addtolength{\topmargin}{-0.72in}
+\addtolength{\textheight}{1.35in}
+
+\titleformat{\section}
+  {\large\bfseries}
+  {}
+  {0em}
+  {}
+  [\titlerule]
+\titlespacing*{\section}{0pt}{5pt}{2pt}
+
+\newcommand{\resumeItem}[1]{\item\small{#1}}
+\newcommand{\resumeRole}[4]{
+  \textbf{#1} \hfill #2\\
+  \textit{#3} \hfill \textit{#4}
+}
+\newcommand{\resumeProject}[3]{
+  \textbf{#1}: \textit{#2} \hfill \href{#3}{GitHub}
+}
+
+\begin{document}
+
+\begin{center}
+  {\Huge \textbf{Nikunj Khitha}}\\
+  \vspace{2pt}
+  \small
+  Gurugram, Haryana, India \quad
+  \href{mailto:njkhitha2003@gmail.com}{njkhitha2003@gmail.com} \quad
+  \href{tel:+919540234616}{+91 9540234616}\\
+  \href{https://www.linkedin.com/in/nikunj-khitha/}{linkedin.com/in/nikunj-khitha} \quad
+  \href{https://github.com/Nikunj2003}{github.com/Nikunj2003} \quad
+  \href{https://nikunj.codenex.dev/}{nikunj.codenex.dev}
+\end{center}
+
+\section{Professional Summary}
+\small Full-Stack GenAI Engineer specializing in production AI platforms, backend APIs, retrieval systems, AI gateways, and full-stack delivery. Built GenAI capabilities for 200+ customers, including GraphRAG over 500,000+ entities, MCP automation, and multi-provider LLM infrastructure. Improved retrieval accuracy by 40\%, reduced LLM indexing costs by 50\%, and eliminated 200+ manual hours per month.
+
+\section{Technical Skills}
+\small
+\textbf{Languages and Full Stack:} Java, TypeScript, JavaScript, Python, Go, SQL, Spring Boot, Spring AI, Node.js, Express.js, FastAPI, Gin, Next.js, React, REST APIs, SSE, RBAC\\
+\textbf{GenAI and Data:} RAG, GraphRAG, LightRAG, Graphiti, LangGraph, LangChain, CrewAI, MCP, OpenAI, Claude, Gemini AI, LLaMA, PostgreSQL, pgvector, Neo4j, MongoDB, Redis, MSSQL\\
+\textbf{Platform and Tools:} Docker, Kubernetes, Kafka, GitHub Actions, Jenkins, CI/CD, AWS, Azure, LiteLLM, Grafana, Nginx, n8n, DeepEval, Playwright, JUnit, PyTest, Auth0, Stripe
+
+\section{Professional Experience}
+\resumeRole{ArmorCode}{Dec 2025 -- Present}{Associate Engineer, Full-Stack GenAI}{Gurugram, India}
+\begin{itemize}[leftmargin=0.16in, itemsep=0pt, topsep=1pt]
+  \resumeItem{Architected enterprise GenAI platforms for 200+ customers, including a Neo4j and pgvector GraphRAG system that unified 500,000+ entities across 5+ enterprise systems and improved retrieval accuracy by 40\%.}
+  \resumeItem{Built the backend memory layer for Anya using Graphiti-backed temporal graph memory, session-scoped context, and person-level long-term GraphRAG recall.}
+  \resumeItem{Developed AI Exposure Management capabilities for AI security, observability, ownership, governance, shadow AI visibility, and auditable risk workflows.}
+  \resumeItem{Built OpenCode gateway and load-balancing workflows with MCP support, AI security controls, observability, and routing; cut LLM indexing costs by 50\%, saving \$15,000+ annually.}
+  \resumeItem{Received ArmorCode's AI Ninja Award as the first recipient and youngest company award winner for high-impact AI engineering work.}
+\end{itemize}
+
+\resumeRole{ArmorCode}{Jan 2025 -- Nov 2025}{GenAI Platform Engineering Intern}{Gurugram, India}
+\begin{itemize}[leftmargin=0.16in, itemsep=0pt, topsep=1pt]
+  \resumeItem{Expanded Java and Spring Boot backend with 10+ REST APIs serving 5,000+ daily requests at 99.8\% uptime; automated documentation for 250+ security integrations, cutting update latency by 99\%.}
+  \resumeItem{Built an OpenAI-compatible proxy for Gemini and Claude, deployed LiteLLM to monitor 15+ AI APIs, and automated support, QA, HR, and marketing workflows to eliminate 200+ manual hours per month.}
+\end{itemize}
+
+\resumeRole{Xansr Media (AIKO)}{Jun 2024 -- Dec 2024}{SDE Intern, Backend and AI}{Remote}
+\begin{itemize}[leftmargin=0.16in, itemsep=0pt, topsep=1pt]
+  \resumeItem{Built Node.js and FastAPI microservices with test-driven development, reaching 92\%+ test coverage and improving API performance by 40\%.}
+  \resumeItem{Designed Docker and GitHub Actions CI/CD pipelines that reduced deployment time by 42\%; engineered Fantasy GPT with RAG, LangGraph, backend APIs, and agents to resolve 98\% of complex sports queries.}
+  \resumeItem{Built AIKO personalization features for voice-based sports media, Azure Speech SDK, live commentary in 20+ languages, and on-the-fly highlight reels; product workflows were presented at IBC 2024 in Amsterdam.}
+  \resumeItem{Created SQLAlchemy ETL pipelines into MSSQL for SQL RAG agents, maintaining 100\% data accuracy across cricket intelligence workflows.}
+\end{itemize}
+
+\section{Projects}
+\resumeProject{CodeNex: AI Builder}{Java, Spring Boot, Spring AI, React, TypeScript, SSE, Kubernetes, MinIO, Stripe}{https://github.com/Nikunj2003/Codenex-backend-v1}
+\begin{itemize}[leftmargin=0.16in, itemsep=0pt, topsep=1pt]
+  \resumeItem{Built an AI code generation SaaS with SSE streaming, Kubernetes preview pods, MinIO/NFS persistence, token quotas, RBAC, Stripe subscriptions, 10,000+ concurrent streams, and sub-2 second previews.}
+\end{itemize}
+
+\resumeProject{CodeNex AI API Proxy}{Go, Gin, Node.js, Express.js, Redis, PostgreSQL, React}{https://github.com/Nikunj2003/codenex-ai-api-proxy}
+\begin{itemize}[leftmargin=0.16in, itemsep=0pt, topsep=1pt]
+  \resumeItem{Built a provider-agnostic AI gateway with protocol translation, provider pooling, health-aware failover, streaming, and operational controls behind one API surface.}
+\end{itemize}
+
+\resumeProject{Serenify}{React, TypeScript, Supabase, pgvector, Gemini AI, Vercel}{https://github.com/Nikunj2003/Serenify}
+\begin{itemize}[leftmargin=0.16in, itemsep=0pt, topsep=1pt]
+  \resumeItem{Built an open-source AI wellness platform with empathetic chat, mood tracking, journaling, guided sessions, privacy-aware analytics, and pgvector-backed product workflows.}
+\end{itemize}
+
+\resumeProject{Resume Fit -- CodeNex}{React, TypeScript, Gemini AI, Vercel AI SDK, Recharts}{https://github.com/Nikunj2003/Resume-Fit-Codenex}
+\begin{itemize}[leftmargin=0.16in, itemsep=0pt, topsep=1pt]
+  \resumeItem{Built an AI resume optimization tool with ATS-style scoring, keyword extraction, guided refinements, and visual feedback for job-description fit.}
+\end{itemize}
+
+\section{Education}
+\textbf{The NorthCap University} \hfill Aug 2021 -- Jun 2025\\
+\textit{B.Tech in Computer Science Engineering, Full Stack Development} \hfill \textit{Gurugram, India}\\
+\small CGPA: 8.16
+
+\end{document}
