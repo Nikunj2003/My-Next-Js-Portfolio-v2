@@ -192,7 +192,7 @@ const ProjectsSection = () => {
             Featured <span className="text-gradient">Work</span>
           </h2>
           <p className="text-muted-foreground leading-relaxed mb-10 max-w-xl text-lg">
-            Backend systems, full-stack products, AI applications, and platform tooling spanning APIs, UX, automation, retrieval, and production infrastructure.
+            Backend systems, full-stack products, AI applications, and platform tooling spanning APIs, gateways, UX, automation, retrieval, observability, and production infrastructure.
           </p>
 
           {/* Filters */}

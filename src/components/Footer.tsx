@@ -56,7 +56,7 @@ const Footer = () => (
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-8 text-center sm:text-left">
             <p className="text-sm font-medium text-foreground/85">
-              Open to backend, full-stack, platform, and AI product engineering roles.
+              Open to backend, full-stack, platform, AI security, observability, and GenAI product engineering roles.
             </p>
             <a
               href={personalInfo.resumeUrl}

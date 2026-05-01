@@ -48,7 +48,7 @@ function FlipChapter() {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: shouldReduceMotion ? 0.2 : 0.5 }}
-      className="mt-10 text-left text-base font-semibold text-foreground sm:text-xl md:text-2xl"
+      className="mt-6 inline-flex flex-nowrap items-baseline whitespace-nowrap text-left text-[0.95rem] font-semibold text-foreground min-[380px]:text-base sm:text-xl md:text-2xl lg:mt-8 lg:text-lg xl:text-xl 2xl:text-2xl"
     >
       And a new{" "}
       <AnimatePresence onExitComplete={() => setIsAnimating(false)}>
@@ -66,7 +66,7 @@ function FlipChapter() {
               ? { opacity: 0 }
               : { opacity: 0, y: -40, x: 40, filter: "blur(8px)", scale: 2, position: "absolute" }
           }
-          className="relative inline-block px-2 text-left text-primary"
+          className="relative inline-block w-[9ch] px-2 text-center text-primary"
         >
           {currentWord.split("").map((letter, index) => (
             <motion.span
@@ -309,8 +309,8 @@ const ExperienceSection = () => {
                     Professional <br className="hidden lg:block" />
                     <span className="text-gradient">Experience</span>
                   </h2>
-                  <p className="mb-8 max-w-md leading-relaxed text-muted-foreground">
-                    I’ve grown from building public-sector software into shipping backend systems, platform tooling, and AI products where reliability, delivery speed, retrieval quality, and usability all have to work together.
+                  <p className="max-w-md leading-relaxed text-muted-foreground">
+                    I’ve grown from building public-sector software into shipping backend systems, full-stack platform features, gateways, observability, and AI products where reliability, delivery speed, retrieval quality, and usability all have to work together.
                   </p>
 
                   <div className="hidden lg:block">
