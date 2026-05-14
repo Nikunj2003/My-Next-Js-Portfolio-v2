@@ -4,11 +4,12 @@ Canonical site:
 - https://nikunj.codenex.dev/
 
 ## Professional profile
-Nikunj Khitha is a full stack software engineer focused on productionizing Generative AI systems. His work centers on GraphRAG engines, multi-agent orchestration, AI gateways, MCP-based automation, backend platforms, and polished product delivery.
+Nikunj Khitha is a Full-Stack GenAI Engineer focused on productionizing Generative AI systems. His work centers on Knowledge Graph RAG, tenant-scoped MCP access, LLM gateways, internal AI infrastructure, backend platforms, and polished product delivery.
 
 Core areas:
-- Generative AI platforms and RAG systems
-- Multi-agent workflows and MCP-based tooling
+- Knowledge Graph RAG systems and retrieval infrastructure
+- Multi-agent workflows, MCP servers, and tenant-scoped tool access
+- LLM gateways, OpenCode workflows, and AI automation infrastructure
 - Backend services, APIs, and platform infrastructure
 - Full-stack product engineering with modern web stacks
 
@@ -30,19 +31,21 @@ Core areas:
 - Location signal: Gurugram, Haryana, India
 
 ## Featured projects
-1. CodeNex Backend v1
+1. CodeNex: AI Builder
+   - Live URL: https://www.codenex.dev/
    - URL: https://github.com/Nikunj2003/Codenex-backend-v1
-   - Summary: Production-grade Java backend for the Codenex platform, designed as a microservices system for full-stack app generation workflows powered by LLMs.
-   - Stack signals: Java, Spring Boot, Maven, Docker, Kubernetes, Redis, Kafka.
+   - Summary: AI codegen SaaS that turns natural-language prompts into full React applications using Spring Boot and Spring AI, with SSE streaming, MinIO/NFS persistence, and Kubernetes preview pods.
+   - Stack signals: Java, Spring Boot, Spring AI, React, TypeScript, SSE, Kubernetes, MinIO, Stripe.
 
 2. CodeNex AI API Proxy
    - URL: https://github.com/Nikunj2003/codenex-ai-api-proxy
-   - Summary: Unified AI gateway that standardizes access to multiple LLM providers with protocol translation, provider pooling, failover, and streaming.
-   - Stack signals: Go, Gin, Node.js, Express.js, Redis, PostgreSQL, React.
+   - Summary: OpenAI-compatible AI gateway with provider abstraction, multi-account load balancing, health-aware fallbacks, Redis-backed response caching, streaming support, and operational controls.
+   - Stack signals: Go, Gin, Redis, PostgreSQL, React, OpenAI-compatible APIs.
 
 3. Serenify
-   - URL: https://github.com/Nikunj2003/Serenify
-   - Summary: Open-source mental wellness product with empathetic AI chat, mood tracking, journaling, guided activities, and personal analytics.
+   - Live URL: https://serenify.codenex.dev/
+   - Source URL: https://github.com/Nikunj2003/Serenify
+   - Summary: Open-source AI wellness product with empathetic Gemini-powered chat, mood tracking, journaling, guided sessions, crisis-help flows, privacy-aware analytics, and pgvector-backed personalization.
    - Stack signals: React, TypeScript, Supabase, pgvector, Gemini AI, Vercel.
 
 4. CodeNex Images
