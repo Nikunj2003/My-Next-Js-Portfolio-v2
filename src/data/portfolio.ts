@@ -1,8 +1,8 @@
 export const personalInfo = {
   name: "Nikunj Khitha",
   role: "Full-Stack GenAI Engineer",
-  tagline: "I build backend systems, full-stack products, and AI platforms where APIs, gateways, security, observability, and model workflows have to work together in production.",
-  focus: "Open to backend, full-stack, platform, and GenAI engineering roles where I can own architecture, delivery, and measurable outcomes.",
+  tagline: "I build full-stack GenAI platforms where Spring Boot APIs, retrieval systems, MCP servers, LLM gateways, security, observability, and product UX work together in production.",
+  focus: "Open to Full-Stack GenAI, backend, platform, and AI infrastructure roles where I can own architecture, delivery, and measurable outcomes.",
   email: "njkhitha2003@gmail.com",
   linkedin: "https://www.linkedin.com/in/nikunj-khitha/",
   github: "https://github.com/Nikunj2003",
@@ -10,21 +10,21 @@ export const personalInfo = {
 };
 
 export const stats = [
-  { value: 200, suffix: "+", label: "Customers Served" },
-  { value: 10, suffix: "+", label: "Backend APIs" },
-  { value: 5, suffix: "K+", label: "Daily API Requests" },
+  { value: 1, suffix: "M+", label: "KG Entities" },
+  { value: 6, suffix: "", label: "Production MCP Servers" },
+  { value: 30, suffix: "+", label: "Automations" },
   { value: 40, suffix: "%", label: "Retrieval Lift" },
 ];
 
 export const about = {
-  summary: "I work best on products and platforms where backend systems have to be reliable, AI has to be useful, and the user experience has to earn trust in production. My sweet spot is owning the system end to end: designing the product surface, building Java/Spring Boot and Node.js backends, shaping gateways and load-balancing layers, wiring observability and security controls, and turning model behavior into software teams can trust.",
+  summary: "I work best on products and platforms where backend systems have to be reliable, AI has to be useful, and the user experience has to earn trust in production. My sweet spot is owning the system end to end: designing product surfaces, building Java/Spring Boot and Node.js backends, shaping MCP access layers and LLM gateways, wiring observability and security controls, and turning retrieval-heavy model behavior into software teams can trust.",
   highlights: [
-    "Architected a GraphRAG platform for 200+ customers that unified 500K+ entities across 5+ enterprise systems and improved retrieval accuracy by 40%.",
-    "Expanded Java and Spring Boot backends with 10+ REST APIs, gateway capabilities, and platform workflows serving 5,000+ daily requests.",
-    "Built AIEM-facing full-stack and backend features for AI security, observability, ownership, governance, and shadow AI risk workflows.",
-    "Shipped Anya backend memory, OpenCode gateway work, MCP-enabled tooling, and automation systems that removed 200+ manual hours per month.",
+    "Built ArmorCode's central Knowledge Graph RAG brain over 1,000,000+ entities from Zendesk, QMetry, Jira, Chorus, and codebase sources, improving retrieval accuracy by 40%.",
+    "Designed tenant-scoped MCP access so platform and internal agents can retrieve context and execute authorized tools without cross-tenant leakage.",
+    "Shipped 6 production MCP servers and an internal AI runtime stack across Knowledge Graph RAG, LiteLLM, OpenCode Server, n8n, and agent workflows.",
+    "Built AI Exposure Management product surfaces for AI visibility, ownership, governance, shadow AI discovery, and auditable risk tracking.",
+    "Delivered 30+ automations and 25+ AI workflows across 20+ systems, eliminating 200+ manual hours monthly and earning ArmorCode's AI Ninja Award.",
     "Built CodeNex, a distributed AI code generation SaaS with Spring Boot, Spring AI, SSE streaming, Kubernetes previews, MinIO/NFS persistence, RBAC, and Stripe subscriptions.",
-    "Reduced LLM indexing cost by 50%, saving $15K+ annually, by redesigning ingestion and retrieval workflows instead of simply scaling spend.",
   ],
 };
 
@@ -57,27 +57,25 @@ export const experiences: Experience[] = [
     type: "work",
     summary: "Shipped full-stack, backend, GenAI, and data systems for AIKO and Fantasy GPT, powering personalized sports experiences, voice AI, and retrieval-backed cricket intelligence.",
     bullets: [
-      "Built Node.js and FastAPI microservices with test-driven development, reaching 92% test coverage and improving API performance by 40%.",
-      "Designed Docker and GitHub Actions delivery pipelines that reduced deployment time by 42% and improved release confidence.",
-      "Worked across the backend and frontend of AIKO, a voice-based sports companion using Azure Speech SDK for text-to-speech and speech-to-text, user-level personalization, and live AI-generated commentary in 20+ languages.",
-      "Built AIKO personalization features for on-the-fly highlight reels, where AI agents stitched sports moments based on each user's profile and interests; the product was presented at IBC 2024 in Amsterdam.",
-      "Engineered Fantasy GPT with RAG, LangGraph, backend APIs, and a multi-agent layer to resolve 98% of complex sports queries, then evaluated answer quality with DeepEval.",
-      "Created scalable ETL pipelines with SQLAlchemy to transform cricket data into MSSQL for the SQL RAG agent, maintaining 100% data accuracy across AI product workflows.",
+      "Built Node.js and FastAPI microservices, improving API performance by 40% and reducing deployment time by 42% with Docker and GitHub Actions.",
+      "Engineered Fantasy GPT with RAG, LangGraph, backend APIs, agents, and DeepEval quality checks to resolve 98% of complex sports queries.",
+      "Built Python-based ETL pipelines to collect sports data from multiple sources and ingest it into MS SQL for Fantasy GPT SQL RAG workflows.",
+      "Worked across AIKO, a voice-based sports companion using Azure Speech SDK for text-to-speech and speech-to-text, user-level personalization, and live AI-generated commentary in 20+ languages.",
+      "Built AIKO personalization features for on-the-fly highlight reels, where AI agents stitched sports moments based on each user's profile and interests for a product presented at IBC 2024 in Amsterdam.",
     ],
   },
   {
     company: "ArmorCode",
-    role: "AI Automation Intern",
+    role: "Software Development Engineer Intern",
     period: "Jan 2025 - Nov 2025",
     type: "work",
-    summary: "Built production automation, backend APIs, knowledge workflows, and multi-model platform infrastructure across ArmorCode's AI systems.",
+    summary: "Built backend integrations, reusable backend infrastructure, AI-assisted scaffolding, and internal LLM platform components across ArmorCode's AppSec platform.",
     bullets: [
-      "Expanded the core platform agent with Java and Spring Boot APIs, prompt improvements, and AWS S3 vector knowledge base workflows.",
-      "Led AI-driven code-to-documentation automation for 250+ security integrations using CrewAI and MCP servers, cutting update latency by 99% from 72 hours to 45 minutes.",
-      "Built an OpenAI-compatible proxy for Gemini and Claude and deployed LiteLLM to monitor 15+ AI APIs with centralized cost visibility.",
-
-      "Built automation suites across support, QA, HR, and marketing with n8n, Java microservices, and Python, eliminating 200+ manual hours per month.",
-      "Expanded the core Java and Spring Boot backend with 10+ REST APIs serving 5,000+ daily requests at 99.8% uptime for AI and platform product workflows.",
+      "Owned backend integrations for 5+ security tools, including Black Duck, Snyk, and Checkmarx, on an AppSec platform with 130+ connectors for consolidated security finding management.",
+      "Created AI-assisted code generation utilities with template engines and AST parsing to automate new integration scaffolding, reducing per-integration boilerplate setup time by 30%.",
+      "Built a shared backend service-orchestration library with parallel container startup for MySQL, Elasticsearch, Redis, Kafka, MongoDB, and LocalStack across backend services.",
+      "Built an OpenAI-compatible proxy in Go for Gemini CLI, Codex, and Claude Code auth with multi-account load balancing, provider fallbacks, and Redis-backed LLM caching, cutting LLM indexing costs by 70% and saving $15,000+ annually.",
+      "Shipped a reusable HTTP client using Resilience4j for failure isolation, configurable backoff, timeout handling, and SSRF protection adopted across multiple services.",
     ],
   },
   {
@@ -85,13 +83,15 @@ export const experiences: Experience[] = [
     role: "Associate Engineer (Full-Stack GenAI)",
     period: "Dec 2025 – Present",
     type: "work",
-    summary: "Own end-to-end backend, full-stack, and GenAI platform work across Anya, AI Exposure Management, gateways, observability, automation, and production reliability.",
+    summary: "Own end-to-end backend, full-stack, and GenAI platform work across ArmorCode's platform agent memory, AI Exposure Management, MCP servers, gateways, automation, observability, and production AI infrastructure.",
     bullets: [
-      "Architected enterprise GenAI platforms for 200+ customers, including a Neo4j + PGVector GraphRAG system that unified 500,000+ entities across 5+ systems and improved retrieval accuracy by 40%.",
-      "Built the backend memory layer for Anya, ArmorCode's multi-step reasoning agent, using Graphiti-backed temporal graph memory with session-scoped context and person-level long-term GraphRAG recall.",
-      "Developed AI Exposure Management (AIEM) capabilities across frontend and backend workflows for AI security, observability, ownership, governance, shadow AI visibility, and auditable risk outcomes.",
-      "Built gateway and load-balancing capabilities for OpenCode server workflows with built-in MCP support, AI security controls, observability, and operational routing.",
-      "Orchestrated GraphRAG and LightRAG ETL pipelines that cut LLM indexing costs by 50% and saved $15,000+ annually."
+      "Architected ArmorCode's central Knowledge Graph RAG brain, ingesting 1,000,000+ entities from Zendesk, QMetry, Jira, Chorus, and codebase sources into Neo4j and pgvector, improving retrieval accuracy by 40%.",
+      "Built the tenant-scoped MCP access layer around the graph brain, enabling platform and internal agents to retrieve tenant-specific context and execute authorized tools without cross-tenant leakage.",
+      "Deployed and maintained ArmorCode's internal AI runtime stack with Knowledge Graph RAG, LiteLLM, OpenCode Server, n8n, and 6 production MCP servers for retrieval, model access, agent execution, and workflow orchestration.",
+      "Shipped the ArmorCode platform agent memory layer with Graphiti temporal knowledge graphs, combining session-scoped context with tenant and person-level long-term Knowledge Graph recall for multi-step reasoning workflows.",
+      "Contributed to ArmorCode AI Exposure Management (AIEM), building frontend and backend workflows for AI visibility, ownership, governance, shadow AI discovery, and auditable risk tracking.",
+      "Built the OpenCode gateway in front of OpenCode Server using Go and Gin with observability, load balancing, task queueing, main-server routing, and scheduled and PR-triggered workflow orchestration.",
+      "Delivered 30+ automations and 25+ AI workflows across 20+ systems with fallback paths, approval gates, and Slack/Jira handoffs, eliminating 200+ manual hours monthly and earning ArmorCode's AI Ninja Award in the second month after FTE conversion."
     ],
   },
 ];
@@ -135,24 +135,25 @@ export const projects: Project[] = [
     ],
     tech: ["Java", "Spring Boot", "Spring AI", "React", "TypeScript", "SSE", "Kubernetes", "MinIO", "Stripe"],
     github: "https://github.com/Nikunj2003/Codenex-backend-v1",
+    live: "https://www.codenex.dev/",
   },
   {
     slug: "codenex-ai-api-proxy",
     title: "CodeNex AI API Proxy",
     category: "AI Gateway & Infra",
-    summary: "A unified AI gateway for routing across providers through one consistent API layer.",
-    description: "Built a provider-agnostic AI gateway that handles protocol translation, provider pooling, health-aware failover, streaming, and operational controls behind a single API surface.",
-    impact: "Demonstrates strong infra instincts around reliability, abstraction, observability, and multi-model platform design.",
+    summary: "A unified AI gateway for routing model traffic through one consistent API layer.",
+    description: "Built an OpenAI-compatible AI gateway in Go and Gin with provider abstraction, multi-account load balancing, health-aware fallbacks, Redis-backed response caching, streaming support, and operational controls behind a single API surface.",
+    impact: "Demonstrates strong infra instincts around reliability, cost control, abstraction, observability, and multi-model platform design.",
     role: "Gateway architecture, backend implementation, and operational tooling",
     timeline: "Infra-focused product build",
-    complexity: "Provider abstraction, failover, streaming, and control plane UX",
+    complexity: "Provider abstraction, account pooling, fallback routing, Redis caching, streaming, and control plane UX",
     images: [
       "/images/projects/codenex-proxy/dashbord.png",
       "/images/projects/codenex-proxy/providers.png",
       "/images/projects/codenex-proxy/api-docs.png",
       "/images/projects/codenex-proxy/login.png",
     ],
-    tech: ["Go", "Gin", "Node.js", "Express.js", "Redis", "PostgreSQL", "React"],
+    tech: ["Go", "Gin", "Redis", "PostgreSQL", "React", "OpenAI-compatible APIs"],
     github: "https://github.com/Nikunj2003/codenex-ai-api-proxy",
   },
   {
@@ -160,11 +161,11 @@ export const projects: Project[] = [
     title: "Serenify",
     category: "Full-Stack AI Product",
     summary: "A consumer-style AI wellness product with thoughtful UX, not just chat wrapped around a model.",
-    description: "Built an open-source AI wellness platform that combines empathetic chat, mood tracking, journaling, guided sessions, and privacy-aware analytics into a product users can return to consistently.",
-    impact: "Shows product empathy, end-user UX judgment, and the ability to shape AI into a coherent consumer experience.",
+    description: "Built an open-source AI wellness product that combines empathetic Gemini-powered chat, mood tracking, journaling, guided sessions, crisis-help flows, privacy-aware analytics, and pgvector-backed personalization.",
+    impact: "Shows product empathy, privacy-minded AI interaction design, end-user UX judgment, and the ability to shape AI into a coherent consumer experience users can return to consistently.",
     role: "Product design, frontend experience, and AI workflow implementation",
     timeline: "Full product build",
-    complexity: "State-rich UX, AI interactions, privacy-minded product design",
+    complexity: "State-rich UX, AI interactions, crisis-help flows, Supabase-backed product workflows, pgvector personalization, and privacy-minded product design",
     images: [
       "/images/projects/serenify/landing-page-light.png",
       "/images/projects/serenify/dashboard-light.png",
@@ -177,6 +178,7 @@ export const projects: Project[] = [
     ],
     tech: ["React", "TypeScript", "Supabase", "pgvector", "Gemini AI", "Vercel"],
     github: "https://github.com/Nikunj2003/Serenify",
+    live: "https://serenify.codenex.dev/",
   },
   {
     slug: "resume-fit-codenex",
@@ -240,34 +242,34 @@ export const skillCategories = [
   {
     title: "Backend & Product Engineering",
     description: "The languages, frameworks, and application-layer tools I use to build production products, APIs, and internal platforms end to end.",
-    skills: ["TypeScript", "Node.js", "Go", "Gin", "Java", "Spring Boot", "Maven", "Python", "FastAPI", "NestJS", "SQLAlchemy", "Express.js", "Next.js", "React", "Prisma", "REST APIs", "Server-Sent Events", "RBAC"],
+    skills: ["Java 21", "Spring Boot 3", "Spring AI", "TypeScript", "Node.js", "Go", "Gin", "Python", "FastAPI", "SQLAlchemy", "Next.js", "React", "REST APIs", "Microservices", "Server-Sent Events", "RBAC", "JWT", "OAuth2", "Stripe"],
   },
   {
     title: "GenAI, Agents & Retrieval",
     description: "The AI, orchestration, and retrieval stack I use to build production-grade GenAI systems and agent workflows.",
-    skills: ["RAG", "GraphRAG", "LightRAG", "Graphiti", "Temporal Graph Memory", "Agentic AI", "Multi-Step Reasoning Agents", "Multi-Agent Systems", "LangGraph", "LangChain", "LangChain4j", "Spring AI", "CrewAI", "MCP", "Prompt Engineering", "Vercel AI SDK", "Claude", "Gemini AI", "OpenAI", "LLaMA", "NVIDIA NIM", "AWS Bedrock", "Vertex AI"],
+    skills: ["RAG", "GraphRAG", "Knowledge Graph RAG", "LightRAG", "Graphiti", "Temporal Graph Memory", "Agentic AI", "Multi-Step Reasoning Agents", "Multi-Agent Systems", "LangGraph", "LangChain4j", "Spring AI", "CrewAI", "DeepEval", "MCP", "Tenant-Scoped Tools", "Prompt Engineering", "Claude", "Gemini AI", "OpenAI", "LLaMA", "LLM Proxying"],
   },
   {
     title: "Data & Search Infrastructure",
     description: "The storage, indexing, vector, and search technologies I use to make AI systems accurate, scalable, and cost-aware.",
-    skills: ["PostgreSQL", "pgvector", "Neo4j", "Qdrant", "Pinecone", "MongoDB", "Elasticsearch", "Azure AI Search", "Supabase", "AWS S3", "MinIO", "NFS", "Redis"],
+    skills: ["PostgreSQL", "pgvector", "Neo4j", "MongoDB", "Elasticsearch", "Redis", "MSSQL", "Supabase", "MinIO", "NFS"],
   },
   {
     title: "Platform, DevOps & Delivery",
     description: "The infrastructure and operational tooling I use to deploy, route, observe, secure, and scale products reliably.",
-    skills: ["Docker", "Kubernetes", "Kubernetes Autoscaling", "Fabric8", "Ingress", "Kafka", "RabbitMQ", "SQS", "CI/CD", "GitHub Actions", "Jenkins", "AWS", "Azure", "LiteLLM", "Grafana", "Nginx", "Traefik", "Load Balancing", "API Gateways", "AI Observability", "AI Security", "n8n"],
+    skills: ["Resilience4j", "Docker", "Kubernetes", "Kubernetes Autoscaling", "Fabric8", "Kubernetes Ingress", "Kafka", "LocalStack", "GitHub Actions", "Jenkins", "AWS", "Azure", "Vercel", "LiteLLM", "Grafana", "Nginx", "Load Balancing", "API Gateways", "AI Observability", "AI Security", "n8n", "OpenCode Server"],
   },
   {
     title: "Product Tooling & UX",
     description: "Supporting tools I use to ship full-stack product surfaces, admin workflows, charts, authentication, and polished UX.",
-    skills: ["Auth0", "Stripe", "Tailwind CSS", "Framer Motion", "shadcn/ui", "next-themes", "Recharts", "Streamlit", "Swagger", "Postman", "Vite", "Vercel"],
+    skills: ["Auth0", "Tailwind CSS", "Framer Motion", "shadcn/ui", "next-themes", "Recharts", "Streamlit", "Swagger", "Postman", "Vite", "Kiro", "Claude Code", "Codex"],
   },
 ];
 
 export const chatSuggestions = [
   "Which project best shows your backend depth?",
   "What did you build for AIEM?",
-  "How did you build Anya memory?",
+  "How did you build platform agent memory?",
   "How do you approach platform reliability?",
   "Which build best shows end-to-end ownership?",
 ];

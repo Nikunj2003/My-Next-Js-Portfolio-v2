@@ -76,7 +76,7 @@ const AITwinSection = () => {
                       : "The live assistant is temporarily unavailable. You can still browse the portfolio and open the chat panel for status details."}
                 </p>
                 <p className="text-sm text-foreground/75 mb-8 max-w-lg lg:mx-0 mx-auto">
-                  Best for recruiter summaries, architecture deep-dives, backend and gateway discussions, AIEM context, Anya memory work, and guided project walkthroughs.
+                  Best for recruiter summaries, architecture deep-dives, backend and gateway discussions, AIEM context, platform agent memory work, and guided project walkthroughs.
                 </p>
                 <button 
                   onClick={() => handlePromptClick("")}
