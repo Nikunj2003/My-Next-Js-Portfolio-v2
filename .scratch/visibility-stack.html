@@ -1,0 +1,543 @@
+<title>The Visibility Stack</title>
+<style>
+:root{
+  --paper:#eef0e8;
+  --paper-raised:#f6f7f0;
+  --ink:#1d2419;
+  --ink-soft:#54594c;
+  --ink-faint:#8b8f7f;
+  --rule:#c9cdba;
+  --accent:#1f5f5b;
+  --accent-soft:#dbe6e0;
+  --warn:#93601f;
+  --warn-soft:#ece0c8;
+  --card-bg:#ffffff;
+  --code-bg:#e6e9dd;
+  font-size:17px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#14170f;
+    --paper-raised:#1a1e14;
+    --ink:#e9ebdd;
+    --ink-soft:#a9ad98;
+    --ink-faint:#6d7160;
+    --rule:#343a29;
+    --accent:#5fc2b8;
+    --accent-soft:#1e332f;
+    --warn:#d9a54c;
+    --warn-soft:#332a17;
+    --card-bg:#1a1e14;
+    --code-bg:#20241a;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#14170f;
+  --paper-raised:#1a1e14;
+  --ink:#e9ebdd;
+  --ink-soft:#a9ad98;
+  --ink-faint:#6d7160;
+  --rule:#343a29;
+  --accent:#5fc2b8;
+  --accent-soft:#1e332f;
+  --warn:#d9a54c;
+  --warn-soft:#332a17;
+  --card-bg:#1a1e14;
+  --code-bg:#20241a;
+}
+
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Arial,sans-serif;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{ background:var(--accent-soft); }
+
+.serif{ font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif; }
+.mono{ font-family:ui-monospace,"SF Mono","Cascadia Code",Consolas,monospace; }
+
+a{ color:var(--accent); text-decoration-thickness:1px; }
+a:hover{ text-decoration-thickness:2px; }
+a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:2px; }
+
+.wrap{
+  max-width:920px;
+  margin:0 auto;
+  padding:0 24px 96px;
+}
+
+/* Masthead */
+header.masthead{
+  padding:72px 0 40px;
+  border-bottom:1px solid var(--rule);
+  margin-bottom:48px;
+}
+.kicker{
+  font-family:ui-monospace,"SF Mono","Cascadia Code",Consolas,monospace;
+  font-size:12.5px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--accent);
+  margin:0 0 18px;
+}
+h1.title{
+  font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  font-size:clamp(2.2rem,5vw,3.4rem);
+  line-height:1.05;
+  margin:0 0 18px;
+  text-wrap:balance;
+  letter-spacing:-.01em;
+}
+.dek{
+  font-size:1.05rem;
+  color:var(--ink-soft);
+  max-width:62ch;
+  margin:0 0 22px;
+}
+.methodology{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:14px;
+  margin-top:28px;
+  padding-top:22px;
+  border-top:1px dashed var(--rule);
+}
+.method-item dt{
+  font-family:ui-monospace,"SF Mono","Cascadia Code",Consolas,monospace;
+  font-size:11px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--ink-faint);
+  margin-bottom:4px;
+}
+.method-item dd{
+  margin:0;
+  font-size:14.5px;
+  color:var(--ink-soft);
+}
+
+/* Section structure */
+section.brief{
+  display:grid;
+  grid-template-columns:64px 1fr;
+  gap:28px;
+  margin-bottom:56px;
+}
+.tag-col{ position:relative; }
+.tag-letter{
+  font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  font-style:italic;
+  font-size:2.6rem;
+  color:var(--ink-faint);
+  line-height:1;
+}
+.tag-col .stem{
+  position:absolute;
+  left:50%;
+  top:52px;
+  bottom:-56px;
+  width:1px;
+  background:var(--rule);
+}
+section.brief:last-of-type .tag-col .stem{ display:none; }
+
+h2.section-title{
+  font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  font-size:1.65rem;
+  margin:2px 0 6px;
+  text-wrap:balance;
+}
+.section-sub{
+  font-size:14.5px;
+  color:var(--ink-faint);
+  margin:0 0 20px;
+  font-style:italic;
+}
+.section-body > p{ margin:0 0 16px; max-width:70ch; }
+.section-body h3{
+  font-size:1.02rem;
+  margin:26px 0 10px;
+  color:var(--ink);
+  font-weight:600;
+}
+.section-body ul, .section-body ol{ margin:0 0 16px; padding-left:22px; max-width:70ch; }
+.section-body li{ margin-bottom:8px; }
+
+/* Citation card */
+.cite{
+  background:var(--card-bg);
+  border:1px solid var(--rule);
+  border-left:3px solid var(--accent);
+  border-radius:4px;
+  padding:16px 18px;
+  margin:14px 0 18px;
+  max-width:72ch;
+}
+.cite .quote{
+  font-family:ui-monospace,"SF Mono","Cascadia Code",Consolas,monospace;
+  font-size:14px;
+  line-height:1.55;
+  color:var(--ink);
+}
+.cite .quote::before{ content:"“"; color:var(--ink-faint); }
+.cite .quote::after{ content:"”"; color:var(--ink-faint); }
+.cite .src{
+  margin-top:10px;
+  font-size:12.5px;
+  color:var(--ink-faint);
+}
+.cite .src a{ color:var(--ink-soft); }
+
+/* pattern list (headlines) */
+.pattern-grid{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  margin:14px 0 20px;
+  max-width:76ch;
+}
+.pattern-row{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:16px;
+  align-items:baseline;
+  padding:10px 0;
+  border-bottom:1px solid var(--rule);
+}
+.pattern-row .txt{ font-size:14.5px; }
+.pattern-row .who{
+  font-size:12.5px;
+  color:var(--ink-faint);
+  white-space:nowrap;
+  text-align:right;
+}
+
+/* Tag pills */
+.pill{
+  display:inline-block;
+  font-family:ui-monospace,"SF Mono","Cascadia Code",Consolas,monospace;
+  font-size:10.5px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  padding:2px 7px;
+  border-radius:3px;
+  margin-left:8px;
+  vertical-align:middle;
+}
+.pill.sourced{ background:var(--accent-soft); color:var(--accent); }
+.pill.caveat{ background:var(--warn-soft); color:var(--warn); }
+
+/* Caveat/aside box */
+.aside{
+  border:1px dashed var(--warn);
+  background:var(--warn-soft);
+  border-radius:4px;
+  padding:14px 16px;
+  margin:16px 0 20px;
+  font-size:13.5px;
+  color:var(--ink);
+  max-width:72ch;
+}
+.aside strong{ color:var(--warn); }
+
+/* comparison table */
+.tbl-wrap{ overflow-x:auto; margin:14px 0 20px; max-width:76ch; }
+table{ border-collapse:collapse; width:100%; font-size:13.5px; }
+th,td{ text-align:left; padding:9px 14px; border-bottom:1px solid var(--rule); vertical-align:top; }
+th{
+  font-family:ui-monospace,"SF Mono","Cascadia Code",Consolas,monospace;
+  font-size:10.5px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--ink-faint);
+  font-weight:500;
+}
+td.num{ font-variant-numeric:tabular-nums; }
+
+/* Gap-closer action list */
+.actions{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  margin:16px 0 8px;
+  max-width:76ch;
+}
+.action{
+  display:grid;
+  grid-template-columns:34px 1fr;
+  gap:16px;
+  padding:14px 16px;
+  background:var(--card-bg);
+  border:1px solid var(--rule);
+  border-radius:6px;
+}
+.action .n{
+  font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  font-style:italic;
+  font-size:1.3rem;
+  color:var(--accent);
+}
+.action h4{ margin:0 0 4px; font-size:15px; }
+.action p{ margin:0; font-size:14px; color:var(--ink-soft); }
+
+footer.colophon{
+  margin-top:64px;
+  padding-top:24px;
+  border-top:1px solid var(--rule);
+  font-size:12.5px;
+  color:var(--ink-faint);
+}
+
+@media (max-width:640px){
+  section.brief{ grid-template-columns:40px 1fr; gap:16px; }
+  .tag-letter{ font-size:1.8rem; }
+  .tag-col .stem{ top:38px; }
+  header.masthead{ padding:48px 0 32px; }
+}
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <p class="kicker">Field notes · public-profile research · August 2026</p>
+  <h1 class="title">The Visibility Stack</h1>
+  <p class="dek">How Applied AI / Agent Engineers at frontier labs, applied-AI startups, and India's AI orgs actually present themselves — and what closes the gap for someone with real MCP, agent-memory, and eval work who isn't visible yet.</p>
+  <dl class="methodology">
+    <div class="method-item">
+      <dt>Scope</dt>
+      <dd>Anthropic, OpenAI, Perplexity, Harvey, Sierra, Glean, Cursor, LangChain, Braintrust, W&amp;B, Together, Cognition, Windsurf, Replit, Vercel, plus Sarvam, Krutrim, Observe.AI, Razorpay, CRED, Atlan, Postman, Hasura</dd>
+    </div>
+    <div class="method-item">
+      <dt>Method</dt>
+      <dd>Live web search + fetch, no memory recall. Direct LinkedIn scraping is blocked from search indexing — flagged inline wherever a quote is a proxy source instead.</dd>
+    </div>
+    <div class="method-item">
+      <dt>Reading the tags</dt>
+      <dd><span class="pill sourced">sourced</span> = quoted from an indexed, linked page. <span class="pill caveat">caveat</span> = a real limitation in the finding — read it.</dd>
+    </div>
+  </dl>
+</header>
+
+<section class="brief">
+  <div class="tag-col"><span class="tag-letter">A</span><div class="stem"></div></div>
+  <div>
+    <h2 class="section-title">Headline patterns</h2>
+    <p class="section-sub">The LinkedIn headline field itself is not indexed by search engines — no query surfaced 15–25 verbatim personal headlines. What's below is real, but split between LinkedIn post text, personal-site self-description, and the job-posting vocabulary people adopt the moment they're hired.</p>
+    <div class="section-body">
+
+      <div class="aside"><strong>Caveat.</strong> Decorated headlines (pipes, emoji, stacked metrics) could not be confirmed one way or the other — every verified example below is short and undecorated. Treat "AI engineers avoid decoration" as a live hypothesis, not a closed finding.</div>
+
+      <h3>Three competing identity conventions, confirmed</h3>
+      <div class="pattern-grid">
+        <div class="pattern-row"><span class="txt"><strong>Member of Technical Staff</strong> — flattened, seniority-erasing, used specifically by Anthropic and OpenAI</span><span class="who">frontier labs</span></div>
+        <div class="pattern-row"><span class="txt"><strong>Forward Deployed / Applied AI Engineer</strong> — the customer-embedded title, postings up 700–800% YoY</span><span class="who">Palantir-lineage, Harvey, Sierra</span></div>
+        <div class="pattern-row"><span class="txt"><strong>AI Engineer</strong> — swyx's plain generalist label, still the default outside labs</span><span class="who">everywhere else</span></div>
+      </div>
+
+      <h3>Real quotes</h3>
+      <div class="cite">
+        <div class="quote">I'm thrilled to share that I've joined OpenAI as a Forward Deployed Engineer in San Francisco! I'll be working closely with our Product, Research, and Go-To-Market teams to build and scale AI solutions for OpenAI's most strategic customers.</div>
+        <div class="src">Manan Mehta, on joining OpenAI — <a href="https://www.linkedin.com/posts/mananm2_im-thrilled-to-share-that-ive-joined-openai-activity-7383642758206603266-k1zY">LinkedIn post</a> <span class="pill sourced">sourced</span></div>
+      </div>
+      <div class="cite">
+        <div class="quote">Forward‑Deployed Engineer (FDE): The New Data Scientist? The Enterprise AI space seems to be locking into a new role.</div>
+        <div class="src">Amaresh Tripathy — <a href="https://www.linkedin.com/posts/atripathy_ai-forwarddeployedengineer-productengineering-activity-7361419852672122881-WSeB">LinkedIn post</a> <span class="pill sourced">sourced</span></div>
+      </div>
+      <div class="cite">
+        <div class="quote">Member of Technical Staff at Anthropic. I work to bridge the field and the frontier, and help build safe, reliable AI systems that serve customers at scale.</div>
+        <div class="src">Eugene Yan, personal site (proxy for LinkedIn headline+summary) — <a href="https://eugeneyan.com/about/">eugeneyan.com/about</a> <span class="pill caveat">personal-site proxy</span></div>
+      </div>
+      <div class="cite">
+        <div class="quote">I help foster the Rise of the AI Engineer.</div>
+        <div class="src">Shawn "swyx" Wang — <a href="https://swyx.io/about">swyx.io/about</a> <span class="pill caveat">personal-site proxy</span></div>
+      </div>
+      <div class="cite">
+        <div class="quote">I help companies build products with LLMs and share what I learn along the way.</div>
+        <div class="src">Hamel Husain, Independent AI Consultant — <a href="https://pages.hamel.dev/">pages.hamel.dev</a> <span class="pill caveat">personal-site proxy</span></div>
+      </div>
+
+      <h3>What the job titles themselves say</h3>
+      <p>The exact strings hires later put on LinkedIn: OpenAI's <span class="mono">Applied AI Engineer, Codex Core Agent</span> and <span class="mono">AI Deployment Engineer, Enterprise</span>; Harvey's <span class="mono">Applied AI Engineer</span>; Postman's <span class="mono">Applied AI Engineer, Postbot</span>; Perplexity's <span class="mono">AI Engineer, Applied ML</span>. None append a technology list — the specificity is in the surface ("Codex Core Agent," "Postbot"), not a skills string.</p>
+    </div>
+  </div>
+</section>
+
+<section class="brief">
+  <div class="tag-col"><span class="tag-letter">B</span><div class="stem"></div></div>
+  <div>
+    <h2 class="section-title">About / summary structure</h2>
+    <p class="section-sub">No full LinkedIn About section was recoverable via search — the four examples below are personal-site "about" pages, used as the closest public proxy.</p>
+    <div class="section-body">
+      <ul>
+        <li><strong>Eugene Yan</strong> — factual header (org + title) → one mission sentence → a career-history paragraph (Amazon Principal Applied Scientist, Alibaba, Lazada, healthtech). Leads with current org and mission, not metrics or a stack list.</li>
+        <li><strong>swyx</strong> — first person, informal, identity-first ("I help foster the Rise of the AI Engineer"), stacks multiple roles (editor / founder / investor) instead of one title. Narrative over credential-listing.</li>
+        <li><strong>Hamel Husain</strong> — two lines total: role label, then one value-prop sentence. No stack list, no metrics, plain consulting tone.</li>
+        <li><strong>Vaibhav "VB" Srivastav</strong> (Hugging Face) — speaker-bio register: one title line, one sentence naming specific focus areas (open source, audio, on-device ML) rather than tools. <a href="https://sessionize.com/vaibhav-srivastav/">sessionize.com/vaibhav-srivastav</a></li>
+      </ul>
+      <p>The pattern that repeats across all four: <strong>org/role → one mission sentence → specific, checkable history.</strong> None front-load a technology list; the stack shows up later, in the writing itself, not the summary.</p>
+    </div>
+  </div>
+</section>
+
+<section class="brief">
+  <div class="tag-col"><span class="tag-letter">C</span><div class="stem"></div></div>
+  <div>
+    <h2 class="section-title">Experience bullets &amp; the confidentiality problem</h2>
+    <p class="section-sub">The metric becomes the disclosure boundary: state the outcome precisely, keep the "how" generic enough not to leak IP.</p>
+    <div class="section-body">
+      <p>The recurring formula from 2026 FDE/Applied-AI resume guidance (<a href="https://www.tryexponent.com/blog/forward-deployed-engineer-resume-examples-skills-2026/">tryexponent.com</a>):</p>
+      <p class="mono" style="font-size:14px;background:var(--code-bg);padding:10px 14px;border-radius:4px;">[industry/client type, never named] + [constraint that signals seriousness] + [hard number]</p>
+      <div class="cite">
+        <div class="quote">Designed and shipped a production RAG system for a healthcare client in their VPC under HIPAA constraints, serving 50M documents with sub-300ms p95 retrieval latency.</div>
+        <div class="src">example bullet pattern — <a href="https://www.tryexponent.com/blog/forward-deployed-engineer-resume-examples-skills-2026/">tryexponent.com</a> <span class="pill sourced">sourced</span></div>
+      </div>
+      <p>The client's name and the system's real architecture stay hidden; the <em>constraint</em> (HIPAA, VPC, Fortune 500 scale) and the <em>number</em> do the credibility work instead. Career-advice consensus on NDA-bound work: job title, employer, and public-facing outcome are fair game; internal tool names, model names, and proprietary architecture are not (<a href="https://resumeworded.com/blog/resume-nda/">resumeworded.com</a>).</p>
+
+      <h3>Company-specific framing of the same role</h3>
+      <p>Sierra reframes its FDEs as <strong>"Agent Engineers"</strong> who "own the full Agent Development Life Cycle end-to-end" — the renamed title claims full-stack, customer-facing scope rather than a narrow integration label (<a href="https://www.tryexponent.com/jobs/fde/sierra">tryexponent.com/jobs/fde/sierra</a>). Harvey's FDEs embed inside BigLaw firms for 6–9 months; the public description stays at the workflow/vertical/cadence level, never the prompt or eval pipeline underneath (<a href="https://getperspective.ai/blog/harvey-ai-forward-deployed-engineers-biglaw-deployment-playbook-2026">getperspective.ai</a>).</p>
+
+      <h3>Research-track resumes flip the ratio</h3>
+      <p>For MTS/research roles, the advice inverts: <span class="cite" style="display:inline;padding:2px 6px;border-left:none;">"If you have done interesting independent research, written an insightful blog post, or made substantial contributions to open-source software, put that at the <strong>top</strong>"</span> (<a href="https://simplify.jobs/blog/member-technical-staff-mts-salary-roles">simplify.jobs</a>). Metrics-over-narrative for deployment roles, narrative-over-metrics for research roles — the split tracks the role, not the company.</p>
+    </div>
+  </div>
+</section>
+
+<section class="brief">
+  <div class="tag-col"><span class="tag-letter">D</span><div class="stem"></div></div>
+  <div>
+    <h2 class="section-title">What actually makes someone visible</h2>
+    <p class="section-sub">The mechanism, by subfield — and it's narrower than "write a blog and open-source something."</p>
+    <div class="section-body">
+
+      <h3>MCP: a credibility ladder with a top rung</h3>
+      <p>The ladder is legible now that MCP was donated to the <strong>Agentic AI Foundation (Linux Foundation)</strong> in Dec 2025 — a named-maintainer slot there reads like a CNCF TOC seat (<a href="https://blog.modelcontextprotocol.io/posts/2026-04-08-maintainer-update/">maintainer-update post</a>). MCP's creators, David Soria Parra and Justin Spahr-Summers, built visibility through two channels: the <a href="https://a16z.com/podcast/mcp-co-creator-on-the-next-wave-of-llm-innovation/">a16z podcast</a> and repeat <a href="https://www.latent.space/p/mcp">Latent Space</a> appearances, including the <a href="https://www.latent.space/p/one-year-of-mcp-with-david-soria-parra">"One Year of MCP" retrospective</a>.</p>
+      <p>Below that tier, the actual mechanism: <strong>ship a narrow server solving one annoying problem → get pulled into a curated "awesome" list → get cited by a name-brand analyst.</strong> idosal's <a href="https://github.com/idosal/git-mcp">git-mcp</a> ("put an end to code hallucinations") went from personal repo to sitting alongside official servers in <a href="https://github.com/apappascs/mcp-servers-hub">mcp-servers-hub</a>. Company-branded pairs — <a href="https://github.com/github/github-mcp-server">github-mcp-server</a>, <a href="https://github.com/postmanlabs/postman-mcp-server">postman-mcp-server</a> (with <a href="https://blog.postman.com/mcp-goes-stateless-and-postmans-ready/">launch post</a>), Hasura's <a href="https://github.com/hasura/promptql-mcp">promptql-mcp</a> — show the pattern: a named engineer's commit history plus a company blog post is what recruiters actually search on. <strong>Simon Willison</strong> is the single most consistent amplifier in this niche — a link from his weblog (e.g. <a href="https://simonw.substack.com/p/stateless-mcp-has-recaptured-my-interest">on stateless MCP</a>) functions as MCP's version of a Hacker News front page.</p>
+
+      <h3>Evals: course + reference doc, not repo stars alone</h3>
+      <p>Hamel Husain and Shreya Shankar's <a href="https://maven.com/parlance-labs/evals">"AI Evals for Engineers &amp; PMs"</a> course has run <strong>4,500+ engineers from OpenAI, Google, Meta, Amazon, Microsoft</strong> through it, backed by the long-running <a href="https://hamel.dev/blog/posts/evals-faq/">Evals FAQ</a> and a <a href="https://www.lennysnewsletter.com/p/building-eval-systems-that-improve">Lenny's Newsletter</a> feature. Eugene Yan's essay <a href="https://eugeneyan.com/writing/evals/">"Task-Specific LLM Evals that Do &amp; Don't Work"</a> and the multi-author <a href="https://applied-llms.org/about.html">"What We Learned from a Year of Building with LLMs"</a> (with Bryan Bischof, Shreya Shankar, Charles Frye, Jason Liu, Hamel Husain) is probably the most-cited applied-AI artifact of the past two years — <em>every</em> co-author benefited from the shared byline. On the repo side, Jeffrey Ip's <strong>DeepEval</strong> proves stars still count on their own: <a href="https://www.star-history.com/confident-ai/deepeval">17.4k stars</a>, a pytest-style API, plus a steady internals-post cadence like <a href="https://www.confident-ai.com/blog/how-i-built-deterministic-llm-evaluation-metrics-for-deepeval">"How I Built Deterministic LLM Evaluation Metrics."</a> Braintrust does the same move at company scale with its open <a href="https://www.braintrust.dev/blog/behavior-specs">"Behavior Specs"</a> standard.</p>
+
+      <h3>Memory: thinner air, company blogs over personal brands</h3>
+      <p>Mem0's own <a href="https://mem0.ai/blog/state-of-ai-agent-memory-2026">"State of AI Agent Memory 2026"</a> report is the clean example of a repeatable move: publish a benchmark that positions your own product as the reference point. Zep (<a href="https://github.com/getzep/zep">getzep/zep</a>) plays the adoption-proof game with multi-language SDKs. Neither subfield has a Willison- or Husain-level individual figurehead yet — credibility here currently accrues to company blogs, not personal ones.</p>
+
+      <h3>The mechanism, synthesized</h3>
+      <p>Artifact → recruiter inbound runs through four chokepoints, and going through zero of them is why most solid work stays invisible: <strong>(1)</strong> inclusion in an official or heavily-starred curated list, <strong>(2)</strong> a Willison/Latent-Space/Lenny's-style amplifier linking it, <strong>(3)</strong> a company blog post pairing the repo with a named engineer's byline, <strong>(4)</strong> a benchmark or "state of X" report that makes the author the category's reference point.</p>
+
+      <h3>India vs. US/remote</h3>
+      <p>Visibility for India-based engineers runs more through <strong>LinkedIn and founder-centric press</strong> than X threads — Krutrim's coverage (<a href="https://techcrunch.com/2026/05/05/indias-first-genai-unicorn-shifts-to-cloud-services-as-ai-model-ambitions-face-reality/">TechCrunch</a>) tracks founder Bhavish Aggarwal's persona more than any repo; Sarvam AI's credibility leans on a benchmark claim (84.3% on olmOCR-Bench) amplified through Indian tech press, not a viral OSS launch. The India-specific analog to a Latent Space podcast slot is the <strong>meetup circuit</strong>: AI Tinkerers Bangalore, Anthropic's Builder Summit in Bengaluru, the Agentic AI Community Bengaluru meetup — in-person demo credibility over X-native build-in-public virality. Enterprise B2B names (Postman, Hasura, Atlan) publish through company engineering blogs regardless of the engineer's location, which reads as the more reliable path for India-based contributors right now.</p>
+    </div>
+  </div>
+</section>
+
+<section class="brief">
+  <div class="tag-col"><span class="tag-letter">E</span><div class="stem"></div></div>
+  <div>
+    <h2 class="section-title">Portfolio patterns: it's a blog first</h2>
+    <p class="section-sub">Every site below is a writing archive, and the writing <em>is</em> the proof of work. None lead with a project-card grid.</p>
+    <div class="section-body">
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Site</th><th>Nav</th><th>What does the work</th></tr></thead>
+          <tbody>
+            <tr><td><a href="https://jxnl.co">jxnl.co</a> — Jason Liu (OpenAI DX, Instructor creator)</td><td class="mono">Home / Writing</td><td>MkDocs-style writing archive; RAG/structured-output posts grew into a named consulting practice (Zapier, HubSpot, W&amp;B, Modal)</td></tr>
+            <tr><td><a href="https://simonwillison.net">simonwillison.net</a> — Simon Willison</td><td class="mono">Entries / Links / Quotes / TILs</td><td>Multiple posts a day, same-day model/security analysis — a public engineering notebook others cite as a primary source</td></tr>
+            <tr><td><a href="https://eugeneyan.com">eugeneyan.com</a> — Eugene Yan (Anthropic)</td><td class="mono">Writing / Speaking / Prototyping</td><td>212 posts quantified on the homepage; co-created <a href="https://applied-llms.org">applied-llms.org</a> and <a href="https://applyingml.com">applyingml.com</a>, now canonical industry reading lists</td></tr>
+            <tr><td><a href="https://hamel.dev">hamel.dev</a> — Hamel Husain</td><td class="mono">Blog / Notes / OSS / Teaching</td><td>Bio leads with a specific, checkable claim (early LLM research used by OpenAI for code understanding); writing converted into a paid course</td></tr>
+            <tr><td><a href="https://swyx.io">swyx.io</a> — Shawn Wang</td><td class="mono">home / ideas / about</td><td>One essay — "The Rise of the AI Engineer" — named a job title the industry adopted wholesale</td></tr>
+            <tr><td><a href="https://lilianweng.github.io">lilianweng.github.io</a> — Lilian Weng</td><td class="mono">Posts / Archive / Tags</td><td>20–40 min research-register posts, citation-dense — depth over demo polish</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>What separates "helps" from "ignored"</h3>
+      <ol>
+        <li><strong>Frequency + specificity beats a static project grid.</strong> A portfolio last touched two years ago with three cards reads — and ranks — as abandoned.</li>
+        <li><strong>The writing is the demo.</strong> None of these sites lean on an embedded chat widget as the primary artifact; the post itself (code, methodology, named users) is the proof.</li>
+        <li><strong>Reference docs beat resumes.</strong> applied-llms.org and applyingml.com outperform any About page because other people link to them as infrastructure — compounding backlinks a static bio never gets.</li>
+        <li><strong>One high-leverage essay can outperform years of a resume site</strong> — swyx's and Liu's career inflection points both trace to a single post, not a redesign.</li>
+        <li><strong>Verifiable specifics beat adjectives.</strong> Named clients, named course enrollees, named prior-employer projects — every site above leads with something checkable, never "passionate about AI."</li>
+      </ol>
+      <div class="aside"><strong>Caveat.</strong> Post counts and enrollment numbers above are self-reported on each site, not independently re-verified — treat as directional, not audited.</div>
+    </div>
+  </div>
+</section>
+
+<section class="brief">
+  <div class="tag-col"><span class="tag-letter">F</span><div class="stem"></div></div>
+  <div>
+    <h2 class="section-title">Member of Technical Staff, and title-as-signal</h2>
+    <p class="section-sub">MTS traces to Bell Labs, where it read as fellowship status, not corporate rank.</p>
+    <div class="section-body">
+      <p>OpenAI revived it in 2023 — Greg Brockman has credited Alan Kay's Xerox PARC culture — and Anthropic made it the standard designation company-wide; the Claude Code team reportedly runs <a href="https://aakashgupta.medium.com/anthropics-claude-code-team-has-5-roles-and-zero-job-titles-bf4860a389fc">"5 roles and zero job titles."</a> The stated logic, per <a href="https://simplify.jobs/blog/member-technical-staff-mts-salary-roles">simplify.jobs</a>: <span class="mono" style="background:var(--code-bg);padding:2px 6px;border-radius:3px;">"With no level attached, people can work across pre-training, post-training, product, and infra without renegotiating their title every time."</span> Independently corroborated as a soft anti-poaching mechanism — uniform titling makes it harder for rivals to target seniority via LinkedIn (<a href="https://www.trevorlasn.com/blog/anthropic-anti-talent-poaching-tactics">trevorlasn.com</a>).</p>
+
+      <h3>The Karpathy flashpoint</h3>
+      <div class="cite">
+        <div class="quote">Anthropic is doing the right thing. A huge company with zero corporate bureaucracy. Bunch of MTS, aligned on a mission.</div>
+        <div class="src">Andrej Karpathy, on joining Anthropic's pretraining team as MTS — <a href="https://techcrunch.com/2026/05/19/openai-co-founder-andrej-karpathy-joins-anthropics-pre-training-team/">TechCrunch</a> · <a href="https://digg.com/tech/dzxn82lm">Digg</a> <span class="pill sourced">sourced</span></div>
+      </div>
+      <p>The takeaway: MTS from a nobody and MTS from Karpathy is the identical string. Status is entirely reputational, never encoded in the title.</p>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Company</th><th>Title band</th><th>Reported range</th></tr></thead>
+          <tbody>
+            <tr><td>OpenAI</td><td>Member of Technical Staff</td><td class="num">$210K – $530K (H-1B filings)</td></tr>
+            <tr><td>Anthropic</td><td>Member of Technical Staff</td><td class="num">$300K – $405K base; ~$545K median total comp</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="section-sub" style="margin-top:-8px;">Source: <a href="https://hackernoon.com/why-everyone-at-anthropic-and-openai-is-just-technical-staff-and-what-it-means-for-your-job">hackernoon.com</a>, <a href="https://simplify.jobs/blog/member-technical-staff-mts-salary-roles">simplify.jobs</a></p>
+
+      <h3>What this means for someone outside the lab</h3>
+      <p>A traditional ladder ("Senior/Staff/Principal Engineer") signals scope and comp band on sight. MTS signals almost nothing externally — so candidates must front-load <em>other</em> proof: public research, OSS contributions, shipped demos, since the title itself won't do the talking. Startups lean the opposite direction on purpose: <strong>Founding Engineer, Applied AI Engineer, Agent Engineer</strong> are deliberately <em>more</em> descriptive than MTS, because a startup's title has to do the credibility work a lab's brand already does (<a href="https://www.coffeespace.com/blog-post/what-startups-look-for-in-founding-engineers-in-2026">coffeespace.com</a>, <a href="https://www.lyzr.ai/blog/what-is-an-agent-engineer/">lyzr.ai</a>). Expect any prior functional title (data scientist, infra engineer) to flatten to MTS on hire at a lab — so the LinkedIn story has to carry seniority signals the title no longer will.</p>
+    </div>
+  </div>
+</section>
+
+<section class="brief">
+  <div class="tag-col"><span class="tag-letter">G</span></div>
+  <div>
+    <h2 class="section-title">Closing the gap — for 1.7 years, MCP servers, agent memory, Langfuse evals, KG RAG</h2>
+    <p class="section-sub">Mapped against the four chokepoints in <strong>D</strong>: the underlying work already qualifies. What's missing is which of the four mechanisms it's been pushed through — right now, probably none.</p>
+    <div class="section-body">
+      <div class="actions">
+        <div class="action">
+          <div class="n">1</div>
+          <div><h4>Publish one MCP server as a standalone, generalized repo</h4><p>Strip the enterprise-specific parts, ship it solving one narrow problem well, submit it to <a href="https://github.com/apappascs/mcp-servers-hub">mcp-servers-hub</a> or an awesome-mcp-servers list. This is the git-mcp path — a personal repo that earned a seat next to official servers.</p></div>
+        </div>
+        <div class="action">
+          <div class="n">2</div>
+          <div><h4>Write the Evals-FAQ-style post on Langfuse methodology</h4><p>Narrow and opinionated beats broad: one sharp post on a real eval failure mode and how it was measured and fixed, in Hamel Husain's register — not a Langfuse feature tour.</p></div>
+        </div>
+        <div class="action">
+          <div class="n">3</div>
+          <div><h4>Turn the KG-RAG + agent-memory work into a "state of X" comparison</h4><p>Memory is the thinnest subfield (section D) — a benchmark-style post comparing graph-based memory against Mem0/Zep-style approaches has real odds of becoming a cited reference point, the way Mem0's own report did for itself.</p></div>
+        </div>
+        <div class="action">
+          <div class="n">4</div>
+          <div><h4>Get one link from an actual amplifier</h4><p>Submit the MCP server or the eval post where a Willison-equivalent could see it, or — India-specific — demo it live at AI Tinkerers Bangalore or an Anthropic Builder Summit. One credible amplifier link outperforms months of unlinked posting.</p></div>
+        </div>
+        <div class="action">
+          <div class="n">5</div>
+          <div><h4>Rebuild the portfolio as a writing archive, not a project grid</h4><p>Per section E: lead with a Writing section, publish on a real cadence, and let one long, technical post (the eval or memory piece) be the primary artifact — not a demo widget.</p></div>
+        </div>
+        <div class="action">
+          <div class="n">6</div>
+          <div><h4>Rewrite the LinkedIn headline and About to the confirmed pattern</h4><p>Org/role → one mission sentence → specific, checkable history (section B). Drop adjectives; put the OSS/research artifact from #1–#3 at the top, per the MTS resume advice in section C.</p></div>
+        </div>
+        <div class="action">
+          <div class="n">7</div>
+          <div><h4>Reframe experience bullets with the FDE formula</h4><p>[industry, unnamed] + [constraint that signals seriousness] + [hard number] — see section C. Keep internal system names out; keep the metric and the constraint in.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="colophon">
+  Compiled from live web search and fetch across four parallel research passes, August 2026. Every quote above links to its source; items marked <span class="pill caveat">caveat</span> carry a real, stated limitation rather than a resolved fact — worth re-checking before citing further.
+</footer>
+
+</div>

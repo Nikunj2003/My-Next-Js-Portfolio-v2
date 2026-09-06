@@ -1,17 +1,18 @@
 "use client";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Menu, X, Download } from "lucide-react";
+import { Menu, X, Download, Search } from "lucide-react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import logo from "@/assets/logo.png";
 import { personalInfo } from "@/data/portfolio";
 import { ThemeToggle } from "./ThemeToggle";
+import { useLenisLock } from "@/hooks/useLenisLock";
 import { scrollToHash } from "@/lib/scroll";
 
 const navLinks = [
   { href: "#about", label: "About" },
   { href: "#experience", label: "Experience" },
-  { href: "#projects", label: "Projects" },
+  { href: "#work", label: "Work" },
   { href: "#skills", label: "Skills" },
   { href: "#ai-twin", label: "AI Twin" },
   { href: "#contact", label: "Contact" },
@@ -26,6 +27,10 @@ const Navbar = () => {
   const firstMobileLinkRef = useRef<HTMLAnchorElement>(null);
   const shouldRestoreFocusRef = useRef(true);
   const shouldReduceMotion = useReducedMotion();
+
+  // The mobile menu sets body overflow, but Lenis scrolls via its own window
+  // listener and would otherwise keep moving the page behind the open menu.
+  useLenisLock(isOpen);
 
   useEffect(() => {
     let frameId: number | null = null;
@@ -154,7 +159,7 @@ const Navbar = () => {
     <>
       <div className="fixed top-0 inset-x-0 z-50 flex justify-center px-4 pt-[max(1rem,env(safe-area-inset-top))] sm:pt-[max(1.5rem,env(safe-area-inset-top))] pointer-events-none">
         <nav
-          className={`pointer-events-auto transition-all duration-500 rounded-2xl sm:rounded-full w-full max-w-6xl 2xl:max-w-[88rem] flex items-center justify-between px-4 sm:px-6 h-14 sm:h-16 border ${
+          className={`pointer-events-auto transition-all duration-500 rounded-2xl sm:rounded-full container-width flex items-center justify-between px-4 sm:px-6 h-14 sm:h-16 border ${
             scrolled ? "glass-strong shadow-accent-card border-white/10" : "bg-transparent border-transparent"
           }`}
         >
@@ -172,7 +177,7 @@ const Navbar = () => {
                 aria-current={activeSection === link.href ? "location" : undefined}
                 className={`px-3 py-2 text-sm font-medium transition-all duration-200 rounded-full ${
                   activeSection === link.href
-                    ? "bg-primary/10 text-primary shadow-[0_0_14px_rgba(41,214,185,0.1)]"
+                    ? "bg-primary/10 text-primary shadow-[0_0_14px_hsl(var(--accent)/0.1)]"
                     : "text-muted-foreground hover:text-foreground hover:bg-white/10"
                 }`}
               >
@@ -180,6 +185,16 @@ const Navbar = () => {
               </a>
             ))}
             <div className="w-px h-4 bg-white/10 mx-2" />
+            {/* Discoverability for the shortcut — most visitors never guess it exists. */}
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent("open-command-palette"))}
+              aria-label="Open command palette"
+              className="hidden items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 font-mono text-[11px] text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary lg:flex"
+            >
+              <Search className="h-3 w-3" />
+              <kbd className="font-sans">⌘K</kbd>
+            </button>
             <ThemeToggle />
             <a
               href={personalInfo.resumeUrl}
@@ -195,7 +210,7 @@ const Navbar = () => {
             ref={menuButtonRef}
             type="button"
             onClick={() => (isOpen ? closeMenu() : setIsOpen(true))}
-            className="md:hidden p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors active:scale-95"
+            className="md:hidden p-2 rounded-xl glass-subtle border border-white/10 hover:bg-white/10 transition-colors active:scale-95"
             aria-label="Toggle menu"
             aria-expanded={isOpen}
             aria-controls="mobile-navigation"
@@ -212,8 +227,9 @@ const Navbar = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: shouldReduceMotion ? 0.15 : 0.25 }}
               onClick={() => closeMenu()}
-              className="md:hidden fixed inset-0 z-[90] bg-black/40 backdrop-blur-[2px]"
+              className="md:hidden fixed inset-0 z-[90] bg-black/40 glass-scrim"
               aria-hidden="true"
             />
             <motion.div

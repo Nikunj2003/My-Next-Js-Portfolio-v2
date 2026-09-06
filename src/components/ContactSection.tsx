@@ -1,8 +1,6 @@
 "use client";
 import Image from "next/image";
 import { useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
-import { useInView } from "react-intersection-observer";
 import { Mail, Linkedin, Github, Send, Download, ArrowUpRight } from "lucide-react";
 import { personalInfo } from "@/data/portfolio";
 import { toast } from "@/components/ui/sonner";
@@ -14,6 +12,7 @@ import {
   type ContactFormData,
 } from "@/lib/contact";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
+import Reveal from "@/components/ui/reveal";
 import Card3D from "./Card3D";
 import cardImage from "@/assets/card.png";
 
@@ -49,13 +48,11 @@ type ContactField = keyof ContactFormData;
 type ContactErrors = Partial<Record<ContactField, string>>;
 
 const ContactSection = () => {
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
   const [form, setForm] = useState<ContactFormData>(INITIAL_FORM);
   const [honeypot, setHoneypot] = useState("");
   const [startedAt, setStartedAt] = useState(() => Date.now());
   const [errors, setErrors] = useState<ContactErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const shouldReduceMotion = useReducedMotion();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,33 +125,23 @@ const ContactSection = () => {
 
   return (
     <section id="contact" className="section-padding relative z-10">
-      <div className="container-narrow" ref={ref}>
+      <div className="container-narrow">
 
         {/* Heading */}
-        <motion.div
-          initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 20 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: shouldReduceMotion ? 0.2 : 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="text-center mb-14"
-        >
+        <Reveal className="mb-14 text-center">
           <div className="inline-flex items-center px-3 py-1.5 rounded-full glass-subtle border border-primary/20 text-xs font-mono text-primary mb-6">
             Connect
           </div>
-          <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
+          <h2 className="heading-xl mb-4">
             Get in <span className="text-gradient">Touch</span>
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto text-base leading-relaxed">
             {personalInfo.focus}
           </p>
-        </motion.div>
+        </Reveal>
 
         {/* Mobile-only card */}
-        <motion.div
-          initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 16 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: shouldReduceMotion ? 0.2 : 0.6, delay: shouldReduceMotion ? 0 : 0.05 }}
-          className="block lg:hidden mb-10 mx-auto w-full max-w-xs sm:max-w-sm"
-        >
+        <Reveal delay={0.05} className="mx-auto mb-10 block w-full max-w-xs sm:max-w-sm lg:hidden">
           <Card3D>
             <Image
               src={cardImage}
@@ -165,10 +152,10 @@ const ContactSection = () => {
               sizes="(min-width: 640px) 384px, 100vw"
             />
           </Card3D>
-        </motion.div>
+        </Reveal>
 
         {/* Two equal panels with Spotlight */}
-        <div className="grid lg:grid-cols-2 gap-6 items-stretch max-w-5xl 2xl:max-w-7xl mx-auto">
+        <div className="grid items-stretch gap-6 lg:grid-cols-2">
 
           {/* Left panel */}
           <SpotlightCard delay={0.1} className="h-full">
@@ -176,7 +163,7 @@ const ContactSection = () => {
               {/* Grows to fill */}
               <div className="flex flex-col gap-6 flex-1">
                 <div>
-                  <h3 className="text-3xl font-bold mb-3 tracking-tight">Let&apos;s Build Something</h3>
+                  <h3 className="heading-lg mb-3">Let&apos;s Build Something</h3>
                   <p className="text-base text-muted-foreground leading-relaxed" style={{ textWrap: "pretty" }}>
                     If you are hiring for Applied AI systems, AI product engineering, agent workflows, or AI-platform reliability, I would welcome a conversation about the team, workflow, or problem you are solving. I&apos;m also open to thoughtful collaborations and open-source conversations.
                   </p>
@@ -210,13 +197,13 @@ const ContactSection = () => {
                 <a
                   href={personalInfo.resumeUrl}
                   download
-                  className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-primary text-primary-foreground font-bold text-sm tracking-wide shadow-[0_0_16px_rgba(41,214,185,0.14)] hover:shadow-[0_0_24px_rgba(41,214,185,0.2)] transition-all duration-300 active:scale-[0.98]"
+                  className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-primary text-primary-foreground font-bold text-sm tracking-wide glow-accent-sm hover:glow-accent-md transition-all duration-300 active:scale-[0.98]"
                 >
                   <Download className="w-4 h-4" />
                   Download Resume
                 </a>
                 <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground border-t border-black/10 dark:border-white/5 pt-4">
-                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse motion-reduce:animate-none shrink-0 shadow-[0_0_6px_rgba(41,214,185,0.28)]" />
+                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse motion-reduce:animate-none shrink-0" />
                   Available for new opportunities
                 </div>
               </div>
@@ -241,7 +228,7 @@ const ContactSection = () => {
               {/* Grows to fill */}
               <div className="flex flex-col gap-6 flex-1">
                 <div>
-                  <h3 className="text-3xl font-bold mb-3 tracking-tight">Send a Message</h3>
+                  <h3 className="heading-lg mb-3">Send a Message</h3>
                   <p className="text-base text-muted-foreground leading-relaxed">
                     Share the role, team, problem space, or product idea and I&apos;ll reply with context that&apos;s actually useful.
                   </p>
@@ -371,7 +358,7 @@ const ContactSection = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground font-bold text-sm tracking-wide hover:bg-black/10 dark:hover:bg-white/10 transition-all duration-300 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl glass-subtle border border-black/10 dark:border-white/10 text-foreground font-bold text-sm tracking-wide hover:bg-black/10 dark:hover:bg-white/10 transition-all duration-300 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <Send className="w-4 h-4 text-primary" />
                   {isSubmitting ? "Sending..." : "Send Message"}

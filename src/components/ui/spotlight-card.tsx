@@ -3,6 +3,7 @@ import { motion, useMotionTemplate, useMotionValue, useReducedMotion } from "fra
 import { useInView } from "react-intersection-observer";
 import { type PointerEvent, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { revealTransition } from "@/lib/motion";
 
 interface SpotlightCardProps {
   children: React.ReactNode;
@@ -18,7 +19,7 @@ export function SpotlightCard({
   children,
   delay = 0,
   className,
-  glowColor = "rgba(41, 214, 185, 0.08)", // Default teal accent glow
+  glowColor = "hsl(var(--accent) / 0.08)", // Default teal accent glow
   glowSize = 650,
   glowOpacity = 100,
   animateOnEnter = true,
@@ -127,12 +128,12 @@ export function SpotlightCard({
       ref={setRefs}
       initial={animateOnEnter ? (shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 30 }) : false}
       animate={animateOnEnter ? (inView ? { opacity: 1, y: 0 } : {}) : undefined}
-      transition={animateOnEnter ? { duration: shouldReduceMotion ? 0.2 : 0.4, delay: shouldReduceMotion ? 0 : Math.min(delay, 0.2), ease: [0.16, 1, 0.3, 1] } : undefined}
+      transition={animateOnEnter ? revealTransition(shouldReduceMotion, delay) : undefined}
       onPointerEnter={isInteractive ? handlePointerEnter : undefined}
       onPointerMove={isInteractive ? handlePointerMove : undefined}
       onPointerLeave={isInteractive ? handlePointerLeave : undefined}
       className={cn(
-        "group relative rounded-3xl border border-border/60 bg-background/65 dark:bg-background/68 backdrop-blur-[18px] backdrop-saturate-140 overflow-hidden shadow-accent-card",
+        "group relative rounded-3xl border border-border/60 bg-background/65 dark:bg-background/68 glass-tier-surface backdrop-saturate-140 overflow-hidden shadow-accent-card",
         className
       )}
     >

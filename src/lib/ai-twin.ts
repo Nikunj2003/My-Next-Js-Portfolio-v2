@@ -1,9 +1,10 @@
-import { about, experiences, personalInfo, projects, skillCategories, stats } from "@/data/portfolio";
+import { caseStudies, getCaseStudyPath } from "@/data/case-studies";
+import { about, experiences, highlightSentences, personalInfo, projects, recognition, skillCategories, stats } from "@/data/portfolio";
 
 export const CHAT_MEMORY_WINDOW = 10;
 export const CHAT_STORAGE_KEY = "nikunj-ai-twin-chat";
 export const PROJECT_ANCHOR_PREFIX = "project-";
-export const WELCOME_MESSAGE = "Hi — I’m Nikunj’s AI twin. I can give you a quick recruiter summary, walk through a project, or explain how he approaches agent systems, governed MCP tool use, agent memory, evaluation, and AI product delivery. You can also [jump to projects](#projects) or [download the resume](/Nikunj_Resume.pdf).";
+export const WELCOME_MESSAGE = "Hi — I’m Nikunj’s AI twin. I can give you a quick recruiter summary, walk through a project, or explain how he approaches agent systems, governed MCP tool use, agent memory, evaluation, and AI product delivery. You can also read the [LLM evaluation platform case study](/work/llm-evaluation-platform), [browse the work](#work), or [download the resume](/Nikunj_Resume.pdf).";
 
 type ConversationWindowMessage = {
   content: string;
@@ -92,6 +93,29 @@ const projectMatchers = projects.map((project) => ({
 
 const projectAnchorMap = new Map(projects.map((project) => [getProjectAnchor(project.slug), project]));
 
+const caseStudyMatchers = caseStudies.map((study) => ({
+  study,
+  phrases: Array.from(
+    new Set(
+      [
+        normalizeText(study.title),
+        normalizeText(study.slug.replace(/-/g, " ")),
+        ...study.tags.map((tag) => normalizeText(tag)),
+        ...study.aliases.map((alias) => normalizeText(alias)),
+      ].filter((phrase) => phrase.length > 0)
+    )
+  ),
+}));
+
+export function findMatchingCaseStudies(text: string) {
+  const corpus = normalizeText(text);
+
+  return caseStudyMatchers
+    .filter(({ phrases }) => phrases.some((phrase) => corpus.includes(phrase)))
+    .map(({ study }) => study)
+    .slice(0, 2);
+}
+
 const profileStats = stats.map((stat) => `${stat.value}${stat.suffix} ${stat.label}`).join(", ");
 
 const experienceContext = experiences
@@ -101,6 +125,40 @@ const experienceContext = experiences
         .map((bullet) => `  - ${bullet}`)
         .join("\n")}`
   )
+  .join("\n");
+
+/**
+ * An index of the case studies, not their full text.
+ *
+ * This deliberately omits every decision body and section body. Those used to be
+ * inlined here, which meant the full prose of every study was resent on every
+ * single request — a cost that grew linearly with the number of case studies and
+ * would have tripled as the set went from three to nine.
+ *
+ * Depth is available on demand instead: `get_case_study(slug, section?)` returns
+ * the problem, constraints, decisions with their rejected alternatives, results,
+ * ownership, or the full section detail. That is both cheaper and more honest to
+ * the design of the chat — the agent fetches what a question actually needs, and
+ * the visitor sees it do so in the trace.
+ *
+ * Slugs are listed so the model always has a valid argument for the tool.
+ * Results and the ownership boundary stay inline because they are short, they are
+ * the two things most likely to be asked for directly, and the ownership line
+ * must never be paraphrased from memory.
+ */
+const caseStudyContext = caseStudies
+  .map((study) => {
+    const results = study.results.map((result) => `${result.metric} ${result.label}`).join("; ");
+
+    return (
+      `- ${study.title}${study.employer ? ` at ${study.employer}` : ""} (${study.period}) — slug: ${study.slug} — page: ${getCaseStudyPath(study.slug)}\n` +
+      `  - One-liner: ${study.oneLiner}\n` +
+      `  - Themes: ${[...study.tags, ...study.stack.slice(0, 6)].join(", ")}\n` +
+      `  - Results: ${results}\n` +
+      `  - Ownership boundary: ${study.ownership}\n` +
+      `  - For the problem, constraints, decisions, rejected alternatives, or section detail: call get_case_study("${study.slug}").`
+    );
+  })
   .join("\n");
 
 const projectContext = projects
@@ -127,11 +185,15 @@ Personal info:
 
 Professional summary:
 - ${about.summary}
-- Highlights: ${about.highlights.join(" | ")}
+- Highlights: ${highlightSentences.join(" | ")}
 - Stats: ${profileStats}
+- Recognition: ${recognition.title} — ${recognition.detail}
 
 Experience:
 ${experienceContext}
+
+Engineering case studies (deep-dive pages on this site — the strongest technical proof available):
+${caseStudyContext}
 
 Projects:
 ${projectContext}
@@ -141,8 +203,43 @@ ${skillContext}
 
 Navigation links:
 - Contact section: #contact
-- Projects section: #projects
+- Work section: #work
 - Resume download: ${personalInfo.resumeUrl}
+${caseStudies.map((study) => `- ${study.title} case study: ${getCaseStudyPath(study.slug)}`).join("\n")}
+`;
+
+/**
+ * Topic-level context for the suggestion generator, which only needs to know
+ * which subjects exist to write four short follow-up questions. Sending it the
+ * full case-study prose was costing more tokens than the answer prompt itself.
+ */
+export const PORTFOLIO_CONTEXT_BRIEF = `
+Personal info:
+- Name: ${personalInfo.name}
+- Role: ${personalInfo.role}
+- Tagline: ${personalInfo.tagline}
+
+Professional summary:
+- ${about.summary}
+- Stats: ${profileStats}
+- Recognition: ${recognition.title} — ${recognition.detail}
+
+Experience (companies and roles):
+${experiences.map((experience) => `- ${experience.company} | ${experience.role} | ${experience.period}\n  ${experience.summary}`).join("\n")}
+
+Engineering case studies (topics available for deep questions):
+${caseStudies
+  .map(
+    (study) =>
+      `- ${study.title}: ${study.oneLiner}\n  Themes: ${[...study.tags, ...study.stack.slice(0, 6)].join(", ")}`
+  )
+  .join("\n")}
+
+Projects:
+${projects.map((project) => `- ${project.title} (${project.category}): ${project.summary}`).join("\n")}
+
+Skills:
+${skillContext}
 `;
 
 export const PORTFOLIO_LINK_GUIDE = `
@@ -150,8 +247,11 @@ When links would help the user, use these markdown links directly in the answer:
 - [Jump to Contact](#contact)
 - [View LinkedIn](${personalInfo.linkedin})
 - [View GitHub](${personalInfo.github})
-- [Browse Projects](#projects)
+- [Browse Work](#work)
 - [Download Resume](${personalInfo.resumeUrl})
+${caseStudies
+  .map((study) => `- [Read the ${study.title} case study](${getCaseStudyPath(study.slug)})`)
+  .join("\n")}
 ${projects
   .map(
     (project) =>
@@ -196,7 +296,7 @@ function normalizeGeneratedLinks(response: string) {
 type InlineLink = {
   href: string;
   label: string;
-  kind: "linkedin" | "github" | "resume" | "contact" | "projects" | "project" | "repo";
+  kind: "linkedin" | "github" | "resume" | "contact" | "projects" | "project" | "repo" | "case-study";
 };
 
 function buildInlineLinkSentence(links: InlineLink[]) {
@@ -213,7 +313,9 @@ function buildInlineLinkSentence(links: InlineLink[]) {
       case "contact":
         return `jump to the [Contact section](${link.href})`;
       case "projects":
-        return `open the [Projects section](${link.href})`;
+        return `open the [Work section](${link.href})`;
+      case "case-study":
+        return `read the [${link.label} case study](${link.href})`;
       case "project":
         return `view [${link.label}](${link.href})`;
       case "repo":
@@ -243,9 +345,15 @@ export function appendContextualLinks(userMessage: string, aiResponse: string) {
   const asksForGitHub = /(github|git hub)/i.test(normalizedUserMessage);
   const asksForResume = /\b(resume|cv)\b/i.test(normalizedUserMessage);
   const asksForRepo = /(repo|repository|source code|codebase|open source|open-source)/i.test(normalizedUserMessage);
-  const asksForProjectLink = /(project link|live link|demo link|link to|open|show me|navigate|take me|where can i see|where can i find)/i.test(normalizedUserMessage);
+  // `open` needs a following noun. Bare `open` matched "open to relocating",
+  // "open source", and "OpenTelemetry", injecting project links into answers
+  // that never asked for one.
+  const asksForProjectLink = /(project link|live link|demo link|link to|open (?:the )?(?:project|demo|repo|site|page|app)|show me|navigate|take me|where can i see|where can i find)/i.test(normalizedUserMessage);
   const asksForContactSection = /(contact section|open contact|navigate to contact|take me to contact)/i.test(normalizedUserMessage);
-  const asksForProjectsSection = /(projects section|open projects|navigate to projects|take me to projects)/i.test(normalizedUserMessage);
+  const asksForProjectsSection = /(projects section|work section|open projects|open work|navigate to projects|take me to projects)/i.test(normalizedUserMessage);
+  const asksForDetail = /(case study|deep dive|architecture|how does it work|how did you build|more detail|write up|writeup|read more)/i.test(
+    normalizedUserMessage
+  );
 
   const addLink = (link: InlineLink) => {
     const { href } = link;
@@ -270,7 +378,20 @@ export function appendContextualLinks(userMessage: string, aiResponse: string) {
   }
 
   if (asksForProjectsSection) {
-    addLink({ label: "Projects section", href: "#projects", kind: "projects" });
+    addLink({ label: "Work section", href: "#work", kind: "projects" });
+  }
+
+  // Case studies are the deepest proof on the site, so surface them whenever the
+  // visitor asks about one by name or asks for architecture-level detail.
+  findMatchingCaseStudies(userMessage).forEach((study) => {
+    addLink({ label: study.title, href: getCaseStudyPath(study.slug), kind: "case-study" });
+  });
+
+  if (asksForDetail && links.every((link) => link.kind !== "case-study")) {
+    const [firstMatch] = findMatchingCaseStudies(userMessage);
+    if (firstMatch) {
+      addLink({ label: firstMatch.title, href: getCaseStudyPath(firstMatch.slug), kind: "case-study" });
+    }
   }
 
   const matchedProjects = findMatchingProjects(userMessage);

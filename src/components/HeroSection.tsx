@@ -4,7 +4,9 @@ import { useEffect, useState, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { ArrowDown, MessageCircle, Download } from "lucide-react";
+import Link from "next/link";
 import { personalInfo, stats } from "@/data/portfolio";
+import { REVEAL_DURATION_REDUCED, REVEAL_EASE, REVEAL_OFFSET } from "@/lib/motion";
 import Card3D from "./Card3D";
 import cardImage from "@/assets/card.png";
 
@@ -64,16 +66,13 @@ const HeroSection = () => {
   };
 
   const item = {
-    hidden: shouldReduceMotion
-      ? { opacity: 0 }
-      : { opacity: 0, y: 24, filter: "blur(4px)" },
+    hidden: shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: REVEAL_OFFSET },
     show: {
       opacity: 1,
       y: 0,
-      filter: "blur(0px)",
       transition: {
-        duration: shouldReduceMotion ? 0.2 : 0.7,
-        ease: [0.16, 1, 0.3, 1] as const,
+        duration: shouldReduceMotion ? REVEAL_DURATION_REDUCED : 0.7,
+        ease: REVEAL_EASE,
       },
     },
   };
@@ -102,7 +101,7 @@ const HeroSection = () => {
           {/* Left - Content */}
           <motion.div variants={container} initial="hidden" animate="show" className="flex flex-col gap-6 sm:gap-8 lg:col-span-7">
             <motion.div variants={item}>
-              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono font-bold glass-subtle border border-primary/20 text-primary tracking-wide shadow-[0_0_12px_rgba(41,214,185,0.1)]">
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono font-bold glass-subtle border border-primary/20 text-primary tracking-wide glow-accent-xs">
                 <span className="w-2 h-2 rounded-full bg-primary animate-pulse motion-reduce:animate-none" />
                 Available for New Opportunities
               </span>
@@ -121,18 +120,43 @@ const HeroSection = () => {
               {personalInfo.tagline}
             </motion.p>
 
-            <motion.div variants={item} className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 mt-1 sm:mt-2">
+            {/* Stats — placed above the CTAs because these numbers are the
+                fastest proof in the first viewport, and each one links to the
+                surface that backs it up. */}
+            <motion.div
+              ref={statsTriggerRef}
+              variants={item}
+              onAnimationStart={() => setStatsRevealStarted(true)}
+              className="grid grid-cols-2 gap-4 sm:grid-cols-4"
+            >
+              {stats.map((stat) => (
+                <Link
+                  key={stat.label}
+                  href={stat.href}
+                  className="group border-l-2 border-primary/30 py-1 pl-4 transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                  <div className="text-2xl font-bold tracking-tighter text-foreground">
+                    <AnimatedCounter value={stat.value} suffix={stat.suffix} start={shouldStartStats} />
+                  </div>
+                  <div className="mt-1 text-xs font-medium uppercase tracking-wider text-muted-foreground transition-colors group-hover:text-primary">
+                    {stat.label}
+                  </div>
+                </Link>
+              ))}
+            </motion.div>
+
+            <motion.div variants={item} className="mt-1 flex flex-col flex-wrap gap-3 sm:mt-2 sm:flex-row sm:gap-4">
               <a
-                href="#projects"
-                className="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-8 py-3.5 rounded-full bg-primary text-primary-foreground font-bold text-sm tracking-wide shadow-[0_0_20px_rgba(41,214,185,0.18)] hover:shadow-[0_0_28px_rgba(41,214,185,0.24)] transition-all duration-300 active:scale-95"
+                href="#work"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-8 py-3.5 text-sm font-bold tracking-wide text-primary-foreground transition-all duration-300 glow-accent-sm hover:glow-accent-md active:scale-95 sm:w-auto"
               >
-                View Projects
-                <ArrowDown className="w-4 h-4 ml-1" />
+                Read the case studies
+                <ArrowDown className="ml-1 h-4 w-4" />
               </a>
               <a
                 href={personalInfo.resumeUrl}
                 download
-                className="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-8 py-3.5 rounded-full bg-white/5 dark:bg-white/[0.02] backdrop-blur-lg border border-primary/50 dark:border-primary/50 font-bold text-foreground text-sm tracking-wide hover:bg-primary/10 transition-all duration-300 active:scale-95"
+                className="btn-cta-secondary w-full sm:w-auto"
               >
                 <Download className="w-4 h-4 mr-1 text-primary" />
                 Resume
@@ -146,22 +170,6 @@ const HeroSection = () => {
               </a>
             </motion.div>
 
-            {/* Stats */}
-            <motion.div
-              ref={statsTriggerRef}
-              variants={item}
-              onAnimationStart={() => setStatsRevealStarted(true)}
-              className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 sm:mt-6"
-            >
-              {stats.map((stat) => (
-                <div key={stat.label} className="border-l-2 border-primary/30 pl-4 py-1">
-                  <div className="text-2xl font-bold tracking-tighter text-foreground">
-                    <AnimatedCounter value={stat.value} suffix={stat.suffix} start={shouldStartStats} />
-                  </div>
-                  <div className="text-xs font-medium text-muted-foreground mt-1 uppercase tracking-wider">{stat.label}</div>
-                </div>
-              ))}
-            </motion.div>
           </motion.div>
 
           {/* Right - 3D Card wrapped in a delicate glow */}

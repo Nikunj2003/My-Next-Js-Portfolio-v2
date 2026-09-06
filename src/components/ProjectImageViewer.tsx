@@ -678,14 +678,14 @@ export default function ProjectImageViewer({
       shouldScaleBackground={false}
     >
       <DrawerPrimitive.Portal>
-        <DrawerPrimitive.Overlay className="fixed inset-0 z-50 bg-[radial-gradient(circle_at_top,rgba(41,214,185,0.12),transparent_36%),linear-gradient(180deg,rgba(3,7,18,0.84),rgba(3,7,18,0.96))] [will-change:opacity] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <DrawerPrimitive.Overlay className="fixed inset-0 z-50 bg-[radial-gradient(circle_at_top,hsl(var(--accent)/0.12),transparent_36%),linear-gradient(180deg,rgba(3,7,18,0.84),rgba(3,7,18,0.96))] [will-change:opacity] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
 
         <DrawerPrimitive.Content
           ref={contentRef}
           tabIndex={-1}
           onKeyDown={(event) => handleKeyControls(event)}
           style={{ top: "max(env(safe-area-inset-top), 0.75rem)" }}
-          className="fixed inset-x-0 bottom-0 z-[60] mx-auto flex w-[min(calc(100vw-0.75rem),96rem)] transform-gpu flex-col overflow-hidden rounded-t-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(17,24,39,0.97),rgba(12,18,32,0.98))] shadow-[0_-16px_36px_rgba(41,214,185,0.14)] outline-none [will-change:transform] sm:w-[min(calc(100vw-1.5rem),96rem)]"
+          className="fixed inset-x-0 bottom-0 z-[60] mx-auto flex w-[min(calc(100vw-0.75rem),96rem)] transform-gpu flex-col overflow-hidden rounded-t-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(17,24,39,0.97),rgba(12,18,32,0.98))] shadow-[0_-16px_36px_hsl(var(--accent)/0.14)] outline-none [will-change:transform] sm:w-[min(calc(100vw-1.5rem),96rem)]"
         >
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/80 to-transparent" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-white/10 to-transparent" />
@@ -707,7 +707,7 @@ export default function ProjectImageViewer({
             </div>
 
             <div className="flex shrink-0 items-center gap-2">
-              <div className="hidden items-center gap-1 rounded-full border border-white/10 bg-black/20 p-1 sm:flex">
+              <div className="hidden items-center gap-1 rounded-full border border-white/10 bg-black/20 glass-tier-surface p-1 sm:flex">
                 <Button
                   type="button"
                   variant="ghost"
@@ -749,7 +749,7 @@ export default function ProjectImageViewer({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-10 w-10 rounded-full border border-white/10 bg-black/25 text-foreground/80 hover:bg-white/10 hover:text-foreground"
+                  className="h-10 w-10 rounded-full border border-white/10 bg-black/25 glass-tier-surface text-foreground/80 hover:bg-white/10 hover:text-foreground"
                   aria-label="Close image viewer"
                 >
                   <X className="h-4 w-4" />
@@ -759,8 +759,8 @@ export default function ProjectImageViewer({
           </div>
 
           <div className="flex min-h-0 flex-1 flex-col gap-4 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pb-6">
-            <div className="relative min-h-0 flex-1 overflow-hidden rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(9,14,29,0.88),rgba(4,7,18,0.96))] shadow-[inset_0_0_20px_rgba(41,214,185,0.12)]">
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(41,214,185,0.12),transparent_36%),radial-gradient(circle_at_bottom,rgba(255,255,255,0.05),transparent_28%)]" />
+            <div className="relative min-h-0 flex-1 overflow-hidden rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(9,14,29,0.88),rgba(4,7,18,0.96))] shadow-[inset_0_0_20px_hsl(var(--accent)/0.12)]">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,hsl(var(--accent)/0.12),transparent_36%),radial-gradient(circle_at_bottom,rgba(255,255,255,0.05),transparent_28%)]" />
 
               <div
                 ref={viewportRef}
@@ -802,7 +802,7 @@ export default function ProjectImageViewer({
                       loading="eager"
                       decoding="async"
                       fetchPriority="high"
-                      className="pointer-events-none block h-full w-full select-none rounded-[1.2rem] object-contain shadow-[0_14px_30px_rgba(41,214,185,0.12)] sm:shadow-[0_22px_52px_rgba(41,214,185,0.16)]"
+                      className="pointer-events-none block h-full w-full select-none rounded-[1.2rem] object-contain shadow-[0_14px_30px_hsl(var(--accent)/0.12)] sm:shadow-[0_22px_52px_hsl(var(--accent)/0.16)]"
                       onLoad={(event) => {
                         const { naturalWidth, naturalHeight } = event.currentTarget;
 
@@ -842,7 +842,7 @@ export default function ProjectImageViewer({
                     size="icon"
                     onClick={goToPrevious}
                     disabled={!canGoPrevious}
-                    className="absolute left-3 top-1/2 h-11 w-11 -translate-y-1/2 rounded-full border border-white/10 bg-black/35 text-foreground/80 shadow-[0_10px_22px_rgba(41,214,185,0.12)] backdrop-blur hover:bg-white/10 hover:text-foreground disabled:opacity-35 sm:left-5"
+                    className="absolute left-3 top-1/2 h-11 w-11 -translate-y-1/2 rounded-full border border-white/10 bg-black/35 text-foreground/80 shadow-[0_10px_22px_hsl(var(--accent)/0.12)] backdrop-blur hover:bg-white/10 hover:text-foreground disabled:opacity-35 sm:left-5"
                     aria-label="Previous image"
                   >
                     <ChevronLeft className="h-5 w-5" />
@@ -854,7 +854,7 @@ export default function ProjectImageViewer({
                     size="icon"
                     onClick={goToNext}
                     disabled={!canGoNext}
-                    className="absolute right-3 top-1/2 h-11 w-11 -translate-y-1/2 rounded-full border border-white/10 bg-black/35 text-foreground/80 shadow-[0_10px_22px_rgba(41,214,185,0.12)] backdrop-blur hover:bg-white/10 hover:text-foreground disabled:opacity-35 sm:right-5"
+                    className="absolute right-3 top-1/2 h-11 w-11 -translate-y-1/2 rounded-full border border-white/10 bg-black/35 text-foreground/80 shadow-[0_10px_22px_hsl(var(--accent)/0.12)] backdrop-blur hover:bg-white/10 hover:text-foreground disabled:opacity-35 sm:right-5"
                     aria-label="Next image"
                   >
                     <ChevronRight className="h-5 w-5" />
@@ -864,7 +864,7 @@ export default function ProjectImageViewer({
             </div>
 
             <div className="flex items-center justify-between gap-3 sm:hidden">
-              <div className="flex items-center gap-1 rounded-full border border-white/10 bg-black/20 p-1">
+              <div className="flex items-center gap-1 rounded-full border border-white/10 bg-black/20 glass-tier-surface p-1">
                 <Button
                   type="button"
                   variant="ghost"
@@ -902,14 +902,14 @@ export default function ProjectImageViewer({
               </div>
 
               {images.length > 1 && (
-                <div className="rounded-full border border-white/10 bg-black/20 px-3 py-2 text-xs font-mono text-muted-foreground">
+                <div className="rounded-full border border-white/10 bg-black/20 glass-tier-surface px-3 py-2 text-xs font-mono text-muted-foreground">
                   {activeIndex + 1}/{images.length}
                 </div>
               )}
             </div>
 
             {images.length > 1 && showThumbnailRail && (
-              <div className="z-10 flex gap-3 overflow-x-auto overscroll-x-contain pb-1 touch-pan-x">
+              <div data-lenis-prevent className="z-10 flex gap-3 overflow-x-auto overscroll-x-contain pb-1 touch-pan-x">
                 {images.map((image, index) => {
                   const isActive = index === activeIndex;
 
@@ -925,7 +925,7 @@ export default function ProjectImageViewer({
                       className={cn(
                         "group relative h-16 w-24 shrink-0 touch-manipulation overflow-hidden rounded-2xl border bg-black/35 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:h-20 sm:w-32",
                         isActive
-                          ? "border-primary/70 shadow-[0_0_0_1px_rgba(41,214,185,0.3),0_10px_24px_rgba(41,214,185,0.14)]"
+                          ? "border-primary/70 shadow-[0_0_0_1px_hsl(var(--accent)/0.3),0_10px_24px_hsl(var(--accent)/0.14)]"
                           : "border-white/10 hover:border-white/20 hover:bg-white/5",
                       )}
                       aria-label={`Open screenshot ${index + 1}`}

@@ -23,6 +23,21 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
       wheelMultiplier: 0.9,
       syncTouch: false,
       touchMultiplier: 1.2,
+      /**
+       * Defer to any inner scroll container under the cursor.
+       *
+       * Defaults to false, which is why scrolling inside the chat and the
+       * command palette lagged: Lenis was still smoothing those wheel events
+       * against the page while the browser also scrolled the container.
+       * With this on, Lenis checks for a scrollable ancestor and bails out,
+       * so nested lists scroll natively at full speed.
+       */
+      allowNestedScroll: true,
+      /**
+       * No rubber-banding past the top or bottom. Without this the page could
+       * be dragged above the first section into blank space.
+       */
+      overscroll: false,
     });
 
     const appWindow = window as LenisWindow;

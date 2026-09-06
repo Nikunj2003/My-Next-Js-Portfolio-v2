@@ -8,7 +8,7 @@ import { SpotlightCard } from "@/components/ui/spotlight-card";
 const NAV_LINKS = [
   { label: "About", href: "#about" },
   { label: "Experience", href: "#experience" },
-  { label: "Projects", href: "#projects" },
+  { label: "Work", href: "#work" },
   { label: "Skills", href: "#skills" },
   { label: "AI Twin", href: "#ai-twin" },
   { label: "Contact", href: "#contact" },

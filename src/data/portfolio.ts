@@ -9,23 +9,79 @@ export const personalInfo = {
   resumeUrl: "/Nikunj_Resume.pdf",
 };
 
+/** `href` points each number at the surface that actually proves it. */
 export const stats = [
-  { value: 8, suffix: "+", label: "Business Functions Served" },
-  { value: 9, suffix: "", label: "Production MCP Servers" },
-  { value: 1, suffix: "M+", label: "KG Entities" },
-  { value: 9, suffix: "", label: "AI Surfaces Evaluated" },
+  { value: 8, suffix: "+", label: "Business Functions Served", href: "#experience" },
+  { value: 9, suffix: "", label: "Production MCP Servers", href: "/work/governed-mcp-registry" },
+  { value: 1, suffix: "M+", label: "KG Entities", href: "/work/knowledge-graph-rag" },
+  { value: 9, suffix: "", label: "AI Surfaces Evaluated", href: "/work/llm-evaluation-platform" },
 ];
+
+export interface Highlight {
+  /** The measured claim, shown large. */
+  metric: string;
+  /** What the metric counts. */
+  label: string;
+  /** One sentence of supporting detail. */
+  detail: string;
+}
 
 export const about = {
   summary: "I focus on the engineering work that makes AI useful after the first successful prompt: connecting models to the right tools and context, controlling what those tools can do, preserving useful memory, measuring behavior, and debugging failures across model, protocol, application, and infrastructure boundaries.",
+  /**
+   * Structured so a card can lead with the figure and stay compact. The AI Twin
+   * still receives the full prose via the derived strings below.
+   */
   highlights: [
-    "Built an OpenTelemetry-based LLM evaluation platform on Langfuse that scores 9 AI surfaces against golden datasets, using deterministic checks, classification metrics, Ragas RAG scores, and LLM-as-a-judge graders validated at Cohen's kappa >= 0.7 and enforced as Jenkins CI gates.",
-    "Delivered 9 of the 14 production MCP servers in ArmorCode's shared enterprise tool registry, implementing OAuth2/RBAC, tool-level permission tiers, explicit denial behavior, and audit attribution under multi-tenant AppSec constraints.",
-    "Co-built Agentic Office OS, translating ambiguous stakeholder requirements into Slack-accessible agents, skills, MCP integrations, and human-in-the-loop approval workflows for 8+ business functions, then owning rollout, debugging, and enablement.",
-    "Sole maintainer of company-wide model and MCP access via a LiteLLM gateway: scoped API keys, per-model spend budgets, and RBAC-gated MCP distribution across teams.",
-    "Built ArmorCode's tenant-scoped Knowledge Graph RAG layer over 1M+ entities in Neo4j and pgvector, scoring retrieval on recall@k, MRR, and context precision across five query modes.",
-  ],
+    {
+      metric: "9",
+      label: "AI surfaces evaluated",
+      detail:
+        "An OpenTelemetry platform on Langfuse scoring prompts, models, agents, skills, MCP tools, and retrieval against golden datasets — deterministic checks, scikit-learn metrics, Ragas, and LLM-as-a-judge graders validated at Cohen's kappa >= 0.7, enforced as Jenkins CI gates.",
+    },
+    {
+      metric: "9 of 14",
+      label: "Production MCP servers",
+      detail:
+        "Delivered in ArmorCode's shared enterprise tool registry with OAuth2/RBAC, tool-level permission tiers, explicit denial behavior, and audit attribution under multi-tenant AppSec constraints.",
+    },
+    {
+      metric: "8+",
+      label: "Business functions served",
+      detail:
+        "Co-built Agentic Office OS, translating ambiguous stakeholder requirements into Slack-accessible agents, skills, MCP integrations, and human-in-the-loop approval workflows — then owning rollout, debugging, and enablement.",
+    },
+    {
+      metric: "1M+",
+      label: "Knowledge graph entities",
+      detail:
+        "ArmorCode's tenant-scoped Knowledge Graph RAG layer in Neo4j and pgvector, with retrieval scored on recall@k, MRR, and context precision across five query modes.",
+    },
+    {
+      metric: "57%",
+      label: "Of gateway cost traced",
+      detail:
+        "Sole maintainer of company-wide model and MCP access on a LiteLLM gateway. Traced 57% of spend across 50,000+ requests to 10+ automations, then migrated models and enabled prompt caching.",
+    },
+    {
+      metric: "Graphiti",
+      label: "Agent memory layer",
+      detail:
+        "Shipped the platform agent memory layer on temporal knowledge graphs, combining session-scoped context with tenant- and person-level long-term recall for multi-step reasoning.",
+    },
+  ] satisfies Highlight[],
 };
+
+export const recognition = {
+  title: "AI Ninja Award at ArmorCode",
+  detail:
+    "First recipient of ArmorCode's AI Ninja Award, and the youngest person to receive an award at the company.",
+};
+
+/** Prose form of the highlights, for the AI Twin context and SEO surfaces. */
+export const highlightSentences = about.highlights.map(
+  (highlight) => `${highlight.metric} ${highlight.label.toLowerCase()} — ${highlight.detail}`
+);
 
 export interface Experience {
   company: string;
@@ -86,9 +142,9 @@ export const experiences: Experience[] = [
       "Co-built Agentic Office OS, the internal platform of autonomous, human-triggered, and human-in-the-loop agents reachable org-wide through Slack, translating ambiguous requirements from an external business consultant, executives, and internal teams into agents, skills, MCP integrations, and approval workflows for 8+ business functions, then owning rollout, debugging, and enablement.",
       "Built an OpenTelemetry-based LLM evaluation platform on Langfuse so every prompt, model, agent, skill, and MCP tool change ships on measured accuracy, latency, and cost. It scores 9 AI surfaces against golden datasets using deterministic checks, scikit-learn classification metrics, Ragas RAG scores, and LLM-as-a-judge graders validated at Cohen's kappa >= 0.7, enforced as Jenkins CI gates.",
       "Delivered 9 of the 14 production MCP servers in ArmorCode's shared enterprise tool registry under multi-tenant AppSec constraints, implementing OAuth2/RBAC controls, tool-level permission tiers, explicit denial behavior, and audit attribution, with 20 of 20 authorization checks validated across three access tiers.",
-      "Govern company-wide model and MCP access as sole maintainer of a LiteLLM gateway, issuing scoped API keys with per-model spend budgets and distributing RBAC-gated MCP servers to employees' Claude Desktop via an .mcpb proxy. Cut recurring LLM spend by tracing 57% of gateway cost across 6,372 requests to two automations, then migrating models and splitting system/user prompts to enable Bedrock prompt caching, while flagging a deterministic rewrite worth a further ~95% reduction.",
+      "Govern company-wide model and MCP access as sole maintainer of a LiteLLM gateway, issuing scoped API keys with per-model spend budgets and distributing RBAC-gated MCP servers to employees' Claude Desktop via an .mcpb proxy. Cut recurring LLM spend by tracing 57% of gateway cost across 50,000+ requests to 10+ automations, then migrating models and splitting system/user prompts to enable Bedrock prompt caching, while flagging a deterministic rewrite worth a further ~95% reduction.",
       "Built ArmorCode's tenant-scoped knowledge-graph RAG layer over 1M+ entities of RCAs, test cases, and product documentation in Neo4j and pgvector, giving Office OS agents grounded product knowledge without cross-tenant leakage, with retrieval scored on recall@k, MRR, and context precision across five query modes.",
-      "Cut CS and support escalations to engineering with a codebase-search MCP service in Go over 8 product repositories, fronting a read-only agent against a daily-reindexed vector index. Restored it after 46 consecutive queries returned zero content by isolating two independent causes in SDK and host internals: a Go output-schema defect that made schema-aware clients discard every answer, and a query deadline sized for a longer client timeout tier. Shipped the fix with a negative-control test and flagged 2 exposed connectors.",
+      "Cut CS and support escalations to engineering with a codebase-search MCP service in Go over 8 product repositories, fronting a read-only agent against a daily-reindexed vector index. Restored it after 100+ queries returned zero content by isolating two independent causes in SDK and host internals: a Go output-schema defect that made schema-aware clients discard every answer, and a query deadline sized for a longer client timeout tier. Shipped the fix with a negative-control test and flagged 14 exposed connectors.",
       "Kept AI-drafted documentation reviewable rather than blind-published by shipping Quill, an Electron/React/TypeScript GitHub PR review tool pairing a WYSIWYG editor with an embedded AI agent terminal, per-branch Git worktrees, and permission-aware GitHub delivery."
     ],
   },
@@ -96,6 +152,8 @@ export const experiences: Experience[] = [
 
 export interface Project {
   slug: string;
+  /** Featured projects get a full card; the rest render in the compact list. */
+  featured?: boolean;
   title: string;
   category: string;
   summary: string;
@@ -113,6 +171,7 @@ export interface Project {
 export const projects: Project[] = [
   {
     slug: "codenex",
+    featured: true,
     title: "CodeNex: AI Builder",
     category: "Full-Stack AI SaaS",
     summary: "An AI-driven code generation SaaS platform for building full React applications from natural-language prompts.",
@@ -137,6 +196,7 @@ export const projects: Project[] = [
   },
   {
     slug: "codenex-ai-api-proxy",
+    featured: true,
     title: "CodeNex AI API Proxy",
     category: "AI Gateway & Infra",
     summary: "A unified AI gateway for routing model traffic through one consistent API layer.",
@@ -156,6 +216,7 @@ export const projects: Project[] = [
   },
   {
     slug: "serenify",
+    featured: true,
     title: "Serenify",
     category: "Full-Stack AI Product",
     summary: "A consumer-style AI wellness product with thoughtful UX, not just chat wrapped around a model.",
@@ -239,35 +300,31 @@ export const projects: Project[] = [
 export const skillCategories = [
   {
     title: "Applied AI, Agents & Evaluation",
-    description: "The agent, orchestration, and evaluation stack I use to build governed AI systems and agent workflows.",
-    skills: ["Agentic AI", "AI Agents", "Model Context Protocol (MCP)", "Tool Calling", "Agent Memory", "LLM Evaluation", "Evals", "Langfuse", "LangChain", "LangGraph", "LangChain4j", "CrewAI", "DeepEval", "RAG", "GraphRAG", "Knowledge Graph RAG", "LightRAG", "Graphiti", "Temporal Graph Memory", "Vector Search", "Multi-Agent Systems", "Human-in-the-Loop Workflows", "Tenant-Scoped Tools", "Prompt Engineering", "AWS Bedrock", "Claude", "Gemini AI", "OpenAI", "LLaMA", "LLM Proxying"],
+    description: "The agent, retrieval, and evaluation stack I use to build governed AI systems and prove they still work after a change.",
+    skills: ["AI Agents", "Agentic AI", "Multi-Agent Systems", "Model Context Protocol (MCP)", "Tool Calling", "Agent Memory", "LLM Evaluation", "LLM-as-a-Judge", "Golden Datasets", "Langfuse", "Ragas", "OpenTelemetry", "RAG", "GraphRAG", "Knowledge Graph RAG", "Prompt Engineering", "Prompt Caching", "Model Routing", "LangGraph", "Spring AI", "Graphiti", "AWS Bedrock"],
   },
   {
-    title: "Backend & Product Engineering",
-    description: "The languages, frameworks, and application-layer tools I use to build AI products, APIs, and internal platforms end to end.",
-    skills: ["Java 21", "Spring Boot 3", "Spring AI", "TypeScript", "Node.js", "Go", "Gin", "Python", "FastAPI", "SQLAlchemy", "Next.js", "React", "REST APIs", "Microservices", "Server-Sent Events", "RBAC", "JWT", "OAuth2", "Stripe"],
+    title: "Languages & Backend",
+    description: "The languages and frameworks I use to build AI products, APIs, and internal platforms end to end.",
+    skills: ["Python", "TypeScript", "Go", "Java", "SQL", "FastAPI", "Spring Boot", "Node.js", "Gin", "Next.js", "React", "REST APIs", "Microservices", "OAuth2", "RBAC"],
   },
   {
-    title: "Data & Search Infrastructure",
-    description: "The storage, indexing, vector, and search technologies I use to make retrieval and context systems accurate and scalable.",
-    skills: ["PostgreSQL", "pgvector", "Neo4j", "MongoDB", "Elasticsearch", "Redis", "MSSQL", "Supabase", "MinIO", "NFS"],
+    title: "Data, Retrieval & Storage",
+    description: "The storage, graph, and vector technologies behind the retrieval and context systems I build.",
+    skills: ["Neo4j", "pgvector", "PostgreSQL", "Elasticsearch", "Redis", "MongoDB", "Apache Superset", "S3"],
   },
   {
-    title: "Platform, DevOps & Delivery",
-    description: "The infrastructure and operational tooling I use to deploy, route, observe, secure, and scale AI systems reliably.",
-    skills: ["Resilience4j", "Docker", "Kubernetes", "Kubernetes Autoscaling", "Fabric8", "Kubernetes Ingress", "Kafka", "LocalStack", "GitHub Actions", "Jenkins", "AWS", "Azure", "Vercel", "LiteLLM", "Grafana", "Nginx", "Load Balancing", "API Gateways", "AI Tooling Reliability", "n8n", "OpenCode Server"],
-  },
-  {
-    title: "Product Tooling & UX",
-    description: "Supporting tools I use to ship full-stack product surfaces, admin workflows, charts, authentication, and polished UX.",
-    skills: ["Auth0", "Tailwind CSS", "Framer Motion", "shadcn/ui", "next-themes", "Recharts", "Streamlit", "Swagger", "Postman", "Vite", "Kiro", "Claude Code", "Codex"],
+    title: "Platform, Observability & Delivery",
+    description: "The infrastructure and measurement tooling I use to deploy, route, observe, and gate AI systems in production.",
+    skills: ["Docker", "Kubernetes", "AWS", "CI/CD", "Jenkins", "GitHub Actions", "LiteLLM", "pytest", "scikit-learn", "Kafka", "Grafana", "Prometheus", "n8n"],
   },
 ];
 
+/** Phrased to exercise the AI Twin's tools rather than invite a canned answer. */
 export const chatSuggestions = [
-  "How do you approach agent memory and evaluation?",
-  "What's your governed MCP approach?",
-  "How did Agentic Office OS turn stakeholder needs into workflows?",
-  "How do you debug AI-tool reliability issues?",
-  "Which build best shows end-to-end ownership?",
+  "Which system handles tenant isolation?",
+  "How does the evaluation platform work?",
+  "Compare the MCP registry and the RAG layer",
+  "What broke in production, and how was it fixed?",
+  "Show me the strongest proof of ownership",
 ];

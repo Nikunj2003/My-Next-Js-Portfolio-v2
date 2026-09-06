@@ -1,3 +1,4 @@
+import { caseStudies, getCaseStudyPath } from "@/data/case-studies";
 import { about, personalInfo } from "@/data/portfolio";
 
 const siteUrl = "https://nikunj.codenex.dev";
@@ -86,4 +87,7 @@ export const siteConfig = {
   aboutSummary: about.summary,
 } as const;
 
-export const canonicalPages = [siteConfig.homeUrl] as const;
+export const caseStudyPages = caseStudies.map((study) => `${siteUrl}${getCaseStudyPath(study.slug)}`);
+
+/** Home first, then each case study. Consumed by sitemap.ts. */
+export const canonicalPages = [siteConfig.homeUrl, `${siteConfig.siteUrl}/work`, ...caseStudyPages];

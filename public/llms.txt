@@ -8,11 +8,54 @@ Focus: AI agents, permission-aware MCP tool integrations, agent memory and evalu
 Canonical pages:
 - https://nikunj.codenex.dev/
 - https://nikunj.codenex.dev/Nikunj_Resume.pdf
+- https://nikunj.codenex.dev/work
+- https://nikunj.codenex.dev/work/llm-evaluation-platform
+- https://nikunj.codenex.dev/work/governed-mcp-registry
+- https://nikunj.codenex.dev/work/code-intelligence-gateway
+- https://nikunj.codenex.dev/work/knowledge-graph-rag
+- https://nikunj.codenex.dev/work/documentation-automation
+- https://nikunj.codenex.dev/work/sentinel-test-agent
+- https://nikunj.codenex.dev/work/bi-platform
+- https://nikunj.codenex.dev/work/quill
+- https://nikunj.codenex.dev/work/codenex-ai-proxy
+- https://nikunj.codenex.dev/work/codenex
+- https://nikunj.codenex.dev/work/fantasy-gpt
+- https://nikunj.codenex.dev/work/aiko
+- https://nikunj.codenex.dev/work/serenify
+
+Interactive AI Twin (a working artifact, not a chatbot widget):
+- The site's assistant is an agent with real tool calling: search_work, get_case_study, get_metric, compare_systems, and navigate_to.
+- Tool calls, latency, grounding sources, and refusals are shown to the visitor in a trace footer.
+- get_metric returns "not measured" for any figure not published, so the agent declines rather than estimating.
+- Available at https://nikunj.codenex.dev/#ai-twin
+
+Engineering case studies (deepest technical detail on this site) — 13 write-ups, indexed by theme at https://nikunj.codenex.dev/work:
+
+Agent systems:
+- LLM Evaluation Platform (OpenTelemetry + Langfuse, 9 AI surfaces, LLM-as-a-judge validated at Cohen's kappa >= 0.7, Jenkins CI gates): https://nikunj.codenex.dev/work/llm-evaluation-platform
+- Governed MCP Tool Registry (9 of 14 production MCP servers, OAuth2/RBAC tool-level authorization, protocol RCA): https://nikunj.codenex.dev/work/governed-mcp-registry
+- Documentation Automation Platform (multi-agent pipeline with a clarification gate that blocks drafting until open questions are answered): https://nikunj.codenex.dev/work/documentation-automation
+- Sentinel Test Generation Agent (multi-step agent grounded in a code graph; downstream automation fails loudly without linked coverage): https://nikunj.codenex.dev/work/sentinel-test-agent
+
+Retrieval and context:
+- Knowledge Graph RAG (1M+ entities in Neo4j and pgvector, five-layer retrieval evaluation): https://nikunj.codenex.dev/work/knowledge-graph-rag
+- Business Data Layer for Agents (the governed data layer behind the business agents; 19 dashboards at parity, schema pruned 32 to 12 tables): https://nikunj.codenex.dev/work/bi-platform
+- Fantasy GPT (multi-step reasoning SQL RAG on a fine-tuned in-house model, answering live cricket questions in under 30s; 98% of complex queries resolved): https://nikunj.codenex.dev/work/fantasy-gpt
+
+Platform and reliability:
+- Code Intelligence Gateway (agent code search over 8 repositories; storage-throughput root cause found via a 76KB copy taking 14 minutes): https://nikunj.codenex.dev/work/code-intelligence-gateway
+- CodeNex AI API Proxy (open-source gateway fronting 6 provider backends with health-aware failover and automatic recovery): https://nikunj.codenex.dev/work/codenex-ai-proxy
+
+AI products:
+- CodeNex (prompt-to-React-app builder on a Spring Cloud microservice backend with per-project Kubernetes preview environments): https://nikunj.codenex.dev/work/codenex
+- AIKO (personalized voice sports companion; persona building, live match reasoning, catch-up highlight reels with AI commentary in 20+ languages; presented at IBC 2024): https://nikunj.codenex.dev/work/aiko
+- Serenify (AI wellness product with database-enforced per-user isolation, granular AI data-access controls, and explicit crisis-resource surfacing): https://nikunj.codenex.dev/work/serenify
+- Quill (desktop review app keeping AI-drafted documentation reviewable; permissions delegated entirely to the source-control platform): https://nikunj.codenex.dev/work/quill
 
 Important homepage sections:
 - About: https://nikunj.codenex.dev/#about
 - Experience: https://nikunj.codenex.dev/#experience
-- Projects: https://nikunj.codenex.dev/#projects
+- Work: https://nikunj.codenex.dev/#work
 - Skills: https://nikunj.codenex.dev/#skills
 - AI Twin: https://nikunj.codenex.dev/#ai-twin
 - Contact: https://nikunj.codenex.dev/#contact

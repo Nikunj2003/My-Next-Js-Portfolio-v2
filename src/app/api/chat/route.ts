@@ -2,11 +2,20 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { AI_MODEL, SYSTEM_PROMPT, SUGGESTION_SYSTEM_PROMPT } from "@/lib/ai-config";
 import {
+  CHAT_FINAL_ANSWER_RESERVE_MS,
+  CHAT_MAX_TOOL_ROUNDS,
   CHAT_PRIMARY_RESPONSE_TIMEOUT_MS,
+  CHAT_STREAM_CONTENT_TYPE,
   CHAT_SUGGESTION_TIMEOUT_MS,
+  CHAT_TOOL_ROUND_TIMEOUT_MS,
   CHAT_TOTAL_RESPONSE_BUDGET_MS,
   type ChatAvailabilityResponse,
+  type ChatErrorCode,
+  type ChatStreamEvent,
+  type ChatToolCall,
+  type ChatTrace,
 } from "@/lib/chat-contract";
+import { TOOL_DEFINITIONS, executeTool, formatToolCall } from "@/lib/ai-tools";
 import { CHAT_MEMORY_WINDOW, appendContextualLinks, findMatchingProjects, normalizeText, trimConversationHistory } from "@/lib/ai-twin";
 import { checkRateLimit, getClientKey, getRateLimitHeaders } from "@/lib/rate-limit";
 
@@ -15,21 +24,20 @@ interface Message {
   sender: "user" | "ai";
 }
 
-interface ChatCompletionMessageParam {
-  role: "system" | "user" | "assistant";
-  content: string;
+interface ProviderToolCall {
+  id?: string;
+  type?: string;
+  function?: { name?: string; arguments?: string };
 }
 
-type ChatErrorCode =
-  | "invalid_request"
-  | "rate_limited"
-  | "service_unavailable"
-  | "upstream_timeout"
-  | "upstream_rate_limited"
-  | "upstream_auth_error"
-  | "upstream_error"
-  | "upstream_unreachable"
-  | "internal_error";
+interface ChatCompletionMessageParam {
+  role: "system" | "user" | "assistant" | "tool";
+  content: string;
+  tool_calls?: ProviderToolCall[];
+  tool_call_id?: string;
+  name?: string;
+}
+
 
 const RATE_LIMIT = 39;
 const WINDOW_MS = 60_000;
@@ -295,6 +303,39 @@ export async function GET() {
   });
 }
 
+/* ------------------------------------------------------------------ *
+ * Agent loop
+ * ------------------------------------------------------------------ */
+
+function parseToolArgs(raw: string | undefined): Record<string, unknown> {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function classifyUpstreamFailure(status: number): { code: ChatErrorCode; error: string; retryable: boolean } {
+  if (status === 429) {
+    return { code: "upstream_rate_limited", error: "The AI service is busy. Please try again shortly.", retryable: true };
+  }
+  if (status === 401 || status === 403) {
+    return { code: "upstream_auth_error", error: "The AI service rejected the request. Please contact Nikunj directly.", retryable: false };
+  }
+  // A 4xx other than 429 means the request itself was wrong, so replaying it
+  // verbatim fails identically. Only 5xx and unknown statuses are worth a retry.
+  if (status >= 400 && status < 500) {
+    return {
+      code: "upstream_error",
+      error: "The AI service could not process that request.",
+      retryable: false,
+    };
+  }
+  return { code: "upstream_error", error: "The AI service returned an error. Please try again.", retryable: true };
+}
+
 export async function POST(request: Request) {
   const requestStartedAt = Date.now();
   const rateLimitResult = checkRateLimit(requestStore, getClientKey(request), {
@@ -315,161 +356,306 @@ export async function POST(request: Request) {
     );
   }
 
+  let parsedBody;
   try {
-    const parsedBody = chatRequestSchema.safeParse(await request.json());
-
-    if (!parsedBody.success) {
-      return createChatErrorResponse(
-        400,
-        "invalid_request",
-        parsedBody.error.issues[0]?.message || "Invalid chat request.",
-        rateLimitHeaders,
-        false
-      );
-    }
-
-    const { message, conversationHistory } = parsedBody.data;
-
-    const apiKey = process.env.LLM_API_KEY?.trim();
-    if (!apiKey) {
-      console.warn("LLM API key not configured");
-      return createChatErrorResponse(
-        503,
-        "service_unavailable",
-        "The AI service is not configured right now. Please contact Nikunj directly if you need help.",
-        rateLimitHeaders,
-        false
-      );
-    }
-
-    const invokeUrl = process.env.LLM_BASE_URL?.trim() || "https://integrate.api.nvidia.com/v1/chat/completions";
-    const headers = {
-      "Authorization": `Bearer ${apiKey}`,
-      "Accept": "application/json",
-      "Content-Type": "application/json"
-    };
-
-    const recentMessages = trimConversationHistory(conversationHistory, CHAT_MEMORY_WINDOW);
-
-    const messages: ChatCompletionMessageParam[] = [
-      { role: "system", content: SYSTEM_PROMPT },
-    ];
-
-    recentMessages.forEach((msg) => {
-      messages.push({
-        role: msg.sender === "user" ? "user" : "assistant",
-        content: msg.content,
-      });
-    });
-
-    messages.push({ role: "user", content: message });
-
-    // 1. Generate primary AI response
-    let response: Response;
-
-    try {
-      response = await postChatCompletion(
-        invokeUrl,
-        headers,
-        {
-          model: AI_MODEL,
-          messages,
-          top_p: 0.7,
-          temperature: 0.7,
-        },
-        CHAT_PRIMARY_RESPONSE_TIMEOUT_MS
-      );
-    } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
-        return createChatErrorResponse(
-          504,
-          "upstream_timeout",
-          "The AI provider took too long to respond. Please retry.",
-          rateLimitHeaders
-        );
-      }
-
-      console.error("LLM provider request failed");
-      return createChatErrorResponse(
-        502,
-        "upstream_unreachable",
-        "The AI provider could not be reached. Please retry.",
-        rateLimitHeaders
-      );
-    }
-
-    if (!response.ok) {
-      const upstreamStatus = response.status;
-      await response.text();
-      console.error("LLM API error", upstreamStatus);
-
-      if (upstreamStatus === 429) {
-        return createChatErrorResponse(
-          429,
-          "upstream_rate_limited",
-          "The AI provider is rate limiting requests right now. Please retry in a moment.",
-          rateLimitHeaders
-        );
-      }
-
-      if (upstreamStatus === 401 || upstreamStatus === 403) {
-        return createChatErrorResponse(
-          503,
-          "upstream_auth_error",
-          "The AI service is misconfigured right now. Please contact Nikunj if this keeps happening.",
-          rateLimitHeaders,
-          false
-        );
-      }
-
-      return createChatErrorResponse(
-        502,
-        "upstream_error",
-        "The AI provider returned an error. Please retry.",
-        rateLimitHeaders
-      );
-    }
-
-    const responseData = await response.json();
-    let aiResponse = responseData.choices?.[0]?.message?.content || "";
-
-    if (!aiResponse) {
-      aiResponse = "I apologize, but I'm having trouble responding right now. Please try asking your question again.";
-    }
-
-    // 2. Generate follow-up suggestions without exceeding the client timeout budget.
-    const elapsedMs = Date.now() - requestStartedAt;
-    const remainingBudgetMs = CHAT_TOTAL_RESPONSE_BUDGET_MS - elapsedMs;
-    const priorUserTexts = getPriorUserTexts(recentMessages, message);
-
-    const followUpSuggestions =
-      remainingBudgetMs >= 1_200
-        ? await generateAISuggestions(
-            message,
-            aiResponse,
-            recentMessages,
-            invokeUrl,
-            headers,
-            Math.min(CHAT_SUGGESTION_TIMEOUT_MS, remainingBudgetMs - 250),
-            priorUserTexts,
-          )
-        : buildFallbackSuggestions(message, aiResponse, recentMessages, priorUserTexts);
-
-    return NextResponse.json({
-      response: appendContextualLinks(message, aiResponse),
-      suggestions: followUpSuggestions.length > 0 ? followUpSuggestions : undefined,
-    }, { headers: rateLimitHeaders });
-
+    parsedBody = chatRequestSchema.safeParse(await request.json());
   } catch {
-    console.error("AI response handling failed");
+    return createChatErrorResponse(400, "invalid_request", "Invalid chat request.", rateLimitHeaders, false);
+  }
+
+  if (!parsedBody.success) {
     return createChatErrorResponse(
-      500,
-      "internal_error",
-      "Something went wrong while processing that message. Please retry.",
-      rateLimitHeaders
+      400,
+      "invalid_request",
+      parsedBody.error.issues[0]?.message || "Invalid chat request.",
+      rateLimitHeaders,
+      false
     );
   }
+
+  const { message, conversationHistory } = parsedBody.data;
+
+  const apiKey = process.env.LLM_API_KEY?.trim();
+  if (!apiKey) {
+    console.warn("LLM API key not configured");
+    return createChatErrorResponse(
+      503,
+      "service_unavailable",
+      "The AI service is not configured right now. Please contact Nikunj directly if you need help.",
+      rateLimitHeaders,
+      false
+    );
+  }
+
+  const invokeUrl = process.env.LLM_BASE_URL?.trim() || "https://integrate.api.nvidia.com/v1/chat/completions";
+  const headers = {
+    Authorization: `Bearer ${apiKey}`,
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  };
+
+  const recentMessages = trimConversationHistory(conversationHistory, CHAT_MEMORY_WINDOW);
+
+  const messages: ChatCompletionMessageParam[] = [{ role: "system", content: SYSTEM_PROMPT }];
+  recentMessages.forEach((msg) => {
+    messages.push({ role: msg.sender === "user" ? "user" : "assistant", content: msg.content });
+  });
+  messages.push({ role: "user", content: message });
+
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      /**
+       * True once the client has gone away or the stream has been closed.
+       *
+       * `enqueue` throws on a detached stream. Without this guard a client
+       * disconnect threw inside `send`, and the catch handler's own `send`
+       * calls threw again with nothing above them to catch it — an unhandled
+       * rejection on every abandoned request. Writes are now no-ops after the
+       * stream is gone, and closing is idempotent.
+       */
+      let closed = false;
+
+      const send = (event: ChatStreamEvent) => {
+        if (closed) return;
+        try {
+          controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
+        } catch {
+          // The consumer detached mid-response; stop trying to write.
+          closed = true;
+        }
+      };
+
+      const finish = () => {
+        if (closed) return;
+        closed = true;
+        try {
+          finish();
+        } catch {
+          // Already closed by the runtime after a disconnect.
+        }
+      };
+
+      // A client that navigates away or hits stop should end the work, not
+      // leave the loop running against the provider.
+      request.signal.addEventListener("abort", () => {
+        closed = true;
+      });
+
+      const sources: string[] = [];
+      const refusals: string[] = [];
+      let toolCount = 0;
+      let rounds = 0;
+      let answer = "";
+
+      const emitTrace = () => {
+        const trace: ChatTrace = {
+          rounds,
+          toolCount,
+          elapsedMs: Date.now() - requestStartedAt,
+          sources: Array.from(new Set(sources)).slice(0, 6),
+          refusals,
+          model: AI_MODEL,
+        };
+        send({ type: "trace", trace });
+      };
+
+      try {
+        // Tool rounds. The model may skip tools entirely, in which case this
+        // loop exits on the first pass and we stream whatever it said.
+        for (let round = 0; round <= CHAT_MAX_TOOL_ROUNDS; round += 1) {
+          const elapsed = Date.now() - requestStartedAt;
+          const isFinalRound = round === CHAT_MAX_TOOL_ROUNDS;
+          const budgetLeft = CHAT_TOTAL_RESPONSE_BUDGET_MS - elapsed - CHAT_FINAL_ANSWER_RESERVE_MS;
+
+          // Out of time for another tool round: force a text answer.
+          const mustAnswer = isFinalRound || budgetLeft <= 0;
+
+          rounds = round + 1;
+
+          if (round > 0) {
+            send({ type: "status", label: mustAnswer ? "Writing answer" : "Thinking" });
+          }
+
+          let response: Response;
+          try {
+            response = await postChatCompletion(
+              invokeUrl,
+              headers,
+              {
+                model: AI_MODEL,
+                messages,
+                top_p: 0.95,
+                temperature: 0.6,
+                ...(mustAnswer ? {} : { tools: TOOL_DEFINITIONS, tool_choice: "auto" }),
+              },
+              // The final answer used to get the full primary timeout with no
+              // deduction for time already spent in tool rounds, so a request
+              // that burned 15s across two rounds could still take another 16s
+              // — ~31s against a declared 18.5s budget and a 24s client
+              // timeout. Both paths now clamp to whatever budget remains.
+              Math.min(
+                mustAnswer ? CHAT_PRIMARY_RESPONSE_TIMEOUT_MS : CHAT_TOOL_ROUND_TIMEOUT_MS,
+                Math.max(2_000, budgetLeft)
+              )
+            );
+          } catch (error) {
+            if (isAbortError(error)) {
+              send({
+                type: "error",
+                error: "The AI service took too long to respond. Please try again.",
+                code: "upstream_timeout",
+                retryable: true,
+              });
+            } else {
+              console.error("LLM request failed");
+              send({
+                type: "error",
+                error: "Could not reach the AI service. Please try again.",
+                code: "upstream_unreachable",
+                retryable: true,
+              });
+            }
+            emitTrace();
+            send({ type: "done" });
+            finish();
+            return;
+          }
+
+          if (!response.ok) {
+            console.error("LLM API error", response.status);
+            const failure = classifyUpstreamFailure(response.status);
+            send({ type: "error", ...failure });
+            emitTrace();
+            send({ type: "done" });
+            finish();
+            return;
+          }
+
+          const data = await response.json();
+          const choice = data.choices?.[0];
+          const providerCalls: ProviderToolCall[] = choice?.message?.tool_calls ?? [];
+          const content: string = choice?.message?.content || "";
+
+          // No tools requested (or none allowed): this is the answer.
+          if (providerCalls.length === 0) {
+            answer = content;
+            break;
+          }
+
+          // Record the assistant turn that requested the tools, so the
+          // follow-up call has a coherent history.
+          messages.push({ role: "assistant", content, tool_calls: providerCalls });
+
+          for (const providerCall of providerCalls) {
+            const name = providerCall.function?.name ?? "unknown";
+            const args = parseToolArgs(providerCall.function?.arguments);
+            const callId = providerCall.id ?? `${name}-${toolCount}`;
+            const label = formatToolCall(name, args);
+
+            const running: ChatToolCall = { id: callId, name, label, status: "running" };
+            send({ type: "tool_call", call: running });
+
+            const result = executeTool({ id: callId, name, args });
+            toolCount += 1;
+            result.sources.forEach((source) => sources.push(source));
+            if (result.refused) refusals.push(`${name}: ${result.summary}`);
+
+            const href =
+              name === "navigate_to" &&
+              result.output &&
+              typeof result.output === "object" &&
+              "href" in result.output
+                ? String((result.output as { href: unknown }).href)
+                : undefined;
+
+            send({
+              type: "tool_result",
+              call: {
+                ...running,
+                status: "done",
+                summary: result.summary,
+                durationMs: result.durationMs,
+                refused: result.refused,
+                href,
+              },
+            });
+
+            messages.push({
+              role: "tool",
+              tool_call_id: callId,
+              name,
+              content: JSON.stringify(result.output),
+            });
+          }
+        }
+
+        if (!answer) {
+          answer = "I could not put together an answer for that. Try rephrasing, or reach out to Nikunj directly.";
+        }
+
+        // appendContextualLinks still runs, but tools already resolved most
+        // navigation, so it now only fills gaps.
+        const finalText = appendContextualLinks(message, answer);
+
+        // Streamed in chunks so markdown paints progressively. The provider
+        // response is already complete here; this is presentation pacing.
+        const CHUNK = 24;
+        for (let index = 0; index < finalText.length; index += CHUNK) {
+          send({ type: "text_delta", text: finalText.slice(index, index + CHUNK) });
+        }
+
+        emitTrace();
+
+        // Suggestions last: off the critical path entirely now.
+        const elapsedMs = Date.now() - requestStartedAt;
+        const remainingBudgetMs = CHAT_TOTAL_RESPONSE_BUDGET_MS - elapsedMs;
+        const priorUserTexts = getPriorUserTexts(recentMessages, message);
+
+        const followUpSuggestions =
+          remainingBudgetMs >= 1_200
+            ? await generateAISuggestions(
+                message,
+                answer,
+                recentMessages,
+                invokeUrl,
+                headers,
+                Math.min(CHAT_SUGGESTION_TIMEOUT_MS, remainingBudgetMs - 250),
+                priorUserTexts
+              )
+            : buildFallbackSuggestions(message, answer, recentMessages, priorUserTexts);
+
+        if (followUpSuggestions.length > 0) {
+          send({ type: "suggestions", suggestions: followUpSuggestions });
+        }
+
+        send({ type: "done" });
+        finish();
+      } catch {
+        console.error("AI response handling failed");
+        send({
+          type: "error",
+          error: "Something went wrong while processing that message. Please retry.",
+          code: "internal_error",
+          retryable: true,
+        });
+        send({ type: "done" });
+        finish();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      ...rateLimitHeaders,
+      "Content-Type": CHAT_STREAM_CONTENT_TYPE,
+      "Cache-Control": "no-store",
+      "X-Accel-Buffering": "no",
+    },
+  });
 }
+
 
 async function generateAISuggestions(
   currentMessage: string,

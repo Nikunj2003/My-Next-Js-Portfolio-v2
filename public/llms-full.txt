@@ -16,9 +16,23 @@ Core areas:
 ## Canonical content URLs
 - Home: https://nikunj.codenex.dev/
 - Resume PDF: https://nikunj.codenex.dev/Nikunj_Resume.pdf
+- Case study index: https://nikunj.codenex.dev/work
+- Case study, LLM Evaluation Platform: https://nikunj.codenex.dev/work/llm-evaluation-platform
+- Case study, Governed MCP Tool Registry: https://nikunj.codenex.dev/work/governed-mcp-registry
+- Case study, Code Intelligence Gateway: https://nikunj.codenex.dev/work/code-intelligence-gateway
+- Case study, Knowledge Graph RAG: https://nikunj.codenex.dev/work/knowledge-graph-rag
+- Case study, Documentation Automation Platform: https://nikunj.codenex.dev/work/documentation-automation
+- Case study, Sentinel Test Generation Agent: https://nikunj.codenex.dev/work/sentinel-test-agent
+- Case study, Business Data Layer for Agents: https://nikunj.codenex.dev/work/bi-platform
+- Case study, Quill: https://nikunj.codenex.dev/work/quill
+- Case study, CodeNex AI API Proxy: https://nikunj.codenex.dev/work/codenex-ai-proxy
+- Case study, CodeNex: https://nikunj.codenex.dev/work/codenex
+- Case study, Fantasy GPT: https://nikunj.codenex.dev/work/fantasy-gpt
+- Case study, AIKO: https://nikunj.codenex.dev/work/aiko
+- Case study, Serenify: https://nikunj.codenex.dev/work/serenify
 - About section: https://nikunj.codenex.dev/#about
 - Experience section: https://nikunj.codenex.dev/#experience
-- Projects section: https://nikunj.codenex.dev/#projects
+- Work section: https://nikunj.codenex.dev/#work
 - Skills section: https://nikunj.codenex.dev/#skills
 - AI Twin section: https://nikunj.codenex.dev/#ai-twin
 - Contact section: https://nikunj.codenex.dev/#contact
@@ -30,35 +44,148 @@ Core areas:
 - Contact email: njkhitha2003@gmail.com
 - Location signal: Gurugram, Haryana, India
 
-## Featured projects
-1. CodeNex: AI Builder
-   - Live URL: https://www.codenex.dev/
-   - URL: https://github.com/Nikunj2003/Codenex-backend-v1
-   - Summary: AI codegen SaaS that turns natural-language prompts into full React applications using Spring Boot and Spring AI, with SSE streaming, MinIO/NFS persistence, and Kubernetes preview pods.
-   - Stack signals: Java, Spring Boot, Spring AI, React, TypeScript, SSE, Kubernetes, MinIO, Stripe.
+## The AI Twin on this site
 
-2. CodeNex AI API Proxy
-   - URL: https://github.com/Nikunj2003/codenex-ai-api-proxy
-   - Summary: OpenAI-compatible AI gateway with provider abstraction, multi-account load balancing, health-aware fallbacks, Redis-backed response caching, streaming support, and operational controls.
-   - Stack signals: Go, Gin, Redis, PostgreSQL, React, OpenAI-compatible APIs.
+The assistant on nikunj.codenex.dev is itself a portfolio artifact rather than a support widget. It runs a tool-calling agent loop (up to three tool rounds) over an OpenAI-compatible endpoint, streaming NDJSON events to the browser.
 
-3. Serenify
-   - Live URL: https://serenify.codenex.dev/
-   - Source URL: https://github.com/Nikunj2003/Serenify
-   - Summary: Open-source AI wellness product with empathetic Gemini-powered chat, mood tracking, journaling, guided sessions, crisis-help flows, privacy-aware analytics, and pgvector-backed personalization.
-   - Stack signals: React, TypeScript, Supabase, pgvector, Gemini AI, Vercel.
+- Tools: search_work (ranked search across systems, projects, and experience), get_case_study (full detail on one system), get_metric (a measured value with its measurement context), compare_systems (side-by-side), navigate_to (allow-listed navigation the agent performs on the page).
+- Every tool call is shown to the visitor as it executes, with a collapsible trace reporting rounds, latency, grounding sources, and any refusals.
+- get_metric can return measured:false, so the agent says a figure is not published instead of inventing one. navigate_to is allow-listed, so the agent cannot invent a destination.
+- The design intent: the mechanics the case studies describe in prose — tool calling, governed permissions, evaluation discipline — are demonstrated by the site's own behaviour.
 
-4. CodeNex Images
+## Engineering case studies
+
+These are the deepest technical write-ups on the site — 13 in total, spanning production systems built at ArmorCode, GenAI product work at Xansr Media, and independently built products — each covering the problem, constraints, architecture, the decisions taken and the alternatives rejected, measured results, and an explicit statement of what was individually owned versus shared. Indexed by theme at https://nikunj.codenex.dev/work — agent systems, retrieval and context, platform and reliability, and AI products
+
+1. LLM Evaluation Platform — https://nikunj.codenex.dev/work/llm-evaluation-platform
+   - An OpenTelemetry and Langfuse platform that gates every prompt, model, agent, and tool change on measured accuracy, latency, and cost.
+   - Instrumentation happens at the single LiteLLM gateway, so one config change covers every model call in the organization.
+   - Scorer ladder, cheapest first: deterministic checks, then scikit-learn precision/recall with a minority-class recall floor, then Ragas faithfulness and answer relevancy, then LLM-as-a-judge.
+   - Judges must agree with held-out human labels at Cohen's kappa >= 0.7 before they are allowed to gate anything.
+   - 9 AI surfaces scored against golden datasets; offline runs gate in Jenkins CI, 5-10% of live traffic is scored continuously for drift.
+   - Ownership: the evaluation framework is Nikunj's; the self-hosted Langfuse deployment underneath it is owned by platform DevOps.
+   - Stack signals: OpenTelemetry, Langfuse, LiteLLM, Ragas, scikit-learn, pytest, Python, Jenkins, n8n, AWS Bedrock.
+
+2. Governed MCP Tool Registry — https://nikunj.codenex.dev/work/governed-mcp-registry
+   - 9 of the 14 production MCP servers in a shared enterprise registry, with OAuth2/RBAC, tool-level permission tiers, explicit denial behavior, and audit attribution under multi-tenant AppSec constraints.
+   - 20 of 20 authorization checks passing across three permission tiers.
+   - Distribution solved with desktop extension bundles after rejecting a public endpoint with IP allowlist, a tunnel/reverse proxy, a CLI-based client, and vendor-managed MCP tunnels.
+   - Reliability: restored a codebase-search service after 100+ queries returned zero content, isolating two independent root causes by reading SDK source and host internals — an output schema the tool could never populate, and a query deadline sized for the wrong client timeout tier.
+   - Stack signals: Model Context Protocol, Go, OAuth2, RBAC, Python, n8n, LiteLLM, AWS, Docker.
+
+3. Code Intelligence Gateway — https://nikunj.codenex.dev/work/code-intelligence-gateway
+   - Agent-facing code search over 8 product repositories, taken from a container proof of concept to serverless production.
+   - The other failure class on the same service as the registry RCA: a storage-throughput problem, not a protocol defect.
+   - Root cause: shared-volume burst-throughput credits drained by query-time index reads plus a 30-minute re-clone and re-index of 8 repositories on the same volume. Identified by a copy of 76KB across 6 files taking 14 minutes — latency uncorrelated with data volume.
+   - Fix: index and checkout moved to local ephemeral storage, the gateway took ownership of its own git sync, startup made non-blocking so health answers immediately, git operations serialized behind a mutex, and a warmup gate so queries report warming up rather than answering from a half-populated index.
+   - Rejected: paying for a higher provisioned-throughput storage tier, which would treat a design mistake as a billing line.
+   - Ownership: the service design, deployment specification, and root-cause analysis are Nikunj's; infrastructure-as-code and cluster provisioning were executed by platform DevOps against that specification.
+   - Stack signals: Go, Docker, AWS Fargate, AWS ECS, Model Context Protocol, Neo4j, ripgrep.
+
+4. Knowledge Graph RAG — https://nikunj.codenex.dev/work/knowledge-graph-rag
+   - Tenant-scoped retrieval over 1M+ entities in Neo4j and pgvector, fed by four ETL pipelines each with an incremental update path.
+   - Five independently measured failure layers: ingestion integrity, knowledge-graph extraction quality, retrieval quality, answer quality, and operations.
+   - Retrieval scored on recall@k, MRR, and context precision per query mode and per question type, producing a documented mode-per-tool policy.
+   - Golden question set drawn from 75-100 real production traces rather than invented questions.
+   - Stack signals: Neo4j, pgvector, PostgreSQL, Python, FastAPI, Ragas, Langfuse, OpenTelemetry, MCP.
+
+5. Documentation Automation Platform — https://nikunj.codenex.dev/work/documentation-automation
+   - A multi-agent pipeline that drafts product documentation from source code and tickets, reworked after production use showed that an agent given thin context writes confident, imprecise prose.
+   - The defining decision: a clarification gate. The agent compiles a numbered list of what it cannot resolve from the evidence and waits for answers before drafting anything.
+   - Codebase search is mandatory, not a fallback — at least two queries per article, because only the code authoritatively names a field or UI label.
+   - Related tickets are discovered by a bounded recency-and-status search rather than trusting link graphs alone.
+   - Writing rules were distilled from the last several published release notes, with patterns that violated existing rules deliberately excluded rather than encoded.
+   - A change collector over 6 repositories feeds a queue processed one item at a time, trading throughput for correctness to avoid template collisions.
+   - Stack signals: n8n, Model Context Protocol, Python, CLI agents, Confluence, Zendesk, GitHub, AWS Bedrock.
+
+6. Sentinel Test Generation Agent — https://nikunj.codenex.dev/work/sentinel-test-agent
+   - A multi-step agent generating test cases from tickets, grounded in a graph of the actual code, uploading reviewed cases to the test management system.
+   - The integration contract: a one-to-many ticket-to-case mapping, so downstream automation stops with a structured validation error rather than reporting success on untested work.
+   - A code graph was chosen over a lighter code-indexing tool that was evaluated first and rejected for insufficient relationship depth.
+   - Parallel tool calls within a single agent turn to cut multi-source context latency.
+   - Write paths are rate limited per host: 10 requests an hour on ticket writes, 100 on test-management writes.
+   - Stated honestly as an evolving product: generation, upload, grounding, and parallel tool calls are delivered; the enforced traceability contract and a reviewer sub-agent are in progress or designed but not yet shipped.
+   - Stack signals: n8n, Model Context Protocol, Neo4j, CLI agents, Python, Jira, AWS Bedrock.
+
+7. Business Data Layer for Agents — https://nikunj.codenex.dev/work/bi-platform
+   - The governed data layer the business agents answer from, replacing a vendor reporting tool and the local notebooks feeding it.
+   - Exposed over MCP, it became the data source behind the support, customer success, sales, and executive-office agents — business context under the same access controls a human would face.
+   - A region-qualified composite tenant key resolved colliding integer organization identifiers across deployments; it is built before every other pipeline because all downstream joins depend on unambiguous identity.
+   - PostgreSQL chosen over two column-oriented engines, with the condition for revisiting written down: roughly 50 million snapshot-fact rows.
+   - Schema pruned from over 30 tables to 12, every remaining column required to trace to a surface that reads it.
+   - Loads gated on a manifest so a partially written batch cannot be read as complete; row-level plus dashboard-level access control.
+   - 19 dashboards migrated to parity, 4 production environments and 10+ external sources consolidated.
+   - Stack signals: Python, PostgreSQL, Apache Superset, AWS S3, FastAPI, Docker, Jenkins, Model Context Protocol.
+
+8. Quill — https://nikunj.codenex.dev/work/quill
+   - A desktop review application that makes AI-written documentation reviewable by the documentation team rather than only by engineers who can read a raw diff.
+   - Each open proposal gets its own working tree, so the primary checkout is never modified and parallel reviews cannot collide; paths are validated against traversal.
+   - Permissions are delegated entirely to the source-control platform's live tiers — there is no application-managed access list to drift out of sync.
+   - The published theme is vendored so reviewers see what readers will actually get, with word-level highlighting.
+   - A real terminal session opens in the active working tree so a reviewer can re-run the authoring agent in place.
+   - Maturity, stated precisely: Quill is an internal release; the documentation-synchronization workflow it supports runs in production.
+   - Stack signals: Electron, React, TypeScript, Git, GitHub API, TinyMCE, node-pty, GitHub Actions.
+
+9. CodeNex AI API Proxy — https://nikunj.codenex.dev/work/codenex-ai-proxy
+   - Open-source gateway presenting one compatible API surface in front of 6 provider backends, with format translation and streaming preserved through it.
+   - Source: https://github.com/Nikunj2003/codenex-ai-api-proxy
+   - Health-tracked provider pool with least-recently-used selection and automatic recovery, rather than permanently blacklisting a provider after a transient rate limit.
+   - Routing inferred from the requested model name, so clients need no per-provider configuration.
+   - Two deliberate implementations: a process-supervised runtime with metrics and caching, and a single compiled binary for low-footprint deployments.
+   - Worker supervision restarts crashed workers so one bad request cannot take the gateway down.
+   - Stack signals: Go, Gin, Node.js, Redis, PostgreSQL, React, OpenAI-compatible APIs.
+
+10. CodeNex — https://nikunj.codenex.dev/work/codenex
+   - An AI builder turning a prompt into a running React application, built as a distributed system rather than a model wrapper.
+   - Live product: https://www.codenex.dev/ · Source: https://github.com/Nikunj2003/Codenex-backend-v1
+   - Account, workspace, and intelligence split into separate services behind a Spring Cloud gateway, with configuration pulled from a central config service — generation load and auth traffic scale independently.
+   - Every project gets an isolated preview environment addressed by its own subdomain, so browser origin boundaries do the isolation rather than application-level path checks.
+   - Generated files are pushed to object storage and watched into the preview namespace, so artifacts survive the generating pod and previews can rebuild without re-running the model.
+   - Generation streams over server-sent events, removing the timeout ceiling a buffered response would impose.
+   - Stack signals: Java, Spring Boot, Spring AI, Spring Cloud Gateway, React, TypeScript, Kubernetes, PostgreSQL, Kafka, Redis, MinIO, Stripe.
+
+11. Fantasy GPT — https://nikunj.codenex.dev/work/fantasy-gpt
+   - A multi-step reasoning SQL RAG system on a fine-tuned in-house model, answering live cricket questions against continuously ingested match data in under thirty seconds.
+   - SQL generation over document retrieval, because the questions were quantitative and the answers had to be computed rather than retrieved.
+   - Multi-step reasoning chains, so a question that decomposes into dependent queries can be answered at all.
+   - A fine-tuned in-house model for dense domain vocabulary and a schema-specific query surface, with inference kept on internal infrastructure.
+   - Live ETL treated as part of the answer path: freshness is a system property when the match is still in progress.
+   - 98% of complex sports queries resolved end to end, with automated quality checks rather than spot-checking.
+   - Employer: Xansr Media. Stack signals: Python, FastAPI, LangGraph, SQL RAG, fine-tuned LLaMA, Microsoft SQL Server, DeepEval.
+
+12. AIKO — https://nikunj.codenex.dev/work/aiko
+   - A personalized voice sports companion: persona building per listener, bidirectional live speech, reasoning over a running match, and catch-up highlight reels with generated commentary.
+   - Commentary is generated rather than spliced from the broadcast, so a reel can address someone who joined mid-match, in their language, at their level of detail.
+   - Persona is the personalization primitive — highlight selection and commentary tone both read from one model of the listener instead of being personalized separately.
+   - 20+ languages supported for live commentary and conversation. Presented at IBC 2024 in Amsterdam.
+   - Ownership: contributed to the voice workflows, personalization layer, and profile-driven highlight generation as a GenAI intern; AIKO is a Xansr Media product built by a team.
+   - Stack signals: Python, Node.js, FastAPI, Azure Speech SDK, LLM commentary generation, Docker.
+
+13. Serenify — https://nikunj.codenex.dev/work/serenify
+   - An AI wellness product where the hard problems are trust ones: what the model may see, and what must happen when a conversation turns to crisis.
+   - Live product: https://serenify.codenex.dev/ · Source: https://github.com/Nikunj2003/Serenify
+   - Per-user isolation enforced at the database against the authenticated identity, so a wrong query cannot return another user's rows.
+   - Granular user controls over which categories of personal data the assistant may read — privacy and personalization genuinely trade off, so the user sets the balance.
+   - Retrieval over documents the user chose to share, embedded in the same per-user isolated store.
+   - Crisis language surfaces real helpline and emergency resources directly rather than relying on the model to respond well.
+   - A known limitation is documented in the repository rather than hidden: the current open-source build calls the model client-side, exposing the API key; the fix is to proxy calls server-side.
+   - Stack signals: React, TypeScript, Supabase, PostgreSQL, pgvector, Gemini, Vite, Vercel.
+
+## Other projects
+
+These have project cards on the homepage rather than full case studies. CodeNex, Serenify, and the CodeNex AI API Proxy are covered in the case studies above.
+
+1. CodeNex Images
    - URL: https://github.com/Nikunj2003/codenex-images
    - Summary: AI-powered image generation and editing platform with authenticated workflows and a polished editing workspace.
    - Stack signals: React, TypeScript, Vite, Auth0, Gemini AI, Node.js, MongoDB.
 
-5. Resume Fit — CodeNex
+2. Resume Fit — CodeNex
    - URL: https://github.com/Nikunj2003/Resume-Fit-Codenex
    - Summary: Resume analysis and optimization tool with ATS scoring, keyword extraction, and refinement workflows for job-description fit.
    - Stack signals: React, TypeScript, Gemini AI, Vercel AI SDK, Recharts.
 
-6. LLaMa MCP Streamlit
+3. LLaMa MCP Streamlit
    - URL: https://github.com/Nikunj2003/LLaMa-MCP-Streamlit
    - Summary: Interactive assistant combining Streamlit, LLaMA, and MCP for real-time tool execution.
    - Stack signals: Python, Streamlit, MCP, LLaMA, NVIDIA NIM.

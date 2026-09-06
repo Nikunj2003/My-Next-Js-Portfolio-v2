@@ -1,4 +1,4 @@
-export const CHAT_STORAGE_VERSION = 1;
+export const CHAT_STORAGE_VERSION = 2;
 export const CHAT_STORAGE_TTL_MS = 7 * 24 * 60 * 60_000;
 
 export type ChatStorageEnvelope<T> = {

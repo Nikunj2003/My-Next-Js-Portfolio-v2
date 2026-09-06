@@ -16,7 +16,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "node --test --experimental-strip-types tests/*.test.ts"
+    "test": "node --test --experimental-strip-types --import ./tests/alias-hook-register.mjs tests/*.test.ts"
   },
   "keywords": [
     "portfolio",

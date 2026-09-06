@@ -789,6 +789,13 @@ const useFluidCursor = (
         filtering
       );
 
+    // These three are recreated unconditionally on every size change (unlike
+    // dye/velocity, which go through resizeDoubleFBO and short-circuit when the
+    // size is unchanged). Free the old ones first or they leak every call.
+    deleteFBO(divergence);
+    deleteFBO(curl);
+    deleteDoubleFBO(pressure);
+
     divergence = createFBO(
       simRes.width,
       simRes.height,
@@ -853,6 +860,9 @@ const useFluidCursor = (
     return {
       texture,
       fbo,
+      // Kept so the FBO can be freed. Without it the texture handle was
+      // unreachable and every recreated FBO leaked GPU memory.
+      texture,
       width: w,
       height: h,
       texelSizeX,
@@ -863,6 +873,26 @@ const useFluidCursor = (
         return id;
       },
     };
+  }
+
+  /**
+   * Frees one FBO's GPU resources.
+   *
+   * Nothing in this file used to call gl.delete* at all, so every simulation
+   * buffer recreated on a resize was leaked. initFramebuffers() runs on each
+   * reported size change — i.e. continuously while a window is drag-resized —
+   * so the leak was unbounded and independent of unmount.
+   */
+  function deleteFBO(target) {
+    if (!target) return;
+    if (target.fbo) gl.deleteFramebuffer(target.fbo);
+    if (target.texture) gl.deleteTexture(target.texture);
+  }
+
+  function deleteDoubleFBO(target) {
+    if (!target) return;
+    deleteFBO(target.read);
+    deleteFBO(target.write);
   }
 
   function createDoubleFBO(w, h, internalFormat, format, type, param) {
@@ -913,6 +943,8 @@ const useFluidCursor = (
       type,
       param
     );
+    // The previous write FBO is replaced, so free it rather than dropping it.
+    deleteFBO(target.write);
     target.write = createFBO(w, h, internalFormat, format, type, param);
     target.width = w;
     target.height = h;
@@ -1248,6 +1280,31 @@ const useFluidCursor = (
     listeners.forEach(({ target, type, fn, opts }) => {
       target.removeEventListener(type, fn, opts);
     });
+
+    /**
+     * Free GPU resources.
+     *
+     * This used to stop at the rAF loop and the listeners, so every mount/unmount
+     * cycle leaked a full set of textures, framebuffers, programs, and buffers.
+     * The caller remounts the canvas whenever pointer type, reduced-motion, or
+     * the breakpoint changes, and browsers cap concurrent WebGL contexts at
+     * roughly 16 — so repeated toggling could exhaust them and the effect would
+     * silently stop working.
+     */
+    try {
+      deleteDoubleFBO(dye);
+      deleteDoubleFBO(velocity);
+      deleteDoubleFBO(pressure);
+      deleteFBO(divergence);
+      deleteFBO(curl);
+
+      // Ask the driver to drop the context outright; this releases anything the
+      // explicit deletes above missed (programs, shaders, the blit buffers).
+      const loseContext = gl.getExtension("WEBGL_lose_context");
+      loseContext?.loseContext();
+    } catch {
+      // Teardown is best-effort: the context may already be gone.
+    }
   };
 
   const handleMouseDown = (e: MouseEvent) => {

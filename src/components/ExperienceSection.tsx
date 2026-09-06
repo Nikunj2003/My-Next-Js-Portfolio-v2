@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-  AnimatePresence,
   motion,
   useMotionValue,
   useReducedMotion,
@@ -10,83 +9,11 @@ import {
   useTransform,
   type MotionValue,
 } from "framer-motion";
-import { useInView } from "react-intersection-observer";
 import { Briefcase, CalendarDays, GraduationCap } from "lucide-react";
 import { experiences, type Experience } from "@/data/portfolio";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
-
-const CHAPTER_WORDS = ["adventure", "chapter", "journey"];
-
-function FlipChapter() {
-  const [currentWord, setCurrentWord] = useState(CHAPTER_WORDS[0]);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
-  const shouldReduceMotion = useReducedMotion();
-
-  const startAnimation = useCallback(() => {
-    const word = CHAPTER_WORDS[CHAPTER_WORDS.indexOf(currentWord) + 1] || CHAPTER_WORDS[0];
-    setCurrentWord(word);
-    setIsAnimating(true);
-  }, [currentWord]);
-
-  useEffect(() => {
-    const handler = () => setIsVisible(!document.hidden);
-    document.addEventListener("visibilitychange", handler);
-    return () => document.removeEventListener("visibilitychange", handler);
-  }, []);
-
-  useEffect(() => {
-    if (!isAnimating && isVisible) {
-      const id = window.setTimeout(() => startAnimation(), 3000);
-      return () => window.clearTimeout(id);
-    }
-  }, [isAnimating, isVisible, startAnimation]);
-
-  return (
-    <motion.h3
-      initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: shouldReduceMotion ? 0.2 : 0.5 }}
-      className="mt-6 inline-flex flex-nowrap items-baseline whitespace-nowrap text-left text-[0.95rem] font-semibold text-foreground min-[380px]:text-base sm:text-xl md:text-2xl lg:mt-8 lg:text-lg xl:text-xl 2xl:text-2xl"
-    >
-      And a new{" "}
-      <span className="relative inline-grid w-[9ch] overflow-hidden px-2 text-center text-primary">
-        <AnimatePresence initial={false} onExitComplete={() => setIsAnimating(false)}>
-          <motion.span
-            key={currentWord}
-            initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={
-              shouldReduceMotion
-                ? { duration: 0.2 }
-                : { type: "spring", stiffness: 100, damping: 10 }
-            }
-            exit={
-              shouldReduceMotion
-                ? { opacity: 0 }
-                : { opacity: 0, y: -40, filter: "blur(8px)", scale: 1.15 }
-            }
-            className="col-start-1 row-start-1 inline-block"
-          >
-            {currentWord.split("").map((letter, index) => (
-              <motion.span
-                key={`${currentWord}-${index}`}
-                initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10, filter: "blur(8px)" }}
-                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                transition={{ delay: index * (shouldReduceMotion ? 0.02 : 0.08), duration: shouldReduceMotion ? 0.18 : 0.4 }}
-                className="inline-block"
-              >
-                {letter}
-              </motion.span>
-            ))}
-          </motion.span>
-        </AnimatePresence>
-      </span>{" "}
-      ahead
-    </motion.h3>
-  );
-}
+import FlipWords from "@/components/ui/flip-words";
+import Reveal from "@/components/ui/reveal";
 
 function TimelineIcon({
   timelineRef,
@@ -177,20 +104,20 @@ function ExperienceItem({
   return (
     <li ref={ref} className="relative mb-12 flex w-full flex-col gap-1 pl-[50px] sm:mb-16 sm:pl-[90px]">
       <TimelineIcon timelineRef={timelineRef} lineProgress={lineProgress} />
-      <SpotlightCard delay={index * 0.05} className="h-full">
+      <SpotlightCard delay={index * 0.08} className="h-full">
         <div className="p-6 md:p-8">
           <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
-              <h3 className="text-xl font-bold text-foreground md:text-2xl">{exp.role}</h3>
+              <h3 className="heading-md text-foreground">{exp.role}</h3>
               <span className="mt-1 block font-medium text-primary">{exp.company}</span>
             </div>
 
             <div className="flex w-full flex-col items-end gap-2 md:w-auto md:flex-none">
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-mono font-medium uppercase tracking-wide text-muted-foreground">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 glass-subtle px-3 py-1.5 text-[11px] font-mono font-medium uppercase tracking-wide text-muted-foreground">
                 <MetaIcon className="h-3.5 w-3.5" />
                 {metaLabel}
               </span>
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-mono font-medium text-muted-foreground">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 glass-subtle px-3 py-1.5 text-xs font-mono font-medium text-muted-foreground">
                 <CalendarDays className="h-3.5 w-3.5" />
                 {exp.period}
               </span>
@@ -287,19 +214,14 @@ const ExperienceSection = () => {
     };
   }, [scrollYProgress, shouldReduceMotion]);
 
-  const [sectionRef, inView] = useInView({ triggerOnce: true, threshold: 0 });
 
   return (
     <section id="experience" className="section-padding relative z-10">
-      <div className="container-narrow" ref={sectionRef}>
+      <div className="container-narrow">
         <div className="flex flex-col items-start gap-12 lg:flex-row lg:gap-20">
           <div className="w-full shrink-0 lg:sticky lg:top-32 lg:w-1/3">
-            <motion.div
-              initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: -30 }}
-              animate={inView ? { opacity: 1, x: 0 } : {}}
-              transition={{ duration: shouldReduceMotion ? 0.2 : 0.7, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <div className="relative overflow-hidden rounded-[2rem] border border-white/10 glass-subtle p-6 shadow-[0_0_40px_rgba(41,214,185,0.08)]">
+            <Reveal axis="x" offset={-24}>
+              <div className="panel-sticky">
                 <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
                 <div className="absolute -bottom-20 -left-16 h-40 w-40 rounded-full bg-accent/10 blur-3xl" />
 
@@ -307,7 +229,7 @@ const ExperienceSection = () => {
                   <div className="mb-6 inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-mono text-primary">
                     Journey
                   </div>
-                  <h2 className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl">
+                  <h2 className="heading-xl mb-6">
                     Professional <br className="hidden lg:block" />
                     <span className="text-gradient">Experience</span>
                   </h2>
@@ -316,11 +238,15 @@ const ExperienceSection = () => {
                   </p>
 
                   <div className="hidden lg:block">
-                    <FlipChapter />
+                    <p className="mt-6 inline-flex flex-nowrap items-baseline whitespace-nowrap text-base font-semibold text-foreground sm:text-xl lg:mt-8">
+                    And a new{" "}
+                    <FlipWords words={["adventure", "chapter", "journey"]} slotWidth={9} className="px-2 text-primary" />{" "}
+                    ahead
+                  </p>
                   </div>
                 </div>
               </div>
-            </motion.div>
+            </Reveal>
           </div>
 
           <div className="relative w-full lg:w-2/3" ref={timelineRef}>
@@ -328,7 +254,7 @@ const ExperienceSection = () => {
 
             <motion.div
               style={{ scaleY: shouldReduceMotion ? 1 : scrollYProgress }}
-              className="absolute bottom-0 left-[24px] top-0 w-[2px] origin-top rounded-full bg-primary shadow-[0_0_6px_rgba(41,214,185,0.18)] sm:left-[44px] sm:shadow-[0_0_12px_rgba(41,214,185,0.24)]"
+              className="absolute bottom-0 left-[24px] top-0 w-[2px] origin-top rounded-full bg-primary glow-accent-xs sm:left-[44px]"
             />
 
             <ul className="relative w-full py-4">
@@ -344,7 +270,11 @@ const ExperienceSection = () => {
             </ul>
 
             <div className="mt-8 pl-[50px] lg:hidden sm:pl-[90px]">
-              <FlipChapter />
+              <p className="mt-6 inline-flex flex-nowrap items-baseline whitespace-nowrap text-base font-semibold text-foreground sm:text-xl lg:mt-8">
+                    And a new{" "}
+                    <FlipWords words={["adventure", "chapter", "journey"]} slotWidth={9} className="px-2 text-primary" />{" "}
+                    ahead
+                  </p>
             </div>
           </div>
         </div>

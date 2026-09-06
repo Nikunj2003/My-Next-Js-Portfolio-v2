@@ -22,7 +22,7 @@ I also deliver the tool and context layer those agents run on: 9 of the 14 produ
 
 Day to day this is embedded delivery. I co-build Agentic Office OS with teammates, working with an external business consultant, executives, and teams across QA, Documentation, Technical Support, Customer Success, Sales, Product, and the Office of the CEO to turn ambiguous requirements into agents, skills, MCP integrations, and approval workflows — then staying on through rollout, debugging, enablement, and iteration. Earlier, as an intern, I created the initial Java framework for Anya, ArmorCode's platform agent, and designed and owned its short- and long-term memory layers.
 
-I like the failure modes most. I restored our codebase-search MCP service after 46 consecutive queries returned zero content, isolating a Go output-schema defect and a client timeout-tier mismatch by reading SDK and host internals, then shipped the fix with a negative-control test and flagged two other connectors carrying the same misconfiguration. On the cost side, I traced 57% of gateway spend across 6,372 requests to two automations and fixed it with a model migration and prompt caching — while naming the deterministic rewrite that would have saved a further ~95%.
+I like the failure modes most. I restored our codebase-search MCP service after 100+ queries returned zero content, isolating a Go output-schema defect and a client timeout-tier mismatch by reading SDK and host internals, then shipped the fix with a negative-control test and flagged 14 exposed connectors carrying the same misconfiguration. On the cost side, I traced 57% of gateway spend across 50,000+ requests to 10+ automations and fixed it with a model migration and prompt caching — while naming the deterministic rewrite that would have saved a further ~95%.
 
 Also: Quill, an Electron documentation review app that keeps AI-drafted docs reviewable; and CodeNex, a public Spring AI product with streaming generation and Kubernetes preview environments.
 
@@ -53,13 +53,13 @@ The umbrella platform the rest of my work plugs into: fully autonomous, human-tr
 
 - Delivered **9 of the 14 production MCP servers** in ArmorCode's shared enterprise tool registry, under multi-tenant AppSec constraints where a single authorization slip leaks another customer's vulnerability data — implementing OAuth2/RBAC, tool-level permission tiers, explicit denial behavior, and audit attribution. Validated one 23-tool integration across three permission tiers with **20/20 authorization checks passing**.
 - Sole maintainer of company-wide model and MCP access on a **LiteLLM gateway**: I own the approved model catalog configuration, issue scoped API keys with per-model access and spend budgets for individual agents, automations, and team POCs, and maintain RBAC-gated distribution of internal MCP servers out to employees' Claude Desktop via an `.mcpb` proxy.
-- Cut recurring LLM spend after a budget alert by tracing **57%** of gateway cost across **6,372 requests** to two automations, root-causing it to a bulk historical backfill rather than the model itself, then migrating models and splitting system/user prompts to enable Bedrock prompt caching — while documenting that a deterministic regex/JS rewrite of those binary classification tasks would have saved a further **~95%**.
+- Cut recurring LLM spend after a budget alert by tracing **57%** of gateway cost across **50,000+ requests** to **10+ automations**, root-causing it to a bulk historical backfill rather than the model itself, then migrating models and splitting system/user prompts to enable Bedrock prompt caching — while documenting that a deterministic regex/JS rewrite of those binary classification tasks would have saved a further **~95%**.
 
 ##### Agent Context: Retrieval and Code Intelligence
 
 - Built ArmorCode's tenant-scoped **knowledge-graph RAG** layer over **1M+ entities** — RCAs, test cases, and product documentation — in Neo4j and pgvector, giving Office OS agents grounded product knowledge without cross-tenant leakage. Retrieval is scored on recall@k, MRR, and context precision across five query modes, with a documented mode-per-tool policy.
 - Removed most CS and support escalations to engineering by building a **codebase-search MCP service in Go** over **8 product repositories**: an authenticated gateway with request queueing and per-query session isolation, fronting a read-only OpenCode agent that loops against a daily-reindexed local vector index, with **8 specialized agents** and **7 domain skills** for documentation generation, feature-flag cataloging, and tenant-configuration discovery. Only the question and the snippets the agent read ever leave the container.
-- Restored that service on two client surfaces after **46 consecutive queries returned zero content**, isolating two independent causes by reading SDK and host internals: a Go output-schema defect that made schema-aware clients discard every answer while a third surface kept working, and a query deadline sized for a longer client timeout tier. Shipped the fix with an isolated reproduction and a negative-control test, verified build/vet/test across nine packages, and flagged latent exposure on two other connectors carrying the same misconfiguration.
+- Restored that service on two client surfaces after **100+ queries returned zero content**, isolating two independent causes by reading SDK and host internals: a Go output-schema defect that made schema-aware clients discard every answer while a third surface kept working, and a query deadline sized for a longer client timeout tier. Shipped the fix with an isolated reproduction and a negative-control test, verified build/vet/test across nine packages, and flagged latent exposure on **14 connectors** carrying the same misconfiguration.
 - Replaced AWS QuickSight with a self-hosted **enterprise business-data layer**, consolidating **4 production AWS accounts** plus **10+ SaaS sources** — Salesforce, Zendesk, Pendo, Chorus, Vitally, Greenhouse, Loom — into a central S3 lake via cross-account replication, then into a PostgreSQL analytics database and Apache Superset with a **12-table star schema**, Jenkins-scheduled ETL, row-level RBAC, and **19 dashboards** at QuickSight parity. Exposed over MCP, it became the data source behind the TSE, CS, Sales, and Office-of-the-CEO agents.
 
 ##### Agent Memory, Execution & Developer Workflows
@@ -127,12 +127,12 @@ Built an open-source AI wellness product with empathetic chat, mood tracking, jo
 
 ## Featured Recommendations
 
-1. **CodeNex live product** — lead proof of full-stack AI product engineering.
-2. **CodeNex repository** — inspectable backend and platform implementation.
-3. **Governed MCP Platform case study** — authorization, ownership boundaries, and production validation.
-4. **AI Tooling Reliability case study** — protocol debugging, negative controls, and deployment remediation.
-5. **Anya or Agentic Office OS case study** — memory/evaluation architecture or embedded internal delivery.
-6. **Quill & Documentation Lifecycle case study** — developer-product and human-review workflow proof.
+1. **[LLM Evaluation Platform case study](https://nikunj.codenex.dev/work/llm-evaluation-platform)** — the strongest differentiator: architecture, the scorer ladder, judge validation at Cohen's kappa >= 0.7, and the ownership boundary against platform DevOps.
+2. **[Governed MCP Tool Registry case study](https://nikunj.codenex.dev/work/governed-mcp-registry)** — tool-level authorization under multi-tenant AppSec constraints, the distribution decision with its four rejected alternatives, and the protocol RCA.
+3. **[Knowledge Graph RAG case study](https://nikunj.codenex.dev/work/knowledge-graph-rag)** — retrieval over 1M+ entities, evaluated across five independent failure layers with a documented mode-per-tool policy.
+4. **[CodeNex live product](https://www.codenex.dev/)** — full-stack AI product engineering, shipped and clickable.
+5. **[CodeNex repository](https://github.com/Nikunj2003/Codenex-backend-v1)** — inspectable backend and platform implementation.
+6. **[CodeNex AI API Proxy](https://github.com/Nikunj2003/codenex-ai-api-proxy)** — Go gateway with provider abstraction, health-aware fallbacks, and Redis-backed caching.
 
 ## Skills
 

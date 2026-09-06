@@ -31,6 +31,30 @@
     --input: 175 20% 85%;
     --ring: 175 84% 32%;
     --radius: 0.75rem;
+
+    /* Glass blur scale. Three tiers for three kinds of surface, so the amount
+       of blur communicates depth rather than varying per component. Before
+       this, six different values were in use across nine surface types. */
+    --blur-surface: 12px;   /* in-page surfaces: cards, panels, pills */
+    --blur-chrome: 18px;    /* persistent chrome: navbar, toasts */
+    --blur-overlay: 24px;   /* modals over dimmed content: chat, palette */
+    --blur-scrim: 4px;      /* the dimming layer behind a modal */
+
+    /* Glass FILL opacity — the half of glass morphism that actually makes the
+       blur visible. A fill of the page colour at N% lets (100-N)% of the
+       blurred backdrop through; a fill of *white* at 2% lets 98% through and
+       reads flat no matter how much blur is applied. Both models were in use
+       (SpotlightCard at 68% background vs these utilities at 2% white), which
+       is why panels looked flat beside the cards next to them. One model now:
+       the page colour, mixed with transparent.
+
+       The percentages are written literally in the rules below rather than as
+       var() inside calc(): calc() in color-mix() cannot be resolved at build
+       time, so the minifier emits an opaque fallback that wins and the surface
+       loses its frost entirely. The three tiers are:
+         55%  light in-page surfaces: pills, small cards, secondary buttons
+         68%  standard cards and panels (the value SpotlightCard already used)
+         80%  chrome and overlays that must stay legible over content */
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
@@ -74,6 +98,11 @@
   html {
     position: relative;
     scroll-padding-top: calc(5rem + env(safe-area-inset-top));
+    /* Reserve the scrollbar track permanently. Radix dialogs lock scroll via
+       react-remove-scroll, which removes the scrollbar and widens the viewport
+       — that shifted the centre-aligned fixed navbar left on open and back on
+       close. Reserving the gutter means the width never changes. */
+    scrollbar-gutter: stable;
   }
 
   body {
@@ -139,60 +168,207 @@ textarea,
 }
 
 @layer utilities {
+  /* Glass surfaces: translucent fill + blur only.
+     They deliberately do NOT set a border. Call sites compose their own
+     (`glass-strong border-white/10`, `glass-subtle border-white/5`), and these
+     utilities are emitted late in the stylesheet — so baking a border in here
+     overrode those per-element classes and changed borders across the site.
+
+     Blur comes from the --blur-* tokens, one per kind of surface, so depth is
+     consistent instead of per-component. Do not hardcode a blur at a call site.
+
+     Two things here fail SILENTLY and are why this is plain CSS, not @apply:
+       1. Inside `@layer utilities`, an @apply list drops every declaration
+          after a variant-prefixed utility (`dark:`) or an opacity-modified
+          border colour. That left these compiling to a border and nothing else.
+       2. `dark:` compiles to `:is(.dark *)`; a hand-written `.dark .x` has
+          different specificity and wins or loses inconsistently.
+     Always verify against the built CSS, not the source. */
+  /* In-page surfaces. */
+  .glass-subtle,
+  .panel-sticky,
+  .btn-cta-secondary {
+    -webkit-backdrop-filter: blur(var(--blur-surface));
+    backdrop-filter: blur(var(--blur-surface));
+  }
+
+  /* Persistent chrome sits above content permanently, so it carries a little
+     more blur than an in-page card to read as a separate layer. */
+  .glass,
+  .glass-strong {
+    -webkit-backdrop-filter: blur(var(--blur-chrome));
+    backdrop-filter: blur(var(--blur-chrome));
+  }
+
+  /* Fills use the page background colour, matching SpotlightCard. Mixing in
+     `transparent` is what lets the blurred backdrop show through — the higher
+     the percentage, the more opaque and the less frost. */
   .glass {
-    @apply bg-white/9 dark:bg-white/[0.035] backdrop-blur-xl border border-white/18 dark:border-white/[0.08];
+    background-color: color-mix(in oklab, hsl(var(--background)) 68%, transparent);
   }
 
   .glass-strong {
-    @apply bg-white/16 dark:bg-white/[0.065] backdrop-blur-xl border border-white/24 dark:border-white/[0.11];
+    background-color: color-mix(in oklab, hsl(var(--background)) 80%, transparent);
   }
 
   .glass-subtle {
-    @apply bg-white/4 dark:bg-white/[0.02] backdrop-blur-md border border-white/8 dark:border-white/[0.05];
+    background-color: color-mix(in oklab, hsl(var(--background)) 55%, transparent);
+  }
+
+  /* Direct tier access, for components that supply their own fill and only need
+     the blur at the right depth (SpotlightCard, toasts, the project deck). */
+  .glass-tier-surface {
+    -webkit-backdrop-filter: blur(var(--blur-surface));
+    backdrop-filter: blur(var(--blur-surface));
+  }
+
+  .glass-tier-chrome {
+    -webkit-backdrop-filter: blur(var(--blur-chrome));
+    backdrop-filter: blur(var(--blur-chrome));
+  }
+
+  /* The dimming layer behind a modal. Not a surface — it sits over content
+     rather than holding any, so it takes the lightest blur of the four. */
+  .glass-scrim {
+    -webkit-backdrop-filter: blur(var(--blur-scrim));
+    backdrop-filter: blur(var(--blur-scrim));
+  }
+
+  /* Modal surfaces over dimmed content. */
+  .glass-overlay {
+    -webkit-backdrop-filter: blur(var(--blur-overlay)) saturate(150%);
+    backdrop-filter: blur(var(--blur-overlay)) saturate(150%);
   }
 
   .text-gradient {
     @apply bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent;
   }
 
-  .glow-accent {
-    box-shadow: 0 0 24px rgba(41, 214, 185, 0.1), 0 0 48px rgba(41, 214, 185, 0.035);
+  /* Call-to-action buttons.
+     These were retyped at each call site, which is how the secondary button
+     ended up in three variants — one of them missing `backdrop-blur` entirely,
+     so it rendered flat transparent next to the same button in the hero.
+
+     Two @apply pitfalls hit while writing these, both of which fail SILENTLY —
+     the rule still compiles, it just loses declarations:
+       1. An opacity-modified border colour (`border-primary/50`) emits
+          `border-color` without the opacity AND drops every utility after it
+          in the same @apply list.
+       2. Variant-prefixed utilities (`dark:`, `hover:`) emit nothing here and
+          also truncate the rest of the list.
+     So anything in either category is written as plain CSS below. Check the
+     compiled output, not just the source, when editing these. */
+  .btn-cta-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-bold tracking-wide text-primary-foreground transition-all duration-300 active:scale-95;
+  }
+
+  .btn-cta-secondary {
+    border: 1px solid hsl(var(--primary) / 0.5);
+    background-color: color-mix(in oklab, hsl(var(--background)) 55%, transparent);
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-sm font-bold tracking-wide text-foreground transition-all duration-300 active:scale-95;
+  }
+
+  .btn-cta-secondary:hover {
+    background-color: hsl(var(--primary) / 0.1);
+  }
+
+  :is(.dark *).btn-cta-secondary:hover {
+    background-color: hsl(var(--primary) / 0.1);
   }
 
   .shadow-accent-soft {
-    box-shadow: 0 10px 24px rgba(41, 214, 185, 0.12);
+    box-shadow: 0 10px 24px hsl(var(--accent) / 0.12);
   }
 
   .shadow-accent-card {
-    box-shadow: 0 16px 48px rgba(41, 214, 185, 0.16);
+    box-shadow: 0 16px 48px hsl(var(--accent) / 0.16);
   }
 
   .shadow-accent-strong {
-    box-shadow: 0 22px 68px rgba(41, 214, 185, 0.2);
+    box-shadow: 0 22px 68px hsl(var(--accent) / 0.2);
+  }
+
+  /* Accent glows, derived from --accent so changing the hue changes all of them.
+     Previously these were rgba(41, 214, 185, x) literals at 20+ call sites. */
+  .glow-accent-xs {
+    box-shadow: 0 0 12px hsl(var(--accent) / 0.1);
+  }
+
+  .glow-accent-sm {
+    box-shadow: 0 0 20px hsl(var(--accent) / 0.18);
+  }
+
+  .glow-accent-md {
+    box-shadow: 0 0 28px hsl(var(--accent) / 0.24);
+  }
+
+  .glow-accent-panel {
+    box-shadow: 0 0 40px hsl(var(--accent) / 0.08);
+  }
+
+  /* Scrolling panels that sit on top of a backdrop-filter.
+     Scrolling inside a blurred, saturated surface forces the browser to
+     re-run that filter for the whole panel every frame, which is what made
+     the chat and the command palette feel heavy. `contain: paint` isolates
+     the subtree so only the list repaints, and promoting it to its own layer
+     keeps the blur cached instead of recomputed. */
+  .scroll-panel {
+    contain: paint;
+    will-change: scroll-position;
+    transform: translateZ(0);
+  }
+
+  /* One section-heading scale. Replaces three competing per-section patterns
+     (text-4xl sm:text-5xl / text-3xl sm:text-4xl md:text-5xl / +lg:text-6xl). */
+  .heading-xl {
+    @apply text-4xl font-bold tracking-tight sm:text-5xl;
+  }
+
+  .heading-lg {
+    @apply text-3xl font-bold tracking-tight sm:text-4xl;
+  }
+
+  .heading-md {
+    @apply text-xl font-bold tracking-tight sm:text-2xl;
+  }
+
+  /* The sticky sidebar panel, previously copy-pasted byte-for-byte across
+     AboutSection, SkillsSection, and ExperienceSection. Its fill matches
+     SpotlightCard's 68% so a sidebar and the cards beside it read identically —
+     they used to differ 34x, which is what made panels look flat. Unlike the
+     glass-* utilities this one owns its border, because no call site adds one. */
+  .panel-sticky {
+    position: relative;
+    overflow: hidden;
+    border-radius: 2rem;
+    border: 1px solid rgb(255 255 255 / 0.1);
+    padding: 1.5rem;
+    background-color: color-mix(in oklab, hsl(var(--background)) 68%, transparent);
+    box-shadow: 0 0 40px hsl(var(--accent) / 0.08);
   }
 
   .section-padding {
     @apply py-20 md:py-28 lg:py-32;
   }
 
+  /* One content width for the whole site. Sections must not add their own
+     max-w-* on top of this — three of them used to, sitting 64px narrower than
+     their neighbours and visibly breaking the left/right edges. */
   .container-narrow {
     @apply max-w-6xl mx-auto px-5 sm:px-6 lg:px-8;
   }
 
+  /* Same measure without the padding, for chrome that aligns to the container
+     but supplies its own inset (the navbar). */
+  .container-width {
+    @apply w-full max-w-6xl;
+  }
+
   @media (min-width: 1536px) {
-    .container-narrow {
+    .container-narrow,
+    .container-width {
       max-width: 88rem;
     }
-  }
-
-  .mask-x-fade {
-    mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
-  }
-
-  .mask-y-fade {
-    mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
   }
 }
 

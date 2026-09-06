@@ -98,7 +98,9 @@ const Carousel = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEl
       api.on("select", onSelect);
 
       return () => {
+        // Both listeners must come off; "reInit" used to leak.
         api?.off("select", onSelect);
+        api?.off("reInit", onSelect);
       };
     }, [api, onSelect]);
 

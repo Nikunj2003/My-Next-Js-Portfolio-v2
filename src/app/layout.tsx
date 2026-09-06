@@ -1,10 +1,18 @@
 import type { Metadata, Viewport } from 'next'
+import dynamic from 'next/dynamic'
 import Script from 'next/script'
 import './globals.css'
 import { Providers } from './providers'
 import { SmoothScroll } from '@/components/SmoothScroll'
-import { getPortfolioGraph, toJsonLd } from '@/lib/seo/jsonld'
 import { siteConfig, ogLocale } from '@/lib/seo/site'
+
+// Mounted at the layout so every route gets the background layer, including
+// /work/*. Self-gates on pointer:fine, >=1280px, and reduced motion.
+const FluidCursor = dynamic(() => import('@/components/FluidCursor'))
+const CommandPalette = dynamic(() => import('@/components/CommandPalette'))
+// Mounted here so the twin — and the "ask about this" affordances that dispatch
+// into it — work on case study routes, not just the homepage.
+const AITwinChat = dynamic(() => import('@/components/AITwinChat'))
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.siteUrl),
@@ -64,16 +72,10 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const portfolioJsonLd = toJsonLd(getPortfolioGraph()).replace(/</g, '\\u003c')
-
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="color-scheme" content="dark light" />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: portfolioJsonLd }}
-        />
       </head>
       <body className="font-sans" suppressHydrationWarning>
         <a
@@ -109,7 +111,10 @@ export default function RootLayout({
         <div id="root">
           <SmoothScroll>
             <Providers>
+              <FluidCursor />
               {children}
+              <AITwinChat />
+              <CommandPalette />
             </Providers>
           </SmoothScroll>
         </div>
