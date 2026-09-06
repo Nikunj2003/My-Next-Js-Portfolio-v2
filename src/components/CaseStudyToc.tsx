@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { motion, useMotionValue, useReducedMotion } from "framer-motion";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 export interface TocItem {
@@ -18,9 +17,6 @@ export interface TocItem {
 const CaseStudyToc = ({ items }: { items: TocItem[] }) => {
   const [activeId, setActiveId] = useState(items[0]?.id ?? "");
   const [open, setOpen] = useState(false);
-  const progress = useMotionValue(0);
-  const shouldReduceMotion = useReducedMotion();
-  const frameRef = useRef<number | null>(null);
 
   useEffect(() => {
     const headings = items
@@ -47,66 +43,11 @@ const CaseStudyToc = ({ items }: { items: TocItem[] }) => {
     return () => observer.disconnect();
   }, [items]);
 
-  useEffect(() => {
-    const article = document.getElementById("case-study-article");
-    if (!article) return;
-
-    const update = () => {
-      frameRef.current = null;
-      const rect = article.getBoundingClientRect();
-      const scrollable = rect.height - window.innerHeight;
-      if (scrollable <= 0) {
-        progress.set(1);
-        return;
-      }
-      progress.set(Math.min(1, Math.max(0, -rect.top / scrollable)));
-    };
-
-    const schedule = () => {
-      if (frameRef.current !== null) return;
-      frameRef.current = window.requestAnimationFrame(update);
-    };
-
-    update();
-
-    /**
-     * Lenis animates scroll inside its own rAF loop and only writes the result
-     * to the document, so the native `scroll` event fires coarsely — the bar
-     * jumped to position after scrolling stopped instead of tracking it.
-     * Subscribing to Lenis's own per-frame `scroll` event makes it continuous.
-     * The native listener stays as the fallback for reduced-motion visitors,
-     * where Lenis is never instantiated.
-     */
-    const lenis = (window as Window & { __lenis?: { on: (e: string, cb: () => void) => void; off: (e: string, cb: () => void) => void } }).__lenis;
-
-    if (lenis) {
-      lenis.on("scroll", update);
-    } else {
-      window.addEventListener("scroll", schedule, { passive: true });
-    }
-    window.addEventListener("resize", schedule, { passive: true });
-
-    return () => {
-      if (lenis) {
-        lenis.off("scroll", update);
-      } else {
-        window.removeEventListener("scroll", schedule);
-      }
-      window.removeEventListener("resize", schedule);
-      if (frameRef.current !== null) window.cancelAnimationFrame(frameRef.current);
-    };
-  }, [progress]);
 
   return (
     <>
-      {/* Reading progress — scaleX on a transform, never animated width. */}
-      <div className="fixed inset-x-0 top-0 z-[95] h-0.5 bg-transparent" aria-hidden="true">
-        <motion.div
-          className="h-full origin-left bg-gradient-to-r from-primary to-accent"
-          style={{ scaleX: shouldReduceMotion ? 1 : progress }}
-        />
-      </div>
-
+      {/* The reading-progress bar now lives in ScrollProgress, mounted globally
+          in the root layout so every route has it — not just case studies. */}
       <nav aria-label="On this page" className="lg:sticky lg:top-28">
         {/* Mobile: a disclosure, so it never eats the first screen. */}
         <button

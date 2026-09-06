@@ -85,7 +85,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
 
       <Navbar />
 
-      <main id="main-content" tabIndex={-1} className="relative z-10">
+      <main id="main-content" tabIndex={-1} className="relative z-10 scroll-mt-0 focus:outline-none">
         <article id="case-study-article" className="section-padding">
           <div className="container-narrow">
             <Reveal className="mb-8">

@@ -59,7 +59,7 @@ const WorkIndexPage = () => (
 
     <Navbar />
 
-    <main id="main-content" tabIndex={-1} className="relative z-10">
+    <main id="main-content" tabIndex={-1} className="relative z-10 scroll-mt-0 focus:outline-none">
       <section className="section-padding">
         <div className="container-narrow">
           <Reveal className="mb-8">

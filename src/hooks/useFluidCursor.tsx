@@ -1298,10 +1298,14 @@ const useFluidCursor = (
       deleteFBO(divergence);
       deleteFBO(curl);
 
-      // Ask the driver to drop the context outright; this releases anything the
-      // explicit deletes above missed (programs, shaders, the blit buffers).
-      const loseContext = gl.getExtension("WEBGL_lose_context");
-      loseContext?.loseContext();
+      // Deliberately NOT calling WEBGL_lose_context here.
+      //
+      // Forcing context loss leaves the canvas element transparent while React
+      // may still have it mounted — and because the page background sits behind
+      // it, that showed as the white flash on refresh that commit 9e96e68
+      // ("initializeFirstFrame") originally fixed. The explicit deletes above
+      // reclaim the buffers that actually grow; the rest is released when the
+      // canvas is garbage collected.
     } catch {
       // Teardown is best-effort: the context may already be gone.
     }

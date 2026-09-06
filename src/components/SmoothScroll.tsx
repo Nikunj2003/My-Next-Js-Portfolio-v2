@@ -43,6 +43,25 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
     const appWindow = window as LenisWindow;
     appWindow.__lenis = lenis;
 
+    /**
+     * Align Lenis with wherever the browser actually restored the page.
+     *
+     * Lenis caches its own scroll position when it initialises. On a refresh the
+     * browser restores the previous offset asynchronously, so Lenis could start
+     * from a stale value and then correct itself on the first frame — which read
+     * as the page auto-scrolling a little on every reload. Resyncing after the
+     * restore settles removes the drift without fighting the browser (leaving
+     * scrollRestoration on "auto", so refreshing keeps your reading position).
+     */
+    const syncToRestoredPosition = () => {
+      lenis.resize();
+      lenis.scrollTo(window.scrollY, { immediate: true, force: true });
+    };
+
+    // Two passes: one after layout, one after the restore has definitely landed.
+    const syncFrame = window.requestAnimationFrame(syncToRestoredPosition);
+    const syncTimer = window.setTimeout(syncToRestoredPosition, 120);
+
     let rafId: number | null = null;
 
     function raf(time: number) {
@@ -111,6 +130,8 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
     document.addEventListener('click', handleHashLinkClick);
 
     return () => {
+      window.cancelAnimationFrame(syncFrame);
+      window.clearTimeout(syncTimer);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       document.removeEventListener('click', handleHashLinkClick);
       stopRaf();

@@ -4,6 +4,7 @@ import Script from 'next/script'
 import './globals.css'
 import { Providers } from './providers'
 import { SmoothScroll } from '@/components/SmoothScroll'
+import ScrollProgress from '@/components/ScrollProgress'
 import { siteConfig, ogLocale } from '@/lib/seo/site'
 
 // Mounted at the layout so every route gets the background layer, including
@@ -112,6 +113,9 @@ export default function RootLayout({
           <SmoothScroll>
             <Providers>
               <FluidCursor />
+              {/* Inside SmoothScroll so it can subscribe to the Lenis instance,
+                  and above {children} so every route gets the reading bar. */}
+              <ScrollProgress />
               {children}
               <AITwinChat />
               <CommandPalette />
