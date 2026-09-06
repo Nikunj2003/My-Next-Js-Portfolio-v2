@@ -1,5 +1,6 @@
 "use client";
 import Image from "next/image";
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Menu, X, Download, Search } from "lucide-react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
@@ -7,7 +8,8 @@ import logo from "@/assets/logo.png";
 import { personalInfo } from "@/data/portfolio";
 import { ThemeToggle } from "./ThemeToggle";
 import { useLenisLock } from "@/hooks/useLenisLock";
-import { scrollToHash } from "@/lib/scroll";
+import { scrollToHash, scrollToTop } from "@/lib/scroll";
+import { usePathname, useRouter } from "next/navigation";
 
 const navLinks = [
   { href: "#about", label: "About" },
@@ -27,6 +29,10 @@ const Navbar = () => {
   const firstMobileLinkRef = useRef<HTMLAnchorElement>(null);
   const shouldRestoreFocusRef = useRef(true);
   const shouldReduceMotion = useReducedMotion();
+  const router = useRouter();
+  const pathname = usePathname();
+  /** The section anchors only exist on the homepage. */
+  const isHome = pathname === "/";
 
   // The mobile menu sets body overflow, but Lenis scrolls via its own window
   // listener and would otherwise keep moving the page behind the open menu.
@@ -62,6 +68,11 @@ const Navbar = () => {
       frameId = window.requestAnimationFrame(updateScrolled);
     };
 
+    // Off the homepage there are no section anchors to observe, so skip the
+    // listeners entirely. The rendered active state is derived below instead of
+    // being written here, which would be a synchronous setState in an effect.
+    if (!isHome) return;
+
     updateScrolled();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
@@ -71,20 +82,31 @@ const Navbar = () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
     };
-  }, []);
+  }, [isHome]);
 
   const closeMenu = useCallback((restoreFocus = true) => {
     shouldRestoreFocusRef.current = restoreFocus;
     setIsOpen(false);
   }, []);
 
-  const scrollToSection = useCallback((href: string) => {
-    scrollToHash(href);
-  }, []);
+  const scrollToSection = useCallback(
+    (href: string) => {
+      // Off the homepage the target does not exist, so navigate to it there and
+      // let the browser resolve the fragment on arrival.
+      if (!isHome) {
+        router.push(`/${href}`);
+        return;
+      }
+      scrollToHash(href);
+    },
+    [isHome, router]
+  );
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string, isMobile: boolean) => {
     e.preventDefault();
-    setActiveSection(href);
+    // Only reflect the click immediately when the section is on this page;
+    // otherwise the scroll observer on the destination decides what is active.
+    if (isHome) setActiveSection(href);
 
     if (isMobile) {
       closeMenu(false);
@@ -94,6 +116,29 @@ const Navbar = () => {
     } else {
       scrollToSection(href);
     }
+  };
+
+  // Nothing is "active" off the homepage, regardless of any stale stored value.
+  const currentSection = isHome ? activeSection : null;
+
+  /**
+   * The real destination for a section link.
+   *
+   * Off the homepage a bare "#about" points at nothing, which is what made every
+   * nav item a no-op on /work and /work/*. Middle-click and open-in-new-tab read
+   * this attribute directly, so it must be right independently of the handler.
+   */
+  const sectionHref = (href: string) => (isHome ? href : `/${href}`);
+
+  /** Logo: top of the homepage, from anywhere. */
+  const handleHomeClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    if (!isHome) {
+      router.push("/");
+      return;
+    }
+    setActiveSection(null);
+    scrollToTop();
   };
 
   useEffect(() => {
@@ -163,20 +208,20 @@ const Navbar = () => {
             scrolled ? "glass-strong shadow-accent-card border-white/10" : "bg-transparent border-transparent"
           }`}
         >
-          <a href="#hero" aria-label="Go to hero section" className="flex items-center gap-2 group">
+          <Link href="/" onClick={handleHomeClick} aria-label="Go to the top of the homepage" className="flex items-center gap-2 group">
             <Image src={logo} alt="" aria-hidden="true" className="w-10 h-10 sm:w-12 sm:h-12 transition-transform duration-300 group-hover:scale-110 pointer-events-none" draggable={false} />
             <span className="font-bold text-lg tracking-wide hidden sm:block">Nikunj Khitha</span>
-          </a>
+          </Link>
 
           <div className="hidden md:flex items-center gap-1.5">
             {navLinks.map((link) => (
               <a
                 key={link.href}
-                href={link.href}
+                href={sectionHref(link.href)}
                 onClick={(e) => handleNavClick(e, link.href, false)}
-                aria-current={activeSection === link.href ? "location" : undefined}
+                aria-current={currentSection === link.href ? "location" : undefined}
                 className={`px-3 py-2 text-sm font-medium transition-all duration-200 rounded-full ${
-                  activeSection === link.href
+                  currentSection === link.href
                     ? "bg-primary/10 text-primary shadow-[0_0_14px_hsl(var(--accent)/0.1)]"
                     : "text-muted-foreground hover:text-foreground hover:bg-white/10"
                 }`}
@@ -249,11 +294,11 @@ const Navbar = () => {
                 <a
                   key={link.href}
                   ref={link === navLinks[0] ? firstMobileLinkRef : undefined}
-                  href={link.href}
+                  href={sectionHref(link.href)}
                   onClick={(e) => handleNavClick(e, link.href, true)}
-                  aria-current={activeSection === link.href ? "location" : undefined}
+                  aria-current={currentSection === link.href ? "location" : undefined}
                   className={`block px-4 py-3 text-sm rounded-lg transition-colors font-medium w-full ${
-                    activeSection === link.href
+                    currentSection === link.href
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:text-foreground hover:bg-white/5"
                   }`}

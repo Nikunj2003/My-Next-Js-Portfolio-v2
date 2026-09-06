@@ -1,9 +1,12 @@
 "use client";
 import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { personalInfo } from "@/data/portfolio";
 import logo from "@/assets/logo.png";
 import { Mail, Linkedin, Github } from "lucide-react";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
+import { scrollToHash, scrollToTop } from "@/lib/scroll";
 
 const NAV_LINKS = [
   { label: "About", href: "#about" },
@@ -20,7 +23,28 @@ const SOCIAL_LINKS = [
   { icon: Github, label: "GitHub", href: personalInfo.github },
 ];
 
-const Footer = () => (
+const Footer = () => {
+  const pathname = usePathname();
+  /** The section anchors these links point at only exist on the homepage. */
+  const isHome = pathname === "/";
+
+  // Off the homepage a bare "#about" resolves to nothing, so the link has to be
+  // a real navigation to "/#about" instead of a same-page jump.
+  const sectionHref = (href: string) => (isHome ? href : `/${href}`);
+
+  const handleSectionClick = (event: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (!isHome) return; // let Next handle the route change
+    event.preventDefault();
+    scrollToHash(href);
+  };
+
+  const handleHomeClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!isHome) return;
+    event.preventDefault();
+    scrollToTop();
+  };
+
+  return (
   <footer className="py-8 px-4 relative z-10">
     <div className="container-narrow">
       <SpotlightCard className="w-full">
@@ -28,7 +52,7 @@ const Footer = () => (
           
           {/* Mobile: centered stack | Desktop: logo-left nav-right */}
           <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start sm:justify-between sm:gap-4 mb-8">
-            <a href="#hero" className="flex items-center gap-3 group shrink-0">
+            <Link href="/" onClick={handleHomeClick} className="flex items-center gap-3 group shrink-0">
               <div className="relative">
                 <div className="absolute inset-0 bg-primary/20 blur-md rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                 <Image src={logo} alt="" aria-hidden="true" className="w-8 h-8 opacity-80 group-hover:opacity-100 relative z-10 transition-opacity pointer-events-none" draggable={false} />
@@ -36,17 +60,18 @@ const Footer = () => (
               <span className="text-base font-bold text-muted-foreground group-hover:text-foreground transition-colors tracking-tight">
                 Nikunj Khitha
               </span>
-            </a>
+            </Link>
 
             <nav className="flex max-w-xl flex-wrap items-center justify-center gap-x-6 gap-y-3 sm:justify-end">
               {NAV_LINKS.map((l) => (
-                <a
+                <Link
                   key={l.label}
-                  href={l.href}
+                  href={sectionHref(l.href)}
+                  onClick={(event) => handleSectionClick(event, l.href)}
                   className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
                 >
                   {l.label}
-                </a>
+                </Link>
               ))}
             </nav>
           </div>
@@ -91,8 +116,9 @@ const Footer = () => (
 
         </div>
       </SpotlightCard>
-    </div>
-  </footer>
-);
+      </div>
+    </footer>
+  );
+};
 
 export default Footer;
