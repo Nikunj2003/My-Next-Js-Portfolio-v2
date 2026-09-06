@@ -27,13 +27,13 @@ const SOCIAL_LINKS = [
   {
     icon: Linkedin,
     label: "LinkedIn",
-    value: "linkedin.com/in/nikunj-khitha",
+    value: personalInfo.linkedin.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""),
     href: personalInfo.linkedin,
   },
   {
     icon: Github,
     label: "GitHub",
-    value: "github.com/Nikunj2003",
+    value: personalInfo.github.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""),
     href: personalInfo.github,
   },
 ];
@@ -144,7 +144,7 @@ const ContactSection = () => {
             Get in <span className="text-gradient">Touch</span>
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto text-base leading-relaxed">
-            Open to backend, full-stack, platform, AI security, observability, and GenAI product engineering opportunities, as well as thoughtful collaborations.
+            {personalInfo.focus}
           </p>
         </motion.div>
 
@@ -178,7 +178,7 @@ const ContactSection = () => {
                 <div>
                   <h3 className="text-3xl font-bold mb-3 tracking-tight">Let&apos;s Build Something</h3>
                   <p className="text-base text-muted-foreground leading-relaxed" style={{ textWrap: "pretty" }}>
-                    If you&apos;re hiring for backend, full-stack, platform, AI security, observability, or GenAI product engineering work, I&apos;d love to talk. I&apos;m also open to thoughtful collaborations and open-source conversations.
+                    If you are hiring for Applied AI systems, AI product engineering, agent workflows, or AI-platform reliability, I would welcome a conversation about the team, workflow, or problem you are solving. I&apos;m also open to thoughtful collaborations and open-source conversations.
                   </p>
                 </div>
 

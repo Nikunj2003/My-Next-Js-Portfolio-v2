@@ -1,8 +1,8 @@
 export const personalInfo = {
   name: "Nikunj Khitha",
-  role: "Full-Stack GenAI Engineer",
-  tagline: "I build full-stack GenAI platforms where Spring Boot APIs, retrieval systems, MCP servers, LLM gateways, security, observability, and product UX work together in production.",
-  focus: "Open to Full-Stack GenAI, backend, platform, and AI infrastructure roles where I can own architecture, delivery, and measurable outcomes.",
+  role: "Applied AI Engineer",
+  tagline: "I work on the part of AI that starts after the demo: giving agents real tools, real memory, and a way to prove they still work tomorrow.",
+  focus: "Open to Applied AI, Forward Deployed AI, Agentic AI, AI Product, and LLM/AI Engineer roles where I can own agent systems end to end \u2014 governed MCP tool use, retrieval, and the evaluation that keeps them reliable.",
   email: "njkhitha2003@gmail.com",
   linkedin: "https://www.linkedin.com/in/nikunj-khitha/",
   github: "https://github.com/Nikunj2003",
@@ -10,21 +10,20 @@ export const personalInfo = {
 };
 
 export const stats = [
+  { value: 8, suffix: "+", label: "Business Functions Served" },
+  { value: 9, suffix: "", label: "Production MCP Servers" },
   { value: 1, suffix: "M+", label: "KG Entities" },
-  { value: 6, suffix: "", label: "Production MCP Servers" },
-  { value: 30, suffix: "+", label: "Automations" },
-  { value: 40, suffix: "%", label: "Retrieval Lift" },
+  { value: 9, suffix: "", label: "AI Surfaces Evaluated" },
 ];
 
 export const about = {
-  summary: "I work best on products and platforms where backend systems have to be reliable, AI has to be useful, and the user experience has to earn trust in production. My sweet spot is owning the system end to end: designing product surfaces, building Java/Spring Boot and Node.js backends, shaping MCP access layers and LLM gateways, wiring observability and security controls, and turning retrieval-heavy model behavior into software teams can trust.",
+  summary: "I focus on the engineering work that makes AI useful after the first successful prompt: connecting models to the right tools and context, controlling what those tools can do, preserving useful memory, measuring behavior, and debugging failures across model, protocol, application, and infrastructure boundaries.",
   highlights: [
-    "Built ArmorCode's central Knowledge Graph RAG brain over 1,000,000+ entities from Zendesk, QMetry, Jira, Chorus, and codebase sources, improving retrieval accuracy by 40%.",
-    "Designed tenant-scoped MCP access so platform and internal agents can retrieve context and execute authorized tools without cross-tenant leakage.",
-    "Shipped 6 production MCP servers and an internal AI runtime stack across Knowledge Graph RAG, LiteLLM, OpenCode Server, n8n, and agent workflows.",
-    "Built AI Exposure Management product surfaces for AI visibility, ownership, governance, shadow AI discovery, and auditable risk tracking.",
-    "Delivered 30+ automations and 25+ AI workflows across 20+ systems, eliminating 200+ manual hours monthly and earning ArmorCode's AI Ninja Award.",
-    "Built CodeNex, a distributed AI code generation SaaS with Spring Boot, Spring AI, SSE streaming, Kubernetes previews, MinIO/NFS persistence, RBAC, and Stripe subscriptions.",
+    "Built an OpenTelemetry-based LLM evaluation platform on Langfuse that scores 9 AI surfaces against golden datasets, using deterministic checks, classification metrics, Ragas RAG scores, and LLM-as-a-judge graders validated at Cohen's kappa >= 0.7 and enforced as Jenkins CI gates.",
+    "Delivered 9 of the 14 production MCP servers in ArmorCode's shared enterprise tool registry, implementing OAuth2/RBAC, tool-level permission tiers, explicit denial behavior, and audit attribution under multi-tenant AppSec constraints.",
+    "Co-built Agentic Office OS, translating ambiguous stakeholder requirements into Slack-accessible agents, skills, MCP integrations, and human-in-the-loop approval workflows for 8+ business functions, then owning rollout, debugging, and enablement.",
+    "Sole maintainer of company-wide model and MCP access via a LiteLLM gateway: scoped API keys, per-model spend budgets, and RBAC-gated MCP distribution across teams.",
+    "Built ArmorCode's tenant-scoped Knowledge Graph RAG layer over 1M+ entities in Neo4j and pgvector, scoring retrieval on recall@k, MRR, and context precision across five query modes.",
   ],
 };
 
@@ -52,7 +51,7 @@ export const experiences: Experience[] = [
   },
   {
     company: "Xansr Media (Aiko)",
-    role: "SDE Intern (Backend/AI)",
+    role: "Software Development Intern (GenAI Specialist)",
     period: "Jun 2024 – Dec 2024",
     type: "work",
     summary: "Shipped full-stack, backend, GenAI, and data systems for AIKO and Fantasy GPT, powering personalized sports experiences, voice AI, and retrieval-backed cricket intelligence.",
@@ -66,32 +65,31 @@ export const experiences: Experience[] = [
   },
   {
     company: "ArmorCode",
-    role: "Software Development Engineer Intern",
+    role: "Software Development Intern (Applied AI)",
     period: "Jan 2025 - Nov 2025",
     type: "work",
-    summary: "Built backend integrations, reusable backend infrastructure, AI-assisted scaffolding, and internal LLM platform components across ArmorCode's AppSec platform.",
+    summary: "Created Anya's agent framework and memory layers, and built backend integrations and AI-assisted scaffolding across ArmorCode's AppSec platform.",
     bullets: [
-      "Owned backend integrations for 5+ security tools, including Black Duck, Snyk, and Checkmarx, on an AppSec platform with 130+ connectors for consolidated security finding management.",
+      "Created the initial Java framework for Anya, ArmorCode's platform agent; designed, implemented, and owned its short- and long-term memory layers; and set up Langfuse-backed evaluation for agent accuracy and memory behavior.",
+      "Ported 2 of 6 Anya sub-agents from LangChain4j to Spring AI, reimplementing memory and evaluation integrations for the new architecture.",
+      "Owned backend integrations for 5+ security tools, including Black Duck, Snyk, and Checkmarx, on an AppSec platform aggregating findings across 130+ connectors.",
       "Created AI-assisted code generation utilities with template engines and AST parsing to automate new integration scaffolding, reducing per-integration boilerplate setup time by 30%.",
-      "Built a shared backend service-orchestration library with parallel container startup for MySQL, Elasticsearch, Redis, Kafka, MongoDB, and LocalStack across backend services.",
-      "Built an OpenAI-compatible proxy in Go for Gemini CLI, Codex, and Claude Code auth with multi-account load balancing, provider fallbacks, and Redis-backed LLM caching, cutting LLM indexing costs by 70% and saving $15,000+ annually.",
-      "Shipped a reusable HTTP client using Resilience4j for failure isolation, configurable backoff, timeout handling, and SSRF protection adopted across multiple services.",
     ],
   },
   {
     company: "ArmorCode",
-    role: "Associate Engineer (Full-Stack GenAI)",
+    role: "Associate Software Engineer (Applied AI)",
     period: "Dec 2025 – Present",
     type: "work",
-    summary: "Own end-to-end backend, full-stack, and GenAI platform work across ArmorCode's platform agent memory, AI Exposure Management, MCP servers, gateways, automation, observability, and production AI infrastructure.",
+    summary: "Co-build Agentic Office OS, the internal agent platform serving 8+ business functions, and own the tool, context, governance, and evaluation layers underneath it.",
     bullets: [
-      "Architected ArmorCode's central Knowledge Graph RAG brain, ingesting 1,000,000+ entities from Zendesk, QMetry, Jira, Chorus, and codebase sources into Neo4j and pgvector, improving retrieval accuracy by 40%.",
-      "Built the tenant-scoped MCP access layer around the graph brain, enabling platform and internal agents to retrieve tenant-specific context and execute authorized tools without cross-tenant leakage.",
-      "Deployed and maintained ArmorCode's internal AI runtime stack with Knowledge Graph RAG, LiteLLM, OpenCode Server, n8n, and 6 production MCP servers for retrieval, model access, agent execution, and workflow orchestration.",
-      "Shipped the ArmorCode platform agent memory layer with Graphiti temporal knowledge graphs, combining session-scoped context with tenant and person-level long-term Knowledge Graph recall for multi-step reasoning workflows.",
-      "Contributed to ArmorCode AI Exposure Management (AIEM), building frontend and backend workflows for AI visibility, ownership, governance, shadow AI discovery, and auditable risk tracking.",
-      "Built the OpenCode gateway in front of OpenCode Server using Go and Gin with observability, load balancing, task queueing, main-server routing, and scheduled and PR-triggered workflow orchestration.",
-      "Delivered 30+ automations and 25+ AI workflows across 20+ systems with fallback paths, approval gates, and Slack/Jira handoffs, eliminating 200+ manual hours monthly and earning ArmorCode's AI Ninja Award in the second month after FTE conversion."
+      "Co-built Agentic Office OS, the internal platform of autonomous, human-triggered, and human-in-the-loop agents reachable org-wide through Slack, translating ambiguous requirements from an external business consultant, executives, and internal teams into agents, skills, MCP integrations, and approval workflows for 8+ business functions, then owning rollout, debugging, and enablement.",
+      "Built an OpenTelemetry-based LLM evaluation platform on Langfuse so every prompt, model, agent, skill, and MCP tool change ships on measured accuracy, latency, and cost. It scores 9 AI surfaces against golden datasets using deterministic checks, scikit-learn classification metrics, Ragas RAG scores, and LLM-as-a-judge graders validated at Cohen's kappa >= 0.7, enforced as Jenkins CI gates.",
+      "Delivered 9 of the 14 production MCP servers in ArmorCode's shared enterprise tool registry under multi-tenant AppSec constraints, implementing OAuth2/RBAC controls, tool-level permission tiers, explicit denial behavior, and audit attribution, with 20 of 20 authorization checks validated across three access tiers.",
+      "Govern company-wide model and MCP access as sole maintainer of a LiteLLM gateway, issuing scoped API keys with per-model spend budgets and distributing RBAC-gated MCP servers to employees' Claude Desktop via an .mcpb proxy. Cut recurring LLM spend by tracing 57% of gateway cost across 6,372 requests to two automations, then migrating models and splitting system/user prompts to enable Bedrock prompt caching, while flagging a deterministic rewrite worth a further ~95% reduction.",
+      "Built ArmorCode's tenant-scoped knowledge-graph RAG layer over 1M+ entities of RCAs, test cases, and product documentation in Neo4j and pgvector, giving Office OS agents grounded product knowledge without cross-tenant leakage, with retrieval scored on recall@k, MRR, and context precision across five query modes.",
+      "Cut CS and support escalations to engineering with a codebase-search MCP service in Go over 8 product repositories, fronting a read-only agent against a daily-reindexed vector index. Restored it after 46 consecutive queries returned zero content by isolating two independent causes in SDK and host internals: a Go output-schema defect that made schema-aware clients discard every answer, and a query deadline sized for a longer client timeout tier. Shipped the fix with a negative-control test and flagged 2 exposed connectors.",
+      "Kept AI-drafted documentation reviewable rather than blind-published by shipping Quill, an Electron/React/TypeScript GitHub PR review tool pairing a WYSIWYG editor with an embedded AI agent terminal, per-branch Git worktrees, and permission-aware GitHub delivery."
     ],
   },
 ];
@@ -119,7 +117,7 @@ export const projects: Project[] = [
     category: "Full-Stack AI SaaS",
     summary: "An AI-driven code generation SaaS platform for building full React applications from natural-language prompts.",
     description: "Built an AI codegen SaaS that turns natural-language prompts into full React applications using Spring Boot and Spring AI, with SSE streaming, MinIO/NFS persistence, and Kubernetes preview pods.",
-    impact: "Designed for production SaaS scale with 10K+ concurrent streams, sub-2s previews, token quotas, RBAC, autoscaling, and Stripe subscriptions.",
+    impact: "Designed for SaaS-scale concurrency with Kubernetes preview pods, token quotas, RBAC, autoscaling, and Stripe subscriptions.",
     role: "SaaS architecture, backend systems, streaming infrastructure, and platform design",
     timeline: "Flagship platform build",
     complexity: "Distributed codegen, streaming, Kubernetes previews, persistence, auth, billing, and quotas",
@@ -240,24 +238,24 @@ export const projects: Project[] = [
 
 export const skillCategories = [
   {
+    title: "Applied AI, Agents & Evaluation",
+    description: "The agent, orchestration, and evaluation stack I use to build governed AI systems and agent workflows.",
+    skills: ["Agentic AI", "AI Agents", "Model Context Protocol (MCP)", "Tool Calling", "Agent Memory", "LLM Evaluation", "Evals", "Langfuse", "LangChain", "LangGraph", "LangChain4j", "CrewAI", "DeepEval", "RAG", "GraphRAG", "Knowledge Graph RAG", "LightRAG", "Graphiti", "Temporal Graph Memory", "Vector Search", "Multi-Agent Systems", "Human-in-the-Loop Workflows", "Tenant-Scoped Tools", "Prompt Engineering", "AWS Bedrock", "Claude", "Gemini AI", "OpenAI", "LLaMA", "LLM Proxying"],
+  },
+  {
     title: "Backend & Product Engineering",
-    description: "The languages, frameworks, and application-layer tools I use to build production products, APIs, and internal platforms end to end.",
+    description: "The languages, frameworks, and application-layer tools I use to build AI products, APIs, and internal platforms end to end.",
     skills: ["Java 21", "Spring Boot 3", "Spring AI", "TypeScript", "Node.js", "Go", "Gin", "Python", "FastAPI", "SQLAlchemy", "Next.js", "React", "REST APIs", "Microservices", "Server-Sent Events", "RBAC", "JWT", "OAuth2", "Stripe"],
   },
   {
-    title: "GenAI, Agents & Retrieval",
-    description: "The AI, orchestration, and retrieval stack I use to build production-grade GenAI systems and agent workflows.",
-    skills: ["RAG", "GraphRAG", "Knowledge Graph RAG", "LightRAG", "Graphiti", "Temporal Graph Memory", "Agentic AI", "Multi-Step Reasoning Agents", "Multi-Agent Systems", "LangGraph", "LangChain4j", "Spring AI", "CrewAI", "DeepEval", "MCP", "Tenant-Scoped Tools", "Prompt Engineering", "Claude", "Gemini AI", "OpenAI", "LLaMA", "LLM Proxying"],
-  },
-  {
     title: "Data & Search Infrastructure",
-    description: "The storage, indexing, vector, and search technologies I use to make AI systems accurate, scalable, and cost-aware.",
+    description: "The storage, indexing, vector, and search technologies I use to make retrieval and context systems accurate and scalable.",
     skills: ["PostgreSQL", "pgvector", "Neo4j", "MongoDB", "Elasticsearch", "Redis", "MSSQL", "Supabase", "MinIO", "NFS"],
   },
   {
     title: "Platform, DevOps & Delivery",
-    description: "The infrastructure and operational tooling I use to deploy, route, observe, secure, and scale products reliably.",
-    skills: ["Resilience4j", "Docker", "Kubernetes", "Kubernetes Autoscaling", "Fabric8", "Kubernetes Ingress", "Kafka", "LocalStack", "GitHub Actions", "Jenkins", "AWS", "Azure", "Vercel", "LiteLLM", "Grafana", "Nginx", "Load Balancing", "API Gateways", "AI Observability", "AI Security", "n8n", "OpenCode Server"],
+    description: "The infrastructure and operational tooling I use to deploy, route, observe, secure, and scale AI systems reliably.",
+    skills: ["Resilience4j", "Docker", "Kubernetes", "Kubernetes Autoscaling", "Fabric8", "Kubernetes Ingress", "Kafka", "LocalStack", "GitHub Actions", "Jenkins", "AWS", "Azure", "Vercel", "LiteLLM", "Grafana", "Nginx", "Load Balancing", "API Gateways", "AI Tooling Reliability", "n8n", "OpenCode Server"],
   },
   {
     title: "Product Tooling & UX",
@@ -267,9 +265,9 @@ export const skillCategories = [
 ];
 
 export const chatSuggestions = [
-  "Which project best shows your backend depth?",
-  "What did you build for AIEM?",
-  "How did you build platform agent memory?",
-  "How do you approach platform reliability?",
+  "How do you approach agent memory and evaluation?",
+  "What's your governed MCP approach?",
+  "How did Agentic Office OS turn stakeholder needs into workflows?",
+  "How do you debug AI-tool reliability issues?",
   "Which build best shows end-to-end ownership?",
 ];

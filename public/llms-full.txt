@@ -4,14 +4,14 @@ Canonical site:
 - https://nikunj.codenex.dev/
 
 ## Professional profile
-Nikunj Khitha is a Full-Stack GenAI Engineer focused on productionizing Generative AI systems. His work centers on Knowledge Graph RAG, tenant-scoped MCP access, LLM gateways, internal AI infrastructure, backend platforms, and polished product delivery.
+Nikunj Khitha is an Applied AI Engineer who builds AI agents that connect models to enterprise tools, knowledge, and real workflows. His work centers on agent architecture, permission-aware MCP tool integrations, agent memory and evaluation, retrieval/context systems, and full-stack AI product delivery.
 
 Core areas:
-- Knowledge Graph RAG systems and retrieval infrastructure
-- Multi-agent workflows, MCP servers, and tenant-scoped tool access
-- LLM gateways, OpenCode workflows, and AI automation infrastructure
+- AI agents, agent memory, and evaluation (Langfuse)
+- Model Context Protocol (MCP) servers and permission-aware tool access
+- Knowledge Graph RAG systems and retrieval/context infrastructure
 - Backend services, APIs, and platform infrastructure
-- Full-stack product engineering with modern web stacks
+- Full-stack AI product engineering with modern web stacks
 
 ## Canonical content URLs
 - Home: https://nikunj.codenex.dev/

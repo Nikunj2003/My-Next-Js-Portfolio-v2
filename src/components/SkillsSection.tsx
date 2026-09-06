@@ -77,8 +77,8 @@ function FlipSkill() {
 
 // Icons for each category
 const CATEGORY_ICONS: Record<string, React.ElementType> = {
+  "Applied AI, Agents & Evaluation": Brain,
   "Backend & Product Engineering": Layers,
-  "GenAI, Agents & Retrieval": Brain,
   "Data & Search Infrastructure": Database,
   "Platform, DevOps & Delivery": Server,
   "Product Tooling & UX": Wrench,
@@ -105,7 +105,7 @@ const SkillsSection = () => {
                   <span className="text-gradient">Stack</span>
                 </h2>
                 <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-md">
-                  The technologies I reach for most often when building backend systems, full-stack products, gateways, production infrastructure, and AI-powered workflows.
+                  The technologies I reach for most often when building agent systems, governed MCP tools, evaluation pipelines, and full-stack AI products.
                 </p>
 
                 <FlipSkill />

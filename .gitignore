@@ -35,3 +35,10 @@ yarn-error.log*
 next-env.d.ts
 # Added by code-review-graph
 .code-review-graph/
+
+# private career-research evidence (never publish)
+/work/
+/Yash.md
+/image.png
+/plane.md
+/2026-08-15-*-applied-ai-*.txt

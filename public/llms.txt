@@ -2,8 +2,8 @@
 
 Site: https://nikunj.codenex.dev
 Author: Nikunj Khitha
-Primary role: Full-Stack GenAI Engineer
-Focus: Knowledge Graph RAG systems, tenant-scoped MCP access, LLM gateways, AI infrastructure, and production-grade full-stack products
+Primary role: Applied AI Engineer
+Focus: AI agents, permission-aware MCP tool integrations, agent memory and evaluation, retrieval/context systems, and full-stack AI products
 
 Canonical pages:
 - https://nikunj.codenex.dev/

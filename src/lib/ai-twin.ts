@@ -3,7 +3,7 @@ import { about, experiences, personalInfo, projects, skillCategories, stats } fr
 export const CHAT_MEMORY_WINDOW = 10;
 export const CHAT_STORAGE_KEY = "nikunj-ai-twin-chat";
 export const PROJECT_ANCHOR_PREFIX = "project-";
-export const WELCOME_MESSAGE = "Hi — I’m Nikunj’s AI twin. I can give you a quick recruiter summary, walk through a project, or explain how he approaches backend systems, full-stack platforms, gateways, AIEM, platform agent memory, and GenAI products. You can also [jump to projects](#projects) or [download the resume](/Nikunj_Resume.pdf).";
+export const WELCOME_MESSAGE = "Hi — I’m Nikunj’s AI twin. I can give you a quick recruiter summary, walk through a project, or explain how he approaches agent systems, governed MCP tool use, agent memory, evaluation, and AI product delivery. You can also [jump to projects](#projects) or [download the resume](/Nikunj_Resume.pdf).";
 
 type ConversationWindowMessage = {
   content: string;
