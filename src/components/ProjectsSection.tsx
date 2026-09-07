@@ -172,10 +172,17 @@ function ProjectCard({
       // Offsets stack the cards into a deck as you scroll. CSS-native, no listener.
       style={{ top: `calc(10vh + ${index * 30}px)`, zIndex: index }}
     >
-      {/* The deck stacks sticky cards over one another, so these need a heavier
-          fill than a normal card to occlude what is behind them — the `strong`
-          tier (80%) rather than an off-scale 95%. */}
-      <SpotlightCard className="relative w-full border-white/10 glass-strong">
+      {/*
+        Opaque on purpose, with blur explicitly disabled.
+
+        These cards stack into a sticky deck, so each one must fully hide the
+        cards behind it. Any translucency at all — even the 80% `glass-strong`
+        tier — lets the previous card's screenshot show through, which is what
+        the original `backdrop-blur-none backdrop-saturate-100` was guarding
+        against. This is the one surface on the site that is deliberately not
+        glass; do not "fix" it to use a glass tier.
+      */}
+      <SpotlightCard opaque className="relative w-full border-black/10 dark:border-white/10">
         <div className={`flex min-h-[26rem] flex-col ${isEven ? "lg:flex-row" : "lg:flex-row-reverse"}`}>
           {/* Content */}
           <div className="static z-10 flex flex-1 flex-col justify-center p-6 sm:p-8 lg:w-[42%] lg:p-10">

@@ -36,7 +36,7 @@
        of blur communicates depth rather than varying per component. Before
        this, six different values were in use across nine surface types. */
     --blur-surface: 12px;   /* in-page surfaces: cards, panels, pills */
-    --blur-chrome: 18px;    /* persistent chrome: navbar, toasts */
+    --blur-chrome: 18px;    /* floating chrome: toasts, the project deck */
     --blur-overlay: 24px;   /* modals over dimmed content: chat, palette */
     --blur-scrim: 4px;      /* the dimming layer behind a modal */
 
@@ -192,8 +192,9 @@ textarea,
     backdrop-filter: blur(var(--blur-surface));
   }
 
-  /* Persistent chrome sits above content permanently, so it carries a little
-     more blur than an in-page card to read as a separate layer. */
+  /* Heavier surfaces that must occlude content behind them: the command
+     palette, the chat panel, the dialog primitive, the stacked project deck.
+     The navbar deliberately does NOT use these — see .glass-nav below. */
   .glass,
   .glass-strong {
     -webkit-backdrop-filter: blur(var(--blur-chrome));
@@ -225,6 +226,17 @@ textarea,
   .glass-tier-chrome {
     -webkit-backdrop-filter: blur(var(--blur-chrome));
     backdrop-filter: blur(var(--blur-chrome));
+  }
+
+  /* The top navigation bar.
+     Deliberately matched to the in-page surface tier (12px / 55%) rather than
+     the heavier chrome tier it used to share with dialogs: the bar sits directly
+     against the page content, so at 18px/80% it read as noticeably frostier than
+     every card beside it. */
+  .glass-nav {
+    -webkit-backdrop-filter: blur(var(--blur-surface));
+    backdrop-filter: blur(var(--blur-surface));
+    background-color: color-mix(in oklab, hsl(var(--background)) 55%, transparent);
   }
 
   /* The dimming layer behind a modal. Not a surface — it sits over content

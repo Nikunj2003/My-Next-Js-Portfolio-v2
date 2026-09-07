@@ -205,7 +205,7 @@ const Navbar = () => {
       <div className="fixed top-0 inset-x-0 z-50 flex justify-center px-4 pt-[max(1rem,env(safe-area-inset-top))] sm:pt-[max(1.5rem,env(safe-area-inset-top))] pointer-events-none">
         <nav
           className={`pointer-events-auto transition-all duration-500 rounded-2xl sm:rounded-full container-width flex items-center justify-between px-4 sm:px-6 h-14 sm:h-16 border ${
-            scrolled ? "glass-strong shadow-accent-card border-white/10" : "bg-transparent border-transparent"
+            scrolled ? "glass-nav shadow-accent-card border-white/10" : "bg-transparent border-transparent"
           }`}
         >
           <Link href="/" onClick={handleHomeClick} aria-label="Go to the top of the homepage" className="flex items-center gap-2 group">
@@ -284,7 +284,7 @@ const Navbar = () => {
               animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, height: "auto", y: 0 }}
               exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, height: 0, y: -10 }}
               transition={mobileMenuTransition}
-              className="md:hidden fixed top-[calc(max(1rem,env(safe-area-inset-top))+3.5rem)] inset-x-4 z-[100] glass-strong border border-white/10 overflow-hidden rounded-2xl shadow-accent-card sm:top-[calc(max(1.5rem,env(safe-area-inset-top))+4rem)]"
+              className="md:hidden fixed top-[calc(max(1rem,env(safe-area-inset-top))+3.5rem)] inset-x-4 z-[100] glass-nav border border-white/10 overflow-hidden rounded-2xl shadow-accent-card sm:top-[calc(max(1.5rem,env(safe-area-inset-top))+4rem)]"
               role="dialog"
               aria-modal="true"
               aria-label="Mobile navigation"

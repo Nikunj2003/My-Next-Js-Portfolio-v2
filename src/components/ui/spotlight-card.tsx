@@ -13,6 +13,16 @@ interface SpotlightCardProps {
   glowSize?: number;
   glowOpacity?: number;
   animateOnEnter?: boolean;
+  /**
+   * Renders the card fully opaque with no backdrop blur.
+   *
+   * For the stacked project deck, where each card must completely hide the ones
+   * behind it. This is a prop rather than a `className` override because the
+   * glass tier sets `backdrop-filter` directly while `backdrop-blur-none` only
+   * clears a custom property — and the tier is emitted later in the stylesheet,
+   * so a class-based override loses. Omitting the tier is the reliable fix.
+   */
+  opaque?: boolean;
 }
 
 export function SpotlightCard({
@@ -23,6 +33,7 @@ export function SpotlightCard({
   glowSize = 650,
   glowOpacity = 100,
   animateOnEnter = true,
+  opaque = false,
 }: SpotlightCardProps) {
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -133,7 +144,10 @@ export function SpotlightCard({
       onPointerMove={isInteractive ? handlePointerMove : undefined}
       onPointerLeave={isInteractive ? handlePointerLeave : undefined}
       className={cn(
-        "group relative rounded-3xl border border-border/60 bg-background/65 dark:bg-background/68 glass-tier-surface backdrop-saturate-140 overflow-hidden shadow-accent-card",
+        "group relative rounded-3xl border border-border/60 overflow-hidden shadow-accent-card",
+        opaque
+          ? "bg-background"
+          : "bg-background/65 dark:bg-background/68 glass-tier-surface backdrop-saturate-140",
         className
       )}
     >
