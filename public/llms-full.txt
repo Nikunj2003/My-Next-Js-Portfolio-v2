@@ -85,7 +85,7 @@ These are the deepest technical write-ups on the site — 13 in total, spanning 
 4. Knowledge Graph RAG — https://nikunj.codenex.dev/work/knowledge-graph-rag
    - Tenant-scoped retrieval over 1M+ entities in Neo4j and pgvector, fed by four ETL pipelines each with an incremental update path.
    - Five independently measured failure layers: ingestion integrity, knowledge-graph extraction quality, retrieval quality, answer quality, and operations.
-   - Retrieval scored on recall@k, MRR, and context precision per query mode and per question type, producing a documented mode-per-tool policy.
+   - Retrieval scored on recall@k (recall within the top k results), mean reciprocal rank, and context precision per query mode and per question type, producing a documented mode-per-tool policy.
    - Golden question set drawn from 75-100 real production traces rather than invented questions.
    - Stack signals: Neo4j, pgvector, PostgreSQL, Python, FastAPI, Ragas, Langfuse, OpenTelemetry, MCP.
 

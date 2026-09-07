@@ -30,7 +30,7 @@ const KgRagDiagram = ({ description }: { description: string }) => (
     <Box x={296} y={344} w={128} h={44} label="global"  order={3} />
     <Box x={436} y={344} w={128} h={44} label="hybrid"  order={3} />
     <Box x={576} y={344} w={128} h={44} label="mix"  order={3} />
-    <Caption x={360} y={406} text="scored on recall@k · MRR · context precision, per mode per question type" />
+    <Caption x={360} y={406} text="scored on retrieval accuracy · ranking quality · context precision, per mode per question type" />
 
     <Arrow d="M 360 410 L 360 424"  order={4} />
     <LayerLabel x={16} y={428} text="L4 answer quality · L5 operations" />

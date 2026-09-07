@@ -55,7 +55,7 @@ export const about = {
       metric: "1M+",
       label: "Knowledge graph entities",
       detail:
-        "ArmorCode's tenant-scoped Knowledge Graph RAG layer in Neo4j and pgvector, with retrieval scored on recall@k, MRR, and context precision across five query modes.",
+        "ArmorCode's tenant-scoped Knowledge Graph RAG layer in Neo4j and pgvector, with retrieval scored on accuracy, ranking quality, and context precision across five query modes.",
     },
     {
       metric: "57%",
@@ -148,7 +148,7 @@ export const experiences: Experience[] = [
       "Built an OpenTelemetry-based LLM evaluation platform on Langfuse so every prompt, model, agent, skill, and MCP tool change ships on measured accuracy, latency, and cost. It scores 9 AI surfaces against golden datasets using deterministic checks, scikit-learn classification metrics, Ragas RAG scores, and LLM-as-a-judge graders validated at Cohen's kappa >= 0.7, enforced as Jenkins CI gates.",
       "Delivered 10+ production MCP servers in ArmorCode's shared enterprise tool registry under multi-tenant AppSec constraints, implementing OAuth2/RBAC controls, tool-level permission tiers, explicit denial behavior, and audit attribution, with 20 of 20 authorization checks validated across three access tiers.",
       "Govern company-wide model and MCP access as sole maintainer of a LiteLLM gateway, issuing scoped API keys with per-model spend budgets and distributing RBAC-gated MCP servers to employees' Claude Desktop via an .mcpb proxy. Cut recurring LLM spend by tracing 57% of gateway cost across 50,000+ requests to 10+ automations, then migrating models and splitting system/user prompts to enable Bedrock prompt caching, while flagging a deterministic rewrite worth a further ~95% reduction.",
-      "Built ArmorCode's tenant-scoped knowledge-graph RAG layer over 1M+ entities of RCAs, test cases, and product documentation in Neo4j and pgvector, giving Office OS agents grounded product knowledge without cross-tenant leakage, with retrieval scored on recall@k, MRR, and context precision across five query modes.",
+      "Built ArmorCode's tenant-scoped knowledge-graph RAG layer over 1M+ entities of root-cause analyses, test cases, and product documentation in Neo4j and pgvector, giving Office OS agents grounded product knowledge without cross-tenant leakage, with retrieval scored on accuracy, ranking quality, and context precision across five query modes.",
       "Cut CS and support escalations to engineering with a codebase-search MCP service in Go over 8 product repositories, fronting a read-only agent against a daily-reindexed vector index. Restored it after 100+ queries returned zero content by isolating two independent causes in SDK and host internals: a Go output-schema defect that made schema-aware clients discard every answer, and a query deadline sized for a longer client timeout tier. Shipped the fix with a negative-control test and flagged 14 exposed connectors.",
       "Kept AI-drafted documentation reviewable rather than blind-published by shipping Quill, an Electron/React/TypeScript GitHub PR review tool pairing a WYSIWYG editor with an embedded AI agent terminal, per-branch Git worktrees, and permission-aware GitHub delivery."
     ],

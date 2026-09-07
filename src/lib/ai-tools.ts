@@ -310,7 +310,7 @@ const METRICS: MetricEntry[] = [
     keys: ["query mode", "modes", "retrieval mode", "five modes"],
     value: "5",
     context:
-      "Retrieval modes benchmarked (naive, local, global, hybrid, mix) into a documented mode-per-tool policy, scored on recall@k, MRR, and context precision.",
+      "Retrieval modes benchmarked (naive, local, global, hybrid, mix) into a documented mode-per-tool policy, scored on recall within the top k results, mean reciprocal rank, and context precision.",
     source: "Knowledge Graph RAG",
   },
   {

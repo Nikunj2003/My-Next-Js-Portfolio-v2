@@ -413,7 +413,7 @@ export const caseStudies: CaseStudy[] = [
       {
         choice: "Evaluate retrieval per mode, per question type",
         why:
-          "Specific lookups, thematic questions, and multi-hop questions win under different modes, which is exactly why mode choice should not be folklore. Running all five modes over a golden set of real questions pulled from production traces — scoring recall@k, MRR, and context precision — produced a documented mode-per-tool policy with numbers behind it.",
+          "Specific lookups, thematic questions, and multi-hop questions win under different modes, which is exactly why mode choice should not be folklore. Running all five modes over a golden set of real questions pulled from production traces — scoring recall within the top k results, mean reciprocal rank, and context precision — produced a documented mode-per-tool policy with numbers behind it.",
         rejected: ["One default mode for all tools — simpler, and measurably worse on two of three question types"],
       },
       {
@@ -435,7 +435,7 @@ export const caseStudies: CaseStudy[] = [
         points: [
           "Ingestion integrity — source parity, duplicate and stale counts, idempotency, freshness lag. Nightly assertions with alerts.",
           "Graph extraction quality — entity and relation precision and recall against human annotation, plus duplication and orphan-entity rates. The evaluation almost everyone skips.",
-          "Retrieval quality — recall@k, MRR, and context precision, measured per query mode and per question type.",
+          "Retrieval quality — recall@k (was the right document in the top k results), mean reciprocal rank (how high it ranked), and context precision, measured per query mode and per question type.",
           "Answer quality — faithfulness and answer relevancy, reference-free so they also run on live traffic; correctness against golden facts offline.",
           "Operations — p95 latency, timeout rate, empty-result rate, cost per query, and publish-to-queryable lag.",
         ],
