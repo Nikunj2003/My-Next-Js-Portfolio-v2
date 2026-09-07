@@ -315,8 +315,8 @@ const METRICS: MetricEntry[] = [
     source: "Knowledge Graph RAG",
   },
   {
-    keys: ["business function", "functions", "teams served", "8"],
-    value: "8+",
+    keys: ["business function", "functions", "teams served", "20"],
+    value: "20+",
     context:
       "Business functions reachable by Slack-accessible agents through Agentic Office OS, which Nikunj co-built with teammates.",
     source: "Agentic Office OS",

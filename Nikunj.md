@@ -1,6 +1,6 @@
 # Nikunj Khitha
 
-**Applied AI Engineer at ArmorCode | Agent Systems, MCP Tool Governance & LLM Evaluation | Agents shipped to 8+ business functions · 10+ production MCP servers · Python, Go, TypeScript, Spring AI**
+**Applied AI Engineer at ArmorCode | Agent Systems, MCP Tool Governance & LLM Evaluation | Agents shipped to 20+ business functions · 10+ production MCP servers · Python, Go, TypeScript, Spring AI**
 
 Gurugram, Haryana, India
 
@@ -46,7 +46,7 @@ I am targeting Applied AI Engineer, Forward Deployed AI Engineer, Agentic AI Eng
 
 The umbrella platform the rest of my work plugs into: fully autonomous, human-triggered, and human-in-the-loop agents and sub-agents, serving the PM, QA, Documentation, Dev, TSE, Customer Success, Sales, and Office-of-the-CEO teams, reachable by the whole org through Slack.
 
-- Co-built Agentic Office OS with teammates, partnering with an external business consultant, executive leadership, managers, and teams across **8+ business functions** to translate ambiguous operational needs into agents, skills, MCP integrations, and approval workflows — then owning discovery, rollout, debugging, enablement, and iteration. This is embedded delivery across internal business functions.
+- Co-built Agentic Office OS with teammates, partnering with an external business consultant, executive leadership, managers, and teams across **20+ business functions** to translate ambiguous operational needs into agents, skills, MCP integrations, and approval workflows — then owning discovery, rollout, debugging, enablement, and iteration. This is embedded delivery across internal business functions.
 - Wired the connectors below into those agents as their shared tool and context layer — knowledge-graph RAG, the codebase-search MCP, the business-data layer, and the wider MCP registry — so each team's agents answer from the same grounded sources.
 
 ##### Agent Tooling: Governed MCP Registry

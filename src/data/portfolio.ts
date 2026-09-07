@@ -13,7 +13,7 @@ export const personalInfo = {
 
 /** `href` points each number at the surface that actually proves it. */
 export const stats = [
-  { value: 8, suffix: "+", label: "Business Functions Served", href: "#experience" },
+  { value: 20, suffix: "+", label: "Business Functions Served", href: "#experience" },
   { value: 10, suffix: "+", label: "Production MCP Servers", href: "/work/governed-mcp-registry" },
   { value: 1, suffix: "M+", label: "KG Entities", href: "/work/knowledge-graph-rag" },
   { value: 9, suffix: "", label: "AI Surfaces Evaluated", href: "/work/llm-evaluation-platform" },
@@ -48,7 +48,7 @@ export const about = {
         "Delivered in ArmorCode's shared enterprise tool registry with OAuth2/RBAC, tool-level permission tiers, explicit denial behavior, and audit attribution under multi-tenant AppSec constraints.",
     },
     {
-      metric: "8+",
+      metric: "20+",
       label: "Business functions served",
       detail:
         "Co-built Agentic Office OS, translating ambiguous stakeholder requirements into Slack-accessible agents, skills, MCP integrations, and human-in-the-loop approval workflows — then owning rollout, debugging, and enablement.",
@@ -168,9 +168,9 @@ export const experiences: Experience[] = [
     role: "Applied AI Engineer (SDE 1)",
     period: "Dec 2025 – Present",
     type: "work",
-    summary: "Co-build Agentic Office OS, the internal agent platform serving 8+ business functions, and own the tool, context, governance, and evaluation layers underneath it.",
+    summary: "Co-build Agentic Office OS, the internal agent platform serving 20+ business functions, and own the tool, context, governance, and evaluation layers underneath it.",
     bullets: [
-      "Co-built Agentic Office OS, the internal platform of autonomous, human-triggered, and human-in-the-loop agents reachable org-wide through Slack, translating ambiguous requirements from an external business consultant, executives, and internal teams into agents, skills, MCP integrations, and approval workflows for 8+ business functions, then owning rollout, debugging, and enablement.",
+      "Co-built Agentic Office OS, the internal platform of autonomous, human-triggered, and human-in-the-loop agents reachable org-wide through Slack, translating ambiguous requirements from an external business consultant, executives, and internal teams into agents, skills, MCP integrations, and approval workflows for 20+ business functions, then owning rollout, debugging, and enablement.",
       { text: "Built an OpenTelemetry-based LLM evaluation platform on Langfuse so every prompt, model, agent, skill, and MCP tool change ships on measured accuracy, latency, and cost. It scores 9 AI surfaces against golden datasets using deterministic checks, scikit-learn classification metrics, Ragas RAG scores, and LLM-as-a-judge graders validated at Cohen's kappa >= 0.7, enforced as Jenkins CI gates.", study: "llm-evaluation-platform" },
       { text: "Delivered 10+ production MCP servers in ArmorCode's shared enterprise tool registry under multi-tenant AppSec constraints, implementing OAuth2/RBAC controls, tool-level permission tiers, explicit denial behavior, and audit attribution, with 20 of 20 authorization checks validated across three access tiers.", study: "governed-mcp-registry" },
       { text: "Govern company-wide model and MCP access as sole maintainer of a LiteLLM gateway, issuing scoped API keys with per-model spend budgets and distributing RBAC-gated MCP servers to employees' Claude Desktop via an .mcpb proxy. Cut recurring LLM spend by tracing 57% of gateway cost across 50,000+ requests to 10+ automations, then migrating models and splitting system/user prompts to enable Bedrock prompt caching, while flagging a deterministic rewrite worth a further ~95% reduction.", study: "code-intelligence-gateway" },
