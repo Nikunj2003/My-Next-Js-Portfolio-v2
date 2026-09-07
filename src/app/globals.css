@@ -123,18 +123,32 @@ body {
 
 a,
 button,
+select,
+label,
+summary,
 [role="button"],
+[role="combobox"],
+[role="option"],
 input[type="submit"],
 input[type="button"],
+input[type="checkbox"],
+input[type="radio"],
 .cursor-pointer {
   cursor: url("/icons8-hand-cursor-18-light.png") 4 2, pointer;
 }
 
 .dark a,
 .dark button,
+.dark select,
+.dark label,
+.dark summary,
 .dark [role="button"],
+.dark [role="combobox"],
+.dark [role="option"],
 .dark input[type="submit"],
 .dark input[type="button"],
+.dark input[type="checkbox"],
+.dark input[type="radio"],
 .dark .cursor-pointer {
   cursor: url("/icons8-hand-cursor-18-dark.png") 4 2, pointer;
 }

@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import { useState } from "react";
-import { Mail, Linkedin, Github, Send, Download, ArrowUpRight } from "lucide-react";
+import { Mail, Linkedin, Github, Send, Download, ArrowUpRight, Briefcase, Users, GitPullRequest, MessageSquare } from "lucide-react";
 import { personalInfo } from "@/data/portfolio";
 import { toast } from "@/components/ui/sonner";
 import {
@@ -12,9 +12,23 @@ import {
   type ContactFormData,
 } from "@/lib/contact";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import Reveal from "@/components/ui/reveal";
 import Card3D from "./Card3D";
 import cardImage from "@/assets/card.png";
+
+/**
+ * One icon per contact reason.
+ *
+ * Keyed off CONTACT_REASONS so adding a reason surfaces here as a type error
+ * rather than silently rendering without an icon.
+ */
+const REASON_ICONS: Record<(typeof CONTACT_REASONS)[number], React.ElementType> = {
+  Hiring: Briefcase,
+  Collaboration: Users,
+  "Open Source": GitPullRequest,
+  Other: MessageSquare,
+};
 
 const SOCIAL_LINKS = [
   {
@@ -293,31 +307,50 @@ const ContactSection = () => {
 
                 <div>
                   <label htmlFor="contact-reason" className="text-xs font-mono font-medium text-foreground/70 mb-2 block uppercase tracking-wider">Reason</label>
-                  <div className="relative">
-                    <select
+                  {/*
+                    Radix Select rather than a native <select>: the OS renders a
+                    native dropdown's option list itself, so it cannot be themed
+                    and appeared as a plain grey system menu against the rest of
+                    the portfolio. This one is real markup, so it follows the
+                    site's glass and accent language.
+                  */}
+                  <Select
+                    value={form.reason}
+                    disabled={isSubmitting}
+                    onValueChange={(value) => {
+                      setForm({ ...form, reason: value as ContactFormData["reason"] });
+                      if (errors.reason) {
+                        setErrors((current) => ({ ...current, reason: undefined }));
+                      }
+                    }}
+                  >
+                    <SelectTrigger
                       id="contact-reason"
-                      disabled={isSubmitting}
-                      value={form.reason}
-                      onChange={(e) => {
-                        setForm({ ...form, reason: e.target.value as ContactFormData["reason"] });
-                        if (errors.reason) {
-                          setErrors((current) => ({ ...current, reason: undefined }));
-                        }
-                      }}
                       aria-invalid={Boolean(errors.reason)}
                       aria-describedby={errors.reason ? "contact-reason-error" : undefined}
-                      className="w-full px-4 py-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-sm outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all appearance-none"
                     >
+                      {/*
+                        Explicit content rather than <SelectValue/>: Radix mirrors
+                        the selected item's children into the trigger, which would
+                        drag the icon tile and hint line in with it. The collapsed
+                        trigger shows the icon at label scale and the label only.
+                      */}
+                      <span className="flex min-w-0 items-center gap-2.5">
+                        {(() => {
+                          const ReasonIcon = REASON_ICONS[form.reason];
+                          return <ReasonIcon className="h-4 w-4 shrink-0 text-primary" />;
+                        })()}
+                        <span className="truncate">{form.reason}</span>
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent>
                       {CONTACT_REASONS.map((r) => (
-                        <option key={r} value={r} className="bg-background text-foreground">{r}</option>
+                        <SelectItem key={r} value={r} icon={REASON_ICONS[r]}>
+                          {r}
+                        </SelectItem>
                       ))}
-                    </select>
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
-                      <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
-                  </div>
+                    </SelectContent>
+                  </Select>
                   {errors.reason && (
                     <p id="contact-reason-error" className="mt-2 text-sm text-destructive">
                       {errors.reason}
