@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import Lenis from 'lenis';
 import { scrollToHash, scrollToTop } from '@/lib/scroll';
 
@@ -9,6 +10,44 @@ type LenisWindow = Window & typeof globalThis & {
 };
 
 export function SmoothScroll({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
+  /**
+   * Reset scroll on client-side navigation.
+   *
+   * Lenis caches its own scroll position and, because the effect below runs once
+   * with an empty dep array, it never learns about route changes. Next resets
+   * `window.scrollY` on navigation but Lenis then writes its stale value back on
+   * the next frame — so opening a case study from the homepage (where the
+   * featured row sits far down a very tall page) landed you near the footer.
+   *
+   * It looked correct from `/work` only because that page is short: the stale
+   * offset got clamped to almost nothing, which is why the bug appeared to
+   * depend on the entry point rather than on navigation itself.
+   */
+  const isFirstRenderRef = useRef(true);
+
+  useEffect(() => {
+    // Skip the very first run. On a hard load or a refresh the browser owns the
+    // scroll position — forcing 0 here would defeat scroll restoration, which is
+    // a separate fix. Only client-side navigations need the reset.
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false;
+      return;
+    }
+
+    // A hash target owns the scroll position; do not fight it.
+    if (window.location.hash) return;
+
+    const lenis = (window as LenisWindow).__lenis;
+
+    if (lenis) {
+      lenis.scrollTo(0, { immediate: true, force: true });
+    } else {
+      window.scrollTo(0, 0);
+    }
+  }, [pathname]);
+
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       return;

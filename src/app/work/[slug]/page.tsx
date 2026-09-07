@@ -261,7 +261,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                     What was mine
                     <AskAboutThis question={`Who owned what on the ${study.title}?`} />
                   </h2>
-                  <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/[0.04] p-6 glow-accent-panel">
+                  <div className="mt-4 rounded-2xl border border-primary/20 glass-subtle p-6 glow-accent-panel">
                     <p className="text-base leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
                       {study.ownership}
                     </p>
