@@ -711,7 +711,14 @@ export async function POST(request: Request) {
                 chunks += text;
                 send({ type: "text_delta", text });
               },
-              (attempt) => send({ type: "status", label: `attempt ${attempt} ${mustAnswer ? "Writing answer" : "Thinking"}`.trim() })
+              /*
+               * The retry attempt number is internal detail and must not reach
+               * the UI — it shipped as "attempt 1 Thinking …", which reads as a
+               * debug string. The heartbeat's real job is to keep the client's
+               * idle timer alive, so any label works; the visitor only needs to
+               * know it is still working.
+               */
+              () => send({ type: "status", label: mustAnswer ? "Writing answer" : "Thinking" })
             );
           } catch (error) {
             if (error instanceof UpstreamStatusError) {

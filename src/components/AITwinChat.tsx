@@ -1069,7 +1069,16 @@ const AITwinChat = () => {
             )}
           </div>
         ))}
-        {isLoading && (
+        {/*
+          Shown only when no assistant bubble exists yet.
+
+          This indicator predates streaming, when a pending answer had nothing on
+          screen at all. Now the assistant bubble is placed as soon as the first
+          event arrives and carries its own status ("Thinking", tool trace), so
+          an unconditional `isLoading` indicator rendered a SECOND empty bubble
+          beneath the real one.
+        */}
+        {isLoading && !messages.some((message) => message.streaming) && (
           <div className="flex gap-3">
             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-1">
               <Bot className="w-4 h-4 text-primary" />
