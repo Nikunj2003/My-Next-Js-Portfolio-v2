@@ -1,10 +1,11 @@
 <div align="center">
 
-# 🌐 Nikunj Khitha - Full-Stack GenAI Engineer Portfolio
+# Nikunj Khitha — Applied AI Engineer Portfolio
 
-Production-grade portfolio for a full-stack GenAI engineer focused on GraphRAG, LightRAG, AI automation, AI gateways, backend systems, and product-grade applications built with TypeScript/Node.js, Go/Gin, Java/Spring, and Python/FastAPI.
-
-Built with **Next.js**, the site combines a polished interactive experience with a recruiter-friendly showcase of enterprise GenAI systems, end-to-end engineering, automation, and product development.
+A production Next.js portfolio built around real proof, not slideware: 13 in-depth engineering case
+studies, an AI Twin that answers questions by calling real tools over the site's own data, and a
+data-driven content model that keeps the résumé, LinkedIn, case studies, and the AI Twin's answers
+from drifting apart.
 
 <!-- ![Homepage Screenshot](public/static/home.png) -->
 
@@ -12,139 +13,170 @@ Built with **Next.js**, the site combines a polished interactive experience with
 
 ---
 
-## ✨ Feature Highlights
+## Feature Highlights
 
-### 1. 🤖 AI Twin Chatbot Integration
-Interactive AI chatbot (`src/components/AITwinChat.tsx`) integrated into the portfolio:
-- Floating widget positioned at the bottom-right corner.
-- Context-aware responses regarding professional background, skills, and projects.
-- Provides a seamless, immediate conversational experience for visitors.
+### 1. Case studies, not project cards
+13 case studies under `/work` and `/work/[slug]`, each with a problem statement, the constraints it
+ran under, decisions with their **rejected alternatives**, measured results, and an explicit
+statement of what was individually owned versus shared. Grouped by theme with a "what should I read
+for X" box that answers through the same AI Twin backend. Source of truth: `src/data/case-studies.ts`.
 
-### 2. 🖱️ Fluid Cursor & Canvas Effects
-- Custom fluid cursor (`src/components/FluidCursor.tsx`) tracking mouse movement.
-- Trailing canvas effect for an engaging interactive micro-interaction.
-- Handled via custom hooks (`src/hooks/useFluidCursor`) ensuring highly optimized rendering.
+### 2. AI Twin — a tool-calling agent, not a chat widget
+`src/components/AITwinChat.tsx` and `src/app/api/chat/route.ts` implement a real agent loop against
+an OpenAI-compatible LLM (NVIDIA NIM by default):
+- **Real tools** (`src/lib/ai-tools.ts`): `search_work`, `get_case_study`, `get_metric`,
+  `compare_systems`, `navigate_to` — all pure, in-process lookups over the site's own data, so the
+  agent cites the same facts the pages show.
+- **Streams from round zero**, including tool-selection rounds, with retry-on-stall against
+  first-token latency rather than total generation time — tuned against measured provider latency,
+  not guessed at.
+- **Every tool call is shown**, not narrated: the trace (tool name, arguments, duration, refusal) is
+  part of the response UI.
+- **`get_metric` refuses to invent numbers.** If a figure isn't in the portfolio's source of truth,
+  the agent says so instead of estimating — the whole site's pitch is measurement, so a fabricated
+  number would undercut it.
+- **Inline answers** expand under experience bullets in place; every other "Ask about this"
+  affordance opens the AI Twin panel, since an answer of unpredictable length inside a narrow card
+  breaks the layout around it.
 
-### 3. 🧊 Consistent Glassmorphism & Translucent Design
-- Site-wide glassmorphism aesthetic tailored for both light and dark modes.
-- Refined warm beige hue for neutral color variables in light mode, complementing brand colors and logos.
-- Translucent panels, subtle borders, and backdrop blurs on cards and sidebars.
+### 3. One content model, many surfaces
+`src/data/portfolio.ts` and `src/data/case-studies.ts` are the source of truth for experience,
+projects, skills, stats, and case-study depth. The homepage, `/work`, the AI Twin's tool responses,
+and the JSON-LD SEO graph all derive from the same data — a number or a claim only has to be correct
+in one place. Experience bullets can carry an optional case-study slug (compile-time checked against
+the real slug list), surfacing a "Read case study" link and an inline follow-up right where the claim
+is made.
 
-### 4. 🎬 Advanced Cross-Device Animations
-Leveraging **Framer Motion** for highly performant animations:
-- 3D Card tilt effects on hover (`src/components/Card3D.tsx`)
-- Scroll-triggered reveal animations optimized across mobile, tablet, laptop, and PC hardware.
-- Smooth page structure with micro-interaction refinements on project cards and contact sections.
+### 4. Consistent glassmorphism, tiered on purpose
+Blur and fill are tiered by surface role — in-page cards/panels, floating chrome, and modal overlays
+each get a distinct blur radius and fill opacity (`src/app/globals.css`) — rather than one blur value
+reused everywhere and drifting inconsistent by accident. Scroll-reveal animations slide rather than
+fade, since fading a translucent glass panel in from `opacity: 0` makes it read as flat for the
+length of the animation.
 
-### 5. 🎨 Theming & Refined Colors
-- Adaptive Dark / Light themes via `next-themes`.
-- Carefully harmonized palettes aligned with personal branding aesthetics.
-- Tailwind CSS (v4) for utility-first styling with high performance and Radix UI primitives.
+### 5. Smooth scroll that behaves like the browser
+Lenis-backed smooth scrolling (`src/components/SmoothScroll.tsx`) that still respects native scroll
+restoration on refresh, resets correctly on client-side navigation, and — critically — only locks
+page scroll behind an overlay that is actually modal. The AI Twin's mobile layout is a full-screen
+modal and locks the page; its desktop layout is a non-modal corner panel and does not.
 
-### 6. 💼 Modular Section Architecture
-- Reusable modular components: Hero, About, Experience, Projects, Skills, Contact.
-- Built via React Server / Client Components, prioritizing maintainability and separation of logic.
-- Contact form now posts to a live Next.js API route with server-side validation and Resend-backed inbox delivery.
+### 6. Cross-device animation and interaction polish
+- 3D card tilt on hover (`src/components/Card3D.tsx`)
+- A custom fluid-cursor canvas effect (`src/hooks/useFluidCursor.tsx`)
+- Scroll-triggered reveals via Framer Motion, honoring `prefers-reduced-motion`
+- A live contact form backed by a real API route with Zod validation and Resend delivery
 
 ---
 
-## 🖥️ Technology Stack
+## Technology Stack
 
-- **Next.js (v16)** – App Router, hybrid rendering
-- **TypeScript** – Strong type safety & maintainability
-- **Tailwind CSS (v4)** – Future-ready, highly optimized utility styling
-- **Framer Motion** – Declarative React animations
-- **Radix UI components / Shadcn UI** – Accessible unstyled UI primitives
-- **Lucide React** – Consistent iconography
-- **Zod** – Runtime validation for chat and contact flows
-- **Embla Carousel / Recharts** – Specialized UI elements
+- **Next.js 16** (App Router) + **React 19** + **TypeScript** (strict)
+- **Tailwind CSS v4** — utility-first styling, tiered glass tokens
+- **Framer Motion** — declarative, reduced-motion-aware animation
+- **Radix UI / shadcn-style primitives** (`src/components/ui/`)
+- **Zod** — request validation for the chat and contact API routes
+- **Resend** — contact form delivery
+- **NVIDIA NIM (OpenAI-compatible)** — the AI Twin's LLM provider
 
 ---
 
-## 🔐 Environment Variables
-Create a `.env.local` to securely store keys for the AI Chatbot and Resend-backed contact form.
+## Environment Variables
+
+Create a `.env.local`:
 
 ```bash
-# Example environment variables 
-# -----------------------------
-# Contact / Resend
-RESEND_API_KEY=re_your_resend_api_key
-CONTACT_EMAIL_FROM="Nikunj Portfolio <contact@portfolio.codenex.dev>"
-CONTACT_EMAIL_TO=njkhitha2003@gmail.com,info.portfolio.nikunj@gmail.com
-
-# -----------------------------
-# LLM / AI Provider
-LLM_API_KEY=your-llm-api-key
+# LLM / AI Twin — used in src/app/api/chat/route.ts
+LLM_API_KEY=your-api-key
 LLM_BASE_URL=https://integrate.api.nvidia.com/v1/chat/completions
 AI_MODEL=openai/gpt-oss-20b
+
+# Contact form (Resend)
+RESEND_API_KEY=re_your_resend_api_key
+CONTACT_EMAIL_FROM="Nikunj Portfolio <contact@yourdomain.com>"
+CONTACT_EMAIL_TO=you@example.com
 ```
 
-> Never commit real credentials. Configure them in your hosting provider's dashboard (e.g. Vercel) for production.
-
-`CONTACT_EMAIL_TO` supports a comma-separated list if you want contact form emails delivered to multiple inboxes.
-
-To send from a custom address like `contact@portfolio.codenex.dev`, verify that domain/subdomain inside Resend and add the SPF/DKIM DNS records Resend provides.
+Notes:
+- `CONTACT_EMAIL_TO` accepts a comma-separated list to deliver to multiple inboxes.
+- To send from a custom address, verify that domain in Resend and add the SPF/DKIM records it
+  provides.
+- `AI_MODEL` must support OpenAI-style `tools`/function calling — the AI Twin depends on it for
+  every one of its five tools.
+- Never commit real credentials; set them in your hosting provider's dashboard for production.
 
 ---
 
-## 🛠️ Development Setup
+## Development
 
-### 1. Install Dependencies
 ```bash
 npm install
+npm run dev        # http://localhost:3000
 ```
 
-### 2. Start Dev Server
+## Testing & Linting
+
 ```bash
-npm run dev
+npm run lint        # ESLint
+npm test             # node:test, TypeScript-native (no build step, no Jest)
+npm run build        # Production build
 ```
-Visit: http://localhost:3000
+
+Tests run via Node's built-in test runner against the TypeScript source directly (see
+`tests/alias-hook-register.mjs` for the `@/` path-alias resolver), covering the case-study data
+model, the AI Twin's tools and streaming route, contact/rate-limit logic, and UI consistency rules
+for the "Ask about this" affordance and the glass design tokens.
 
 ---
 
-## 🧪 Testing & Linting
-```bash
-# Run the linter
-npm run lint
+## Codex Job Hunt Toolkit
 
-# Run the unit tests
-npm test
+This repo also includes Codex skills and subagents for resume and job-search workflows, unrelated to
+the site itself:
 
-# Build for production
-npm run build
-```
-
----
-
-## 🤖 Codex Job Hunt Toolkit
-
-This repo includes Codex skills and subagents for resume and job-search workflows:
-
-- `$portfolio-resume-refresh with subagents` refreshes the base one-page ATS LaTeX resume from the latest portfolio facts.
-- `$jd-tailored-resume with subagents` rewrites the resume for a specific job description using portfolio facts, JD keywords, company research, and ATS best practices.
-- `$resume-scorecard with subagents` scores the resume against a JD without editing.
-- `$application-packet with subagents` creates cover letters, recruiter messages, LinkedIn notes, referral asks, and follow-ups.
-- `$interview-story-bank with subagents` builds STAR interview stories from verified portfolio and resume facts.
-- `$portfolio-fact-gap-audit with subagents` finds missing metrics, links, dates, and evidence that would improve applications.
+- `$portfolio-resume-refresh with subagents` refreshes the base one-page ATS LaTeX résumé from the
+  latest portfolio facts.
+- `$jd-tailored-resume with subagents` rewrites the résumé for a specific job description using
+  portfolio facts, JD keywords, company research, and ATS best practices.
+- `$resume-scorecard with subagents` scores the résumé against a JD without editing.
+- `$application-packet with subagents` produces cover letters, recruiter messages, LinkedIn notes,
+  referral asks, and follow-ups.
+- `$interview-story-bank with subagents` builds STAR interview stories from verified résumé and
+  portfolio facts.
+- `$portfolio-fact-gap-audit with subagents` finds missing metrics, links, dates, and evidence that
+  would strengthen an application.
 
 Detailed instructions live in `.codex/job-hunt/INSTRUCTIONS.md`.
 
 ---
 
-## 🧱 Project Structure (Excerpt)
+## Project Structure (excerpt)
+
 ```
 src/
-	app/            # App Router pages, global layouts, styles
-	components/     # Modular UI segments (Hero, Skills, Projects, AITwinChat, etc.)
-		ui/           # Reusable atomic base UI components (Shadcn/Radix based)
-	hooks/          # Custom hooks (e.g., useFluidCursor)
+  app/                    # App Router: layout, homepage, /work, /work/[slug], API routes
+    api/chat/             # AI Twin backend: streaming, tool loop, retry
+    work/                 # Case-study index and detail pages
+  components/
+    ai/                   # AnswerBody, InlineAnswer, useAssistantAnswer — the shared answer UI
+    ui/                   # Radix/shadcn-style primitives
+    AITwinChat.tsx         # The AI Twin panel
+    AskAboutThis.tsx       # The single "ask about this" affordance used everywhere
+  data/
+    portfolio.ts           # Experience, projects, skills, stats — the content source of truth
+    case-studies.ts        # All 13 case studies
+  lib/
+    ai-tools.ts             # The AI Twin's real tools (search_work, get_case_study, ...)
+    ai-config.ts            # System prompt, model selection, guardrails
+    chat-contract.ts        # Shared client/server streaming contract and timeout tuning
+tests/                     # node:test suites (data model, AI tools, chat route, UI rules)
 ```
 
 ---
 
-## 📄 License
-See LICENSE for details.
+## License
+
+See `LICENSE`.
 
 ---
 
-<div align="center">Made with passion & TypeScript ⚡</div>
+<div align="center">Built with Next.js, TypeScript, and a real tool-calling agent.</div>
