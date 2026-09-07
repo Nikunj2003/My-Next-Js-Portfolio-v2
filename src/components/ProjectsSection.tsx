@@ -182,7 +182,14 @@ function ProjectCard({
         against. This is the one surface on the site that is deliberately not
         glass; do not "fix" it to use a glass tier.
       */}
-      <SpotlightCard opaque className="relative w-full border-black/10 dark:border-white/10">
+      {/*
+        animateOnEnter={false}: the reveal animation fades element opacity from 0
+        to 1, and a half-faded opaque card is translucent — so on refresh the card
+        below showed through for the length of the animation. Fading in a member
+        of a deliberately opaque stack cannot work; the deck reveals itself
+        through the sticky scroll offsets instead.
+      */}
+      <SpotlightCard opaque animateOnEnter={false} className="relative w-full border-black/10 dark:border-white/10">
         <div className={`flex min-h-[26rem] flex-col ${isEven ? "lg:flex-row" : "lg:flex-row-reverse"}`}>
           {/* Content */}
           <div className="static z-10 flex flex-1 flex-col justify-center p-6 sm:p-8 lg:w-[42%] lg:p-10">
