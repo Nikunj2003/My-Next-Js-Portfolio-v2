@@ -14,7 +14,7 @@ const srcDir = resolvePath(dirname(fileURLToPath(import.meta.url)), "..", "src")
  */
 import { existsSync } from "node:fs";
 
-export function resolve(specifier, context, nextResolve) {
+export async function resolve(specifier, context, nextResolve) {
   if (specifier.startsWith("@/")) {
     const base = resolvePath(srcDir, specifier.slice(2));
 
@@ -25,5 +25,17 @@ export function resolve(specifier, context, nextResolve) {
       }
     }
   }
+  // Next ships `next/server` et al. without the extension Node's ESM resolver
+  // demands, so a route handler under test fails to load at all. Retrying with
+  // `.js` is what lets tests exercise real route modules instead of only the
+  // pure helpers beside them.
+  if (specifier.startsWith("next/")) {
+    try {
+      return await nextResolve(specifier, context);
+    } catch {
+      return nextResolve(`${specifier}.js`, context);
+    }
+  }
+
   return nextResolve(specifier, context);
 }

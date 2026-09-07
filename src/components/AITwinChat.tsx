@@ -4,9 +4,11 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { MessageCircle, X, Send, Bot, User, Trash2, Wrench } from "lucide-react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { buildAnswerComponents } from "@/components/ai/AnswerBody";
 import { chatSuggestions } from "@/data/portfolio";
 import {
   CHAT_CLIENT_TIMEOUT_MS,
+  CHAT_STREAM_IDLE_TIMEOUT_MS,
   CHAT_ENDPOINT,
   createChatEventParser,
   type ChatToolCall,
@@ -228,7 +230,9 @@ async function consumeChatStream(
   response: Response,
   assistantId: string,
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
-  replaceExisting: boolean
+  replaceExisting: boolean,
+  /** Called on every received chunk so the caller can reset its idle timer. */
+  onActivity?: () => void
 ): Promise<StreamOutcome> {
   const reader = response.body?.getReader();
   if (!reader) {
@@ -297,6 +301,13 @@ async function consumeChatStream(
         patch((message) => ({ ...message, content, status: undefined }));
         break;
       }
+      case "text_replace": {
+        // The server rewrote the answer after streaming it (link
+        // normalisation), so swap the body rather than appending to it.
+        content = event.text;
+        patch((message) => ({ ...message, content, status: undefined }));
+        break;
+      }
       case "trace": {
         trace = event.trace;
         patch((message) => ({ ...message, trace }));
@@ -326,6 +337,8 @@ async function consumeChatStream(
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
+    // Progress is proof of life: the caller's idle timer restarts here.
+    onActivity?.();
     parser.push(decoder.decode(value, { stream: true })).forEach(handleEvent);
   }
   parser.flush().forEach(handleEvent);
@@ -429,84 +442,11 @@ const AITwinChat = () => {
     [isMobile, shouldReduceMotion]
   );
 
+  // Shared with every inline answer surface via `buildAnswerComponents`, so
+  // the panel and an in-page answer render markdown identically rather than
+  // maintaining two copies that quietly drift.
   const markdownComponents = useMemo<Components>(
-    () => ({
-      a: ({ href = "", children, ...props }) => {
-        const isHashLink = href.startsWith("#");
-        const isInternalPath = href.startsWith("/");
-        const isResumeLink = /resume|\.pdf$/i.test(href);
-        const isExternalLink = !isHashLink && !isInternalPath && !href.startsWith("mailto:");
-
-        return (
-          <a
-            {...props}
-            href={href}
-            download={isResumeLink && isInternalPath ? true : undefined}
-            target={isExternalLink ? "_blank" : undefined}
-            rel={isExternalLink ? "noopener noreferrer" : undefined}
-            onClick={(event) => {
-              props.onClick?.(event);
-              if (event.defaultPrevented || !isHashLink) return;
-              event.preventDefault();
-              navigateToSection(href);
-            }}
-            className="font-medium text-primary underline decoration-primary/40 underline-offset-4 transition-colors hover:text-primary/80 break-words"
-          >
-            {children}
-          </a>
-        );
-      },
-      p: ({ children }) => <p className="mb-3 last:mb-0 whitespace-pre-wrap">{children}</p>,
-      ul: ({ children }) => <ul className="mb-3 list-disc space-y-2 pl-5 marker:text-primary last:mb-0">{children}</ul>,
-      ol: ({ children }) => <ol className="mb-3 list-decimal space-y-2 pl-5 marker:text-primary last:mb-0">{children}</ol>,
-      li: ({ children }) => <li className="pl-1">{children}</li>,
-      strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
-      em: ({ children }) => <em className="text-foreground/90">{children}</em>,
-      h1: ({ children }) => <h1 className="mb-3 text-base font-semibold tracking-tight text-foreground">{children}</h1>,
-      h2: ({ children }) => <h2 className="mb-3 text-[15px] font-semibold tracking-tight text-foreground">{children}</h2>,
-      h3: ({ children }) => <h3 className="mb-2 text-sm font-semibold tracking-tight text-foreground">{children}</h3>,
-      blockquote: ({ children }) => (
-        <blockquote className="my-4 border-l-2 border-primary/40 pl-3 text-foreground/80">{children}</blockquote>
-      ),
-      hr: () => <hr className="my-4 border-border/40" />,
-      pre: ({ children }) => (
-        <pre className="my-4 overflow-x-auto rounded-xl border border-border/40 bg-background/70 p-3 text-xs leading-6">
-          {children}
-        </pre>
-      ),
-      code: ({ className, children, ...props }) => {
-        const isBlock = Boolean(className);
-
-        return (
-          <code
-            {...props}
-            className={cn(
-              "font-mono",
-              isBlock
-                ? "text-[12px] text-foreground"
-                : "rounded-md bg-background/70 px-1.5 py-0.5 text-[0.82em] text-primary",
-              className
-            )}
-          >
-            {children}
-          </code>
-        );
-      },
-      table: ({ children }) => (
-        <div className="my-4 overflow-x-auto rounded-xl border border-border/40 bg-background/40">
-          <table className="min-w-[34rem] w-full border-collapse text-left text-xs sm:text-sm">{children}</table>
-        </div>
-      ),
-      thead: ({ children }) => <thead className="bg-background/60">{children}</thead>,
-      tbody: ({ children }) => <tbody className="divide-y divide-border/20">{children}</tbody>,
-      tr: ({ children }) => <tr className="align-top">{children}</tr>,
-      th: ({ children }) => (
-        <th className="border-b border-border/40 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-foreground/80 sm:text-xs">
-          {children}
-        </th>
-      ),
-      td: ({ children }) => <td className="px-3 py-2 text-foreground/90">{children}</td>,
-    }),
+    () => buildAnswerComponents(navigateToSection),
     [navigateToSection]
   );
 
@@ -639,7 +579,20 @@ const AITwinChat = () => {
     const userMsgId = retryUserMessageId || createMessageId();
     const controller = new AbortController();
     abortControllerRef.current = controller;
+    /*
+     * Two timers, not one.
+     *
+     * `timeoutId` is an absolute backstop. `idleTimeoutId` is the one that
+     * actually governs: it restarts on every received chunk, so a long answer
+     * that keeps streaming is never mistaken for a stalled request — which is
+     * precisely what the old single fixed timer got wrong.
+     */
     const timeoutId = window.setTimeout(() => controller.abort(), CHAT_CLIENT_TIMEOUT_MS);
+    let idleTimeoutId = window.setTimeout(() => controller.abort(), CHAT_STREAM_IDLE_TIMEOUT_MS);
+    const resetIdleTimer = () => {
+      window.clearTimeout(idleTimeoutId);
+      idleTimeoutId = window.setTimeout(() => controller.abort(), CHAT_STREAM_IDLE_TIMEOUT_MS);
+    };
     setInput("");
 
     if (isRetry && retryMessageId) {
@@ -685,7 +638,13 @@ const AITwinChat = () => {
 
       if (!response.ok) throw await buildResponseError(response);
 
-      const outcome = await consumeChatStream(response, assistantId, setMessages, isRetry && Boolean(retryMessageId));
+      const outcome = await consumeChatStream(
+        response,
+        assistantId,
+        setMessages,
+        isRetry && Boolean(retryMessageId),
+        resetIdleTimer
+      );
 
       const suggestions = outcome.suggestions;
 
@@ -775,6 +734,9 @@ const AITwinChat = () => {
       });
     } finally {
       window.clearTimeout(timeoutId);
+      // Must be cleared too, or it aborts the NEXT request after this one
+      // completes, since the controller stays referenced by the closure.
+      window.clearTimeout(idleTimeoutId);
       if (abortControllerRef.current === controller) {
         abortControllerRef.current = null;
       }
@@ -787,13 +749,33 @@ const AITwinChat = () => {
 
   useEffect(() => {
     const handleOpenTwin = (e: Event) => {
-      const customEvent = e as CustomEvent<{ question: string }>;
+      const customEvent = e as CustomEvent<{ question: string; answer?: string }>;
+      const { question, answer } = customEvent.detail ?? { question: "" };
       setIsOpen(true);
-      if (customEvent.detail?.question) {
-        window.setTimeout(() => {
-          void handleSendRef.current(customEvent.detail.question);
-        }, 100);
+
+      if (!question) return;
+
+      /*
+       * A "Continue in AI Twin" handoff from an inline answer already has the
+       * answer — resending the question would burn a request and a wait the
+       * visitor already sat through. Appending both turns directly reaches the
+       * same place `handleSend` would have (this component hydrates from
+       * localStorage on mount and re-persists on every `messages` change, so
+       * writing the envelope directly from the dispatching component would
+       * just be overwritten the next time this effect ran).
+       */
+      if (answer) {
+        setMessages((prev) => [
+          ...prev,
+          { id: createMessageId(), role: "user", content: question },
+          { id: createMessageId(), role: "assistant", content: answer },
+        ]);
+        return;
       }
+
+      window.setTimeout(() => {
+        void handleSendRef.current(question);
+      }, 100);
     };
 
     window.addEventListener("open-ai-twin", handleOpenTwin);

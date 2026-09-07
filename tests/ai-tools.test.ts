@@ -210,3 +210,70 @@ test("search_work matches two-character technology names", () => {
   const nonsense = call("search_work", { query: "quantum blockchain casino" });
   assert.equal(nonsense.refused, true);
 });
+
+test("compare_systems accepts slugs sent as a delimited string", () => {
+  // Models routinely ignore an array schema and send "a,b". Observed live:
+  // two valid slugs arrived joined, and the tool refused work it could serve.
+  const joined = executeTool({
+    id: "1",
+    name: "compare_systems",
+    args: { slugs: "governed-mcp-registry,knowledge-graph-rag" },
+  });
+
+  assert.equal(joined.refused, false, "a joined slug string must still compare");
+  assert.match(joined.summary, /2 systems/);
+
+  const arrayForm = executeTool({
+    id: "2",
+    name: "compare_systems",
+    args: { slugs: ["governed-mcp-registry", "knowledge-graph-rag"] },
+  });
+
+  assert.deepEqual(joined.output, arrayForm.output, "both arg shapes must agree");
+});
+
+test("compare_systems still refuses when fewer than two slugs resolve", () => {
+  const one = executeTool({ id: "3", name: "compare_systems", args: { slugs: "governed-mcp-registry" } });
+  assert.equal(one.refused, true);
+
+  const bogus = executeTool({ id: "4", name: "compare_systems", args: { slugs: "not-a-study,also-not-real" } });
+  assert.equal(bogus.refused, true, "unknown slugs must not be fabricated into a comparison");
+});
+
+test("compare_systems accepts a JSON-encoded array string", () => {
+  // The third shape seen live from the same model on the same question.
+  const result = executeTool({
+    id: "5",
+    name: "compare_systems",
+    args: { slugs: '["governed-mcp-registry","knowledge-graph-rag"]' },
+  });
+
+  assert.equal(result.refused, false, "a JSON-encoded array must not be refused");
+  assert.match(result.summary, /2 systems/);
+});
+
+test("all three slug arg shapes produce identical output", () => {
+  const shapes = [
+    ["governed-mcp-registry", "knowledge-graph-rag"],
+    "governed-mcp-registry,knowledge-graph-rag",
+    '["governed-mcp-registry","knowledge-graph-rag"]',
+  ];
+
+  const outputs = shapes.map(
+    (slugs) => executeTool({ id: "x", name: "compare_systems", args: { slugs } }).output
+  );
+
+  for (const output of outputs) {
+    assert.deepEqual(output, outputs[0], "every accepted arg shape must compare the same systems");
+  }
+});
+
+test("a refused comparison explains how to recover", () => {
+  // A bare failure reason left the model with nothing to do and it returned an
+  // empty answer, which surfaced to the visitor as the generic fallback.
+  const refused = executeTool({ id: "6", name: "compare_systems", args: { slugs: "governed-mcp-registry" } });
+  const reason = JSON.stringify(refused.output);
+
+  assert.equal(refused.refused, true);
+  assert.match(reason, /get_case_study|two or more/i, "the refusal must name a recovery path");
+});

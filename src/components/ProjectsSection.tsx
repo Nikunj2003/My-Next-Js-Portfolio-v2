@@ -8,6 +8,7 @@ import { ArrowRight, ExternalLink, Github, Maximize2 } from "lucide-react";
 import { projects, type Project } from "@/data/portfolio";
 import { caseStudies, featuredCaseStudies } from "@/data/case-studies";
 import CaseStudyCard from "@/components/CaseStudyCard";
+import AskAboutThis from "@/components/AskAboutThis";
 import { PROJECT_ANCHOR_PREFIX } from "@/lib/ai-twin";
 import {
   Carousel,
@@ -203,7 +204,19 @@ function ProjectCard({
               )}
             </div>
 
-            <h4 className="heading-lg mb-4 leading-tight">{project.title}</h4>
+            {/*
+              A sibling below the title, not inline inside it.
+
+              Inline, the pill lands wherever the heading text happens to end,
+              so its position moved between cards with a short title ("Serenify")
+              and a long or wrapping one ("CodeNex AI API Proxy"). Anchored under
+              the heading it sits in the same place on every card, and a display
+              heading no longer has to reserve vertical space for a control.
+            */}
+            <h4 className="heading-lg leading-tight">{project.title}</h4>
+            <div className="mb-4 mt-2 flex min-h-6 items-center">
+              <AskAboutThis question={`Tell me about ${project.title}.`} className="ml-0" />
+            </div>
 
             <p className="text-base leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
               {project.summary}
@@ -367,6 +380,9 @@ const ProjectsSection = () => {
                 >
                   <div className="flex h-full flex-col gap-2 rounded-xl border border-white/10 px-5 py-4 transition-colors glass-subtle hover:border-primary/30">
                     <p className="text-sm font-semibold text-foreground">{project.title}</p>
+                    <div className="flex min-h-6 items-center">
+                      <AskAboutThis question={`Tell me about ${project.title}.`} className="ml-0" />
+                    </div>
                     <p className="flex-1 text-xs leading-relaxed text-muted-foreground">{project.summary}</p>
                     <div className="mt-1 flex items-center gap-4 text-xs font-semibold">
                       <a

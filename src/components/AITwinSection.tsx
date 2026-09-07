@@ -72,17 +72,6 @@ const AITwinSection = () => {
                   It will also tell you when something is not measured rather than estimating a number \u2014 which is the same discipline the evaluation platform enforces.
                 </p>
 
-                {/* The tool surface, stated plainly. It is the artifact. */}
-                <ul className="mb-8 flex flex-wrap justify-center gap-2 lg:justify-start">
-                  {["search_work", "get_case_study", "get_metric", "compare_systems", "navigate_to"].map((tool) => (
-                    <li
-                      key={tool}
-                      className="rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1 font-mono text-[11px] text-primary/90"
-                    >
-                      {tool}
-                    </li>
-                  ))}
-                </ul>
                 <button 
                   onClick={() => handlePromptClick("")}
                   className={`inline-flex items-center gap-2 px-8 py-4 rounded-full font-bold text-sm tracking-wide transition-all duration-300 active:scale-95 ${

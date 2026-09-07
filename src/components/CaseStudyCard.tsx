@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, AudioLines, Blocks, Boxes, Database, BookOpen, FlaskConical, Gauge, HeartPulse, Layers, Network, PenLine, ServerCog, ShieldCheck, Trophy } from "lucide-react";
 import { getCaseStudyPath, type CaseStudy } from "@/data/case-studies";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
+import AskAboutThis from "@/components/AskAboutThis";
 
 /**
  * Per-study glyph. A slug with no entry falls back to a generic mark rather
@@ -42,18 +43,37 @@ const CaseStudyCard = ({
   const Heading = headingLevel;
 
   return (
-    <SpotlightCard className="group/system h-full transition-colors duration-300 hover:border-primary/30">
-      <Link
-        href={getCaseStudyPath(study.slug)}
-        className="flex h-full flex-col p-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-      >
+    /*
+      The card is NOT one big link.
+
+      It used to wrap everything in an `<a>`, which put the ask pill inside an
+      anchor: clicking the pill both opened the chat and navigated to the case
+      study. Nesting a `<button>` in an `<a>` is also invalid HTML, so no amount
+      of stopPropagation would have made it correct.
+
+      Instead the card is a plain container with a stretched link on the "Read
+      case study" line: the whole card stays clickable via the ::after overlay,
+      while the pill sits above it in the stacking order and receives its own
+      clicks.
+    */
+    <SpotlightCard className="group/system relative h-full transition-colors duration-300 hover:border-primary/30">
+      <div className="flex h-full flex-col p-6">
         {/* Glyph inline with the title rather than on its own row —
             it was costing ~70px of height for one small icon. */}
         <div className="flex items-start gap-3">
           <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary transition-colors duration-300 group-hover/system:border-primary/50">
             <Glyph className="h-4 w-4" />
           </span>
-          <Heading className="text-lg font-bold leading-snug tracking-tight text-foreground">{study.title}</Heading>
+          <Heading className="text-lg font-bold leading-snug tracking-tight text-foreground">
+            {study.title}
+          </Heading>
+        </div>
+
+        {/* Anchored under the title block rather than inline in the heading, so
+            the pill sits identically on every card regardless of how long the
+            study title is or where it wraps. */}
+        <div className="relative z-10 mt-2 flex min-h-6 items-center">
+          <AskAboutThis question={`Tell me about the ${study.title}.`} className="ml-0" />
         </div>
 
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
@@ -82,11 +102,20 @@ const CaseStudyCard = ({
           {study.stack.slice(0, 4).join(" · ")}
         </p>
 
-        <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary">
+        {/*
+          `after:absolute after:inset-0` stretches this link over the whole
+          card, so the card remains one click target for navigation without
+          wrapping the pill in an anchor. The pill gets `relative z-10` to sit
+          above that overlay.
+        */}
+        <Link
+          href={getCaseStudyPath(study.slug)}
+          className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary after:absolute after:inset-0 after:rounded-[inherit] after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
           Read case study
           <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover/system:translate-x-1 motion-reduce:transition-none" />
-        </span>
-      </Link>
+        </Link>
+      </div>
     </SpotlightCard>
   );
 };

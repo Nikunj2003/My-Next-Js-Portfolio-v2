@@ -1,3 +1,5 @@
+import type { CaseStudySlug } from "@/data/case-studies";
+
 export const personalInfo = {
   name: "Nikunj Khitha",
   role: "Applied AI Engineer",
@@ -88,13 +90,37 @@ export const highlightSentences = about.highlights.map(
   (highlight) => `${highlight.metric} ${highlight.label.toLowerCase()} — ${highlight.detail}`
 );
 
+/**
+ * A bullet is a plain string, OR a string paired with the case-study slug that
+ * proves it.
+ *
+ * A separate slug-by-bullet-text lookup map was the other option and was
+ * rejected: it would silently desync the moment a bullet is reworded, which is
+ * exactly the class of regression this codebase keeps re-discovering.
+ * Co-locating the link with the text it describes makes that impossible.
+ *
+ * `study` is typed against the case-study slug union so a renamed or removed
+ * slug is a compile error here, not a dead link discovered by a visitor.
+ */
+export type ExperienceBullet = string | { text: string; study: CaseStudySlug };
+
+/** Reads the display text regardless of which bullet shape it is. */
+export function bulletText(bullet: ExperienceBullet): string {
+  return typeof bullet === "string" ? bullet : bullet.text;
+}
+
+/** The case-study slug a bullet links to, if it has one. */
+export function bulletStudySlug(bullet: ExperienceBullet): CaseStudySlug | undefined {
+  return typeof bullet === "string" ? undefined : bullet.study;
+}
+
 export interface Experience {
   company: string;
   role: string;
   period: string;
   type: "work" | "education";
   summary: string;
-  bullets: string[];
+  bullets: ExperienceBullet[];
 }
 
 export const experiences: Experience[] = [
@@ -118,10 +144,10 @@ export const experiences: Experience[] = [
     summary: "Shipped full-stack, backend, GenAI, and data systems for AIKO and Fantasy GPT, powering personalized sports experiences, voice AI, and retrieval-backed cricket intelligence.",
     bullets: [
       "Built Node.js and FastAPI microservices, improving API performance by 40% and reducing deployment time by 42% with Docker and GitHub Actions.",
-      "Engineered Fantasy GPT with RAG, LangGraph, backend APIs, agents, and DeepEval quality checks to resolve 98% of complex sports queries.",
-      "Built Python-based ETL pipelines to collect sports data from multiple sources and ingest it into MS SQL for Fantasy GPT SQL RAG workflows.",
-      "Worked across AIKO, a voice-based sports companion using Azure Speech SDK for text-to-speech and speech-to-text, user-level personalization, and live AI-generated commentary in 20+ languages.",
-      "Built AIKO personalization features for on-the-fly highlight reels, where AI agents stitched sports moments based on each user's profile and interests for a product presented at IBC 2024 in Amsterdam.",
+      { text: "Engineered Fantasy GPT with RAG, LangGraph, backend APIs, agents, and DeepEval quality checks to resolve 98% of complex sports queries.", study: "fantasy-gpt" },
+      { text: "Built Python-based ETL pipelines to collect sports data from multiple sources and ingest it into MS SQL for Fantasy GPT SQL RAG workflows.", study: "fantasy-gpt" },
+      { text: "Worked across AIKO, a voice-based sports companion using Azure Speech SDK for text-to-speech and speech-to-text, user-level personalization, and live AI-generated commentary in 20+ languages.", study: "aiko" },
+      { text: "Built AIKO personalization features for on-the-fly highlight reels, where AI agents stitched sports moments based on each user's profile and interests for a product presented at IBC 2024 in Amsterdam.", study: "aiko" },
     ],
   },
   {
@@ -145,12 +171,12 @@ export const experiences: Experience[] = [
     summary: "Co-build Agentic Office OS, the internal agent platform serving 8+ business functions, and own the tool, context, governance, and evaluation layers underneath it.",
     bullets: [
       "Co-built Agentic Office OS, the internal platform of autonomous, human-triggered, and human-in-the-loop agents reachable org-wide through Slack, translating ambiguous requirements from an external business consultant, executives, and internal teams into agents, skills, MCP integrations, and approval workflows for 8+ business functions, then owning rollout, debugging, and enablement.",
-      "Built an OpenTelemetry-based LLM evaluation platform on Langfuse so every prompt, model, agent, skill, and MCP tool change ships on measured accuracy, latency, and cost. It scores 9 AI surfaces against golden datasets using deterministic checks, scikit-learn classification metrics, Ragas RAG scores, and LLM-as-a-judge graders validated at Cohen's kappa >= 0.7, enforced as Jenkins CI gates.",
-      "Delivered 10+ production MCP servers in ArmorCode's shared enterprise tool registry under multi-tenant AppSec constraints, implementing OAuth2/RBAC controls, tool-level permission tiers, explicit denial behavior, and audit attribution, with 20 of 20 authorization checks validated across three access tiers.",
-      "Govern company-wide model and MCP access as sole maintainer of a LiteLLM gateway, issuing scoped API keys with per-model spend budgets and distributing RBAC-gated MCP servers to employees' Claude Desktop via an .mcpb proxy. Cut recurring LLM spend by tracing 57% of gateway cost across 50,000+ requests to 10+ automations, then migrating models and splitting system/user prompts to enable Bedrock prompt caching, while flagging a deterministic rewrite worth a further ~95% reduction.",
-      "Built ArmorCode's tenant-scoped knowledge-graph RAG layer over 1M+ entities of root-cause analyses, test cases, and product documentation in Neo4j and pgvector, giving Office OS agents grounded product knowledge without cross-tenant leakage, with retrieval scored on accuracy, ranking quality, and context precision across five query modes.",
-      "Cut CS and support escalations to engineering with a codebase-search MCP service in Go over 8 product repositories, fronting a read-only agent against a daily-reindexed vector index. Restored it after 100+ queries returned zero content by isolating two independent causes in SDK and host internals: a Go output-schema defect that made schema-aware clients discard every answer, and a query deadline sized for a longer client timeout tier. Shipped the fix with a negative-control test and flagged 14 exposed connectors.",
-      "Kept AI-drafted documentation reviewable rather than blind-published by shipping Quill, an Electron/React/TypeScript GitHub PR review tool pairing a WYSIWYG editor with an embedded AI agent terminal, per-branch Git worktrees, and permission-aware GitHub delivery."
+      { text: "Built an OpenTelemetry-based LLM evaluation platform on Langfuse so every prompt, model, agent, skill, and MCP tool change ships on measured accuracy, latency, and cost. It scores 9 AI surfaces against golden datasets using deterministic checks, scikit-learn classification metrics, Ragas RAG scores, and LLM-as-a-judge graders validated at Cohen's kappa >= 0.7, enforced as Jenkins CI gates.", study: "llm-evaluation-platform" },
+      { text: "Delivered 10+ production MCP servers in ArmorCode's shared enterprise tool registry under multi-tenant AppSec constraints, implementing OAuth2/RBAC controls, tool-level permission tiers, explicit denial behavior, and audit attribution, with 20 of 20 authorization checks validated across three access tiers.", study: "governed-mcp-registry" },
+      { text: "Govern company-wide model and MCP access as sole maintainer of a LiteLLM gateway, issuing scoped API keys with per-model spend budgets and distributing RBAC-gated MCP servers to employees' Claude Desktop via an .mcpb proxy. Cut recurring LLM spend by tracing 57% of gateway cost across 50,000+ requests to 10+ automations, then migrating models and splitting system/user prompts to enable Bedrock prompt caching, while flagging a deterministic rewrite worth a further ~95% reduction.", study: "code-intelligence-gateway" },
+      { text: "Built ArmorCode's tenant-scoped knowledge-graph RAG layer over 1M+ entities of root-cause analyses, test cases, and product documentation in Neo4j and pgvector, giving Office OS agents grounded product knowledge without cross-tenant leakage, with retrieval scored on accuracy, ranking quality, and context precision across five query modes.", study: "knowledge-graph-rag" },
+      { text: "Cut CS and support escalations to engineering with a codebase-search MCP service in Go over 8 product repositories, fronting a read-only agent against a daily-reindexed vector index. Restored it after 100+ queries returned zero content by isolating two independent causes in SDK and host internals: a Go output-schema defect that made schema-aware clients discard every answer, and a query deadline sized for a longer client timeout tier. Shipped the fix with a negative-control test and flagged 14 exposed connectors.", study: "governed-mcp-registry" },
+      { text: "Kept AI-drafted documentation reviewable rather than blind-published by shipping Quill, an Electron/React/TypeScript GitHub PR review tool pairing a WYSIWYG editor with an embedded AI agent terminal, per-branch Git worktrees, and permission-aware GitHub delivery.", study: "quill" }
     ],
   },
 ];

@@ -3,6 +3,7 @@ import { SpotlightCard } from "@/components/ui/spotlight-card";
 import FlipWords from "@/components/ui/flip-words";
 import Reveal from "@/components/ui/reveal";
 import { skillCategories } from "@/data/portfolio";
+import AskAboutThis from "@/components/AskAboutThis";
 
 /** Keyed by exact category title — a miss falls back to Wrench silently, so
  *  these must be updated in the same edit as any title change in portfolio.ts. */
@@ -56,17 +57,30 @@ const SkillsSection = () => {
                 <Reveal key={cat.title} delay={index * 0.08}>
                   <SpotlightCard animateOnEnter={false} className="w-full">
                     <div className="p-8 sm:p-10">
-                      <div className="mb-8 flex items-center gap-4">
+                      {/*
+                        The pill sits OUTSIDE this row, not in the text column.
+                        Inside it, the extra line made the text column taller
+                        than the 48px icon, so `items-center` re-centred the icon
+                        against a different height per card — which is why the
+                        gap under the icon varied between categories.
+                      */}
+                      <div className="flex items-center gap-4">
                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/5 glass-subtle transition-transform duration-500 group-hover:scale-110 group-hover:border-primary/30">
                           <Icon className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <h3 className="heading-md transition-colors duration-300 group-hover:text-primary">{cat.title}</h3>
+                          <h3 className="heading-md transition-colors duration-300 group-hover:text-primary">
+                            {cat.title}
+                          </h3>
                           <p className="mt-1 font-mono text-xs text-muted-foreground">{cat.skills.length} technologies</p>
                         </div>
                       </div>
 
-                      <p className="mb-6 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                      <div className="mt-4">
+                        <AskAboutThis question={`What is Nikunj's depth in ${cat.title}?`} className="ml-0" />
+                      </div>
+
+                      <p className="mb-6 mt-6 max-w-2xl text-sm leading-relaxed text-muted-foreground">
                         {cat.description}
                       </p>
 

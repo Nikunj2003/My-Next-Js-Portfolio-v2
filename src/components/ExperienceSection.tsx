@@ -10,7 +10,9 @@ import {
   type MotionValue,
 } from "framer-motion";
 import { Briefcase, CalendarDays, GraduationCap } from "lucide-react";
-import { experiences, type Experience } from "@/data/portfolio";
+import { bulletStudySlug, bulletText, experiences, type Experience } from "@/data/portfolio";
+import { getCaseStudyPath } from "@/data/case-studies";
+import AskAboutThis, { ReadCaseStudyLink } from "@/components/AskAboutThis";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import FlipWords from "@/components/ui/flip-words";
 import Reveal from "@/components/ui/reveal";
@@ -125,16 +127,50 @@ function ExperienceItem({
           </div>
 
           <ul className="space-y-3 text-sm leading-relaxed text-muted-foreground md:text-base">
+            {/* The summary is a point like any other, so it gets the same
+                affordance — it was the one bullet in every card without one. */}
             <li className="flex gap-3 text-foreground/90">
               <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-              <span>{exp.summary}</span>
+              <div className="flex-1">
+                <p>{exp.summary}</p>
+                {/* Own row, not trailing the prose: inline, the pill landed
+                    wherever the last line happened to wrap, so it sometimes
+                    hugged the text and sometimes sat alone under it. */}
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  {/* `inline` here and nowhere else: an experience card is
+                      full-width prose, so an answer can grow downward without
+                      disturbing anything beside it. */}
+                  <AskAboutThis
+                    question={`Tell me more about ${exp.role} at ${exp.company}: "${exp.summary}"`}
+                    className="ml-0"
+                    inline
+                  />
+                </div>
+              </div>
             </li>
-            {exp.bullets.map((bullet) => (
-              <li key={bullet} className="flex gap-3 text-pretty">
-                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/70" />
-                <span>{bullet}</span>
-              </li>
-            ))}
+            {exp.bullets.map((bullet) => {
+              const text = bulletText(bullet);
+              const studySlug = bulletStudySlug(bullet);
+
+              return (
+                <li key={text} className="flex gap-3 text-pretty">
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/70" />
+                  <div className="flex-1">
+                    <p>{text}</p>
+                    {/* Every point is askable, not just the ones with a case
+                        study — a reader's question does not depend on whether a
+                        write-up happens to exist. Both affordances share one row
+                        so they align down the list regardless of text length. */}
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <AskAboutThis question={`Tell me more about: "${text}"`} className="ml-0" inline />
+                      {studySlug && (
+                        <ReadCaseStudyLink href={getCaseStudyPath(studySlug)} className="ml-0" />
+                      )}
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </SpotlightCard>

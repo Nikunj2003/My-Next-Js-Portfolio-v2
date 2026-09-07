@@ -73,6 +73,48 @@ export interface CaseStudy {
   aliases: string[];
 }
 
+/**
+ * Literal union of every case-study slug, for compile-time-checked references
+ * from other data (e.g. an experience bullet naming which study proves it).
+ *
+ * `slug` on `CaseStudy` stays `string` — turning it into a matching literal
+ * union would require `as const` on all 13 entries, which is more invasive
+ * than this single line. `case-studies.test.ts` asserts this list matches
+ * `caseStudies.map(s => s.slug)` exactly, so the two cannot silently drift:
+ * a renamed slug fails a test rather than becoming a dead link discovered by
+ * a visitor.
+ */
+export type CaseStudySlug =
+  | "llm-evaluation-platform"
+  | "governed-mcp-registry"
+  | "code-intelligence-gateway"
+  | "knowledge-graph-rag"
+  | "documentation-automation"
+  | "sentinel-test-agent"
+  | "bi-platform"
+  | "quill"
+  | "codenex-ai-proxy"
+  | "codenex"
+  | "fantasy-gpt"
+  | "aiko"
+  | "serenify";
+
+export const CASE_STUDY_SLUGS: CaseStudySlug[] = [
+  "llm-evaluation-platform",
+  "governed-mcp-registry",
+  "code-intelligence-gateway",
+  "knowledge-graph-rag",
+  "documentation-automation",
+  "sentinel-test-agent",
+  "bi-platform",
+  "quill",
+  "codenex-ai-proxy",
+  "codenex",
+  "fantasy-gpt",
+  "aiko",
+  "serenify",
+];
+
 export const caseStudies: CaseStudy[] = [
   {
     slug: "llm-evaluation-platform",

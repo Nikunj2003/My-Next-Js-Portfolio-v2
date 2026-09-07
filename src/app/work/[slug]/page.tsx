@@ -154,10 +154,13 @@ const CaseStudyPage = async ({ params }: PageProps) => {
               <div className="min-w-0 flex-1">
 
                 <Reveal>
-                  <h2 id="problem" className="group/heading heading-md scroll-mt-28">
-                    The problem
-                    <AskAboutThis question={`What problem did the ${study.title} solve, and why did it matter?`} />
-                  </h2>
+                  <h2 id="problem" className="heading-md scroll-mt-28">The problem</h2>
+                  <div className="mt-2 flex min-h-6 items-center">
+                    <AskAboutThis
+                      question={`What problem did the ${study.title} solve, and why did it matter?`}
+                      className="ml-0"
+                    />
+                  </div>
                   <div className="mt-4 rounded-2xl border border-white/10 glass-subtle p-6">
                     <p className="text-base leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
                       {study.problem}
@@ -167,6 +170,12 @@ const CaseStudyPage = async ({ params }: PageProps) => {
 
                 <Reveal>
                   <h2 id="constraints" className="heading-md mt-14 scroll-mt-28">Constraints</h2>
+                  <div className="mt-2 flex min-h-6 items-center">
+                    <AskAboutThis
+                      question={`What made the constraints on the ${study.title} hard to work within?`}
+                      className="ml-0"
+                    />
+                  </div>
                   <ul className="mt-4 flex flex-col divide-y divide-white/10 overflow-hidden rounded-2xl glass-subtle">
                     {study.constraints.map((constraint) => (
                       <li key={constraint} className="flex gap-3 p-5 text-base leading-relaxed text-muted-foreground">
@@ -180,12 +189,24 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                 {study.diagram && (
                   <Reveal>
                     <h2 id="architecture" className="heading-md mt-14 scroll-mt-28">Architecture</h2>
+                    <div className="mt-2 flex min-h-6 items-center">
+                      <AskAboutThis
+                        question={`Walk me through the architecture diagram for the ${study.title}.`}
+                        className="ml-0"
+                      />
+                    </div>
                     <CaseStudyDiagram diagram={study.diagram} description={study.diagramCaption} />
                   </Reveal>
                 )}
 
                 <Reveal>
                   <h2 id="decisions" className="heading-md mt-14 scroll-mt-28">Decisions</h2>
+                  <div className="mt-2 flex min-h-6 items-center">
+                    <AskAboutThis
+                      question={`What did you consider and reject while building the ${study.title}?`}
+                      className="ml-0"
+                    />
+                  </div>
               <p className="mt-3 text-sm text-muted-foreground">
                 What I chose, why, and what I turned down to get there.
               </p>
@@ -193,7 +214,16 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                 {study.decisions.map((decision, index) => (
                   <SpotlightCard key={decision.choice} delay={index * 0.06}>
                     <div className="p-6 sm:p-7">
+                      {/* Sibling below the heading: decision titles vary a lot
+                          in length, so inline the pill never sat in the same
+                          place twice down the list. */}
                       <h3 className="text-lg font-bold tracking-tight text-foreground">{decision.choice}</h3>
+                      <div className="mt-2 flex min-h-6 items-center">
+                        <AskAboutThis
+                          question={`On the ${study.title}, why did you choose "${decision.choice}" over the alternatives?`}
+                          className="ml-0"
+                        />
+                      </div>
                       <p className="mt-3 text-sm leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
                         {decision.why}
                       </p>
@@ -220,10 +250,21 @@ const CaseStudyPage = async ({ params }: PageProps) => {
 
                 {study.sections.map((section) => (
                   <Reveal key={section.heading}>
-                    <h2 id={sectionId(section.heading)} className="group/heading heading-md mt-14 scroll-mt-28">
-                      {section.heading}
-                      <AskAboutThis question={`On the ${study.title}: explain "${section.heading}" in more detail.`} />
-                    </h2>
+                    {/* Section headings come from data and vary in length, so
+                        the pill anchors below rather than trailing the text —
+                        inline, a permanently visible pill would leave every
+                        heading's ragged edge permanently uneven. */}
+                    <div className="mt-14">
+                      <h2 id={sectionId(section.heading)} className="heading-md scroll-mt-28">
+                        {section.heading}
+                      </h2>
+                      <div className="mt-2 flex min-h-6 items-center">
+                        <AskAboutThis
+                          question={`On the ${study.title}: explain "${section.heading}" in more detail.`}
+                          className="ml-0"
+                        />
+                      </div>
+                    </div>
                 <p className="mt-4 text-base leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
                   {section.body}
                 </p>
@@ -257,10 +298,10 @@ const CaseStudyPage = async ({ params }: PageProps) => {
             {/* Stated plainly and on purpose: shared work described as sole
                 ownership is the fastest way to lose a technical interview. */}
                 <Reveal>
-                  <h2 id="ownership" className="group/heading heading-md mt-14 scroll-mt-28">
-                    What was mine
-                    <AskAboutThis question={`Who owned what on the ${study.title}?`} />
-                  </h2>
+                  <h2 id="ownership" className="heading-md mt-14 scroll-mt-28">What was mine</h2>
+                  <div className="mt-2 flex min-h-6 items-center">
+                    <AskAboutThis question={`Who owned what on the ${study.title}?`} className="ml-0" />
+                  </div>
                   <div className="mt-4 rounded-2xl border border-primary/20 glass-subtle p-6 glow-accent-panel">
                     <p className="text-base leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
                       {study.ownership}

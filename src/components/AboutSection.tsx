@@ -5,6 +5,7 @@ import { siteConfig } from "@/lib/seo/site";
 import logo from "@/assets/logo.png";
 
 import { SpotlightCard } from "@/components/ui/spotlight-card";
+import AskAboutThis from "@/components/AskAboutThis";
 import Reveal from "@/components/ui/reveal";
 
 /** Latest entry is the current role; the earliest ArmorCode entry sets tenure. */
@@ -154,6 +155,14 @@ const AboutSection = () => {
                     <p className="text-sm leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
                       {highlight.detail}
                     </p>
+                    {/* Pinned to the bottom of the card rather than floated into
+                        the metric row: as an absolutely-positioned icon up there
+                        it overlapped the label and pushed the body text down,
+                        so tiles in the same row no longer lined up. */}
+                    <AskAboutThis
+                      question={`How did Nikunj achieve ${highlight.metric} ${highlight.label.toLowerCase()}?`}
+                      className="ml-0 mt-auto self-start"
+                    />
                   </div>
                 </SpotlightCard>
               ))}

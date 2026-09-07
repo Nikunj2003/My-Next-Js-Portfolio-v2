@@ -1,14 +1,71 @@
 export const CHAT_ENDPOINT = "/live-assistant";
 export const CHAT_PRIMARY_RESPONSE_TIMEOUT_MS = 16_000;
 export const CHAT_SUGGESTION_TIMEOUT_MS = 4_000;
-export const CHAT_TOTAL_RESPONSE_BUDGET_MS = 18_500;
-export const CHAT_CLIENT_TIMEOUT_MS = 24_000;
+/**
+ * Ceiling for the BLOCKING part of a request: the tool-selection round.
+ *
+ * The answer itself no longer counts against this, because it streams and is
+ * policed by an idle timer instead. Raised from 18.5s because that figure was
+ * derived when the answer was blocking too, and it left the tool round only
+ * ~12s — enough to abort a healthy round-0 call that simply had a large prompt
+ * to read. It must also leave room for all CHAT_TOOL_ROUND_ATTEMPTS of the
+ * blocking round (3 x 9s) plus the reserve, or the budget would cancel a retry
+ * that was about to succeed.
+ */
+export const CHAT_TOTAL_RESPONSE_BUDGET_MS = 40_000;
+/**
+ * Absolute client-side ceiling, as a backstop only.
+ *
+ * Raised to clear the route's own worst case: up to ~27s for the blocking
+ * tool round's 3 retry attempts, plus up to CHAT_STREAM_FIRST_CHUNK_TIMEOUT_MS
+ * for the answer's first token, plus the generation and suggestion tail. This
+ * is a backstop for a runtime that never sends another byte at all — the idle
+ * timer is what catches an ordinary stall, and it fires far sooner.
+ */
+export const CHAT_CLIENT_TIMEOUT_MS = 75_000;
+
+/**
+ * Aborts only when the stream goes SILENT for this long.
+ *
+ * A fixed wall-clock cap measured from request start was the wrong instrument:
+ * it treated a slow-but-progressing answer exactly like a dead connection. As
+ * long as bytes keep arriving the request is healthy, so the timer resets on
+ * every chunk and only silence is treated as a fault.
+ *
+ * Sized to exceed the longest legitimate gap the route can produce between two
+ * heartbeats: a single "status" is sent right before the model starts
+ * generating the answer, and the model can then take up to
+ * CHAT_STREAM_FIRST_CHUNK_TIMEOUT_MS to produce its first token. Anything
+ * shorter here would abort a request that was still healthy on the far side.
+ */
+export const CHAT_STREAM_IDLE_TIMEOUT_MS = 30_000;
+
+/**
+ * Allowance for the first streamed chunk.
+ *
+ * Wider than the idle threshold because nothing has been generated yet: this
+ * window covers connection setup plus the provider's initial reasoning pass,
+ * which on the free tier occasionally runs far past the between-chunk gap.
+ * Reusing the stricter idle value here aborted requests that were fine.
+ */
+export const CHAT_STREAM_FIRST_CHUNK_TIMEOUT_MS = 25_000;
 export const CHAT_AVAILABILITY_CACHE_MS = 60_000;
 
 /** Tool rounds the agent may take before it must answer with what it has. */
 export const CHAT_MAX_TOOL_ROUNDS = 3;
 /** A tool round shares the primary budget; keep a floor for the final answer. */
-export const CHAT_TOOL_ROUND_TIMEOUT_MS = 12_000;
+/**
+ * Attempts (not retries) for a stream that stalls before its first byte.
+ *
+ * Sized from 12 measured calls against the provider's free tier:
+ * p50 3.5s time-to-first-byte, p90 34s, one outright stall past 60s — only
+ * 58% connected within 12s. That distribution has no single timeout that is
+ * both responsive and tail-safe, so the strategy is to cut early and retry:
+ * three attempts at the idle threshold beat one long wait, because each retry
+ * re-rolls the latency rather than continuing to wait on a request that has
+ * already hit the tail.
+ */
+export const CHAT_TOOL_ROUND_ATTEMPTS = 3;
 export const CHAT_FINAL_ANSWER_RESERVE_MS = 6_000;
 
 export type ChatAvailabilityResponse = {
@@ -59,6 +116,15 @@ export type ChatStreamEvent =
   | { type: "tool_call"; call: ChatToolCall }
   | { type: "tool_result"; call: ChatToolCall }
   | { type: "text_delta"; text: string }
+  /**
+   * Replaces the accumulated answer wholesale.
+   *
+   * Needed because the answer streams live, but link normalisation runs on the
+   * finished text and can rewrite the body rather than only append to it. In
+   * that (rare) case appending a diff would corrupt the message, so the client
+   * swaps in the corrected text instead.
+   */
+  | { type: "text_replace"; text: string }
   | { type: "trace"; trace: ChatTrace }
   | { type: "suggestions"; suggestions: string[] }
   | { type: "error"; error: string; code: ChatErrorCode; retryable: boolean }

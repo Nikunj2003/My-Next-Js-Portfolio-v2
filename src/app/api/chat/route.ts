@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { AI_MODEL, SYSTEM_PROMPT, SUGGESTION_SYSTEM_PROMPT } from "@/lib/ai-config";
+import { AI_MODEL, AI_REASONING_EFFORT, SYSTEM_PROMPT, SUGGESTION_SYSTEM_PROMPT } from "@/lib/ai-config";
 import {
   CHAT_FINAL_ANSWER_RESERVE_MS,
   CHAT_MAX_TOOL_ROUNDS,
-  CHAT_PRIMARY_RESPONSE_TIMEOUT_MS,
+  CHAT_STREAM_FIRST_CHUNK_TIMEOUT_MS,
+  CHAT_STREAM_IDLE_TIMEOUT_MS,
   CHAT_STREAM_CONTENT_TYPE,
   CHAT_SUGGESTION_TIMEOUT_MS,
-  CHAT_TOOL_ROUND_TIMEOUT_MS,
+  CHAT_TOOL_ROUND_ATTEMPTS,
   CHAT_TOTAL_RESPONSE_BUDGET_MS,
   type ChatAvailabilityResponse,
   type ChatErrorCode,
@@ -38,6 +39,16 @@ interface ChatCompletionMessageParam {
   name?: string;
 }
 
+
+/**
+ * Explicit segment config. Without it the platform default function timeout
+ * applies, which can truncate a legitimate streamed answer mid-flight — the
+ * contact route already pins its runtime; this one had simply never been given
+ * the same treatment. `maxDuration` sits above the server-side budget so the
+ * budget, not the platform, is what ends a slow request.
+ */
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const RATE_LIMIT = 39;
 const WINDOW_MS = 60_000;
@@ -287,6 +298,189 @@ async function postChatCompletion(
   }
 }
 
+/** One tool call as it is progressively assembled from streamed deltas. */
+type StreamedToolCall = { id?: string; name: string; args: string };
+
+/**
+ * Streams ONE completion call and reports connection + text as they arrive.
+ *
+ * Every round streams now, including round 0 with `tools` attached — measured
+ * directly: time-to-first-byte for a tool-offering call is consistently much
+ * faster and far less variable than total generation time (p50 ~3.5s vs a
+ * blocking call that can legitimately run 10-20s when the model answers
+ * directly instead of calling a tool). Reassembling `tool_calls` from stream
+ * deltas by `index` worked correctly in direct testing against this provider
+ * — ids and arguments both arrived intact — so there is no longer a reason to
+ * keep a separate non-streaming path for tool rounds.
+ *
+ * Returns the finished tool calls (if any) once the stream ends; text is
+ * yielded as it arrives via the `onText` callback so the caller can forward it
+ * to the client immediately rather than waiting for completion.
+ */
+async function streamCompletion(
+  invokeUrl: string,
+  headers: Record<string, string>,
+  body: object,
+  timeoutMs: number,
+  /**
+   * Allowance for the FIRST byte, which must also cover the provider's initial
+   * reasoning pass and, on this free tier, an occasional long connect stall.
+   * Generation has not started yet, so the between-chunk idle threshold is too
+   * strict here and would abort a healthy request that simply took a while to
+   * begin.
+   */
+  firstByteTimeoutMs: number,
+  onText: (text: string) => void
+): Promise<{ content: string; toolCalls: StreamedToolCall[] }> {
+  const controller = new AbortController();
+
+  /*
+   * The deadline applies to SILENCE, not to total duration.
+   *
+   * A fixed total cap aborts a long answer that is streaming perfectly well —
+   * observed live: 471 deltas delivered, then killed mid-sentence at the cap and
+   * reported to the visitor as a timeout. While tokens keep arriving the request
+   * is healthy; only a stall is a fault, so the timer restarts on every chunk.
+   */
+  let timeoutId = setTimeout(() => controller.abort(), firstByteTimeoutMs);
+  const resetIdleTimer = () => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  };
+
+  try {
+    const response = await fetch(invokeUrl, {
+      method: "POST",
+      headers: { ...headers, Accept: "text/event-stream" },
+      body: JSON.stringify({ ...body, stream: true }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok || !response.body) {
+      throw new UpstreamStatusError(response.status);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let content = "";
+    const toolCallsByIndex = new Map<number, StreamedToolCall>();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      resetIdleTimer();
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      // Trailing element is a partial line until its newline arrives.
+      buffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("data:")) continue;
+
+        const payload = trimmed.slice(5).trim();
+        if (!payload || payload === "[DONE]") continue;
+
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(payload);
+        } catch {
+          // A malformed SSE frame should not abort a working stream.
+          continue;
+        }
+
+        const delta = (parsed as { choices?: Array<{ delta?: Record<string, unknown> }> })?.choices?.[0]?.delta;
+        if (!delta) continue;
+
+        if (typeof delta.content === "string" && delta.content.length > 0) {
+          content += delta.content;
+          onText(delta.content);
+        }
+
+        const deltaToolCalls = delta.tool_calls;
+        if (Array.isArray(deltaToolCalls)) {
+          for (const rawCall of deltaToolCalls) {
+            const call = rawCall as { index?: number; id?: string; function?: { name?: string; arguments?: string } };
+            const index = call.index ?? 0;
+            const existing = toolCallsByIndex.get(index) ?? { id: undefined, name: "", args: "" };
+            if (call.id) existing.id = call.id;
+            if (call.function?.name) existing.name += call.function.name;
+            if (call.function?.arguments) existing.args += call.function.arguments;
+            toolCallsByIndex.set(index, existing);
+          }
+        }
+      }
+    }
+
+    return { content, toolCalls: Array.from(toolCallsByIndex.values()) };
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/** Signals a non-2xx upstream response out of the streaming generator. */
+class UpstreamStatusError extends Error {
+  // Assigned explicitly rather than via a parameter property: Node's
+  // type-stripping test runner cannot compile those.
+  status: number;
+
+  constructor(status: number) {
+    super(`Upstream responded ${status}`);
+    this.name = "UpstreamStatusError";
+    this.status = status;
+  }
+}
+
+/**
+ * Streams a completion, retrying if an attempt stalls before its first byte.
+ *
+ * Measured directly against the provider's free tier: time-to-first-byte has
+ * a heavy tail (p50 ~3.5s, occasional 30-40s stalls even just to connect).
+ * Waiting out a stall of that length would make the assistant feel broken;
+ * re-rolling is cheaper, since the odds of two consecutive tail hits are far
+ * lower than one. Only a stall before any byte arrives is retried — once
+ * streaming has started, the request is healthy and is not restarted.
+ */
+async function streamCompletionWithRetry(
+  invokeUrl: string,
+  headers: Record<string, string>,
+  body: object,
+  timeoutMs: number,
+  firstByteTimeoutMs: number,
+  onText: (text: string) => void,
+  /**
+   * Called before each attempt so the caller can send a keep-alive byte.
+   *
+   * A silent multi-attempt retry loop can run for several attempts with
+   * nothing sent to the client — comfortably longer than its idle timeout,
+   * which would then abort a retry that was still in progress.
+   */
+  onAttempt?: (attempt: number) => void,
+  attempts = CHAT_TOOL_ROUND_ATTEMPTS
+) {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    onAttempt?.(attempt);
+    try {
+      return await streamCompletion(invokeUrl, headers, body, timeoutMs, firstByteTimeoutMs, onText);
+    } catch (error) {
+      // Only a stall is worth replaying. A non-2xx is a decision by the
+      // provider and would fail identically.
+      if (!isAbortError(error)) throw error;
+
+      lastError = error;
+      if (attempt < attempts) {
+        console.error(`LLM stream stalled before first byte (attempt ${attempt}/${attempts}); retrying`);
+      }
+    }
+  }
+
+  throw lastError;
+}
+
 function isChatConfigured() {
   return Boolean(process.env.LLM_API_KEY?.trim());
 }
@@ -431,7 +625,7 @@ export async function POST(request: Request) {
         if (closed) return;
         closed = true;
         try {
-          finish();
+          controller.close();
         } catch {
           // Already closed by the runtime after a disconnect.
         }
@@ -448,6 +642,13 @@ export async function POST(request: Request) {
       let toolCount = 0;
       let rounds = 0;
       let answer = "";
+      /**
+       * Text already delivered to the client via live streaming.
+       *
+       * Empty means the answer was produced without streaming, so the whole
+       * thing still has to be sent.
+       */
+      let streamedText = "";
 
       const emitTrace = () => {
         const trace: ChatTrace = {
@@ -474,13 +675,24 @@ export async function POST(request: Request) {
 
           rounds = round + 1;
 
-          if (round > 0) {
-            send({ type: "status", label: mustAnswer ? "Writing answer" : "Thinking" });
-          }
-
-          let response: Response;
+          /*
+           * Every round streams, including round 0 with `tools` attached.
+           *
+           * Measured directly against the provider: time-to-first-byte for a
+           * tool-offering call (p50 ~3.5s) is far faster and far less variable
+           * than total generation time, which for an open-ended question the
+           * model often answers directly — 10-20s of blocking generation with
+           * no tool call at all. That was round 0's actual failure mode: not
+           * tool-selection latency, but the model choosing to write a full
+           * prose answer on the very first call. Streaming turns that into a
+           * fast first byte regardless of which the model does, and streamed
+           * `tool_calls` reassemble correctly from `index` on this provider —
+           * confirmed live before removing the separate blocking path.
+           */
+          let chunks = "";
+          let streamOutcome: { content: string; toolCalls: StreamedToolCall[] };
           try {
-            response = await postChatCompletion(
+            streamOutcome = await streamCompletionWithRetry(
               invokeUrl,
               headers,
               {
@@ -488,20 +700,25 @@ export async function POST(request: Request) {
                 messages,
                 top_p: 0.95,
                 temperature: 0.6,
+                // Keeps chain-of-thought short on reasoning-capable models.
+                // Ignored by models that do not support it.
+                reasoning_effort: AI_REASONING_EFFORT,
                 ...(mustAnswer ? {} : { tools: TOOL_DEFINITIONS, tool_choice: "auto" }),
               },
-              // The final answer used to get the full primary timeout with no
-              // deduction for time already spent in tool rounds, so a request
-              // that burned 15s across two rounds could still take another 16s
-              // — ~31s against a declared 18.5s budget and a 24s client
-              // timeout. Both paths now clamp to whatever budget remains.
-              Math.min(
-                mustAnswer ? CHAT_PRIMARY_RESPONSE_TIMEOUT_MS : CHAT_TOOL_ROUND_TIMEOUT_MS,
-                Math.max(2_000, budgetLeft)
-              )
+              CHAT_STREAM_IDLE_TIMEOUT_MS,
+              CHAT_STREAM_FIRST_CHUNK_TIMEOUT_MS,
+              (text) => {
+                chunks += text;
+                send({ type: "text_delta", text });
+              },
+              (attempt) => send({ type: "status", label: `attempt ${attempt} ${mustAnswer ? "Writing answer" : "Thinking"}`.trim() })
             );
           } catch (error) {
-            if (isAbortError(error)) {
+            if (error instanceof UpstreamStatusError) {
+              console.error("LLM API error", error.status);
+              const failure = classifyUpstreamFailure(error.status);
+              send({ type: "error", ...failure });
+            } else if (isAbortError(error)) {
               send({
                 type: "error",
                 error: "The AI service took too long to respond. Please try again.",
@@ -523,30 +740,32 @@ export async function POST(request: Request) {
             return;
           }
 
-          if (!response.ok) {
-            console.error("LLM API error", response.status);
-            const failure = classifyUpstreamFailure(response.status);
-            send({ type: "error", ...failure });
-            emitTrace();
-            send({ type: "done" });
-            finish();
-            return;
-          }
+          streamedText += chunks;
 
-          const data = await response.json();
-          const choice = data.choices?.[0];
-          const providerCalls: ProviderToolCall[] = choice?.message?.tool_calls ?? [];
-          const content: string = choice?.message?.content || "";
-
-          // No tools requested (or none allowed): this is the answer.
-          if (providerCalls.length === 0) {
-            answer = content;
+          // No tools requested (or none allowed): this round's text is the answer.
+          if (streamOutcome.toolCalls.length === 0) {
+            answer = streamOutcome.content;
             break;
           }
 
+          /*
+           * Text alongside tool_calls has already reached the client as
+           * `text_delta`, but it is the model's own narration of what it is
+           * about to do ("Let me check...") rather than the answer, and it
+           * must not be echoed back into `messages` as if it were final —
+           * `streamedText` exists only to detect an empty round; it is
+           * intentionally NOT concatenated into the assistant history entry
+           * below beyond what the provider itself reports as `content`.
+           */
+          const providerCalls: ProviderToolCall[] = streamOutcome.toolCalls.map((call) => ({
+            id: call.id,
+            type: "function" as const,
+            function: { name: call.name, arguments: call.args },
+          }));
+
           // Record the assistant turn that requested the tools, so the
           // follow-up call has a coherent history.
-          messages.push({ role: "assistant", content, tool_calls: providerCalls });
+          messages.push({ role: "assistant", content: streamOutcome.content, tool_calls: providerCalls });
 
           for (const providerCall of providerCalls) {
             const name = providerCall.function?.name ?? "unknown";
@@ -599,11 +818,21 @@ export async function POST(request: Request) {
         // navigation, so it now only fills gaps.
         const finalText = appendContextualLinks(message, answer);
 
-        // Streamed in chunks so markdown paints progressively. The provider
-        // response is already complete here; this is presentation pacing.
-        const CHUNK = 24;
-        for (let index = 0; index < finalText.length; index += CHUNK) {
-          send({ type: "text_delta", text: finalText.slice(index, index + CHUNK) });
+        if (streamedText) {
+          // The answer already reached the client token-by-token. Only the
+          // difference introduced by link normalisation/appending still needs
+          // sending, so the visitor never sees the text repeat.
+          if (finalText.startsWith(streamedText)) {
+            const suffix = finalText.slice(streamedText.length);
+            if (suffix) send({ type: "text_delta", text: suffix });
+          } else {
+            // Normalisation rewrote the body, so replace it wholesale.
+            send({ type: "text_replace", text: finalText });
+          }
+        } else {
+          // Nothing was streamed (a tool round produced the text, or streaming
+          // failed and the non-streaming path answered). Send it in one go.
+          send({ type: "text_delta", text: finalText });
         }
 
         emitTrace();

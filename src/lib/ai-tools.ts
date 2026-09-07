@@ -1,5 +1,5 @@
 import { caseStudies, caseStudyBySlug, getCaseStudyPath } from "@/data/case-studies";
-import { experiences, personalInfo, projects, stats } from "@/data/portfolio";
+import { bulletText, experiences, personalInfo, projects, stats } from "@/data/portfolio";
 import { getProjectAnchor, normalizeText } from "@/lib/ai-twin";
 
 /**
@@ -232,13 +232,14 @@ function searchWork(query: string, kind: string = "all"): { hits: Omit<SearchHit
   if (kind === "all" || kind === "experience") {
     for (const experience of experiences) {
       for (const bullet of experience.bullets) {
-        const score = scoreText(bullet, terms);
+        const text = bulletText(bullet);
+        const score = scoreText(text, terms);
         if (score > 0) {
           hits.push({
             kind: "experience",
             id: `${experience.company} — ${experience.role}`,
             title: `${experience.role} at ${experience.company}`,
-            snippet: bullet,
+            snippet: text,
             score,
           });
         }
@@ -528,6 +529,42 @@ export function formatToolCall(name: string, args: Record<string, unknown>) {
   return `${name}(${primary === undefined ? "" : `"${truncateArg(primary)}"`})`;
 }
 
+/**
+ * Normalises a list argument that a model may send in any of three shapes.
+ *
+ * Observed live from the same model on the same question: a real array,
+ * `"a,b"`, and `'["a","b"]'` (a JSON-encoded array inside a string). The
+ * schema asks for an array, but refusing the other two makes the assistant
+ * look like it lacks the data when it simply disliked the wrapper.
+ */
+function coerceStringList(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map(String).map((item) => item.trim()).filter(Boolean);
+  }
+
+  if (typeof value !== "string") return [];
+
+  const trimmed = value.trim();
+
+  // A JSON-encoded array arrives as a string; unwrap it before splitting, or
+  // the brackets and quotes end up inside the slugs.
+  if (trimmed.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed.map(String).map((item) => item.trim()).filter(Boolean);
+      }
+    } catch {
+      // Fall through to delimiter splitting.
+    }
+  }
+
+  return trimmed
+    .split(/[,\s]+/)
+    .map((item) => item.trim().replace(/^["'\[]+|["'\]]+$/g, ""))
+    .filter(Boolean);
+}
+
 export function executeTool(request: ToolCallRequest): ToolCallResult {
   const startedAt = Date.now();
   const { name, args } = request;
@@ -594,11 +631,36 @@ export function executeTool(request: ToolCallRequest): ToolCallResult {
     }
 
     case "compare_systems": {
-      const slugs = Array.isArray(args.slugs) ? args.slugs.map(String) : [];
+      /*
+       * Accepts an array OR a delimited string.
+       *
+       * The schema asks for an array, but models routinely send
+       * `"a,b"` instead — observed live: valid slugs arrived as one joined
+       * string, `Array.isArray` rejected them, and the tool refused a request
+       * it could plainly have served. Refusing on a formatting quirk reads to
+       * the visitor as "the data isn't there", which is a worse failure than
+       * being lenient about the wrapper.
+       */
+      const slugs = coerceStringList(args.slugs);
       const found = slugs.map((slug) => caseStudyBySlug.get(slug)).filter((study) => study !== undefined);
 
       if (found.length < 2) {
-        return finish({ ok: false, reason: "Need at least two valid case study slugs." }, "too few systems", [], true);
+        // Tells the model how to recover instead of only that it failed.
+        // A bare "need two slugs" left it with nothing to do, and it emitted an
+        // empty answer — the visitor then saw the generic fallback for a
+        // question that was perfectly answerable.
+        return finish(
+          {
+            ok: false,
+            reason:
+              "compare_systems needs at least two valid slugs in the `slugs` array. " +
+              `Received: ${slugs.length > 0 ? slugs.join(", ") : "none"}. ` +
+              "Retry with two or more slugs, or call get_case_study once per system and compare the results yourself.",
+          },
+          "too few systems",
+          [],
+          true
+        );
       }
 
       return finish(

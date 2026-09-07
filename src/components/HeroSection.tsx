@@ -129,6 +129,10 @@ const HeroSection = () => {
               onAnimationStart={() => setStatsRevealStarted(true)}
               className="grid grid-cols-2 gap-4 sm:grid-cols-4"
             >
+              {/* Deliberately no ask affordance here. Each stat already links to
+                  the surface that proves it, and the hero's job in the first
+                  viewport is a fast read — a second interactive element per tile
+                  competed with that link for the same click. */}
               {stats.map((stat) => (
                 <Link
                   key={stat.label}

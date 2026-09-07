@@ -1,7 +1,29 @@
 import { caseStudies } from "@/data/case-studies";
 import { PORTFOLIO_CONTEXT, PORTFOLIO_CONTEXT_BRIEF, PORTFOLIO_LINK_GUIDE } from "@/lib/ai-twin";
 
-export const AI_MODEL = process.env.AI_MODEL || "deepseek-ai/deepseek-v4-pro-0813";
+/**
+ * Measured against NVIDIA NIM with this exact system prompt (~8.3k prompt
+ * tokens), 2 runs each, tool-calling round + streamed answer:
+ *
+ *   openai/gpt-oss-20b                  tool 2.4-3.3s   first token 0.8-1.7s
+ *   nvidia/nemotron-3-super-120b-a12b   tool 4.5-4.9s   first token 1.1-1.2s
+ *   nvidia/nemotron-3.5-lightning-30b   tool 5.6s       first token 0.9-1.3s
+ *   deepseek-ai/deepseek-v4-pro-0813    tool >30s (never returned)
+ *   deepseek-ai/deepseek-v4-flash-0731  tool >30s (never returned)
+ *
+ * The previous default was deepseek-v4-pro, which could not complete a single
+ * tool-calling round inside the server's 12s budget — the upstream_timeout seen
+ * in production was the model, not the plumbing.
+ */
+export const AI_MODEL = process.env.AI_MODEL || "openai/gpt-oss-20b";
+
+/**
+ * gpt-oss returns its chain of thought in a separate `reasoning_content` field
+ * rather than inside `content`, so it never leaks into an answer. It is still
+ * billed latency, and "low" cut it from ~237 to ~34 tokens with no loss of
+ * answer quality for these short, grounded replies.
+ */
+export const AI_REASONING_EFFORT = "low";
 
 export const SYSTEM_PROMPT = `
 You are an AI assistant for Nikunj Khitha's portfolio website. Your role is to provide helpful, accurate information about Nikunj's professional background, skills, experience, and projects.
@@ -27,7 +49,7 @@ Tool discipline:
 - Sound like a strong portfolio representative, not a generic chatbot.
 - If asked about unrelated topics, politely redirect to Nikunj's professional information.
 - Prefer clear sections and bullets over long paragraphs.
-- This chat UI is narrow, especially on mobile. Prefer short sections and bullet lists. Do NOT use markdown tables unless the user explicitly asks for a table.
+- This chat UI is narrow, especially on mobile. Prefer short sections and bullet lists. NEVER use markdown tables unless the user literally asks for a table — this includes comparisons. Compare two systems as a short bulleted list per system, not as a table, because a table overflows the panel and becomes unreadable.
 - Default to a calm, confident tone. Do not use emojis unless the user clearly invites a more casual tone.
 
 ## OWNERSHIP & CLAIM-ACCURACY GUARDRAILS:

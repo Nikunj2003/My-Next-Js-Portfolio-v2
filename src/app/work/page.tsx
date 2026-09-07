@@ -6,6 +6,7 @@ import { personalInfo } from "@/data/portfolio";
 import { getWorkIndexGraph, toJsonLd } from "@/lib/seo/jsonld";
 import { siteConfig } from "@/lib/seo/site";
 import CaseStudyCard from "@/components/CaseStudyCard";
+import { ReadingPathAsk } from "@/components/ai/ReadingPathAsk";
 import Reveal from "@/components/ui/reveal";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -77,10 +78,14 @@ const WorkIndexPage = () => (
             <h1 className="heading-xl mb-6">
               Engineering <span className="text-gradient">Case Studies</span>
             </h1>
-            <p className="mb-16 max-w-2xl text-lg leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
+            <p className="mb-10 max-w-2xl text-lg leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
               Each write-up covers the problem, the constraints it ran under, the decisions taken with the
               alternatives rejected, measured results, and an explicit statement of what was mine versus shared.
             </p>
+          </Reveal>
+
+          <Reveal delay={0.08}>
+            <ReadingPathAsk />
           </Reveal>
 
           {/* Grouped by capability rather than employer, so the shape of the work

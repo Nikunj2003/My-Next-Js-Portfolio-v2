@@ -137,3 +137,40 @@ test("exactly three studies are featured, because the homepage row is a fixed th
     assert.equal(study.kind, "system");
   }
 });
+
+test("CASE_STUDY_SLUGS matches the real array exactly", async () => {
+  // ExperienceBullet references CaseStudySlug at compile time to catch a
+  // renamed slug, but the union itself is hand-maintained (case-studies.ts
+  // documents why: turning `slug` into a matching literal type would require
+  // `as const` on all 13 entries). This is the runtime half of that guarantee
+  // — if the two ever drift, a bullet could compile against a slug that no
+  // longer resolves to any study.
+  const { CASE_STUDY_SLUGS } = await import("../src/data/case-studies.ts");
+  const actual = caseStudies.map((study) => study.slug).sort();
+  const declared = [...CASE_STUDY_SLUGS].sort();
+
+  assert.deepEqual(declared, actual, "CASE_STUDY_SLUGS must list exactly the slugs in `caseStudies`");
+});
+
+test("every experience bullet's study link resolves to a real case study", async () => {
+  const { experiences, bulletStudySlug, bulletText } = await import("../src/data/portfolio.ts");
+
+  let mappedCount = 0;
+  for (const experience of experiences) {
+    for (const bullet of experience.bullets) {
+      const slug = bulletStudySlug(bullet);
+      if (!slug) continue;
+
+      mappedCount += 1;
+      assert.ok(
+        caseStudyBySlug.get(slug),
+        `bullet "${bulletText(bullet).slice(0, 60)}..." links to unknown slug "${slug}"`
+      );
+    }
+  }
+
+  // Not a specific count — just proof the mapping pass actually happened,
+  // so this test cannot pass vacuously if every bullet were reverted to a
+  // plain string.
+  assert.ok(mappedCount >= 10, `expected at least 10 mapped bullets, found ${mappedCount}`);
+});
