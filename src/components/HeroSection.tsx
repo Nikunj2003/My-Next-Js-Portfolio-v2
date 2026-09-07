@@ -65,10 +65,14 @@ const HeroSection = () => {
     },
   };
 
+  /*
+    Slide only, no opacity fade — the availability badge is a glass surface, and
+    fading it in from transparent made it read as flat until the animation
+    finished. Consistent with `revealInitial` in lib/motion.
+  */
   const item = {
-    hidden: shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: REVEAL_OFFSET },
+    hidden: shouldReduceMotion ? {} : { y: REVEAL_OFFSET },
     show: {
-      opacity: 1,
       y: 0,
       transition: {
         duration: shouldReduceMotion ? REVEAL_DURATION_REDUCED : 0.7,

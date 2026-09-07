@@ -29,11 +29,24 @@ export function revealTransition(shouldReduceMotion: boolean | null, delay = 0):
 
 type Axis = "y" | "x";
 
+/**
+ * Slide only — deliberately no opacity fade.
+ *
+ * Backdrop blur only reads as glass once the element is opaque enough to have a
+ * visible fill, so fading a glass surface in from `opacity: 0` made it look
+ * flat for the whole animation and then snap to glass at the end. With a 0.6s
+ * duration plus up to 0.4s of stagger, that was a full second of every glass
+ * panel on the page rendering wrong on load.
+ *
+ * The slide alone still reads as an entrance, and the surface is correct from
+ * the first frame. Reduced motion has nothing left to animate, so it renders
+ * final state immediately, which is the right outcome there anyway.
+ */
 export function revealInitial(shouldReduceMotion: boolean | null, axis: Axis = "y", offset = REVEAL_OFFSET) {
-  if (shouldReduceMotion) return { opacity: 0 };
-  return { opacity: 0, [axis]: offset };
+  if (shouldReduceMotion) return {};
+  return { [axis]: offset };
 }
 
 export function revealAnimate(axis: Axis = "y") {
-  return { opacity: 1, [axis]: 0 };
+  return { [axis]: 0 };
 }

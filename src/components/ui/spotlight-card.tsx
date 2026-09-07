@@ -137,8 +137,14 @@ export function SpotlightCard({
   return (
     <motion.div
       ref={setRefs}
-      initial={animateOnEnter ? (shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 30 }) : false}
-      animate={animateOnEnter ? (inView ? { opacity: 1, y: 0 } : {}) : undefined}
+      /*
+        Slide only, no opacity fade — matching `revealInitial` in lib/motion.
+        A glass card faded in from `opacity: 0` reads as flat until the fade
+        finishes, so every card on the page looked non-glass for up to a second
+        after load. See the note in lib/motion.ts.
+      */
+      initial={animateOnEnter ? (shouldReduceMotion ? {} : { y: 30 }) : false}
+      animate={animateOnEnter ? (inView ? { y: 0 } : {}) : undefined}
       transition={animateOnEnter ? revealTransition(shouldReduceMotion, delay) : undefined}
       onPointerEnter={isInteractive ? handlePointerEnter : undefined}
       onPointerMove={isInteractive ? handlePointerMove : undefined}
