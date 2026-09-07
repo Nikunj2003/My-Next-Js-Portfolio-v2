@@ -350,10 +350,17 @@ async function consumeChatStream(
 
 const AITwinChat = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const isMobile = useIsMobile();
 
-  // Lenis drives the page from a window-level wheel listener, so stopping it is
-  // what actually keeps the background still while the chat is open.
-  useLenisLock(isOpen);
+  /*
+   * Locked on mobile only.
+   *
+   * Mobile renders `fixed inset-0` with a full backdrop, so it is a modal and
+   * the page behind it must not move. Desktop is a 20-24rem corner panel with
+   * no scrim — a non-modal surface the visitor is expected to read *alongside*
+   * the page, so freezing the page behind it was wrong.
+   */
+  useLenisLock(isOpen && isMobile);
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -369,7 +376,6 @@ const AITwinChat = () => {
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const wasOpenRef = useRef(false);
   const handleSendRef = useRef<(request?: SendRequest) => Promise<void>>(async () => {});
-  const isMobile = useIsMobile();
   const shouldReduceMotion = useReducedMotion();
   const { status: chatAvailabilityStatus } = useChatAvailability();
 

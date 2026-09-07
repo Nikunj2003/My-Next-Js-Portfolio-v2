@@ -90,3 +90,49 @@ test("nested overlays lock once and release once", () => {
   acquire();
   assert.deepEqual({ locked, released }, { locked: 2, released: 1 }, "a later lock still applies");
 });
+
+/**
+ * The lock must match modality, not merely "an overlay is open".
+ *
+ * The AI Twin renders two different surfaces: a `fixed inset-0` modal with a
+ * backdrop on mobile, and a 20-24rem corner panel with NO scrim on desktop.
+ * Locking both froze the page behind a non-modal panel the visitor is meant to
+ * read alongside the page.
+ */
+test("the AI Twin only locks scroll on mobile", () => {
+  const source = readFileSync("src/components/AITwinChat.tsx", "utf8");
+
+  assert.match(
+    source,
+    /useLenisLock\(isOpen && isMobile\)/,
+    "the chat must only lock the page for its full-screen mobile layout"
+  );
+
+  /*
+   * Guards the premise rather than just the current code: the mobile-only lock
+   * is correct *because* the desktop panel has no scrim. If it ever gains one it
+   * becomes modal, and this decision must be revisited rather than left
+   * silently wrong.
+   *
+   * Anchored on the code comment marking the branch, not the bare word
+   * "Desktop" — that also appears in prose above and swallowed the mobile
+   * branch, which does legitimately have a backdrop.
+   */
+  const desktopBranch = source.slice(source.indexOf("// Desktop:"));
+  assert.ok(desktopBranch.length > 0, "expected a marked desktop branch");
+  assert.doesNotMatch(
+    desktopBranch,
+    /fixed inset-0 z-50 bg-black/,
+    "the desktop panel gained a scrim, so it is now modal — revisit the mobile-only lock"
+  );
+});
+
+test("genuinely modal overlays still lock", () => {
+  // Both have a full-screen scrim, so the page behind them must not move.
+  const palette = readFileSync("src/components/CommandPalette.tsx", "utf8");
+  assert.match(palette, /useLenisLock\(open\)/, "the command palette is modal and must lock");
+  assert.match(palette, /fixed inset-0[^"]*bg-black\//, "…because it renders a full-screen scrim");
+
+  const navbar = readFileSync("src/components/Navbar.tsx", "utf8");
+  assert.match(navbar, /useLenisLock\(isOpen\)/, "the mobile menu is modal and must lock");
+});
