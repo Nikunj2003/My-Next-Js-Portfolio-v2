@@ -273,10 +273,10 @@ interface MetricEntry {
 
 const METRICS: MetricEntry[] = [
   {
-    keys: ["mcp server", "mcp servers", "servers", "registry size", "9 of 14"],
-    value: "9 of 14",
+    keys: ["mcp server", "mcp servers", "servers", "registry size", "10+"],
+    value: "10+",
     context:
-      "Production MCP servers in ArmorCode's shared enterprise registry delivered by Nikunj. The other five were built by teammates against the same registry policy.",
+      "Production MCP servers Nikunj delivered into ArmorCode's shared enterprise registry. Others in the same registry were built by teammates against the same policy, so this is his contribution rather than the registry total.",
     source: "Governed MCP Tool Registry",
   },
   {

@@ -33,7 +33,7 @@ Engineering case studies (deepest technical detail on this site) — 13 write-up
 
 Agent systems:
 - LLM Evaluation Platform (OpenTelemetry + Langfuse, 9 AI surfaces, LLM-as-a-judge validated at Cohen's kappa >= 0.7, Jenkins CI gates): https://nikunj.codenex.dev/work/llm-evaluation-platform
-- Governed MCP Tool Registry (9 of 14 production MCP servers, OAuth2/RBAC tool-level authorization, protocol RCA): https://nikunj.codenex.dev/work/governed-mcp-registry
+- Governed MCP Tool Registry (10+ production MCP servers, OAuth2/RBAC tool-level authorization, protocol RCA): https://nikunj.codenex.dev/work/governed-mcp-registry
 - Documentation Automation Platform (multi-agent pipeline with a clarification gate that blocks drafting until open questions are answered): https://nikunj.codenex.dev/work/documentation-automation
 - Sentinel Test Generation Agent (multi-step agent grounded in a code graph; downstream automation fails loudly without linked coverage): https://nikunj.codenex.dev/work/sentinel-test-agent
 

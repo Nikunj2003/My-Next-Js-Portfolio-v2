@@ -1,6 +1,6 @@
 # Nikunj Khitha
 
-**Applied AI Engineer at ArmorCode | Agent Systems, MCP Tool Governance & LLM Evaluation | Agents shipped to 8+ business functions · 9 of 14 production MCP servers · Python, Go, TypeScript, Spring AI**
+**Applied AI Engineer at ArmorCode | Agent Systems, MCP Tool Governance & LLM Evaluation | Agents shipped to 8+ business functions · 10+ production MCP servers · Python, Go, TypeScript, Spring AI**
 
 Gurugram, Haryana, India
 
@@ -18,7 +18,7 @@ Applied AI Engineer at ArmorCode. I work on the part of AI that starts after the
 
 Most of what I do is measurement. I built ArmorCode's OpenTelemetry-based LLM evaluation platform on Langfuse, which scores 9 AI surfaces — prompts, models, agents, skills, MCP tool calls, and retrieval — against golden datasets, using deterministic checks, scikit-learn classification metrics, Ragas RAG scores, and LLM-as-a-judge graders validated against human labels at Cohen's kappa >= 0.7, enforced as Jenkins CI gates. Every prompt change and model swap now ships on measured accuracy, latency, and cost instead of assertion. The evaluation framework is mine; the Langfuse deployment underneath it is owned by platform DevOps.
 
-I also deliver the tool and context layer those agents run on: 9 of the 14 production MCP servers in our shared enterprise tool registry, with OAuth2/RBAC, tool-level permission tiers, and audit attribution under multi-tenant AppSec constraints where a single authorization slip would leak another customer's vulnerability data. I am the sole maintainer of company-wide model and MCP access on a LiteLLM gateway — scoped API keys, per-model spend budgets, and RBAC-gated distribution to every team's Claude Desktop. Retrieval comes from a tenant-scoped Knowledge Graph RAG layer over 1M+ entities in Neo4j and pgvector.
+I also deliver the tool and context layer those agents run on: 10+ production MCP servers in our shared enterprise tool registry, with OAuth2/RBAC, tool-level permission tiers, and audit attribution under multi-tenant AppSec constraints where a single authorization slip would leak another customer's vulnerability data. I am the sole maintainer of company-wide model and MCP access on a LiteLLM gateway — scoped API keys, per-model spend budgets, and RBAC-gated distribution to every team's Claude Desktop. Retrieval comes from a tenant-scoped Knowledge Graph RAG layer over 1M+ entities in Neo4j and pgvector.
 
 Day to day this is embedded delivery. I co-build Agentic Office OS with teammates, working with an external business consultant, executives, and teams across QA, Documentation, Technical Support, Customer Success, Sales, Product, and the Office of the CEO to turn ambiguous requirements into agents, skills, MCP integrations, and approval workflows — then staying on through rollout, debugging, enablement, and iteration. Earlier, as an intern, I created the initial Java framework for Anya, ArmorCode's platform agent, and designed and owned its short- and long-term memory layers.
 
@@ -34,7 +34,7 @@ I am targeting Applied AI Engineer, Forward Deployed AI Engineer, Agentic AI Eng
 
 ### ArmorCode
 
-#### Associate Software Engineer (Applied AI)
+#### Applied AI Engineer (SDE 1)
 
 **Dec 2025 - Present · Gurugram, Haryana, India**
 
@@ -51,7 +51,7 @@ The umbrella platform the rest of my work plugs into: fully autonomous, human-tr
 
 ##### Agent Tooling: Governed MCP Registry
 
-- Delivered **9 of the 14 production MCP servers** in ArmorCode's shared enterprise tool registry, under multi-tenant AppSec constraints where a single authorization slip leaks another customer's vulnerability data — implementing OAuth2/RBAC, tool-level permission tiers, explicit denial behavior, and audit attribution. Validated one 23-tool integration across three permission tiers with **20/20 authorization checks passing**.
+- Delivered **10+ production MCP servers** in ArmorCode's shared enterprise tool registry, under multi-tenant AppSec constraints where a single authorization slip leaks another customer's vulnerability data — implementing OAuth2/RBAC, tool-level permission tiers, explicit denial behavior, and audit attribution. Validated one 23-tool integration across three permission tiers with **20/20 authorization checks passing**.
 - Sole maintainer of company-wide model and MCP access on a **LiteLLM gateway**: I own the approved model catalog configuration, issue scoped API keys with per-model access and spend budgets for individual agents, automations, and team POCs, and maintain RBAC-gated distribution of internal MCP servers out to employees' Claude Desktop via an `.mcpb` proxy.
 - Cut recurring LLM spend after a budget alert by tracing **57%** of gateway cost across **50,000+ requests** to **10+ automations**, root-causing it to a bulk historical backfill rather than the model itself, then migrating models and splitting system/user prompts to enable Bedrock prompt caching — while documenting that a deterministic regex/JS rewrite of those binary classification tasks would have saved a further **~95%**.
 
@@ -155,10 +155,8 @@ Built an open-source AI wellness product with empathetic chat, mood tracking, jo
 ## Honors & Awards
 
 **AI Ninja Award — ArmorCode**  
-First recipient of the award, and the youngest award recipient at the company.
+First-ever recipient of the award, presented on the company's global platform, and the youngest award recipient at the company.
 
 ## Education
 
-**The NorthCap University**  
-Bachelor of Technology in Computer Science Engineering  
-Aug 2021 - Jun 2025
+B.Tech in Computer Science Engineering — The NorthCap University, Gurugram (Aug 2021 - Jun 2025)

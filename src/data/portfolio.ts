@@ -12,7 +12,7 @@ export const personalInfo = {
 /** `href` points each number at the surface that actually proves it. */
 export const stats = [
   { value: 8, suffix: "+", label: "Business Functions Served", href: "#experience" },
-  { value: 9, suffix: "", label: "Production MCP Servers", href: "/work/governed-mcp-registry" },
+  { value: 10, suffix: "+", label: "Production MCP Servers", href: "/work/governed-mcp-registry" },
   { value: 1, suffix: "M+", label: "KG Entities", href: "/work/knowledge-graph-rag" },
   { value: 9, suffix: "", label: "AI Surfaces Evaluated", href: "/work/llm-evaluation-platform" },
 ];
@@ -40,7 +40,7 @@ export const about = {
         "An OpenTelemetry platform on Langfuse scoring prompts, models, agents, skills, MCP tools, and retrieval against golden datasets — deterministic checks, scikit-learn metrics, Ragas, and LLM-as-a-judge graders validated at Cohen's kappa >= 0.7, enforced as Jenkins CI gates.",
     },
     {
-      metric: "9 of 14",
+      metric: "10+",
       label: "Production MCP servers",
       detail:
         "Delivered in ArmorCode's shared enterprise tool registry with OAuth2/RBAC, tool-level permission tiers, explicit denial behavior, and audit attribution under multi-tenant AppSec constraints.",
@@ -74,8 +74,13 @@ export const about = {
 
 export const recognition = {
   title: "AI Ninja Award at ArmorCode",
+  /**
+   * "Presented on a global platform" is the accurate framing: ArmorCode is a
+   * global company and the award was given at a company-wide global forum. It
+   * deliberately does not claim the award category itself is titled "global".
+   */
   detail:
-    "First recipient of ArmorCode's AI Ninja Award, and the youngest person to receive an award at the company.",
+    "First-ever recipient of ArmorCode's AI Ninja Award, presented on the company's global platform, and the youngest person to receive an award at the company.",
 };
 
 /** Prose form of the highlights, for the AI Twin context and SEO surfaces. */
@@ -134,14 +139,14 @@ export const experiences: Experience[] = [
   },
   {
     company: "ArmorCode",
-    role: "Associate Software Engineer (Applied AI)",
+    role: "Applied AI Engineer (SDE 1)",
     period: "Dec 2025 – Present",
     type: "work",
     summary: "Co-build Agentic Office OS, the internal agent platform serving 8+ business functions, and own the tool, context, governance, and evaluation layers underneath it.",
     bullets: [
       "Co-built Agentic Office OS, the internal platform of autonomous, human-triggered, and human-in-the-loop agents reachable org-wide through Slack, translating ambiguous requirements from an external business consultant, executives, and internal teams into agents, skills, MCP integrations, and approval workflows for 8+ business functions, then owning rollout, debugging, and enablement.",
       "Built an OpenTelemetry-based LLM evaluation platform on Langfuse so every prompt, model, agent, skill, and MCP tool change ships on measured accuracy, latency, and cost. It scores 9 AI surfaces against golden datasets using deterministic checks, scikit-learn classification metrics, Ragas RAG scores, and LLM-as-a-judge graders validated at Cohen's kappa >= 0.7, enforced as Jenkins CI gates.",
-      "Delivered 9 of the 14 production MCP servers in ArmorCode's shared enterprise tool registry under multi-tenant AppSec constraints, implementing OAuth2/RBAC controls, tool-level permission tiers, explicit denial behavior, and audit attribution, with 20 of 20 authorization checks validated across three access tiers.",
+      "Delivered 10+ production MCP servers in ArmorCode's shared enterprise tool registry under multi-tenant AppSec constraints, implementing OAuth2/RBAC controls, tool-level permission tiers, explicit denial behavior, and audit attribution, with 20 of 20 authorization checks validated across three access tiers.",
       "Govern company-wide model and MCP access as sole maintainer of a LiteLLM gateway, issuing scoped API keys with per-model spend budgets and distributing RBAC-gated MCP servers to employees' Claude Desktop via an .mcpb proxy. Cut recurring LLM spend by tracing 57% of gateway cost across 50,000+ requests to 10+ automations, then migrating models and splitting system/user prompts to enable Bedrock prompt caching, while flagging a deterministic rewrite worth a further ~95% reduction.",
       "Built ArmorCode's tenant-scoped knowledge-graph RAG layer over 1M+ entities of RCAs, test cases, and product documentation in Neo4j and pgvector, giving Office OS agents grounded product knowledge without cross-tenant leakage, with retrieval scored on recall@k, MRR, and context precision across five query modes.",
       "Cut CS and support escalations to engineering with a codebase-search MCP service in Go over 8 product repositories, fronting a read-only agent against a daily-reindexed vector index. Restored it after 100+ queries returned zero content by isolating two independent causes in SDK and host internals: a Go output-schema defect that made schema-aware clients discard every answer, and a query deadline sized for a longer client timeout tier. Shipped the fix with a negative-control test and flagged 14 exposed connectors.",

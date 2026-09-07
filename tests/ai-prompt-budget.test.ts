@@ -77,5 +77,8 @@ test("the prompt still carries what must never be paraphrased", () => {
   }
 
   assert.match(SYSTEM_PROMPT, /get_case_study/, "the prompt must tell the model how to fetch depth");
-  assert.match(SYSTEM_PROMPT, /9 of 14/, "the MCP ownership ratio must stay in the prompt");
+  // The MCP figure is "10+" delivered into a shared registry — no total is
+  // published, so the prompt must carry the count without a denominator.
+  assert.match(SYSTEM_PROMPT, /10\+ production MCP servers/i, "the MCP count must stay in the prompt");
+  assert.doesNotMatch(SYSTEM_PROMPT, /9 of (the )?14/, "the retired 9-of-14 ratio must not reappear");
 });

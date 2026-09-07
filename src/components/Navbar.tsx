@@ -43,8 +43,17 @@ const Navbar = () => {
 
     const updateScrolled = () => {
       frameId = null;
+
+      // The scrolled background applies on EVERY route — the bar floats over
+      // content everywhere. This used to sit behind an `isHome` early return,
+      // which is why /work and /work/* had a transparent bar with page text
+      // showing straight through it.
       const nextScrolled = window.scrollY > 40;
       setScrolled((prev) => (prev === nextScrolled ? prev : nextScrolled));
+
+      // Section tracking, on the other hand, only means anything on the
+      // homepage, since that is the only route with these anchors.
+      if (!isHome) return;
 
       const activationLine = window.innerHeight * 0.35;
       let nextActiveSection: string | null = null;
@@ -67,11 +76,6 @@ const Navbar = () => {
       if (frameId !== null) return;
       frameId = window.requestAnimationFrame(updateScrolled);
     };
-
-    // Off the homepage there are no section anchors to observe, so skip the
-    // listeners entirely. The rendered active state is derived below instead of
-    // being written here, which would be a synchronous setState in an effect.
-    if (!isHome) return;
 
     updateScrolled();
     window.addEventListener("scroll", onScroll, { passive: true });

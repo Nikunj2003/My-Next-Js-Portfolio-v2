@@ -201,9 +201,9 @@ export const caseStudies: CaseStudy[] = [
     employer: "ArmorCode",
     period: "2025 – 2026",
     oneLiner:
-      "Nine of the fourteen production MCP servers behind a shared enterprise registry, with tool-level authorization under multi-tenant AppSec constraints.",
+      "Ten-plus production MCP servers behind a shared enterprise registry, with tool-level authorization under multi-tenant AppSec constraints.",
     summary:
-      "Giving agents real tools inside a multi-tenant security platform means a single authorization slip leaks another customer's vulnerability data. I delivered nine of the fourteen production servers in the shared registry, solved the distribution problem for non-technical teams, and root-caused the outage that took the codebase service down on two of three client surfaces.",
+      "Giving agents real tools inside a multi-tenant security platform means a single authorization slip leaks another customer's vulnerability data. I delivered ten-plus production servers into the shared registry, solved the distribution problem for non-technical teams, and root-caused the outage that took the codebase service down on two of three client surfaces.",
     problem:
       "Agents are only as useful as the tools they can reach, and in an AppSec platform the tools reach customer vulnerability data. Every server needed authentication, scoped permissions, explicit denial behavior, and audit attribution before it could be exposed — and then it needed to actually reach the people who needed it, including teams with no terminal and no device management to push configuration for them.",
     constraints: [
@@ -267,7 +267,7 @@ export const caseStudies: CaseStudy[] = [
       },
     ],
     results: [
-      { metric: "9 of 14", label: "production MCP servers in the shared registry delivered" },
+      { metric: "10+", label: "production MCP servers delivered into the shared registry" },
       { metric: "20 / 20", label: "authorization checks passing across three permission tiers" },
       { metric: "100+ → 0", label: "failing queries traced to two independent root causes and fixed" },
       { metric: "14", label: "connectors flagged for the same latent misconfiguration" },
@@ -285,7 +285,7 @@ export const caseStudies: CaseStudy[] = [
       "GitHub Actions",
     ],
     ownership:
-      "Nine of the fourteen production servers are mine, along with the canonical registry, the distribution mechanism, and the reliability work. The remaining servers were built by teammates against the same registry policy. Which models are approved is a senior engineering decision; I own the configuration and enforcement.",
+      "Ten-plus of the registry's production servers are mine, along with the canonical registry, the distribution mechanism, and the reliability work. The remaining servers were built by teammates against the same registry policy. Which models are approved is a senior engineering decision; I own the configuration and enforcement.",
     tags: ["MCP", "Tool Authorization", "Reliability"],
     aliases: ["mcp", "model context protocol", "tool", "tools", "tool use", "authorization", "permission", "rbac", "oauth", "registry", "rca", "root cause", "debug", "outage", "timeout", "reliability", "governance"],
   },

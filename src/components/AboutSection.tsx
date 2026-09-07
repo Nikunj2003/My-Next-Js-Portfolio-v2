@@ -117,6 +117,26 @@ const AboutSection = () => {
               </div>
             </Reveal>
 
+            {/* Award first: it is the strongest single third-party signal in the
+                section, so it sits directly under the summary rather than at the
+                bottom where it read as a footnote. */}
+            <Reveal delay={0.05}>
+              <SpotlightCard className="overflow-hidden">
+                <div className="flex items-start gap-5 p-6">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10 text-primary glow-accent-sm">
+                    <Award className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-mono text-xs uppercase tracking-[0.25em] text-primary/80">Recognition</p>
+                    <h3 className="heading-md mt-1 text-foreground">{recognition.title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
+                      {recognition.detail}
+                    </p>
+                  </div>
+                </div>
+              </SpotlightCard>
+            </Reveal>
+
             {/* Metric-led proof. Two across inside a 2/3 column keeps each card
                 at a readable measure — three across gave ~23 chars per line. */}
             <div className="grid gap-4 sm:grid-cols-2">
@@ -139,22 +159,6 @@ const AboutSection = () => {
               ))}
             </div>
 
-            <Reveal delay={0.1}>
-              <SpotlightCard className="overflow-hidden">
-                <div className="flex items-start gap-5 p-6">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10 text-primary glow-accent-sm">
-                    <Award className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-mono text-xs uppercase tracking-[0.25em] text-primary/80">Recognition</p>
-                    <h3 className="heading-md mt-1 text-foreground">{recognition.title}</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
-                      {recognition.detail}
-                    </p>
-                  </div>
-                </div>
-              </SpotlightCard>
-            </Reveal>
           </div>
 
         </div>

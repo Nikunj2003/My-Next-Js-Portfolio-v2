@@ -67,7 +67,7 @@ These are the deepest technical write-ups on the site — 13 in total, spanning 
    - Stack signals: OpenTelemetry, Langfuse, LiteLLM, Ragas, scikit-learn, pytest, Python, Jenkins, n8n, AWS Bedrock.
 
 2. Governed MCP Tool Registry — https://nikunj.codenex.dev/work/governed-mcp-registry
-   - 9 of the 14 production MCP servers in a shared enterprise registry, with OAuth2/RBAC, tool-level permission tiers, explicit denial behavior, and audit attribution under multi-tenant AppSec constraints.
+   - 10+ production MCP servers in a shared enterprise registry, with OAuth2/RBAC, tool-level permission tiers, explicit denial behavior, and audit attribution under multi-tenant AppSec constraints.
    - 20 of 20 authorization checks passing across three permission tiers.
    - Distribution solved with desktop extension bundles after rejecting a public endpoint with IP allowlist, a tunnel/reverse proxy, a CLI-based client, and vendor-managed MCP tunnels.
    - Reliability: restored a codebase-search service after 100+ queries returned zero content, isolating two independent root causes by reading SDK source and host internals — an output schema the tool could never populate, and a query deadline sized for the wrong client timeout tier.
