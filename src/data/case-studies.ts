@@ -524,20 +524,20 @@ export const caseStudies: CaseStudy[] = [
     employer: "ArmorCode",
     period: "2025 – 2026",
     oneLiner:
-      "A multi-agent pipeline that writes product documentation from source code and tickets — and stops to ask questions instead of guessing.",
+      "Completed Jira tickets trigger AI documentation updates in GitHub, reviewed through Quill and synced to Zendesk after the pull request merges.",
     summary:
-      "Documentation went stale because writing it required engineers who had other work. I built the agent pipeline that drafts it from the code and the tickets, then reworked that pipeline after production use exposed the real failure: an agent given thin context writes confident, wrong prose. The fix was to make gathering context a mandatory phase with a gate where the agent must ask before it drafts.",
+      "I built AI documentation automation that starts when a Jira ticket is completed. An agent gathers ticket and codebase context, creates or updates documentation in GitHub, and opens a pull request. The documentation team reviews and edits the proposed changes through Quill, the workflow's Electron/React/TypeScript review app. Once the PR merges, the documentation is synced to Zendesk. Context enrichment and a blocking clarification gate keep the agent from drafting through unresolved gaps.",
     problem:
       "The first version drafted from a ticket description alone — typically a one-line summary written for a project manager, not an engineer. It did not reliably read the linked engineering tickets, never searched the codebase to confirm what things were actually called, and never surfaced an ambiguity. The output was plausible and imprecise: approximate UI labels, missed edge cases, and multiple revision rounds per article. The agent was not short of capability; it was short of context, and it had no way to say so.",
     constraints: [
       "The ticket description cannot be trusted as the specification — it is written for a different audience than the documentation.",
       "Published articles are customer-facing, so an approximate field name is a defect, not a rough edge.",
       "Related engineering tickets are often not formally linked, so discovery cannot rely on link graphs alone.",
-      "Generated documentation must stay reviewable by non-engineers rather than being published straight to customers.",
+      "Generated documentation must be reviewed through Quill before the GitHub PR merges; Zendesk receives the merged documentation.",
     ],
     diagram: "docs",
     diagramCaption:
-      "Context enrichment runs to completion before any drafting begins, and the clarification gate blocks the draft until open questions are answered.",
+      "Jira completion triggers the agent. After context enrichment and clarification, it creates or updates GitHub documentation and opens a PR. Quill supports human review and editing; the merged documentation then syncs to Zendesk.",
     decisions: [
       {
         choice: "A clarification gate that blocks drafting",
@@ -571,9 +571,19 @@ export const caseStudies: CaseStudy[] = [
     ],
     sections: [
       {
-        heading: "Keeping the refresh bounded",
+        heading: "From completed ticket to published documentation",
         body:
-          "A collector scans merged pull requests across six repositories, extracts which product areas changed, and maintains a queue with per-item state — first seen, last seen, last run, retry count. A scheduled runner then processes that queue rather than regenerating everything. Documentation refresh is incremental work, and treating it as a full rebuild would waste most of every run.",
+          "A Jira ticket reaching Done automatically triggers the documentation agent. The agent gathers the relevant context, creates a new article or updates an existing one in the GitHub documentation repository, and opens a pull request. Reviewers use Quill to inspect the rendered changes, edit the draft, and approve the PR. After the PR merges, the synchronization workflow updates Zendesk with the merged documentation.",
+        points: [
+          "Jira completion starts the authoring workflow; it does not publish an article by itself.",
+          "Quill is the human review application within this automation, with GitHub retaining the proposed changes and approval history.",
+          "Zendesk synchronization follows the documentation PR merge, so customers receive the reviewed version.",
+        ],
+      },
+      {
+        heading: "Keeping the scheduled refresh bounded",
+        body:
+          "Alongside the Jira-triggered workflow, a collector scans merged code pull requests across six repositories, extracts which product areas changed, and maintains a queue with per-item state — first seen, last seen, last run, retry count. A scheduled runner then processes that queue rather than regenerating everything. These code changes feed documentation refresh; merging the resulting documentation PR is the separate step that leads to Zendesk synchronization.",
         points: [
           "The queue is processed one item at a time, sequentially, on purpose: parallel runs collided over shared template files. Throughput was the correct thing to trade for correctness here, because the deadline is weekly.",
           "Item names are canonicalized and deduplicated, so repeated pull requests touching the same area update one queue row instead of creating several.",
@@ -581,9 +591,9 @@ export const caseStudies: CaseStudy[] = [
         ],
       },
       {
-        heading: "Why the review surface matters",
+        heading: "Quill provides the human review step",
         body:
-          "Drafted documentation is proposed as a pull request and reviewed before publication, never published directly. The whole pipeline is built on the assumption that an agent's output needs a human decision at the end — which is what the review application exists to make practical rather than painful.",
+          "Quill makes the agent's GitHub PRs reviewable by the documentation team. Its WYSIWYG editor, rendered comparisons, embedded agent terminal and per-branch Git worktrees let reviewers inspect and correct a proposal before approving it. Quill is the review component of this documentation automation; the surrounding workflow triggers authoring and syncs merged changes to Zendesk.",
       },
     ],
     results: [
@@ -597,15 +607,20 @@ export const caseStudies: CaseStudy[] = [
       "Model Context Protocol",
       "Python",
       "CLI agents",
+      "Jira",
+      "Quill",
+      "TypeScript",
+      "React",
+      "Electron",
       "Confluence",
       "Zendesk",
       "GitHub",
       "AWS Bedrock",
     ],
     ownership:
-      "The pipeline, the context-enrichment design, the queue model, and the agent prompts are mine, built out from an epic opened by engineering leadership. The documentation team owns the published articles and the review decision.",
+      "Built the documentation automation, including the Jira-triggered agent workflow, context enrichment, refresh queue, GitHub PR delivery, Quill review app and synchronization of merged documentation to Zendesk. The work grew from an epic opened by engineering leadership. The documentation team owns editorial decisions and approval before publication.",
     tags: ["Multi-Agent Systems", "Agent Context", "Workflow Automation"],
-    aliases: ["documentation", "docs", "doc automation", "release notes", "clarification", "context enrichment", "confluence", "zendesk", "technical writing", "agent workflow", "n8n", "queue"],
+    aliases: ["documentation", "docs", "doc automation", "release notes", "clarification", "context enrichment", "confluence", "zendesk", "technical writing", "agent workflow", "n8n", "queue", "quill", "jira done", "documentation pr", "documentation sync"],
   },
   {
     slug: "sentinel-test-agent",
@@ -783,23 +798,25 @@ export const caseStudies: CaseStudy[] = [
     slug: "quill",
     kind: "product",
     theme: "products",
-    title: "Quill",
+    title: "Quill: Documentation Review",
     employer: "ArmorCode",
     period: "2026",
     oneLiner:
-      "A desktop app that makes AI-written documentation reviewable by the people who own it, not just by engineers who can read a diff.",
+      "The Electron/React/TypeScript review app within ArmorCode's AI documentation automation, between agent-created GitHub PRs and publication to Zendesk.",
     summary:
-      "An agent that writes documentation is only useful if someone can check it. Quill is the review surface: it renders proposed changes in the real published theme, lets a non-engineer fix them in place, and delegates every permission decision to the systems that already hold them. It is what keeps AI-drafted documentation reviewed rather than published on trust.",
+      "Quill is the human review component of ArmorCode's AI documentation automation. When a Jira ticket is completed, an agent creates or updates documentation in GitHub and opens a PR. Reviewers use Quill to inspect rendered changes, edit the documentation and approve the proposal. After the PR merges, the surrounding workflow syncs the merged documentation to Zendesk. I built Quill in Electron, React and TypeScript to make that review step practical for the documentation team.",
     problem:
-      "The documentation agent proposes changes as pull requests, which meant reviewers had to judge rendered output by reading raw markup diffs. The people best qualified to catch an error — the documentation team — were the least equipped to read that format, and could not make a small correction without asking an engineer. The bottleneck was not authoring, it was review.",
+      "The Jira-triggered documentation agent already creates and updates articles through GitHub pull requests. Before Quill, the documentation team had to judge the proposed output through raw markup diffs and ask engineers to make small corrections. Since merged documentation is synchronized to Zendesk, review needed to let the people responsible for the articles inspect and fix the actual draft before publication.",
     constraints: [
       "Several proposals are open at once, so editing one cannot disturb the working copy of another.",
       "Reviewers are not engineers; anything requiring command-line work would not be used.",
       "Access control must not become a second system to keep in sync with the source of truth.",
       "Reviewers need to see what customers will see, not an approximation of it.",
+      "Quill reviews the GitHub documentation PR; authoring is triggered by Jira completion and Zendesk synchronization happens after merge in the surrounding workflow.",
     ],
-    diagram: null,
-    diagramCaption: "",
+    diagram: "docs",
+    diagramCaption:
+      "Quill sits at the human review step: Jira Done triggers the agent, the agent creates or updates GitHub docs and opens a PR, reviewers edit and approve through Quill, and merged documentation syncs to Zendesk.",
     decisions: [
       {
         choice: "A separate working tree per proposal",
@@ -828,12 +845,17 @@ export const caseStudies: CaseStudy[] = [
     ],
     sections: [
       {
-        heading: "What shipped",
+        heading: "Quill's place in the documentation workflow",
+        body:
+          "The workflow begins outside Quill, when a completed Jira ticket triggers the documentation agent. The agent creates or updates articles in GitHub and opens a PR. Quill brings those PRs to the documentation team for rendered review, editing and approval. Once a PR merges, the documentation synchronization workflow updates Zendesk. This case study focuses on the review app within that larger system.",
+      },
+      {
+        heading: "What shipped in the review app",
         body:
           "A working desktop application covering the full review path: a filtered list of open proposals, rendered side-by-side comparison with inline and multi-line comments that post back to the real pull request, approve and merge as genuine actions, a searchable article browser with version preview, an in-place editor with image management committed atomically alongside the text, a command palette for jumping to any article, a conversation timeline, and automated builds attaching signed installers to releases.",
         points: [
           "Inline suggestions are posted in the platform's native suggestion format, so a reviewer's fix becomes a one-click accept rather than a comment someone has to transcribe.",
-          "Maturity, stated precisely: Quill is an internal release. The documentation-synchronization workflow it supports runs in production.",
+          "Quill is an internal release within the production documentation automation workflow. Jira completion triggers authoring, Quill supports review, and merged documentation is synced to Zendesk.",
         ],
       },
     ],
@@ -853,9 +875,9 @@ export const caseStudies: CaseStudy[] = [
       "GitHub Actions",
     ],
     ownership:
-      "Designed and built solo, from the first proposal through release automation. The documentation team owns the review decisions the app exists to support.",
-    tags: ["AI Product", "Human in the Loop", "Developer Tooling"],
-    aliases: ["quill", "documentation review", "electron", "desktop app", "wysiwyg", "worktree", "git worktrees", "pull request review", "human in the loop", "review tool", "pty", "terminal"],
+      "Designed and built Quill, the review application within the documentation automation platform, from the first proposal through release automation. Its scope is inspecting, editing and approving GitHub documentation PRs; the surrounding pipeline handles the Jira trigger, agent authoring and Zendesk synchronization after merge. The documentation team owns the review decisions.",
+    tags: ["Documentation Automation", "Human in the Loop", "Developer Tooling"],
+    aliases: ["quill", "documentation review", "electron", "desktop app", "wysiwyg", "worktree", "git worktrees", "pull request review", "human in the loop", "review tool", "pty", "terminal", "documentation automation", "jira", "zendesk"],
   },
   {
     slug: "codenex-ai-proxy",

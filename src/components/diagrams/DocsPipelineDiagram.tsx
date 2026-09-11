@@ -1,56 +1,42 @@
-import DiagramFrame, { Arrow, Box, Caption, LayerLabel } from "./DiagramFrame";
+import DiagramFrame, { Arrow, Box, LayerLabel } from "./DiagramFrame";
 
 const DocsPipelineDiagram = ({ description }: { description: string }) => (
   <DiagramFrame
-    title="Documentation pipeline with a blocking clarification gate"
+    title="Jira to Zendesk documentation workflow with Quill review"
     description={description}
-    viewBox="0 0 720 446"
+    viewBox="0 0 720 594"
   >
-    <LayerLabel x={16} y={20} text="Context enrichment" />
-    <Box x={16} y={30} w={222} h={54} label="Deep ticket pull" sub="linked tickets · bounded search" order={0} />
-    <Box x={250} y={30} w={220} h={54} label="Codebase search" sub="two queries minimum" order={0} />
-    <Box x={482} y={30} w={222} h={54} label="Consolidate" sub="deduplicate the pool" order={0} />
+    <LayerLabel x={16} y={20} text="Automatic trigger" />
+    <Box x={16} y={30} w={328} h={54} label="Jira ticket completed" sub="status reaches Done" order={0} />
+    <Arrow d="M 344 57 L 372 57" order={0} />
+    <Box x={376} y={30} w={328} h={54} label="Documentation agent starts" sub="gather context before drafting" order={0} />
 
-    <Arrow d="M 238 57 L 246 57" order={0} />
-    <Arrow d="M 470 57 L 478 57" order={0} />
+    <Arrow d="M 540 84 L 540 132 L 126 132 L 126 136" order={1} />
+    <LayerLabel x={16} y={126} text="Context enrichment" />
+    <Box x={16} y={140} w={220} h={54} label="Deep ticket pull" sub="linked tickets · bounded search" order={1} />
+    <Arrow d="M 236 167 L 246 167" order={1} />
+    <Box x={250} y={140} w={220} h={54} label="Codebase search" sub="two queries minimum" order={1} />
+    <Arrow d="M 470 167 L 480 167" order={1} />
+    <Box x={484} y={140} w={220} h={54} label="Consolidate" sub="deduplicate the context" order={1} />
 
-    <Arrow d="M 360 84 L 360 122" order={1} />
-    <Caption x={370} y={108} text="nothing is drafted yet" anchor="start" />
+    <Arrow d="M 594 194 L 594 210 L 360 210 L 360 246" order={2} />
+    <LayerLabel x={16} y={236} text="Clarification gate" />
+    <Box x={16} y={250} w={688} h={54} label="Resolve open questions" sub="drafting waits until clarification is complete" accent order={2} />
 
-    <LayerLabel x={16} y={140} text="Gate" />
-    <Box
-      x={16}
-      y={150}
-      w={688}
-      h={58}
-      label="Clarification questions"
-      sub="numbered, specific, and answered before drafting begins"
-      accent
-      order={2}
-    />
+    <Arrow d="M 360 304 L 360 320 L 180 320 L 180 356" order={3} />
+    <LayerLabel x={16} y={346} text="Authoring in GitHub" />
+    <Box x={16} y={360} w={328} h={54} label="Create or update documentation" sub="agent writes the relevant articles" order={3} />
+    <Arrow d="M 344 387 L 372 387" order={3} />
+    <Box x={376} y={360} w={328} h={54} label="Open documentation PR" sub="changes proposed for human review" order={3} />
 
-    <Arrow d="M 200 208 L 200 250" order={3} />
-    <Arrow d="M 520 208 L 520 250" order={3} />
-    <Caption x={196} y={234} text="answered" anchor="end" />
-    <Caption x={532} y={234} text="not applicable" anchor="start" />
-
-    <LayerLabel x={16} y={268} text="Draft" />
-    <Box x={16} y={278} w={340} h={54} label="Delta-only draft" sub="impacted articles only" order={3} />
-    <Box x={368} y={278} w={336} h={54} label="Style rules" sub="distilled from published notes" order={3} />
-
-    <Arrow d="M 360 332 L 360 370" order={4} />
-
-    <LayerLabel x={16} y={388} text="Review" />
-    <Box
-      x={16}
-      y={378}
-      w={688}
-      h={54}
-      label="Proposed as a pull request"
-      sub="rendered for review — never published on trust"
-      accent
-      order={4}
-    />
+    <Arrow d="M 540 414 L 540 462 L 126 462 L 126 466" order={4} />
+    <LayerLabel x={16} y={456} text="Human review and publication" />
+    <Box x={16} y={470} w={220} h={64} label="Review in Quill" sub="inspect · edit · approve" accent order={4} />
+    <Arrow d="M 236 502 L 246 502" order={4} />
+    <Box x={250} y={470} w={220} h={64} label="Merge GitHub PR" sub="reviewed documentation" order={4} />
+    <Arrow d="M 470 502 L 480 502" order={4} />
+    <Box x={484} y={470} w={220} h={64} label="Sync to Zendesk" sub="publish the merged changes" order={4} />
+    <LayerLabel x={16} y={574} text="Quill is the review app within this workflow" />
   </DiagramFrame>
 );
 

@@ -24,7 +24,7 @@ Day to day this is embedded delivery. I co-build Agentic Office OS with teammate
 
 I like the failure modes most. I restored our codebase-search MCP service after 100+ queries returned zero content, isolating a Go output-schema defect and a client timeout-tier mismatch by reading SDK and host internals, then shipped the fix with a negative-control test and flagged 14 exposed connectors carrying the same misconfiguration. On the cost side, I traced 57% of gateway spend across 50,000+ requests to 10+ automations and fixed it with a model migration and prompt caching — while naming the deterministic rewrite that would have saved a further ~95%.
 
-Also: Quill, an Electron documentation review app that keeps AI-drafted docs reviewable; and CodeNex, a public Spring AI product with streaming generation and Kubernetes preview environments.
+I also built AI documentation automation: completing a Jira ticket triggers an agent to create or update documentation in GitHub and open a PR. The documentation team reviews and edits it through Quill, the workflow's Electron/React/TypeScript review app, and merged documentation syncs to Zendesk. Separately, CodeNex is my public Spring AI product with streaming generation and Kubernetes preview environments.
 
 I am targeting Applied AI Engineer, Forward Deployed AI Engineer, Agentic AI Engineer, AI Product Engineer, LLM/AI Engineer, and Software Engineer (Applied AI) roles.
 
@@ -65,7 +65,7 @@ The umbrella platform the rest of my work plugs into: fully autonomous, human-tr
 ##### Agent Memory, Execution & Developer Workflows
 
 - Shipped the platform agent memory layer using **Graphiti** temporal knowledge graphs, combining session-scoped context with tenant- and person-level long-term recall for multi-step reasoning workflows.
-- Shipped **Quill**, an Electron/React/TypeScript GitHub PR review tool pairing a WYSIWYG documentation editor with an embedded AI agent terminal, per-branch Git worktrees, permission-aware GitHub delivery, tests, and release automation, keeping AI-drafted documentation reviewable rather than blind-published. Quill is an internal release; the documentation-synchronization workflow runs in production.
+- Built **AI documentation automation** that starts when a Jira ticket is completed: an agent gathers context, creates or updates documentation in GitHub, and opens a PR. The documentation team uses **Quill**, the workflow's Electron/React/TypeScript review app, to inspect and edit the draft before approving it; merged documentation then syncs to Zendesk. Built Quill with a WYSIWYG editor, embedded AI agent terminal, per-branch Git worktrees, permission-aware GitHub actions, tests, and release automation. Quill is an internal release within the production documentation workflow.
 - Operationalized internal agent execution behind a Go/Gin gateway with request routing, load balancing, task queueing, and observability, running agent workflows on both schedules and pull-request triggers. Designed an OpenAI-compatible LLM proxy in Go serving Gemini CLI, Codex, and Claude Code with provider abstraction, multi-account load balancing, health-aware fallbacks, streaming, and Redis-backed caching.
 
 #### Software Development Intern (Applied AI)

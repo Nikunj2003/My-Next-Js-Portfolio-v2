@@ -387,7 +387,7 @@ const METRICS: MetricEntry[] = [
     keys: ["permission tiers quill", "quill rbac", "github tiers", "3 tiers"],
     value: "3",
     context:
-      "Permission tiers enforced in Quill — read-only, write, and full access — all resolved live from the source-control platform, with no application-managed access list to drift.",
+      "Permission tiers enforced in Quill, the review app within the AI documentation automation workflow — read-only, write, and full access — resolved live from GitHub. Quill supports review of agent-created documentation PRs before merged changes sync to Zendesk.",
     source: "Quill",
   },
   {
