@@ -155,10 +155,10 @@ export const experiences: Experience[] = [
     role: "Software Development Intern (Applied AI)",
     period: "Jan 2025 - Nov 2025",
     type: "work",
-    summary: "Created Anya's agent framework and memory layers, and built backend integrations and AI-assisted scaffolding across ArmorCode's AppSec platform.",
+    summary: "Created ArmorCode's platform agent framework and memory layers, and built backend integrations and AI-assisted scaffolding across its AppSec platform.",
     bullets: [
-      "Created the initial Java framework for Anya, ArmorCode's platform agent; designed, implemented, and owned its short- and long-term memory layers; and set up Langfuse-backed evaluation for agent accuracy and memory behavior.",
-      "Ported 2 of 6 Anya sub-agents from LangChain4j to Spring AI, reimplementing memory and evaluation integrations for the new architecture.",
+      "Created the initial Java framework for ArmorCode's platform agent; designed, implemented, and owned its short- and long-term memory layers; and set up Langfuse-backed evaluation for agent accuracy and memory behavior.",
+      "Ported 2 of 6 platform agent sub-agents from LangChain4j to Spring AI, reimplementing memory and evaluation integrations for the new architecture.",
       "Owned backend integrations for 5+ security tools, including Black Duck, Snyk, and Checkmarx, on an AppSec platform aggregating findings across 130+ connectors.",
       "Created AI-assisted code generation utilities with template engines and AST parsing to automate new integration scaffolding, reducing per-integration boilerplate setup time by 30%.",
     ],

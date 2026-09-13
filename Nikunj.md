@@ -1,6 +1,6 @@
 # Nikunj Khitha
 
-**Applied AI Engineer at ArmorCode | Agent Systems, MCP Tool Governance & LLM Evaluation | Agents shipped to 20+ business functions · 10+ production MCP servers · Python, Go, TypeScript, Spring AI**
+**Applied AI Engineer at ArmorCode | AI Agents, MCP, RAG & LLM Evaluation | Python, TypeScript, Go & Java | AI Platform Engineering**
 
 Gurugram, Haryana, India
 
@@ -14,21 +14,15 @@ Applied AI Engineering · AI Agents · Model Context Protocol (MCP) · LLM Evalu
 
 ## About
 
-Applied AI Engineer at ArmorCode. I work on the part of AI that starts after the demo: giving agents real tools, real memory, and a way to prove they still work tomorrow.
+I build AI systems that have to work after the demo. I’m an Applied AI Engineer at ArmorCode, turning ambiguous product and operational problems into dependable agent workflows, AI platform services and developer tools.
 
-Most of what I do is measurement. I built ArmorCode's OpenTelemetry-based LLM evaluation platform on Langfuse, which scores 9 AI surfaces — prompts, models, agents, skills, MCP tool calls, and retrieval — against golden datasets, using deterministic checks, scikit-learn classification metrics, Ragas RAG scores, and LLM-as-a-judge graders validated against human labels at Cohen's kappa >= 0.7, enforced as Jenkins CI gates. Every prompt change and model swap now ships on measured accuracy, latency, and cost instead of assertion. The evaluation framework is mine; the Langfuse deployment underneath it is owned by platform DevOps.
+My work spans the applied-AI loop: giving agents useful tools through Model Context Protocol (MCP), grounding them with graph and vector retrieval, evaluating behaviour with traceable test cases and CI checks, and operating model access with sensible controls. I’ve built production MCP services, LLM evaluation workflows and retrieval systems, along with an AI documentation workflow that moves from a completed Jira ticket to a GitHub pull request, human review in Quill (a TypeScript/React/Electron application), and a Zendesk update after merge.
 
-I also deliver the tool and context layer those agents run on: 10+ production MCP servers in our shared enterprise tool registry, with OAuth2/RBAC, tool-level permission tiers, and audit attribution under multi-tenant AppSec constraints where a single authorization slip would leak another customer's vulnerability data. I am the sole maintainer of company-wide model and MCP access on a LiteLLM gateway — scoped API keys, per-model spend budgets, and RBAC-gated distribution to every team's Claude Desktop. Retrieval comes from a tenant-scoped Knowledge Graph RAG layer over 1M+ entities in Neo4j and pgvector.
+I work best close to both users and implementation. I clarify the problem with stakeholders, choose an architecture that can grow, build the service, measure it and stay with it through rollout and debugging. Earlier, I worked at Xansr Media on Fantasy GPT and AIKO, building retrieval-backed sports intelligence, data pipelines, backend services and voice-AI workflows. I also build public products such as CodeNex, an AI application builder using Spring AI, streaming generation and Kubernetes previews.
 
-Day to day this is embedded delivery. I co-build Agentic Office OS with teammates, working with an external business consultant, executives, and teams across QA, Documentation, Technical Support, Customer Success, Sales, Product, and the Office of the CEO to turn ambiguous requirements into agents, skills, MCP integrations, and approval workflows — then staying on through rollout, debugging, enablement, and iteration. Earlier, as an intern, I created the initial Java framework for Anya, ArmorCode's platform agent, and designed and owned its short- and long-term memory layers.
+**Core stack:** Python, TypeScript, Go, Java, Spring Boot, Spring AI, FastAPI, React, Electron, LangGraph, Langfuse, OpenTelemetry, Neo4j, pgvector, PostgreSQL, Redis, LiteLLM, Docker, Kubernetes, Jenkins and AWS.
 
-I like the failure modes most. I restored our codebase-search MCP service after 100+ queries returned zero content, isolating a Go output-schema defect and a client timeout-tier mismatch by reading SDK and host internals, then shipped the fix with a negative-control test and flagged 14 exposed connectors carrying the same misconfiguration. On the cost side, I traced 57% of gateway spend across 50,000+ requests to 10+ automations and fixed it with a model migration and prompt caching — while naming the deterministic rewrite that would have saved a further ~95%.
-
-I also built AI documentation automation: completing a Jira ticket triggers an agent to create or update documentation in GitHub and open a PR. The documentation team reviews and edits it through Quill, the workflow's Electron/React/TypeScript review app, and merged documentation syncs to Zendesk. Separately, CodeNex is my public Spring AI product with streaming generation and Kubernetes preview environments.
-
-I am targeting Applied AI Engineer, Forward Deployed AI Engineer, Agentic AI Engineer, AI Product Engineer, LLM/AI Engineer, and Software Engineer (Applied AI) roles.
-
-**Selected stack:** Python, TypeScript, Go, Java, Spring Boot, Spring AI, Node.js, FastAPI, React, Electron, MCP, Langfuse, Ragas, OpenTelemetry, LangGraph, Neo4j, pgvector, Redis, LiteLLM, Docker, Kubernetes, Jenkins, and AWS.
+I’m open to Applied AI, AI Platform, Generative AI, LLM and backend engineering opportunities. If you’re building agent platforms or production GenAI products, I’d be happy to connect.
 
 ## Experience
 
@@ -38,45 +32,33 @@ I am targeting Applied AI Engineer, Forward Deployed AI Engineer, Agentic AI Eng
 
 **Dec 2025 - Present · Gurugram, Haryana, India**
 
-##### Agent Quality: Evaluation Infrastructure
+**LinkedIn skills to associate — primary:** Applied AI · AI Agents · Model Context Protocol (MCP) · Retrieval-Augmented Generation (RAG) · LLM Evaluation
 
-- Built ArmorCode's **OpenTelemetry-based LLM evaluation platform on Langfuse**, scoring **9 AI surfaces** — prompts, models, agents, skills, MCP tool calls, and retrieval — against golden datasets, so prompt changes and model swaps ship on measured accuracy, latency, and cost rather than assertion. Deterministic format checks run free on every case; scikit-learn precision/recall/F1 with a minority-class recall floor gates classification workflows; Ragas scores faithfulness and answer relevancy on RAG; and LLM-as-a-judge graders are validated against held-out human labels at **Cohen's kappa >= 0.7** before they are allowed to gate anything. Prompts are versioned and A/B compared on a shared dataset before promotion, multi-step agent runs are traced end to end and scored on task outcome, and the whole suite runs as Jenkins CI gates. The evaluation framework is mine; the Langfuse deployment underneath it is owned by platform DevOps.
+**Additional skills:** Python · TypeScript · Go · Java · LangGraph · Langfuse · OpenTelemetry · Neo4j · pgvector · LiteLLM · Graphiti · Gin · Jenkins · Jira · GitHub · Zendesk · n8n · Apache Superset · Lua · Kubernetes · AWS · OAuth2 · Role-Based Access Control (RBAC)
 
-##### Agentic Office OS — Shared Internal Platform
-
-The umbrella platform the rest of my work plugs into: fully autonomous, human-triggered, and human-in-the-loop agents and sub-agents, serving the PM, QA, Documentation, Dev, TSE, Customer Success, Sales, and Office-of-the-CEO teams, reachable by the whole org through Slack.
-
-- Co-built Agentic Office OS with teammates, partnering with an external business consultant, executive leadership, managers, and teams across **20+ business functions** to translate ambiguous operational needs into agents, skills, MCP integrations, and approval workflows — then owning discovery, rollout, debugging, enablement, and iteration. This is embedded delivery across internal business functions.
-- Wired the connectors below into those agents as their shared tool and context layer — knowledge-graph RAG, the codebase-search MCP, the business-data layer, and the wider MCP registry — so each team's agents answer from the same grounded sources.
-
-##### Agent Tooling: Governed MCP Registry
-
-- Delivered **10+ production MCP servers** in ArmorCode's shared enterprise tool registry, under multi-tenant AppSec constraints where a single authorization slip leaks another customer's vulnerability data — implementing OAuth2/RBAC, tool-level permission tiers, explicit denial behavior, and audit attribution. Validated one 23-tool integration across three permission tiers with **20/20 authorization checks passing**.
-- Sole maintainer of company-wide model and MCP access on a **LiteLLM gateway**: I own the approved model catalog configuration, issue scoped API keys with per-model access and spend budgets for individual agents, automations, and team POCs, and maintain RBAC-gated distribution of internal MCP servers out to employees' Claude Desktop via an `.mcpb` proxy.
-- Cut recurring LLM spend after a budget alert by tracing **57%** of gateway cost across **50,000+ requests** to **10+ automations**, root-causing it to a bulk historical backfill rather than the model itself, then migrating models and splitting system/user prompts to enable Bedrock prompt caching — while documenting that a deterministic regex/JS rewrite of those binary classification tasks would have saved a further **~95%**.
-
-##### Agent Context: Retrieval and Code Intelligence
-
-- Built ArmorCode's tenant-scoped **knowledge-graph RAG** layer over **1M+ entities** — root-cause analyses, test cases, and product documentation — in Neo4j and pgvector, giving Office OS agents grounded product knowledge without cross-tenant leakage. Retrieval is scored on accuracy, ranking quality, and context precision across five query modes, with a documented mode-per-tool policy.
-- Removed most CS and support escalations to engineering by building a **codebase-search MCP service in Go** over **8 product repositories**: an authenticated gateway with request queueing and per-query session isolation, fronting a read-only OpenCode agent that loops against a daily-reindexed local vector index, with **8 specialized agents** and **7 domain skills** for documentation generation, feature-flag cataloging, and tenant-configuration discovery. Only the question and the snippets the agent read ever leave the container.
-- Restored that service on two client surfaces after **100+ queries returned zero content**, isolating two independent causes by reading SDK and host internals: a Go output-schema defect that made schema-aware clients discard every answer while a third surface kept working, and a query deadline sized for a longer client timeout tier. Shipped the fix with an isolated reproduction and a negative-control test, verified build/vet/test across nine packages, and flagged latent exposure on **14 connectors** carrying the same misconfiguration.
-- Replaced AWS QuickSight with a self-hosted **enterprise business-data layer**, consolidating **4 production AWS accounts** plus **10+ SaaS sources** — Salesforce, Zendesk, Pendo, Chorus, Vitally, Greenhouse, Loom — into a central S3 lake via cross-account replication, then into a PostgreSQL analytics database and Apache Superset with a **12-table star schema**, Jenkins-scheduled ETL, row-level RBAC, and **19 dashboards** at QuickSight parity. Exposed over MCP, it became the data source behind the TSE, CS, Sales, and Office-of-the-CEO agents.
-
-##### Agent Memory, Execution & Developer Workflows
-
-- Shipped the platform agent memory layer using **Graphiti** temporal knowledge graphs, combining session-scoped context with tenant- and person-level long-term recall for multi-step reasoning workflows.
-- Built **AI documentation automation** that starts when a Jira ticket is completed: an agent gathers context, creates or updates documentation in GitHub, and opens a PR. The documentation team uses **Quill**, the workflow's Electron/React/TypeScript review app, to inspect and edit the draft before approving it; merged documentation then syncs to Zendesk. Built Quill with a WYSIWYG editor, embedded AI agent terminal, per-branch Git worktrees, permission-aware GitHub actions, tests, and release automation. Quill is an internal release within the production documentation workflow.
-- Operationalized internal agent execution behind a Go/Gin gateway with request routing, load balancing, task queueing, and observability, running agent workflows on both schedules and pull-request triggers. Designed an OpenAI-compatible LLM proxy in Go serving Gemini CLI, Codex, and Claude Code with provider abstraction, multi-account load balancing, health-aware fallbacks, streaming, and Redis-backed caching.
+- Built an OpenTelemetry-based LLM evaluation platform on Langfuse, combining golden datasets, deterministic checks, retrieval scoring and LLM-as-a-judge evaluation with CI quality gates for prompt, model and agent changes.
+- Co-built an internal agent platform with autonomous and human-in-the-loop workflows, translating stakeholder needs into agents, skills, MCP integrations and approval flows; owned rollout, debugging and enablement.
+- Delivered 10+ production MCP services with OAuth2/RBAC, tool-level permissions and auditability; validated 20/20 authorization checks across three permission tiers and operated governed model access through LiteLLM with routing, spend controls and prompt-caching improvements.
+- Built tenant-scoped graph and vector retrieval over 1M+ entities with Neo4j and pgvector, plus a Go code-search service across 8 product repositories that gives agents grounded access while keeping sessions isolated.
+- Built AI automation workflows across enterprise functions, connecting agents, MCP tools and approval steps to reduce repetitive operational work; received ArmorCode’s AI Ninja Award for applied AI contributions.
+- Built AI documentation automation from Jira completion to GitHub pull request, human review in Quill (TypeScript/React/Electron), merge and Zendesk synchronization.
+- Designed and operationalized Apache Superset as a production BI platform, enabling interactive dashboards, self-service business-data exploration and decision-ready reporting.
+- Owned and rearchitected the production n8n automation platform with multi-stage deployment pipelines, Lua-based RBAC and bidirectional GitHub CI/CD synchronization.
+- Shipped agent memory and execution capabilities using Graphiti, Go/Gin services, task queues, observability and reliable model-provider fallbacks.
 
 #### Software Development Intern (Applied AI)
 
 **Jan 2025 - Nov 2025 · Gurugram, Haryana, India**
 
-- Created the initial Java framework for **Anya**, ArmorCode's platform agent; designed and owned its short- and long-term memory layers; established Langfuse evaluation for agent accuracy and memory behavior; and helped migrate **2 of 6** sub-agents from LangChain4j to Spring AI, reimplementing memory and evaluation integrations for the new architecture.
-- Owned backend integrations for 5+ security tools, including Black Duck, Snyk, and Checkmarx, on an AppSec platform with 130+ connectors.
-- Created AI-assisted integration scaffolding with template engines and AST parsing, reducing boilerplate setup time by 30%.
-- Built shared backend service orchestration for MySQL, Elasticsearch, Redis, Kafka, MongoDB, and LocalStack.
-- Shipped a reusable Resilience4j HTTP client with failure isolation, configurable backoff, timeout handling, and SSRF protection.
+**LinkedIn skills to associate — primary:** Java · Spring AI · AI Agents · Agent Memory · Microservices
+
+**Additional skills:** LangChain4j · Langfuse · Spring Boot · REST APIs · PostgreSQL · Redis · Kafka · Elasticsearch · MongoDB · AST Parsing · Resilience4j · OAuth2 · SSRF Protection
+
+- Created the initial Java framework for ArmorCode’s platform agent and designed and owned its short- and long-term memory layers; established Langfuse evaluation for agent accuracy and memory behaviour.
+- Contributed to the platform agent’s migration from LangChain4j to Spring AI, reimplementing memory and evaluation integrations for the new architecture.
+- Built AI-assisted integration scaffolding with template engines and AST parsing, reducing per-integration boilerplate setup time by 30%.
+- Built shared backend service orchestration across MySQL, Elasticsearch, Redis, Kafka, MongoDB and LocalStack for local and integration workflows.
+- Shipped a reusable Resilience4j HTTP client with failure isolation, configurable backoff, timeout handling and SSRF protection.
 
 ### Xansr Media (AIKO)
 
@@ -84,10 +66,14 @@ The umbrella platform the rest of my work plugs into: fully autonomous, human-tr
 
 **Jun 2024 - Dec 2024 · Remote**
 
-- Built Node.js and FastAPI microservices, improving API performance by 40% and reducing deployment time by 42% with Docker and GitHub Actions.
-- Engineered Fantasy GPT with RAG, LangGraph, backend APIs, agents, sports-data ETL, and DeepEval quality checks, resolving 98% of complex sports queries.
-- Built Python ETL pipelines that collected sports data from multiple sources and ingested it into Microsoft SQL Server for SQL-RAG workflows.
-- Contributed to AIKO voice and personalization workflows using Azure Speech SDK, multilingual live commentary, and profile-driven highlight generation for a product presented at IBC 2024.
+**LinkedIn skills to associate — primary:** Generative AI · Python · FastAPI · Retrieval-Augmented Generation (RAG) · Microservices
+
+**Additional skills:** LangGraph · Node.js · Microsoft Azure · Azure OpenAI · Docker · Agile Methodologies · REST APIs · Data Engineering · SQL · DeepEval · Azure Speech SDK
+
+- Worked on GenAI products for media-content generation and personalization using Agile development practices, contributing to an enterprise-grade MVP designed for scalability, reliability and efficient delivery.
+- Developed Node.js, Python and FastAPI microservices to support modular GenAI workflows and reliable product integration; used Docker and GitHub Actions to streamline delivery.
+- Engineered Fantasy GPT with Python, RAG, LangGraph, backend APIs, sports-data ETL and DeepEval quality checks, while building practical knowledge of the sports-industry data ecosystem.
+- Worked with Microsoft Azure and Azure OpenAI concepts to improve GenAI and RAG solutions; contributed to AIKO, a sports-focused GenAI product showcased at the IBC 2024 Accelerator Zone AI Media Production Lab alongside Verizon Business, AMD and the World Freestyle Football Association.
 
 ### Central Electricity Authority, Government of India
 
@@ -95,9 +81,13 @@ The umbrella platform the rest of my work plugs into: fully autonomous, human-tr
 
 **May 2023 - Jul 2023 · New Delhi, India**
 
-- Integrated National Power Portal data into a renewable-energy dashboard covering 150+ power stations and improved reporting accuracy by 30%.
-- Built a secure Java/PostgreSQL file-management system with role-based access control that improved retrieval efficiency by 25% across 5,000+ files.
-- Developed a MERN conference-room booking system that cut booking time by 60% and reduced scheduling errors by 40%.
+**LinkedIn skills to associate — primary:** Java · Spring Framework · PHP · SQL · Full-Stack Development
+
+**Additional skills:** Role-Based Access Control (RBAC) · React.js · Node.js · Express.js · MongoDB · MERN Stack · REST APIs · Dashboard Development · Data Integration · File Management · Database Design
+
+- Integrated the National Power Portal with a renewable-energy dashboard using Spring and Java, improving data accuracy for monitoring more than 150 power stations.
+- Developed a server file-management system using PHP and SQL with Role-Based Access Control (RBAC), optimizing storage and improving retrieval efficiency across more than 5,000 files.
+- Built a MERN-based conference-room booking system that streamlined reservations, reduced scheduling errors and improved employee efficiency across multiple rooms.
 
 ## Selected Projects
 
@@ -125,32 +115,48 @@ Built an open-source AI wellness product with empathetic chat, mood tracking, jo
 
 [Live product](https://serenify.codenex.dev/) · [GitHub](https://github.com/Nikunj2003/Serenify)
 
-## Featured Recommendations
+### Fantasy GPT
 
-1. **[LLM Evaluation Platform case study](https://nikunj.codenex.dev/work/llm-evaluation-platform)** — the strongest differentiator: architecture, the scorer ladder, judge validation at Cohen's kappa >= 0.7, and the ownership boundary against platform DevOps.
-2. **[Governed MCP Tool Registry case study](https://nikunj.codenex.dev/work/governed-mcp-registry)** — tool-level authorization under multi-tenant AppSec constraints, the distribution decision with its four rejected alternatives, and the protocol RCA.
-3. **[Knowledge Graph RAG case study](https://nikunj.codenex.dev/work/knowledge-graph-rag)** — retrieval over 1M+ entities, evaluated across five independent failure layers with a documented mode-per-tool policy.
-4. **[CodeNex live product](https://www.codenex.dev/)** — full-stack AI product engineering, shipped and clickable.
-5. **[CodeNex repository](https://github.com/Nikunj2003/Codenex-backend-v1)** — inspectable backend and platform implementation.
-6. **[CodeNex AI API Proxy](https://github.com/Nikunj2003/codenex-ai-api-proxy)** — Go gateway with provider abstraction, health-aware fallbacks, and Redis-backed caching.
+**Sports Intelligence · Python, FastAPI, LangGraph, SQL-RAG, Microsoft SQL Server, ETL, DeepEval**
+
+Built a sports-intelligence system that answers cricket questions through multi-step reasoning over live match data. Developed the Python/FastAPI services, LangGraph workflows, SQL-RAG retrieval and data pipelines.
+
+[Case study](https://nikunj.codenex.dev/work/fantasy-gpt)
+
+### AIKO
+
+**Voice AI & Personalization · Python, Node.js, FastAPI, Azure Speech SDK, Docker**
+
+Contributed to a personalized voice sports companion with speech-to-text, text-to-speech, multilingual commentary and profile-driven highlight generation.
+
+[Case study](https://nikunj.codenex.dev/work/aiko)
+
+## Featured Work
+
+1. **[LLM Evaluation Platform](https://nikunj.codenex.dev/work/llm-evaluation-platform)** — evaluation, observability and CI quality gates for production AI systems.
+2. **[Governed MCP Tool Registry](https://nikunj.codenex.dev/work/governed-mcp-registry)** — secure tool integration and access governance for agent workflows.
+3. **[Knowledge Graph RAG](https://nikunj.codenex.dev/work/knowledge-graph-rag)** — graph and vector retrieval for grounded agent responses.
+4. **[Documentation Automation](https://nikunj.codenex.dev/work/documentation-automation)** — Jira-triggered documentation workflow with GitHub, Quill review and Zendesk delivery.
+5. **[CodeNex](https://www.codenex.dev/)** — public AI application builder using Spring AI, streaming generation and Kubernetes previews.
+6. **[AI API Proxy](https://github.com/Nikunj2003/codenex-ai-api-proxy)** — Go gateway with provider routing, fallbacks, streaming and Redis caching.
 
 ## Skills
 
 1. Applied AI Engineering
-2. AI Agents / Agentic Systems
-3. Model Context Protocol (MCP)
-4. LLM Evaluation / Langfuse / Ragas
+2. Generative AI / LLM Applications
+3. AI Agents / Agentic Systems
+4. Model Context Protocol (MCP)
 5. RAG / GraphRAG / Knowledge Graphs
-6. Python
-7. Agent Memory
-8. Go / Gin
-9. TypeScript / Node.js
-10. Spring AI / Java
-11. AI Product Engineering
+6. LLM Evaluation / Langfuse / Ragas
+7. Python / FastAPI
+8. TypeScript / React / Node.js / Electron
+9. Go / Gin
+10. Java / Spring Boot / Spring AI
+11. AI Platform Engineering / Model Gateways
 12. Neo4j / PostgreSQL / pgvector / Redis
-13. AI Tooling Reliability / Observability
+13. OpenTelemetry / Observability / CI/CD
 14. OAuth2 / RBAC / Tool Authorization
-15. Docker / Kubernetes / AWS / CI/CD
+15. Docker / Kubernetes / AWS
 
 ## Honors & Awards
 

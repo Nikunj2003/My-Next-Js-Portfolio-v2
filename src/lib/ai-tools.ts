@@ -336,10 +336,10 @@ const METRICS: MetricEntry[] = [
     source: "Governed MCP Tool Registry",
   },
   {
-    keys: ["sub agent", "sub agents", "anya", "migration", "2 of 6"],
+    keys: ["sub agent", "sub agents", "platform agent", "migration", "2 of 6"],
     value: "2 of 6",
     context:
-      "Anya sub-agents Nikunj helped migrate from LangChain4j to Spring AI during his internship, reimplementing memory and evaluation integrations.",
+      "Platform agent sub-agents Nikunj helped migrate from LangChain4j to Spring AI during his internship, reimplementing memory and evaluation integrations.",
     source: "ArmorCode internship",
   },
   {
