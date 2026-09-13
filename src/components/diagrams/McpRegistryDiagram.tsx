@@ -18,13 +18,13 @@ const McpRegistryDiagram = ({ description }: { description: string }) => (
     <Arrow d="M 200 200 L 200 236"  order={2} />
     <Arrow d="M 520 200 L 520 236"  order={2} />
 
-    <LayerLabel x={16} y={254} text="Per-tool decision" />
+    <LayerLabel x={16} y={228} text="Per-tool decision" />
     <Box x={70} y={238} w={260} h={48} label="Permitted" sub="tool executes, call attributed"  order={2} />
     <Box x={390} y={238} w={260} h={48} label="Denied" sub="explicit refusal, never a silent empty result"  order={2} />
 
     <Arrow d="M 200 286 L 200 320"  order={3} />
 
-    <LayerLabel x={16} y={338} text="Registry · 14 servers" />
+    <LayerLabel x={16} y={312} text="Registry · 14 servers" />
     <Box x={16} y={322} w={222} h={52} label="9 delivered by me" sub="read + write paths, tiered" accent  order={3} />
     <Box x={254} y={322} w={200} h={52} label="5 by teammates" sub="same registry policy"  order={3} />
     <Box x={470} y={322} w={234} h={52} label="Canonical registry" sub="source of truth · drift corrected"  order={3} />
