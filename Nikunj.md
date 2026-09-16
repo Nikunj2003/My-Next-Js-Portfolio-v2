@@ -91,47 +91,276 @@ I’m open to Applied AI, AI Platform, Generative AI, LLM and backend engineerin
 
 ## Selected Projects
 
-### CodeNex: AI Builder
+Paste each description block, including its URLs, into the LinkedIn project description. The company labels identify the associated employer; personal projects are identified separately. Where there is no dedicated case study, the description links to the portfolio experience section.
 
-**Full-Stack AI SaaS · Java, Spring Boot, Spring AI, React, TypeScript, SSE, Kubernetes, MinIO, Stripe**
+### ArmorCode
 
-Built a distributed AI code-generation product that turns natural-language prompts into React applications. I designed the backend, streaming architecture, persistent workspaces, Kubernetes preview environments, RBAC, quotas, autoscaling, and subscription foundations.
+#### LLM Evaluation Platform
 
-[Live product](https://www.codenex.dev/) · [GitHub](https://github.com/Nikunj2003/Codenex-backend-v1)
+**Skills:** Python · Langfuse · OpenTelemetry · Ragas · Jenkins
 
-### CodeNex AI API Proxy
+**Description — copy and paste:**
 
-**AI Gateway & Infrastructure · Go, Gin, Redis, PostgreSQL, React**
+```text
+Built an LLM evaluation framework using golden datasets, deterministic checks, retrieval scoring and human-validated LLM judges. Integrated CI quality gates to assess accuracy, latency and cost before prompt, model and agent changes ship. Owned the evaluation framework, with platform DevOps responsible for the underlying Langfuse deployment.
 
-Built an OpenAI-compatible gateway with provider abstraction, multi-account load balancing, health-aware fallbacks, streaming, Redis-backed caching, and operational controls.
+Case study: https://nikunj.codenex.dev/work/llm-evaluation-platform
+```
 
-[GitHub](https://github.com/Nikunj2003/codenex-ai-api-proxy)
+#### Governed MCP Tool Registry
 
-### Serenify
+**Skills:** MCP · OAuth2 · RBAC · API Integration · Audit Logging
 
-**Full-Stack AI Product · React, TypeScript, Supabase, pgvector, Gemini AI**
+**Description — copy and paste:**
 
-Built an open-source AI wellness product with empathetic chat, mood tracking, journaling, guided sessions, crisis-help flows, privacy-aware analytics, and pgvector-backed personalization.
+```text
+Delivered production MCP services into a shared enterprise tool registry. Implemented tool-level permissions, authorization checks and audit attribution so agents could use business tools under governed access. Contributed the integrations and access controls within a platform built with teammates.
 
-[Live product](https://serenify.codenex.dev/) · [GitHub](https://github.com/Nikunj2003/Serenify)
+Case study: https://nikunj.codenex.dev/work/governed-mcp-registry
+```
 
-### Fantasy GPT
+#### Knowledge Graph RAG
 
-**Sports Intelligence · Python, FastAPI, LangGraph, SQL-RAG, Microsoft SQL Server, ETL, DeepEval**
+**Skills:** Python · Neo4j · PostgreSQL · pgvector · ETL · RAG
 
-Built a sports-intelligence system that answers cricket questions through multi-step reasoning over live match data. Developed the Python/FastAPI services, LangGraph workflows, SQL-RAG retrieval and data pipelines.
+**Description — copy and paste:**
 
-[Case study](https://nikunj.codenex.dev/work/fantasy-gpt)
+```text
+Built graph and vector retrieval that grounds agent responses in relevant product knowledge. Developed ingestion pipelines and tenant-scoped retrieval, and evaluated ranking quality and context precision to improve the usefulness of retrieved information.
 
-### AIKO
+Case study: https://nikunj.codenex.dev/work/knowledge-graph-rag
+```
 
-**Voice AI & Personalization · Python, Node.js, FastAPI, Azure Speech SDK, Docker**
+#### AI Documentation Automation with Quill Review
 
-Contributed to a personalized voice sports companion with speech-to-text, text-to-speech, multilingual commentary and profile-driven highlight generation.
+**Skills:** Python · TypeScript · React · Electron · Jira · GitHub · Zendesk
 
-[Case study](https://nikunj.codenex.dev/work/aiko)
+**Description — copy and paste:**
+
+```text
+Built a documentation workflow in which a completed Jira ticket triggers an agent to create or update GitHub documentation and open a pull request. Built Quill, the TypeScript/React/Electron review app within this workflow, so reviewers can inspect and edit drafts before approval. Merged changes then sync to Zendesk.
+
+Case study: https://nikunj.codenex.dev/work/documentation-automation
+Quill review app: https://nikunj.codenex.dev/work/quill
+```
+
+#### Agentic Office OS
+
+**Skills:** AI Agents · MCP · Slack · Go · Gin · Human-in-the-Loop Workflows
+
+**Description — copy and paste:**
+
+```text
+Co-built an internal agent platform with teammates, translating stakeholder needs into autonomous, human-triggered and human-in-the-loop workflows. Connected agents to shared tools and knowledge sources, and owned rollout, debugging and enablement. Built supporting execution services with request routing, task queues and observability.
+
+Portfolio experience: https://nikunj.codenex.dev/#experience
+```
+
+#### Code Intelligence Gateway
+
+**Skills:** Go · MCP · Docker · AWS ECS · AWS Fargate · Vector Search
+
+**Description — copy and paste:**
+
+```text
+Built a Go code-search service that gives agents access to repository knowledge through a read-only interface. Implemented request queueing and per-query session isolation, designed the deployment specification, and resolved indexing and integration reliability issues. Platform DevOps handled infrastructure provisioning.
+
+Case study: https://nikunj.codenex.dev/work/code-intelligence-gateway
+```
+
+#### Enterprise LLM Gateway and Cost Optimization
+
+**Skills:** LiteLLM · AWS Bedrock · Model Routing · Prompt Caching · RBAC
+
+**Description — copy and paste:**
+
+```text
+Maintain governed model and MCP access through LiteLLM, including model configuration, scoped API keys and spend controls. Investigated usage patterns and implemented model migration and AWS Bedrock prompt caching to improve the cost efficiency of AI workflows.
+
+Portfolio experience: https://nikunj.codenex.dev/#experience
+```
+
+#### AI Test Generation Agent
+
+**Skills:** Python · MCP · Neo4j · n8n · Jira · AWS Bedrock
+
+**Description — copy and paste:**
+
+```text
+Built an agent that generates test cases from tickets using code-graph context and existing test knowledge. Implemented parallel tool calls and test-management uploads, fixed integration defects, and validated the workflow jointly with a QA engineer.
+
+Case study: https://nikunj.codenex.dev/work/sentinel-test-agent
+```
+
+#### Organization BI Platform and Business Data Layer
+
+**Skills:** Python · PostgreSQL · Apache Superset · AWS S3 · ETL · MCP
+
+**Description — copy and paste:**
+
+```text
+Designed and operationalized a production BI platform with Apache Superset, PostgreSQL and scheduled data pipelines. Enabled interactive dashboards and self-service analytics, implemented governed data access, and exposed the same business-data layer to AI agents through MCP.
+
+Case study: https://nikunj.codenex.dev/work/bi-platform
+```
+
+#### Platform Agent Framework and Memory
+
+**Skills:** Java · Spring AI · LangChain4j · Langfuse · Agent Memory · Graphiti
+
+**Description — copy and paste:**
+
+```text
+Created the initial Java framework for ArmorCode's platform agent during my internship, designing and owning its short- and long-term memory layers. Established Langfuse evaluation and contributed to the migration from LangChain4j to Spring AI. Later platform memory work used Graphiti temporal knowledge graphs.
+
+Portfolio experience: https://nikunj.codenex.dev/#experience
+```
+
+#### AppSec Integrations and Backend Developer Tooling
+
+**Skills:** Java · API Integration · AST Parsing · Resilience4j · Redis · Kafka
+
+**Description — copy and paste:**
+
+```text
+Built backend security-tool integrations and AI-assisted scaffolding using template engines and AST parsing during my internship. Developed shared service orchestration and a reusable HTTP client with failure isolation, configurable backoff, timeouts and request protections.
+
+Portfolio experience: https://nikunj.codenex.dev/#experience
+```
+
+#### n8n Automation Platform
+
+**Skills:** n8n · Lua · RBAC · GitHub Actions · CI/CD
+
+**Description — copy and paste:**
+
+```text
+Owned and rearchitected the production n8n automation platform with multi-stage deployment pipelines, Lua-based role-based access control and bidirectional GitHub CI/CD synchronization. Supported the delivery and maintenance of enterprise automation workflows.
+
+Portfolio experience: https://nikunj.codenex.dev/#experience
+```
+
+### Xansr Media
+
+#### Fantasy GPT: Sports Intelligence with SQL-RAG
+
+**Skills:** Python · FastAPI · LangGraph · SQL-RAG · Microsoft SQL Server · ETL · DeepEval
+
+**Description — copy and paste:**
+
+```text
+Built the retrieval and reasoning workflows for Fantasy GPT, a sports-intelligence product answering cricket questions using live match data. Developed Python/FastAPI APIs, LangGraph workflows and SQL-RAG retrieval. Built sports-data ETL pipelines and DeepEval answer-quality checks as a GenAI intern on the product team.
+
+Case study: https://nikunj.codenex.dev/work/fantasy-gpt
+```
+
+#### AIKO: Voice Sports Companion
+
+**Skills:** Python · Node.js · FastAPI · Azure Speech SDK · Docker
+
+**Description — copy and paste:**
+
+```text
+Contributed to AIKO's voice workflows, user personalization and profile-driven highlight generation as a GenAI intern. Worked with Azure Speech SDK for speech recognition and synthesis, multilingual commentary and live sports experiences. AIKO was showcased in the AI Media Production Lab at the IBC 2024 Accelerator Zone.
+
+Case study: https://nikunj.codenex.dev/work/aiko
+```
+
+### Personal Projects
+
+#### CodeNex: AI Builder
+
+**Skills:** Java · Spring Boot · Spring AI · React · TypeScript · Kubernetes · Stripe
+
+**Description — copy and paste:**
+
+```text
+Built an AI application builder that turns natural-language prompts into React applications. Designed the backend, streaming generation, persistent workspaces and isolated Kubernetes previews, with role-based access, quotas, autoscaling and subscription foundations.
+
+Live product: https://www.codenex.dev/
+GitHub: https://github.com/Nikunj2003/Codenex-backend-v1
+```
+
+#### CodeNex AI API Proxy
+
+**Skills:** Go · Gin · Redis · PostgreSQL · React
+
+**Description — copy and paste:**
+
+```text
+Built an OpenAI-compatible AI gateway with provider abstraction, multi-account load balancing, health-aware fallbacks, streaming responses and Redis-backed caching. Owned the gateway architecture, backend implementation and operational tooling.
+
+GitHub: https://github.com/Nikunj2003/codenex-ai-api-proxy
+```
+
+#### Serenify
+
+**Skills:** React · TypeScript · Supabase · pgvector · Gemini AI
+
+**Description — copy and paste:**
+
+```text
+Built an open-source AI wellness product combining empathetic chat, mood tracking, journaling, guided sessions and crisis-help flows. Implemented the product interface, AI interactions and pgvector-backed personalization.
+
+Live product: https://serenify.codenex.dev/
+GitHub: https://github.com/Nikunj2003/Serenify
+```
+
+#### Resume Fit — CodeNex
+
+**Skills:** React · TypeScript · Gemini AI · Vercel AI SDK · Recharts
+
+**Description — copy and paste:**
+
+```text
+Built an AI resume analysis and improvement tool with ATS-style scoring, keyword extraction, guided refinements and visual feedback. Owned the product experience, AI workflow design and frontend implementation.
+
+GitHub: https://github.com/Nikunj2003/Resume-Fit-Codenex
+```
+
+#### CodeNex Images
+
+**Skills:** React · TypeScript · Vite · Auth0 · Gemini AI · Node.js · MongoDB
+
+**Description — copy and paste:**
+
+```text
+Built an AI image generation and editing workspace with authentication and integrated Gemini model interactions. Designed the creation and editing flows and implemented the full-stack product.
+
+GitHub: https://github.com/Nikunj2003/codenex-images
+```
+
+#### LLaMa MCP Streamlit
+
+**Skills:** Python · Streamlit · MCP · LLaMA · NVIDIA NIM
+
+**Description — copy and paste:**
+
+```text
+Built an interactive assistant connecting NVIDIA NIM-hosted LLaMA to MCP tools. Implemented the Python/Streamlit interface and tool integration to demonstrate external tool execution through an LLM assistant.
+
+GitHub: https://github.com/Nikunj2003/LLaMa-MCP-Streamlit
+```
 
 ## Featured Work
+
+### Resume — LinkedIn media
+
+**File to upload:** [Nikunj_Resume.pdf](public/Nikunj_Resume.pdf)
+
+**Title — copy and paste:**
+
+```text
+Nikunj Khitha | Applied AI Engineer | Resume
+```
+
+**Description — copy and paste:**
+
+```text
+My experience building production AI agents, MCP integrations, RAG systems, LLM evaluation platforms and backend services. Skilled in Python, TypeScript, Go and Java, with hands-on ownership from stakeholder discovery through deployment. Interested in Applied AI, Generative AI, AI Platform and Backend Engineering opportunities.
+```
+
+### Project links
 
 1. **[LLM Evaluation Platform](https://nikunj.codenex.dev/work/llm-evaluation-platform)** — evaluation, observability and CI quality gates for production AI systems.
 2. **[Governed MCP Tool Registry](https://nikunj.codenex.dev/work/governed-mcp-registry)** — secure tool integration and access governance for agent workflows.
