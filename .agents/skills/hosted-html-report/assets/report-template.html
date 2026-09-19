@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>TITLE</title>
+<style>
+  /* Nikunj Khitha portfolio design tokens — dark theme, ported from
+     src/app/globals.css and tailwind.config.ts. This report has no light
+     mode: dark is the site's primary brand impression and the template is a
+     single static file with no theme toggle. */
+  :root{
+    --bg:#0A0F1E; --card:#141B2B; --card-2:#1B2436; --fg:#E4EDE9;
+    --muted:#1B2436; --muted-fg:#7C87A0; --border:#252E3F;
+    --primary:#29D6B9; --primary-dark:#0C8C79; --accent-dark:#134D40;
+    --red:#F87171; --red-bg:rgba(248,113,113,.1); --red-br:rgba(248,113,113,.35);
+    --green:#34D399; --green-bg:rgba(52,211,153,.1); --green-br:rgba(52,211,153,.35);
+    --amber:#FBBF24; --amber-bg:rgba(251,191,36,.1); --amber-br:rgba(251,191,36,.35);
+    --blue:#60A5FA; --blue-bg:rgba(96,165,250,.1); --blue-br:rgba(96,165,250,.35);
+    --sans:"Avenir Next","Segoe UI",system-ui,sans-serif;
+    --mono:"SF Mono",Consolas,Monaco,monospace;
+    --sh:0 1px 2px rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;font-family:var(--sans);font-size:13.5px;line-height:24px;color:var(--fg);background:var(--bg)}
+  .wrap{display:grid;grid-template-columns:252px minmax(0,1fr);gap:32px;max-width:1300px;margin:0 auto;padding:0 24px 80px}
+
+  header.top{background:linear-gradient(135deg,var(--bg),var(--accent-dark));border-bottom:1px solid var(--border);padding:32px 0 44px;margin-bottom:32px}
+  header.top .in{max-width:1300px;margin:0 auto;padding:0 24px}
+  header.top .brand{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+  header.top .brand img{width:32px;height:32px;border-radius:8px}
+  header.top .brand a{color:#fff;text-decoration:none;font-weight:800;font-size:13px;letter-spacing:-.2px}
+  /* NOTE: colour must be set on these directly. A generic `p{color:...}` rule
+     applies straight to the element and always beats an inherited colour from
+     header.top, which silently renders dark text on the dark gradient. */
+  header.top .eyebrow{color:var(--primary);font-size:11px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;opacity:.95;margin-bottom:10px}
+  header.top h1{color:#fff;margin:0 0 12px;font-size:26px;line-height:34px;letter-spacing:-.5px;font-weight:800}
+  header.top p{color:#fff;margin:0;max-width:830px;font-size:14px;line-height:24px;opacity:.85}
+  .badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+  .badge{color:#fff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:4px 11px;font-size:11px;font-weight:600;text-decoration:none}
+
+  /* Glassmorphism, ported from globals.css' tiered blur system:
+     --blur-surface (12px, cards/panels), .glass fill ~68% background opacity.
+     A plain rgba() fill stands in for the site's color-mix()-based tokens
+     since this file has no access to the running Tailwind build. */
+  nav.side{position:sticky;top:16px;align-self:start;max-height:calc(100vh - 32px);overflow:auto;
+    background:rgba(20,27,43,.68);backdrop-filter:blur(12px) saturate(140%);-webkit-backdrop-filter:blur(12px) saturate(140%);
+    border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;box-shadow:var(--sh)}
+  nav.side .lbl{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted-fg);font-weight:700;padding:6px 8px 8px}
+  nav.side a{display:block;padding:6px 9px;border-radius:6px;color:var(--muted-fg);text-decoration:none;font-size:12px;line-height:17px}
+  nav.side a:hover{background:rgba(255,255,255,.04);color:var(--fg)}
+  nav.side a.on{background:rgba(41,214,185,.12);color:var(--primary);font-weight:700}
+  nav.side a .n{display:inline-block;min-width:17px;color:var(--muted-fg);font-weight:700;font-size:10.5px}
+
+  main{min-width:0}
+  section{background:rgba(20,27,43,.68);backdrop-filter:blur(18px) saturate(150%);-webkit-backdrop-filter:blur(18px) saturate(150%);
+    border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:26px 30px;margin-bottom:20px;
+    box-shadow:0 16px 48px rgba(41,214,185,.1);scroll-margin-top:16px}
+  h2{margin:0 0 4px;font-size:20px;line-height:28px;letter-spacing:-.4px;font-weight:800;color:var(--fg)}
+  h2 .num{color:var(--primary);margin-right:9px}
+  .sub{color:var(--muted-fg);font-size:12.5px;margin:0 0 18px}
+  h3{margin:26px 0 8px;font-size:15px;line-height:23px;font-weight:800;color:var(--primary)}
+  p{margin:0 0 12px;color:var(--fg);opacity:.92}
+  ul,ol{margin:0 0 12px;padding-left:20px;color:var(--fg);opacity:.92}
+  li{margin-bottom:6px}
+  strong{color:var(--fg);opacity:1;font-weight:700}
+  code{font-family:var(--mono);font-size:11.5px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:4px;padding:1px 5px;color:var(--primary)}
+  a{color:var(--primary)}
+
+  .callout{border:1px solid rgba(41,214,185,.3);background:rgba(41,214,185,.08);border-radius:10px;padding:14px 16px;margin:16px 0}
+  .callout .t{font-weight:800;color:var(--primary);margin-bottom:5px;font-size:13px}
+  .callout p:last-child{margin-bottom:0}
+  .callout.warn{border-color:var(--amber-br);background:var(--amber-bg)} .callout.warn .t{color:var(--amber)}
+  .callout.bad{border-color:var(--red-br);background:var(--red-bg)} .callout.bad .t{color:var(--red)}
+  .callout.ok{border-color:var(--green-br);background:var(--green-bg)} .callout.ok .t{color:var(--green)}
+  .callout.info{border-color:var(--blue-br);background:var(--blue-bg)} .callout.info .t{color:var(--blue)}
+
+  .tw{overflow-x:auto;margin:14px 0;border:1px solid var(--border);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:12px;line-height:19px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--fg);opacity:.92}
+  th{background:rgba(255,255,255,.03);font-weight:800;color:var(--fg);opacity:1;font-size:11px;text-transform:uppercase;position:sticky;top:0}
+  tbody tr:last-child td{border-bottom:none}
+  td.num,th.num{text-align:right;font-family:var(--mono);font-size:11.5px}
+
+  .chip{display:inline-block;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:999px;padding:2px 9px;font-size:10.5px;font-weight:700;color:var(--muted-fg)}
+  .chip.brand{background:rgba(41,214,185,.1);border-color:rgba(41,214,185,.3);color:var(--primary)}
+  .chip.green{background:var(--green-bg);border-color:var(--green-br);color:var(--green)}
+  .chip.red{background:var(--red-bg);border-color:var(--red-br);color:var(--red)}
+  .chip.amber{background:var(--amber-bg);border-color:var(--amber-br);color:var(--amber)}
+  .chip.blue{background:var(--blue-bg);border-color:var(--blue-br);color:var(--blue)}
+
+  figure{margin:18px 0}
+  /* Diagram frame, ported from src/components/diagrams/DiagramFrame.tsx.
+     Diagrams are hand-authored inline SVG (boxes + arrows), not Mermaid —
+     this matches the portfolio's own diagram components exactly and avoids
+     Mermaid's rendering-engine defects entirely (see the diagram guide below). */
+  .diagram{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px;overflow-x:auto;text-align:center;
+    box-shadow:0 10px 24px rgba(41,214,185,.08)}
+  .diagram svg{display:block;margin:0 auto;height:auto;max-width:100%;min-width:480px}
+  figcaption{font-size:11.5px;color:var(--muted-fg);margin-top:8px;text-align:center;font-style:italic}
+
+  footer{color:var(--muted-fg);font-size:11.5px;text-align:center;padding:26px 0 0}
+  footer a{color:var(--muted-fg)}
+
+  @media (max-width:1000px){
+    .wrap{grid-template-columns:1fr;gap:0}
+    nav.side{position:static;max-height:none;margin-bottom:20px}
+    section{padding:20px}
+  }
+  @media print{
+    body{background:#fff;color:#000} nav.side{display:none} .wrap{grid-template-columns:1fr;padding:0}
+    section{break-inside:avoid;box-shadow:none;border-color:#ccc;background:#fff;color:#000;backdrop-filter:none}
+    header.top{background:var(--accent-dark)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="in">
+    <div class="brand">
+      <img src="data:image/png;base64,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" alt="Nikunj Khitha logo"/>
+      <a href="https://nikunj.codenex.dev">Nikunj Khitha</a>
+    </div>
+    <div class="eyebrow">EYEBROW · CONTEXT</div>
+    <h1>TITLE</h1>
+    <p>One paragraph saying what this answers and who it is for.</p>
+    <div class="badges"><span class="badge">BADGE</span></div>
+  </div>
+</header>
+
+<div class="wrap">
+<nav class="side">
+  <div class="lbl">On this page</div>
+  <a href="#s1"><span class="n">1</span> First section</a>
+</nav>
+
+<main>
+
+<section id="s1">
+  <h2><span class="num">1</span>First section</h2>
+  <p class="sub">One line of orientation.</p>
+  <p>Body text.</p>
+
+  <figure>
+  <div class="diagram">
+    <svg viewBox="0 0 560 140" role="img" aria-labelledby="s1-diagram-title">
+      <title id="s1-diagram-title">Start flows into next step, which completes.</title>
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#29D6B9"/>
+        </marker>
+      </defs>
+      <rect x="20" y="55" width="140" height="50" rx="10" fill="rgba(41,214,185,.12)" stroke="rgba(41,214,185,.55)" stroke-width="1.5"/>
+      <text x="90" y="85" text-anchor="middle" font-size="13.5" font-weight="600" fill="#E4EDE9" font-family="-apple-system,'Segoe UI',sans-serif">Start</text>
+
+      <path d="M 160 80 L 230 80" fill="none" stroke="rgba(41,214,185,.6)" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+      <rect x="230" y="55" width="140" height="50" rx="10" fill="rgba(27,36,54,.5)" stroke="#252E3F" stroke-width="1.5"/>
+      <text x="300" y="85" text-anchor="middle" font-size="13.5" font-weight="600" fill="#E4EDE9" font-family="-apple-system,'Segoe UI',sans-serif">Next step</text>
+
+      <path d="M 370 80 L 400 80" fill="none" stroke="rgba(41,214,185,.6)" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+      <rect x="400" y="55" width="140" height="50" rx="10" fill="rgba(52,211,153,.12)" stroke="rgba(52,211,153,.55)" stroke-width="1.5"/>
+      <text x="470" y="85" text-anchor="middle" font-size="13.5" font-weight="600" fill="#E4EDE9" font-family="-apple-system,'Segoe UI',sans-serif">Done</text>
+    </svg>
+  </div>
+  <figcaption>Say what the diagram shows, not that it is a diagram.</figcaption>
+  </figure>
+</section>
+
+</main>
+</div>
+
+<script>
+  const links=[...document.querySelectorAll('nav.side a')];
+  const secs=links.map(a=>document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  const sync=()=>{ let cur=secs[0];
+    for(const s of secs){ if(s.getBoundingClientRect().top<=140) cur=s; }
+    links.forEach(a=>a.classList.toggle('on', a.getAttribute('href')==='#'+(cur&&cur.id))); };
+  window.addEventListener('scroll',sync,{passive:true}); sync();
+</script>
+</body>
+</html>
