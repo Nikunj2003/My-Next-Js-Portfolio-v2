@@ -54,12 +54,14 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
     }
 
     const lenis = new Lenis({
-      duration: 1.05,
+      // A slightly slower, softer glide than before (was 1.05 / 0.9): enough to
+      // feel deliberate, still quick to skim a long page. Touch is untouched.
+      duration: 1.25,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       orientation: 'vertical',
       gestureOrientation: 'vertical',
       smoothWheel: true,
-      wheelMultiplier: 0.9,
+      wheelMultiplier: 0.8,
       syncTouch: false,
       touchMultiplier: 1.2,
       /**
