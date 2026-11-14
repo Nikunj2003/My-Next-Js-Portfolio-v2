@@ -175,23 +175,10 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, showing, openSide, viewport]);
 
-  // Wheel over the ask box scrolls the answer, never the page behind it.
-  useEffect(() => {
-    const node = nodeRef.current;
-    if (!node || showing !== "ask") return;
-    const onWheel = (event: WheelEvent) => {
-      const scroller = scrollableAncestor(event.target, node);
-      if (!scroller) {
-        event.preventDefault();
-        return;
-      }
-      const atTop = scroller.scrollTop <= 0;
-      const atBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
-      if ((event.deltaY < 0 && atTop) || (event.deltaY > 0 && atBottom)) event.preventDefault();
-    };
-    node.addEventListener("wheel", onWheel, { passive: false });
-    return () => node.removeEventListener("wheel", onWheel);
-  }, [showing]);
+  // Wheel over the bubble: the answer area scrolls itself (it is marked
+  // data-lenis-prevent and contains its own overscroll). Everywhere else the
+  // wheel goes to the page as usual. Blocking it here froze the page whenever
+  // the bubble slid under a still pointer while it rode along with the avatar.
 
   const content = bubbleContent(showing, tip, { activeSection, onExpand, close, reduceMotion, tourContent });
 
@@ -202,7 +189,6 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
           key={`twin-bubble-${showing}`}
           ref={nodeRef}
           id="twin-bubble"
-          data-lenis-prevent
           data-placement={openSide}
           role={showing === "ask" ? "dialog" : "group"}
           aria-label="Nikunj's AI Twin"
@@ -296,14 +282,6 @@ function readingRects(): Rect[] {
   return rects;
 }
 
-/** The nearest element between `target` and `root` that can scroll vertically. */
-function scrollableAncestor(target: EventTarget | null, root: HTMLElement): HTMLElement | null {
-  for (let node = target instanceof HTMLElement ? target : null; node && node !== root.parentElement; node = node.parentElement) {
-    const overflow = getComputedStyle(node).overflowY;
-    if ((overflow === "auto" || overflow === "scroll") && node.scrollHeight > node.clientHeight + 1) return node;
-  }
-  return null;
-}
 
 function TipContent({ text }: { text: string }) {
   const [hovered, setHovered] = useState(false);

@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { GuideAvatarProps } from "@/components/guide/GuideAvatar";
 
@@ -50,15 +50,49 @@ export function whenIdle(callback: () => void) {
  */
 export function GuideAvatarSlot({ size, className, ...props }: GuideAvatarProps) {
   const [live, setLive] = useState(false);
+  // The still drawing stays on screen until the live avatar has actually
+  // drawn (its chunk loads asynchronously), then the two cross-fade. Swapping
+  // straight away left the slot empty for a moment on every load.
+  const [drawn, setDrawn] = useState(false);
+  const liveRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     if (prefersStatic()) return;
     return whenIdle(() => setLive(true));
   }, []);
 
+  useEffect(() => {
+    const node = liveRef.current;
+    if (!live || !node) return;
+    const check = () => {
+      if (node.querySelector("svg")) {
+        setDrawn(true);
+        return true;
+      }
+      return false;
+    };
+    if (check()) return;
+    const observer = new MutationObserver(() => {
+      if (check()) observer.disconnect();
+    });
+    observer.observe(node, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [live]);
+
   return (
     <span className={cn("relative inline-flex shrink-0 items-center justify-center", className)} style={{ width: size, height: size }}>
-      {live ? <GuideAvatar size={size} {...props} /> : <StaticGuideMark size={size} />}
+      <span
+        aria-hidden="true"
+        className="absolute inset-0 flex items-center justify-center transition-opacity duration-300 motion-reduce:transition-none"
+        style={{ opacity: drawn ? 0 : 1 }}
+      >
+        <StaticGuideMark size={size} />
+      </span>
+      {live && (
+        <span ref={liveRef} className="relative inline-flex transition-opacity duration-300 motion-reduce:transition-none" style={{ opacity: drawn ? 1 : 0 }}>
+          <GuideAvatar size={size} {...props} />
+        </span>
+      )}
     </span>
   );
 }

@@ -130,6 +130,108 @@ function overlapArea(a: Rect, b: Rect) {
   return w > 0 && h > 0 ? w * h : 0;
 }
 
+/**
+ * The spot under a sticky intro panel, as one continuous function of the
+ * panel's position, so the path is the same scrolling down and up and never
+ * reverses:
+ * - Height: the resting height under the pinned panel (`pinnedBottom + gap`),
+ *   or higher once the panel scrolls away at the end of the section (it rides
+ *   up with it). It never dips to the screen bottom while the panel arrives.
+ * - Across: it waits in the margin while the panel arrives, then slides in
+ *   under it over the last `range` px of the panel's approach.
+ * With no margin (narrower screens) it just waits at the resting spot.
+ */
+export function underPanelPoint(input: {
+  panelLeft: number;
+  panelBottom: number;
+  /** Where the panel's bottom sits once pinned (sticky top + its height). */
+  pinnedBottom: number;
+  /** The margin's x, or null when there is no margin. */
+  gutterX: number | null;
+  gap?: number;
+  inset?: number;
+  range?: number;
+}): Point {
+  const { panelLeft, panelBottom, pinnedBottom, gutterX, gap = 24, inset = 20, range = 280 } = input;
+  const restY = pinnedBottom + gap;
+  const y = Math.min(panelBottom + gap, restY);
+  const spotX = panelLeft + inset;
+  if (gutterX === null) return { x: spotX, y };
+  const k = clamp(1 - (panelBottom - pinnedBottom) / range, 0, 1);
+  return { x: gutterX + (spotX - gutterX) * easeInOutCubic(k), y };
+}
+
+/**
+ * The hero hand-off as a pure function of one number, `t`: 0 = the big hero
+ * avatar is the guide, 1 = the small companion is, sitting at its spot.
+ *
+ * `t` comes straight from the scroll position (no smoothing, no timer), so the
+ * same scroll position always draws the same frame. Stopping mid-way leaves it
+ * mid-way, and scrolling back plays exactly the same frames in reverse.
+ *
+ * One continuous motion: the avatar leaves the hero, shrinking as it goes,
+ * and lands on its spot at its own size. The big hero avatar and the small
+ * companion are drawn as the same disc (same centre, same face size) while
+ * they cross-fade over the first quarter, so it reads as one character
+ * moving, not one fading out and another appearing. Every output is
+ * monotonic in `t`, so the motion never reverses.
+ */
+export function heroHandoffFrame(input: {
+  t: number;
+  /** The hero avatar's centre and diameter, as laid out (untransformed). */
+  heroCentre: Point;
+  heroDiameter: number;
+  /** The companion's size and its spot's top-left. */
+  size: number;
+  spot: Point;
+  /** The face's share of each avatar's box, to match faces rather than boxes. */
+  heroFace?: number;
+  companionFace?: number;
+}) {
+  const { heroCentre, heroDiameter, size, spot, heroFace = 0.82, companionFace = 0.76 } = input;
+  const t = clamp(input.t, 0, 1);
+
+  // Path and size share one eased progress, so the small one shrinks as it
+  // travels and arrives at full size exactly on its spot (no growing in place,
+  // no shrinking after it has landed).
+  const u = easeInOutCubic(t);
+  const startScale = (heroDiameter * heroFace) / (size * companionFace);
+  const companionScale = startScale + (1 - startScale) * u;
+
+  // The big one is drawn at the small one's size and place as long as it is
+  // visible, so the two are one disc while they cross-fade. It fades out over
+  // the first quarter and the small one fades in over the same stretch.
+  const swap = clamp(t / 0.25, 0, 1);
+  const companionOpacity = easeInOutCubic(swap);
+  const heroOpacity = 1 - companionOpacity;
+
+  // Path: from the hero's centre to the spot, on a quadratic curve whose
+  // control point is at the start's x and the spot's y, so it moves to the
+  // spot's height first, then across. Both coordinates move one way only.
+  const from = { x: heroCentre.x - size / 2, y: heroCentre.y - size / 2 };
+  const control = { x: from.x, y: spot.y };
+  const position = {
+    x: (1 - u) * (1 - u) * from.x + 2 * (1 - u) * u * control.x + u * u * spot.x,
+    y: (1 - u) * (1 - u) * from.y + 2 * (1 - u) * u * control.y + u * u * spot.y,
+  };
+
+  // The hero follows the small one while it is still visible: the same
+  // centre offset and the same face size, so they never separate.
+  const centre = { x: position.x + size / 2, y: position.y + size / 2 };
+  const heroScale = (size * companionScale * companionFace) / (heroDiameter * heroFace);
+  const heroOffset = { x: centre.x - heroCentre.x, y: centre.y - heroCentre.y };
+  return { heroScale, heroOpacity, heroOffset, companionScale, companionOpacity, position };
+}
+
+/**
+ * How far the hand-off has got, from the hero avatar's position on screen: 0
+ * while its top is below `start` (just under the navbar), 1 once it has
+ * scrolled `distance` px further up. A plain linear map of the scroll.
+ */
+export function heroHandoffProgress(heroTop: number, start: number, distance: number) {
+  return clamp((start - heroTop) / Math.max(1, distance), 0, 1);
+}
+
 /** Fixed spots that don't ride on content: the left margin, and the bottom-right corner. */
 export function gutterPoint(contentLeft: number, size: number, viewport: Viewport, yRatio = 0.5): Point | null {
   if (contentLeft < size + MARGIN * 2) return null;

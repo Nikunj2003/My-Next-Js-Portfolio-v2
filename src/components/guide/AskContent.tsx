@@ -136,6 +136,20 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
   const chips = exchange?.answer?.suggestions?.slice(0, 2) ?? (exchange ? [] : SECTION_CHIPS[activeSection ?? "hero"] ?? SECTION_CHIPS.hero);
   const answer = exchange?.answer ?? null;
 
+  // Whether the answer area overflows (and so should take the wheel).
+  const [bodyScrolls, setBodyScrolls] = useState(false);
+  useEffect(() => {
+    const node = bodyRef.current;
+    if (!node) return;
+    const check = () => setBodyScrolls(node.scrollHeight > node.clientHeight + 1);
+    check();
+    const observer = new ResizeObserver(check);
+    observer.observe(node);
+    if (node.firstElementChild) observer.observe(node.firstElementChild);
+    return () => observer.disconnect();
+  }, [exchange?.question.id, answer?.content]);
+
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <p className="sr-only" role="status" aria-live="polite">{announcement}</p>
@@ -175,7 +189,9 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
       {exchange && (
         <div
           ref={bodyRef}
-          data-lenis-prevent
+          // Lenis leaves this to native scrolling only while the answer
+          // overflows; a short answer passes the wheel to the page.
+          data-lenis-prevent={bodyScrolls || undefined}
           role="log"
           aria-live="off"
           aria-busy={Boolean(answer?.streaming) || (isLoading && !answer)}

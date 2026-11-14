@@ -16,6 +16,9 @@ import {
   cornerPoint,
   easeInOutCubic,
   gutterPoint,
+  heroHandoffFrame,
+  heroHandoffProgress,
+  underPanelPoint,
   type BubbleSide,
   type Point,
   type Viewport,
@@ -29,8 +32,10 @@ const MOBILE_SIZE = 56;
 const NAVBAR = 85;
 /** How long the glide between two sections' spots takes. */
 const GLIDE_MS = 650;
-/** The shortest time the hero hand-off can take, however fast the scroll. */
-const MORPH_MS = 450;
+/** The hand-off progress at which the conversation moves (mid cross-fade, while both are one disc). */
+const HANDOFF_SWAP_AT = 0.125;
+/** How long after mounting the page counts as still settling (scroll restore, hero entrance). */
+const SETTLE_MS = 300;
 /** Per-frame movement above this while riding is a discontinuity, smoothed into a glide. */
 const MAX_RIDE_STEP = 90;
 
@@ -94,7 +99,12 @@ export default function GuideCompanion() {
   // exception: the companion narrates it from the corner. On phones the ask
   // and the panel are full sheets, so the companion steps aside for them.
   const askOpen = companion.bubble === "ask";
-  const visible = (touring || !heroVisible) && !(isMobile && (askOpen || companion.panelOpen));
+  // On the homepage nothing is decided until the loop has seen the settled
+  // page: `heroVisible` starts false, so without this the companion counted
+  // as visible on every load, was drawn, then faded out once the hero
+  // reported in (the flash on arrival and refresh).
+  const [settled, setSettled] = useState(false);
+  const visible = (!isHome || settled) && (touring || !heroVisible) && !(isMobile && (askOpen || companion.panelOpen));
 
   useEffect(() => {
     dispatchCompanion({ type: "companion/visible", visible });
@@ -135,6 +145,8 @@ export default function GuideCompanion() {
     ruleRef.current = rule;
   }, [reduceMotion, rule]);
 
+  const settledRef = useRef(false);
+  const mountedAtRef = useRef(0);
   const reduceMotionRef = useRef(reduceMotion);
   const isMobileRef = useRef(isMobile);
   useLayoutEffect(() => {
@@ -142,8 +154,6 @@ export default function GuideCompanion() {
     isMobileRef.current = isMobile;
   }, [isMobile, reduceMotion]);
 
-  const morphRef = useRef(0);
-  const lastTickRef = useRef(0);
   const sectionRef = useRef<string | null>(null);
   const visibleRef = useRef(visible);
   const touringRef = useRef(touring);
@@ -154,6 +164,7 @@ export default function GuideCompanion() {
 
   useEffect(() => {
     let frame = 0;
+    mountedAtRef.current = performance.now();
     const footer = () => document.querySelector("footer");
     const tick = (now: number) => {
       frame = requestAnimationFrame(tick);
@@ -182,33 +193,67 @@ export default function GuideCompanion() {
       // up plays it in reverse. `morph` is 0 with the hero fully in view and 1
       // once it has handed over.
       const hero = isHome && !isMobileRef.current ? document.querySelector<HTMLElement>("[data-guide-hero-avatar]") : null;
-      const heroBox = hero?.getBoundingClientRect();
+      // The hero's layout box, without the scale and fade this loop applies to
+      // it: measuring the transformed box fed each frame's shrink back into the
+      // next frame's progress, so the hand-off never settled (and thrashed
+      // around its midpoint, where the conversation swaps between the two).
+      const heroBox = hero ? heroLayoutRect(hero) : undefined;
       const heroHere = Boolean(hero && heroBox && heroBox.width > 0) && !touringRef.current && !reduceMotionRef.current;
-      // The scroll sets where the hand-off should be; the drawn value follows
-      // it at a capped rate, so a fast scroll plays the whole hand-off over a
-      // few hundred milliseconds instead of skipping it in one frame.
-      const wanted = heroHere && heroBox ? clamp01((NAVBAR - heroBox.top) / (heroBox.height * 0.75)) : 1;
-      const dt = lastTickRef.current ? Math.min(64, now - lastTickRef.current) : 16;
-      lastTickRef.current = now;
-      const maxStep = dt / MORPH_MS;
-      const drawn = morphRef.current;
-      const morph = heroHere ? drawn + clamp(wanted - drawn, -maxStep, maxStep) : 1;
-      morphRef.current = morph;
-      if (hero) {
-        const eased = heroHere ? easeInOutCubic(morph) : 0;
-        hero.style.opacity = eased > 0 ? String(1 - eased) : "";
-        hero.style.transform = eased > 0 ? `scale(${1 - 0.45 * eased})` : "";
+      // On a load or a refresh nothing is drawn until the page has settled:
+      // the hero column is still fading in and the browser may still be
+      // restoring a scrolled position. Animating the hand-off from that
+      // half-built state is what played a stray hand-off on every refresh.
+      // Once settled, the companion simply appears at its spot (or stays
+      // hidden over the hero); the hand-off only ever plays from real scrolling.
+      if (!settledRef.current) {
+        const column = hero?.closest<HTMLElement>(".lg\\:col-span-5");
+        const columnShown = !column || Number(getComputedStyle(column).opacity) >= 0.99;
+        if (now - mountedAtRef.current > SETTLE_MS && columnShown) {
+          settledRef.current = true;
+          // Decide who is the guide from the settled page, before anything is drawn.
+          if (hero) setHeroVisible(heroHere && heroBox ? heroHandoffProgress(heroBox.top, NAVBAR + 20, heroBox.height * 0.9) < HANDOFF_SWAP_AT : false);
+          setSettled(true);
+          opacity.set(0);
+          return;
+        } else {
+          opacity.set(0);
+          if (hero) {
+            hero.style.transform = "";
+            hero.style.opacity = "";
+          }
+          return;
+        }
       }
+      // Hand-off progress: a plain function of the scroll position (0 as the
+      // hero avatar's top reaches the navbar, 1 a scroll of 70% of its height
+      // later). No smoothing and no timer: the same scroll position always
+      // draws the same frame, a stop mid-way holds mid-way, and scrolling back
+      // plays the same frames in reverse. Lenis already smooths the scroll.
+      const morph = heroHere && heroBox ? heroHandoffProgress(heroBox.top, NAVBAR + 20, heroBox.height * 0.9) : 1;
+      const heroCentre = heroBox ? { x: heroBox.left + heroBox.width / 2, y: heroBox.top + heroBox.height / 2 } : { x: 0, y: 0 };
+      // Styles the hero from the same hand-off frame the companion is drawn
+      // from, so the two can't disagree by a frame.
+      const styleHero = (frame: ReturnType<typeof heroHandoffFrame> | null) => {
+        if (!hero) return;
+        hero.style.transform = frame ? `translate(${frame.heroOffset.x}px, ${frame.heroOffset.y}px) scale(${frame.heroScale})` : "";
+        hero.style.opacity = frame ? String(frame.heroOpacity) : "";
+        // A faded hero must not catch clicks meant for the page or the companion.
+        hero.style.pointerEvents = frame && frame.heroOpacity < 0.5 ? "none" : "";
+      };
 
       // Nothing to draw while hidden and not mid hand-off; keep tracking the section only.
       const handingOff = heroHere && morph > 0 && morph < 1;
       // The hand-off point decides which avatar is the guide (and hosts the
       // ask box), so the conversation moves exactly when the avatars swap.
-      if (hero) setHeroVisible(heroHere ? morph < 0.5 : heroBox ? heroBox.bottom > NAVBAR + heroBox.height * 0.5 && heroBox.width > 0 : false);
+      if (hero) setHeroVisible(heroHere ? morph < HANDOFF_SWAP_AT : heroBox ? heroBox.bottom > NAVBAR + heroBox.height * 0.5 && heroBox.width > 0 : false);
       if (!visibleRef.current && !handingOff) {
         lastPointRef.current = null;
         glideRef.current = null;
-        opacity.set(fade.get());
+        // Over the hero the hand-off owns the opacity: hidden. (Fading out on
+        // the generic timer here is what let the small avatar linger after the
+        // hero had already come back.)
+        opacity.set(heroHere ? 0 : fade.get());
+        styleHero(null);
         return;
       }
 
@@ -227,14 +272,12 @@ export default function GuideCompanion() {
       }
       const last = lastPointRef.current;
       if (heroHere && heroBox && morph < 1) {
-        // Mid hand-off: from the hero avatar's centre (kept on screen) to the spot.
-        const from = clampToViewport({ x: heroBox.left + heroBox.width / 2 - size / 2, y: heroBox.top + heroBox.height / 2 - size / 2 }, size, viewport);
-        const eased = easeInOutCubic(morph);
-        point = blendPoint(from, target, eased);
+        const frame = heroHandoffFrame({ t: morph, heroCentre, heroDiameter: heroBox.width, size, spot: target });
+        styleHero(frame);
+        point = frame.position;
         glideRef.current = null;
-        const startScale = Math.min(3.2, (heroBox.width * 0.8) / size);
-        scale.set(startScale + (1 - startScale) * eased);
-        opacity.set(clamp01((morph - 0.05) / 0.3));
+        scale.set(frame.companionScale);
+        opacity.set(frame.companionOpacity);
       } else if (!last) {
         point = target; // appearing: straight to the spot
       } else if (!glideRef.current) {
@@ -249,10 +292,18 @@ export default function GuideCompanion() {
       }
 
       if (!(heroHere && morph < 1)) {
+        // Hand-off done (or no hero here): the hero, now invisible, is left to
+        // the page untransformed, so it scrolls away instead of being carried
+        // along over the content. It stays hidden while scrolled past.
+        if (hero && heroHere) {
+          hero.style.transform = "";
+          hero.style.opacity = morph >= 1 ? "0" : "";
+          hero.style.pointerEvents = morph >= 1 ? "none" : "";
+        }
         scale.set(1);
+        // Away from the hero (or with the hand-off complete): fully shown, or
+        // the short in-place fade on other pages, the tour and the panel.
         opacity.set(visibleRef.current ? (heroHere ? 1 : fade.get()) : 0);
-      } else if (morph <= 0) {
-        opacity.set(0);
       }
 
       lastPointRef.current = point;
@@ -272,6 +323,7 @@ export default function GuideCompanion() {
       if (hero) {
         hero.style.opacity = "";
         hero.style.transform = "";
+        hero.style.pointerEvents = "";
       }
     };
   }, [fade, isHome, opacity, posX, posY, scale, size]);
@@ -384,13 +436,22 @@ export default function GuideCompanion() {
   );
 }
 
-function clamp01(value: number) {
-  return Math.min(1, Math.max(0, value));
+/**
+ * The hero avatar's box as laid out, ignoring the scale this loop (and the
+ * inline ask box) apply to it. Its untransformed wrapper starts at the same
+ * place and the avatar keeps its layout size, so read the wrapper's top and
+ * left and the avatar's offset size: no transform is involved.
+ */
+function heroLayoutRect(hero: HTMLElement) {
+  const wrapper = hero.closest<HTMLElement>('[data-guide-target="hero-guide"]') ?? hero;
+  const box = wrapper.getBoundingClientRect();
+  const width = hero.offsetWidth;
+  const height = hero.offsetHeight;
+  const left = box.left + (box.width - width) / 2;
+  return { left, top: box.top, width, height, right: left + width, bottom: box.top + height };
 }
 
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
+
 
 /* ------------------------------------------------------------------------ */
 /* Spots                                                                     */
@@ -411,18 +472,23 @@ function marginRule(key: string): SpotRule {
 const CORNER: SpotRule = { key: "corner", prefer: ["left", "top"], point: (size, viewport) => cornerPoint(size, viewport) };
 
 /** Is this element laid out as a sticky side column right now (desktop)? */
+/** The section's sticky intro panel and the column that sticks, when the sticky layout is on (desktop). */
 function stickyPanel(section: string) {
   const panel = document.getElementById(section)?.querySelector<HTMLElement>(".panel-sticky");
-  const column = panel?.parentElement?.parentElement ?? panel?.parentElement;
-  if (!panel || !column) return null;
-  return getComputedStyle(column).position === "sticky" || getComputedStyle(panel.parentElement!).position === "sticky" ? panel : null;
+  if (!panel) return null;
+  for (let node: HTMLElement | null = panel; node && node.id !== section; node = node.parentElement) {
+    const style = getComputedStyle(node);
+    if (style.position === "sticky") return { panel, stickyTop: parseFloat(style.top) || 0 };
+  }
+  return null;
 }
 
 /**
- * Under a sticky intro panel (About, Experience, Skills): it rides with the
- * panel, so while the panel is pinned the avatar is still, and when the panel
- * scrolls away the avatar scrolls with it, both exactly. Clamped to stay on
- * screen. Without the sticky layout (narrow screens) it falls back to the margin.
+ * Under a sticky intro panel (About, Experience, Skills). One continuous,
+ * scroll-driven path (`underPanelPoint`): it waits in the margin at the
+ * height it will rest at, slides in under the panel as the panel pins, stays
+ * while it is pinned, and rides up with it when the section ends. Without the
+ * sticky layout (narrow screens) it falls back to the margin.
  */
 function underPanelRule(section: string): SpotRule {
   return {
@@ -430,13 +496,14 @@ function underPanelRule(section: string): SpotRule {
     // Below the avatar, in the free space under the panel, when it fits.
     prefer: ["bottom", "right", "top"],
     point: (size, viewport) => {
-      const panel = stickyPanel(section);
-      if (!panel) return gutterPoint(contentLeft(), size, viewport);
-      const box = panel.getBoundingClientRect();
-      // Sits in the space under the panel, near its left edge. While the panel
-      // is pinned (its bottom high on screen) there is room below the avatar
-      // for the bubble, as in the screenshot the visitor expects.
-      return { x: box.left + 20, y: box.bottom + 24 };
+      const sticky = stickyPanel(section);
+      if (!sticky) return gutterPoint(contentLeft(), size, viewport);
+      const box = sticky.panel.getBoundingClientRect();
+      // The panel's own offset inside the sticky column (its first child here).
+      const column = sticky.panel.parentElement!.getBoundingClientRect();
+      const stickyTop = sticky.stickyTop + (box.top - column.top);
+      const gutter = gutterPoint(contentLeft(), size, viewport);
+      return underPanelPoint({ panelLeft: box.left, panelBottom: box.bottom, pinnedBottom: stickyTop + box.height, gutterX: gutter ? gutter.x : null });
     },
   };
 }
@@ -463,9 +530,13 @@ function blockCornerRule(section: string, selector: string, offset: Point = { x:
   };
 }
 
+const ABOUT = underPanelRule("about");
+
 const SECTION_RULES: Record<string, SpotRule> = {
-  hero: marginRule("hero"),
-  about: underPanelRule("about"),
+  // The hero hands off straight to About's spot (the same rule, so crossing
+  // the hero/About boundary is not a change of spot and starts no glide).
+  hero: ABOUT,
+  about: ABOUT,
   experience: underPanelRule("experience"),
   skills: underPanelRule("skills"),
   work: blockCornerRule("work", '[data-guide-target="work-featured"]', { x: 0, y: -12 }),
