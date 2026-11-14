@@ -50,26 +50,6 @@ const Navbar = () => {
       // showing straight through it.
       const nextScrolled = window.scrollY > 40;
       setScrolled((prev) => (prev === nextScrolled ? prev : nextScrolled));
-
-      // Section tracking, on the other hand, only means anything on the
-      // homepage, since that is the only route with these anchors.
-      if (!isHome) return;
-
-      const activationLine = window.innerHeight * 0.35;
-      let nextActiveSection: string | null = null;
-
-      for (const link of navLinks) {
-        const section = document.querySelector(link.href);
-        if (!(section instanceof HTMLElement)) continue;
-
-        const rect = section.getBoundingClientRect();
-        if (rect.top <= activationLine && rect.bottom >= activationLine) {
-          nextActiveSection = link.href;
-          break;
-        }
-      }
-
-      setActiveSection((prev) => (prev === nextActiveSection ? prev : nextActiveSection));
     };
 
     const onScroll = () => {
@@ -86,6 +66,31 @@ const Navbar = () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
     };
+  }, []);
+
+  // Section tracking only means anything on the homepage. An observer with a
+  // one-pixel band at 35% of the screen marks the section crossing that line,
+  // instead of reading every section's rect on every scroll frame.
+  useEffect(() => {
+    if (!isHome) return;
+    const sections = navLinks
+      .map((link) => document.querySelector(link.href))
+      .filter((node): node is HTMLElement => node instanceof HTMLElement);
+    const crossing = new Set<string>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const id = `#${entry.target.id}`;
+          if (entry.isIntersecting) crossing.add(id);
+          else crossing.delete(id);
+        }
+        const next = navLinks.find((link) => crossing.has(link.href))?.href ?? null;
+        setActiveSection((prev) => (prev === next ? prev : next));
+      },
+      { rootMargin: "-35% 0px -65% 0px", threshold: 0 }
+    );
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
   }, [isHome]);
 
   const closeMenu = useCallback((restoreFocus = true) => {

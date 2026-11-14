@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useInView } from "react-intersection-observer";
 import { cn } from "@/lib/utils";
 
 interface FlipWordsProps {
@@ -31,6 +32,9 @@ const FlipWords = ({ words, interval = 3000, className, variant = "slot", slotWi
   const [index, setIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
   const shouldReduceMotion = useReducedMotion();
+  // Only flips while on screen. A copy hidden with CSS (display: none) never
+  // intersects, so it stays idle instead of animating letters nobody sees.
+  const [ref, inView] = useInView({ threshold: 0 });
 
   const advance = useCallback(() => {
     setIndex((current) => (current + 1) % words.length);
@@ -43,10 +47,10 @@ const FlipWords = ({ words, interval = 3000, className, variant = "slot", slotWi
   }, []);
 
   useEffect(() => {
-    if (!isVisible) return;
+    if (!isVisible || !inView) return;
     const id = window.setTimeout(advance, interval);
     return () => window.clearTimeout(id);
-  }, [advance, index, interval, isVisible]);
+  }, [advance, inView, index, interval, isVisible]);
 
   // Clamped: if `words` shrinks between renders, a stale index would read
   // undefined and throw on `.split("")` below.
@@ -58,6 +62,7 @@ const FlipWords = ({ words, interval = 3000, className, variant = "slot", slotWi
 
   return (
     <span
+      ref={ref}
       className={cn(
         "relative overflow-hidden",
         isSlot ? "inline-grid text-center align-baseline" : "inline-block text-left",
@@ -65,6 +70,8 @@ const FlipWords = ({ words, interval = 3000, className, variant = "slot", slotWi
       )}
       style={isSlot ? { width: `${widthCh}ch` } : undefined}
     >
+      {/* Screen readers get the words once, not a letter-by-letter rotation. */}
+      <span className="sr-only">{words.join(", ")}</span>
       <AnimatePresence initial={false}>
         <motion.span
           key={safeIndex}
@@ -78,6 +85,7 @@ const FlipWords = ({ words, interval = 3000, className, variant = "slot", slotWi
               ? { opacity: 0 }
               : { opacity: 0, y: -40, x: 40, filter: "blur(8px)", scale: 2, position: "absolute" }
           }
+          aria-hidden="true"
           className={cn("inline-block", isSlot ? "col-start-1 row-start-1" : "relative text-left")}
         >
           {current.split("").map((letter, letterIndex) => (

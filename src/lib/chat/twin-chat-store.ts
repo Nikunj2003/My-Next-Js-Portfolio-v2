@@ -16,7 +16,7 @@ import {
   type ChatTrace,
 } from "@/lib/chat-contract";
 import { createStoredChatEnvelope, parseStoredChatEnvelope } from "@/lib/chat-storage";
-import { CHAT_MEMORY_WINDOW, CHAT_STORAGE_KEY, WELCOME_MESSAGE, trimConversationHistory } from "@/lib/ai-twin";
+import { CHAT_MEMORY_WINDOW, CHAT_STORAGE_KEY, WELCOME_MESSAGE, trimConversationHistory } from "@/lib/chat/shared";
 import { emitGuide } from "@/lib/guide/bus";
 import type { ChatApiError, ChatRequestError, Message, SendRequest, StreamOutcome } from "@/lib/chat/types";
 

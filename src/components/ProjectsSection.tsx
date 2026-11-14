@@ -1,15 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useInView } from "react-intersection-observer";
 import { ArrowRight, ExternalLink, Github, Maximize2 } from "lucide-react";
 import { projects, type Project } from "@/data/portfolio";
-import { caseStudies, featuredCaseStudies } from "@/data/case-studies";
-import CaseStudyCard from "@/components/CaseStudyCard";
 import AskAboutThis from "@/components/AskAboutThis";
-import { PROJECT_ANCHOR_PREFIX } from "@/lib/ai-twin";
+import { PROJECT_ANCHOR_PREFIX } from "@/lib/chat/shared";
 import {
   Carousel,
   CarouselContent,
@@ -18,7 +16,10 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
-import ProjectImageViewer from "@/components/ProjectImageViewer";
+import dynamic from "next/dynamic";
+
+// Only needed once a screenshot is opened, so it isn't in the page's bundle.
+const ProjectImageViewer = dynamic(() => import("@/components/ProjectImageViewer"), { ssr: false });
 
 const featuredProjects = projects.filter((project) => project.featured);
 const otherProjects = projects.filter((project) => !project.featured);
@@ -27,8 +28,10 @@ const PROJECT_IMAGE_SIZES = "(min-width: 1536px) 42rem, (min-width: 1024px) 40vw
 /**
  * Image gallery half of a project card.
  *
- * Mounts the carousel only when it scrolls near, and warms the neighbouring
- * images so paging feels instant. Clicking opens the full-screen viewer.
+ * Mounts the carousel only when it scrolls near. Every slide is a
+ * `next/image`, so neighbours load as optimised, sized images; the old raw
+ * `new Image()` prefetch downloaded the 1-2MB source PNGs on top of that.
+ * Clicking opens the full-screen viewer.
  */
 function ProjectGallery({
   project,
@@ -40,39 +43,6 @@ function ProjectGallery({
   onOpenViewer: (project: Project, index: number) => void;
 }) {
   const [mediaRef, mediaInView] = useInView({ triggerOnce: true, threshold: 0, rootMargin: "600px 0px" });
-  /**
-   * Which image indexes have already been warmed.
-   *
-   * This was a single boolean, latched true by the index-less call the mount
-   * effect makes — so only images 0 and 1 were ever prefetched and every later
-   * targeted call (hover, focus, paging) returned early. Tracking per index
-   * makes neighbour warming actually work while still never re-fetching one.
-   */
-  const prefetchedRef = useRef<Set<number>>(new Set());
-
-  const prefetchProjectImages = useCallback(
-    (targetIndex?: number) => {
-      if (project.images.length === 0 || typeof window === "undefined") return;
-
-      const indexes = typeof targetIndex === "number" ? [targetIndex - 1, targetIndex, targetIndex + 1] : [0, 1];
-      for (const index of indexes) {
-        const src = project.images[index];
-        if (!src || prefetchedRef.current.has(index)) continue;
-        prefetchedRef.current.add(index);
-        const image = new window.Image();
-        image.decoding = "async";
-        image.src = src;
-      }
-    },
-    [project.images]
-  );
-
-  useEffect(() => {
-    if (!mediaInView || project.images.length === 0) return;
-    const timeoutId = window.setTimeout(prefetchProjectImages, 180);
-    return () => window.clearTimeout(timeoutId);
-  }, [mediaInView, prefetchProjectImages, project.images.length]);
-
   if (project.images.length === 0) {
     return (
       <div className="flex items-center justify-center border-t border-white/10 bg-black/30 p-6 font-mono text-sm text-muted-foreground lg:w-[58%] lg:border-l lg:border-t-0">
@@ -95,13 +65,7 @@ function ProjectGallery({
               <CarouselItem key={`${project.title}-${img}`}>
                 <button
                   type="button"
-                  onClick={() => {
-                    prefetchProjectImages(idx);
-                    onOpenViewer(project, idx);
-                  }}
-                  onMouseEnter={() => prefetchProjectImages(idx)}
-                  onFocus={() => prefetchProjectImages(idx)}
-                  onTouchStart={() => prefetchProjectImages(idx)}
+                  onClick={() => onOpenViewer(project, idx)}
                   className="group/viewer relative block w-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                   aria-label={`Open ${project.title} screenshot ${idx + 1} of ${project.images.length} full screen`}
                 >
@@ -275,7 +239,11 @@ function ProjectCard({
   );
 }
 
-const ProjectsSection = () => {
+/**
+ * The featured case-study cards are rendered by the server page and passed in,
+ * so this client component never imports the case-study dataset.
+ */
+const ProjectsSection = ({ featured, caseStudyCount }: { featured: ReactNode; caseStudyCount: number }) => {
   const [viewerState, setViewerState] = useState<{ open: boolean; project: Project | null; index: number }>({
     open: false,
     project: null,
@@ -320,12 +288,7 @@ const ProjectsSection = () => {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3" data-guide-target="work-featured">
-          {featuredCaseStudies.map((study) => (
-            <div key={study.slug} className="h-full">
-              {/* h4: the group label above this row is an h3. */}
-              <CaseStudyCard study={study} headingLevel="h4" />
-            </div>
-          ))}
+          {featured}
         </div>
 
         {/* The row is a fixed three-column grid, so the rest of the studies are
@@ -335,7 +298,7 @@ const ProjectsSection = () => {
             href="/work"
             className="group/all inline-flex items-center gap-2 text-sm font-semibold text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
-            View all {caseStudies.length} case studies
+            View all {caseStudyCount} case studies
             <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover/all:translate-x-1 motion-reduce:transition-none" />
           </Link>
         </div>

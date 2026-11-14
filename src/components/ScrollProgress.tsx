@@ -26,11 +26,21 @@ const ScrollProgress = () => {
   const frameRef = useRef<number | null>(null);
 
   useEffect(() => {
+    // The page height only changes on layout changes, not per scroll frame:
+    // read it once and again whenever the body resizes or the window does.
+    let scrollable = 0;
+    const measure = () => {
+      scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    };
+    measure();
+    const bodyObserver = new ResizeObserver(() => {
+      measure();
+      schedule();
+    });
+    bodyObserver.observe(document.body);
+
     const update = () => {
       frameRef.current = null;
-
-      const doc = document.documentElement;
-      const scrollable = doc.scrollHeight - window.innerHeight;
 
       // A page shorter than the viewport has nothing to track; showing a full
       // bar there would imply the reader had finished something unscrollable.
@@ -91,16 +101,21 @@ const ScrollProgress = () => {
       tryAttachLenis();
     }
 
-    window.addEventListener("resize", schedule, { passive: true });
+    const onResize = () => {
+      measure();
+      schedule();
+    };
+    window.addEventListener("resize", onResize, { passive: true });
 
     return () => {
+      bodyObserver.disconnect();
       if (attachTimer !== null) window.cancelAnimationFrame(attachTimer);
       if (lenis) {
         lenis.off("scroll", update);
       } else {
         window.removeEventListener("scroll", schedule);
       }
-      window.removeEventListener("resize", schedule);
+      window.removeEventListener("resize", onResize);
       if (frameRef.current !== null) window.cancelAnimationFrame(frameRef.current);
     };
   }, [progress, shouldReduceMotion]);

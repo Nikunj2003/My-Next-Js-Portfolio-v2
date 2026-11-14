@@ -3,6 +3,8 @@ import HeroSection from "@/components/HeroSection";
 import AboutSection from "@/components/AboutSection";
 import ExperienceSection from "@/components/ExperienceSection";
 import ProjectsSection from "@/components/ProjectsSection";
+import CaseStudyCard from "@/components/CaseStudyCard";
+import { caseStudies, featuredCaseStudies } from "@/data/case-studies";
 import SkillsSection from "@/components/SkillsSection";
 import AITwinSection from "@/components/AITwinSection";
 import ContactSection from "@/components/ContactSection";
@@ -28,7 +30,15 @@ export default function Home() {
         <HeroSection />
         <AboutSection />
         <ExperienceSection />
-        <ProjectsSection />
+        <ProjectsSection
+          caseStudyCount={caseStudies.length}
+          featured={featuredCaseStudies.map((study) => (
+            <div key={study.slug} className="h-full">
+              {/* h4: the group label above this row is an h3. */}
+              <CaseStudyCard study={study} headingLevel="h4" />
+            </div>
+          ))}
+        />
         <SkillsSection />
         <AITwinSection />
         <ContactSection />

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, AudioLines, Blocks, Boxes, Database, BookOpen, FlaskConical, Gauge, HeartPulse, Layers, Network, PenLine, ServerCog, ShieldCheck, Trophy } from "lucide-react";
-import { getCaseStudyPath, type CaseStudy } from "@/data/case-studies";
+import type { CaseStudy } from "@/data/case-studies";
+import { getCaseStudyPath } from "@/data/case-study-path";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import AskAboutThis from "@/components/AskAboutThis";
 

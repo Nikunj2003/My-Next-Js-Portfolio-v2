@@ -9,43 +9,40 @@ import { REVEAL_DURATION_REDUCED, REVEAL_EASE, REVEAL_OFFSET } from "@/lib/motio
 import { GuideHeroAvatar } from "@/components/guide/GuideHeroAvatar";
 
 const AnimatedCounter = ({ value, suffix, start }: { value: number; suffix: string; start: boolean }) => {
-  const [count, setCount] = useState(0);
+  const textRef = useRef<HTMLSpanElement>(null);
   const started = useRef(false);
-  const frameRef = useRef<number | null>(null);
   const shouldReduceMotion = useReducedMotion();
-  const displayCount = shouldReduceMotion && start ? value : count;
 
+  // Counts up by writing the text node directly: four counters re-rendering
+  // React every frame for 2.6s was the hero's heaviest entrance work.
   useEffect(() => {
-    if (!start || started.current || shouldReduceMotion) return;
-
+    const node = textRef.current;
+    if (!node || !start || started.current) return;
     started.current = true;
+    if (shouldReduceMotion) {
+      node.textContent = `${value}${suffix}`;
+      return;
+    }
 
     const duration = 2600;
     const startTime = performance.now();
+    let frame = 0;
     const step = (now: number) => {
       const progress = Math.min((now - startTime) / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
-      setCount(Math.round(eased * value));
-      if (progress < 1) {
-        frameRef.current = window.requestAnimationFrame(step);
-      }
+      node.textContent = `${Math.round(eased * value)}${suffix}`;
+      if (progress < 1) frame = window.requestAnimationFrame(step);
     };
-
-    frameRef.current = window.requestAnimationFrame(step);
-
-    return () => {
-      if (frameRef.current !== null) {
-        window.cancelAnimationFrame(frameRef.current);
-      }
-    };
-  }, [shouldReduceMotion, start, value]);
+    frame = window.requestAnimationFrame(step);
+    return () => window.cancelAnimationFrame(frame);
+  }, [shouldReduceMotion, start, suffix, value]);
 
   // The final value is always in the markup (server HTML, assistive tech); the
   // animated number is decorative and hidden from them.
   return (
     <>
       <span className="sr-only">{value}{suffix}</span>
-      <span aria-hidden="true" className="tabular-nums">{displayCount}{suffix}</span>
+      <span ref={textRef} aria-hidden="true" className="tabular-nums">0{suffix}</span>
     </>
   );
 };
@@ -60,6 +57,9 @@ const HeroSection = () => {
   const [statsRevealStarted, setStatsRevealStarted] = useState(false);
 
   const shouldStartStats = Boolean(statsInView && (shouldReduceMotion || statsRevealStarted));
+  // The two large glow orbs pulse forever; pause them once the hero is off screen.
+  const [heroRef, heroInView] = useInView({ threshold: 0 });
+  const orbPlayState = heroInView ? "running" : "paused";
 
   const container = {
     hidden: {},
@@ -88,6 +88,7 @@ const HeroSection = () => {
 
   return (
     <section
+      ref={heroRef}
       id="hero"
       className="relative flex min-h-[100svh] items-start overflow-hidden pt-[calc(5rem+env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))] sm:pt-[calc(5.5rem+env(safe-area-inset-top))] sm:pb-[max(2.5rem,env(safe-area-inset-bottom))] lg:min-h-screen lg:items-center lg:pt-20 lg:pb-12"
     >
@@ -98,8 +99,8 @@ const HeroSection = () => {
       }} />
       
       {/* Massive Glowing Animated Orbs */}
-      <div className="absolute top-1/4 -right-1/4 w-[800px] h-[800px] rounded-full animate-[pulse_8s_ease-in-out_infinite] motion-reduce:animate-none opacity-50 pointer-events-none bg-[radial-gradient(circle,hsl(var(--primary)/0.2)_0%,transparent_70%)]" />
-      <div className="absolute bottom-0 -left-1/4 w-[600px] h-[600px] rounded-full animate-[pulse_10s_ease-in-out_infinite_reverse] motion-reduce:animate-none opacity-40 pointer-events-none bg-[radial-gradient(circle,hsl(var(--accent)/0.2)_0%,transparent_70%)]" />
+      <div className="absolute top-1/4 -right-1/4 w-[800px] h-[800px] rounded-full animate-[pulse_8s_ease-in-out_infinite] motion-reduce:animate-none opacity-50 pointer-events-none bg-[radial-gradient(circle,hsl(var(--primary)/0.2)_0%,transparent_70%)]" style={{ animationPlayState: orbPlayState }} />
+      <div className="absolute bottom-0 -left-1/4 w-[600px] h-[600px] rounded-full animate-[pulse_10s_ease-in-out_infinite_reverse] motion-reduce:animate-none opacity-40 pointer-events-none bg-[radial-gradient(circle,hsl(var(--accent)/0.2)_0%,transparent_70%)]" style={{ animationPlayState: orbPlayState }} />
       
       {/* Smooth fade into the next section */}
       <div className="absolute bottom-0 inset-x-0 h-32 sm:h-64 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none z-0" />

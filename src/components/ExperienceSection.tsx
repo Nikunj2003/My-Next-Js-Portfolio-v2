@@ -5,13 +5,12 @@ import {
   motion,
   useMotionValue,
   useReducedMotion,
-  useSpring,
   useTransform,
   type MotionValue,
 } from "framer-motion";
 import { Briefcase, CalendarDays, GraduationCap } from "lucide-react";
 import { bulletStudySlug, bulletText, experiences, type Experience } from "@/data/portfolio";
-import { getCaseStudyPath } from "@/data/case-studies";
+import { getCaseStudyPath } from "@/data/case-study-path";
 import AskAboutThis, { ReadCaseStudyLink } from "@/components/AskAboutThis";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import FlipWords from "@/components/ui/flip-words";
@@ -47,18 +46,15 @@ function TimelineIcon({
     const resizeObserver = new ResizeObserver(measure);
     resizeObserver.observe(timeline);
     resizeObserver.observe(figure);
-    window.addEventListener("resize", measure);
 
-    return () => {
-      resizeObserver.disconnect();
-      window.removeEventListener("resize", measure);
-    };
+    return () => resizeObserver.disconnect();
   }, [timelineRef]);
 
-  const rawPathLength = useTransform(lineProgress, [fillWindow.start, fillWindow.end], [0, 1], {
+  // Straight from the scroll progress (Lenis already smooths the scroll);
+  // a spring per icon was five extra animations running on every scroll.
+  const pathLength = useTransform(lineProgress, [fillWindow.start, fillWindow.end], [0, 1], {
     clamp: true,
   });
-  const pathLength = useSpring(rawPathLength, { stiffness: 180, damping: 24, mass: 0.25 });
   const fillOpacity = useTransform(pathLength, [0.82, 1], [0, 1], { clamp: true });
 
   return (

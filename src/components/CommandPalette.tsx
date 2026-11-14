@@ -18,9 +18,10 @@ import {
   Search,
   Sparkles,
 } from "lucide-react";
-import { caseStudies, getCaseStudyPath } from "@/data/case-studies";
+import { caseStudyIndex } from "@/data/case-study-index";
+import { getCaseStudyPath } from "@/data/case-study-path";
 import { personalInfo, projects } from "@/data/portfolio";
-import { getProjectAnchor } from "@/lib/ai-twin";
+import { getProjectAnchor } from "@/lib/chat/shared";
 import { useLenisLock } from "@/hooks/useLenisLock";
 import { scrollToHash } from "@/lib/scroll";
 import { cn } from "@/lib/utils";
@@ -174,7 +175,7 @@ const CommandPalette = () => {
                 heading="Case studies"
                 className={groupClass}
               >
-                {caseStudies.map((study) => (
+                {caseStudyIndex.map((study) => (
                   <Command.Item
                     key={study.slug}
                     value={`${study.title} ${study.tags.join(" ")} ${study.stack.join(" ")} ${study.aliases.join(" ")}`}
