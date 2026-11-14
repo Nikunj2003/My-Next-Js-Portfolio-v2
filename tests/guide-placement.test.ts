@@ -116,3 +116,11 @@ test("start-aligned bubbles line up with the avatar's left edge", () => {
   assert.equal(placed.left, 188);
   assert.equal(placed.top, 300 + 68 + 12);
 });
+
+test("over the hero, the companion stands at the hero avatar's lower left with the bubble beside it", () => {
+  const spot = pickSpot({ ...at(1440, { side: "left", yRatio: 0.5 }), perches: { hero: { left: 875, top: 246, width: 344, height: 344 } } });
+  assert.equal(spot.mode, "perch");
+  assert.equal(spot.x, 875 - 34);
+  assert.equal(spot.y, 246 + 344 - 68);
+  assert.equal(spot.prefer[0], "right");
+});

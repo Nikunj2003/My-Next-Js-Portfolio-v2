@@ -18,6 +18,8 @@ const SIZE = 68;
 const MOBILE_SIZE = 56;
 const NAVBAR = 85;
 const SPRING = { stiffness: 140, damping: 22, mass: 0.8 };
+/** Over the hero (only with the ask bubble open) the companion sits under the CTAs, clear of the hero avatar. */
+const HERO_ANCHOR = { side: "left" as const, yRatio: 0.5 };
 
 /**
  * The scroll companion: a small live avatar that takes over from the hero
@@ -112,7 +114,10 @@ export default function GuideCompanion() {
   }, [activeSection, isHome]);
 
   // The tour is narrated by the companion, so it shows even over the hero.
-  const visible = (touring || !heroVisible) && !(isMobile && (companion.bubble === "ask" || companion.panelOpen));
+  // An open conversation (ask bubble or full panel) keeps the companion up even
+  // over the hero, so scrolling back to the top never yanks it away mid-answer.
+  const askOpen = companion.bubble === "ask";
+  const visible = (touring || askOpen || companion.panelOpen || !heroVisible) && !(isMobile && (askOpen || companion.panelOpen));
 
   useEffect(() => {
     dispatchCompanion({ type: "companion/visible", visible });
@@ -128,11 +133,16 @@ export default function GuideCompanion() {
     const padLeft = style ? parseFloat(style.paddingLeft) : 0;
     const padRight = style ? parseFloat(style.paddingRight) : 0;
     const footer = document.querySelector("footer")?.getBoundingClientRect();
-    // Stay put while the bubble is open; a tour or the panel sends it to the corner.
-    const anchored = companion.bubble === "none" || companion.bubble === "tip";
-    const anchor = isHome && anchored && !companion.panelOpen && activeSection ? SECTION_ANCHORS[activeSection] ?? null : null;
+    // Follow the section in view, with the ask bubble open or not. Only the
+    // tour and the full panel send it to the corner.
+    const anchored = companion.bubble !== "tour";
+    const section = activeSection === "hero" ? "hero" : activeSection;
+    const anchor =
+      isHome && anchored && !companion.panelOpen && section
+        ? SECTION_ANCHORS[section] ?? (section === "hero" ? HERO_ANCHOR : null)
+        : null;
     const next = pickSpot({
-      perches: anchor && activeSection ? measurePerches(activeSection) : {},
+      perches: anchor && section ? measurePerches(section) : {},
       viewportWidth: vw,
       viewportHeight: vh,
       content: rect ? { left: rect.left + padLeft, right: rect.right - padRight } : { left: 0, right: vw },
@@ -150,11 +160,9 @@ export default function GuideCompanion() {
   }, [activeSection, companion.bubble, companion.panelOpen, isHome, size]);
 
   useLayoutEffect(() => {
-    // Keep the dock while the ask bubble is open so the bubble doesn't jump.
-    if (companion.bubble === "ask" && dock) return;
     const frame = requestAnimationFrame(recompute);
     return () => cancelAnimationFrame(frame);
-  }, [recompute, companion.bubble, dock]);
+  }, [recompute]);
 
   useEffect(() => {
     const onResize = () => recompute();
@@ -315,6 +323,11 @@ function measurePerches(section: string): Perches {
     return { beside: rect(root.querySelector(".container-narrow > div")), onTop: rect(root.querySelector('[data-guide-target="work-featured"]')) };
   }
   if (section === "ai-twin") return { onTop: rect(root.querySelector(".container-narrow > div")) };
+  if (section === "hero") {
+    // The right column's free space: the companion stands where the hero
+    // avatar's buttons are and the bubble opens beside it, clear of the copy.
+    return { hero: rect(root.querySelector('[data-guide-hero-avatar]')) };
+  }
   if (section === "contact") return { onTop: rect(root.querySelector(".grid.items-stretch")) };
   return {};
 }

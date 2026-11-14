@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { AnimatePresence, motion, useReducedMotion, useTransform, type MotionValue } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion, useSpring, useTransform, type MotionValue } from "framer-motion";
 import { type Components } from "react-markdown";
 import { ArrowRight, Compass, Maximize2, Send, X } from "lucide-react";
 import { buildAnswerComponents } from "@/components/ai/AnswerBody";
@@ -22,6 +22,7 @@ import { useChatAvailability } from "@/hooks/useChatAvailability";
 import { scrollToHash } from "@/lib/scroll";
 
 const BUBBLE_WIDTH = 360;
+const OFFSET_SPRING = { stiffness: 140, damping: 22, mass: 0.8 };
 const NAVBAR = 85;
 
 type TwinBubbleProps = {
@@ -79,8 +80,21 @@ export function TwinBubble(props: TwinBubbleProps) {
     return { side: placed.side, dx: placed.left - dock.x, dy: placed.top - dock.y };
   }, [bubbleHeight, dock, size]);
 
-  const x = useTransform(anchorX, (value) => value + placement.dx);
-  const y = useTransform(anchorY, (value) => value + placement.dy);
+  // The offset from the avatar springs too, so when the bubble changes side
+  // (the companion moved to a new section) it glides round instead of jumping.
+  const offsetX = useSpring(placement.dx, OFFSET_SPRING);
+  const offsetY = useSpring(placement.dy, OFFSET_SPRING);
+  useEffect(() => {
+    if (reduceMotion) {
+      offsetX.jump(placement.dx);
+      offsetY.jump(placement.dy);
+    } else {
+      offsetX.set(placement.dx);
+      offsetY.set(placement.dy);
+    }
+  }, [offsetX, offsetY, placement.dx, placement.dy, reduceMotion]);
+  const x = useTransform([anchorX, offsetX], ([anchor, offset]: number[]) => anchor + offset);
+  const y = useTransform([anchorY, offsetY], ([anchor, offset]: number[]) => anchor + offset);
 
   useLenisLock(isMobile && open && showing !== "tip");
 

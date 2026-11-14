@@ -83,6 +83,8 @@ export type Perches = {
   beside?: Rect | null;
   /** A card whose top edge the companion can perch on (AI Twin, Contact). */
   onTop?: Rect | null;
+  /** The hero avatar: the companion sits at its lower left, bubble opening over the avatar. */
+  hero?: Rect | null;
 };
 
 /**
@@ -94,6 +96,16 @@ export type Perches = {
 export function pickSpot(input: DockInput & { perches: Perches }): Dock {
   const { viewportHeight: vh, size, insetTop, perches } = input;
   const fits = (y: number) => y >= insetTop + MARGIN && y + size <= vh - MARGIN;
+
+  const hero = perches.hero;
+  if (hero && hero.height > 0) {
+    // Stand at the hero avatar's lower-left; the bubble covers the avatar
+    // (it is the same character) rather than the name, stats or buttons.
+    const y = hero.top + hero.height - size;
+    if (fits(y)) {
+      return { mode: "perch", x: Math.round(hero.left - size / 2), y: Math.round(y), side: "left", prefer: ["right", "top"], align: "end" };
+    }
+  }
 
   const under = perches.under;
   if (under && under.height > 0) {

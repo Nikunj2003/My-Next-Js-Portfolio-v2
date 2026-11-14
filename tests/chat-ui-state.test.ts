@@ -78,3 +78,10 @@ test("the chat never chases the bottom while an answer streams", () => {
   assert.match(CHAT, /useTurnAnchor\(/, "the panel anchors turns with useTurnAnchor");
   assert.match(CHAT, /ref=\{spacerRef\}/, "the panel renders the anchor spacer");
 });
+
+test("tool calls lead only until the answer starts, then sit under it", () => {
+  const body = readFileSync("src/components/ai/TwinAssistantBody.tsx", "utf8");
+  const answerAt = body.indexOf("<PacedAnswer");
+  assert.ok(body.indexOf("{!answered && toolList}") < answerAt, "running tools show above an empty answer");
+  assert.ok(body.indexOf("{answered && toolList}") > answerAt, "once text arrives the tools move below it");
+});

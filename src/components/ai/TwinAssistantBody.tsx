@@ -22,13 +22,15 @@ type TwinAssistantBodyProps = {
  * collapsed trace. One component, so the two surfaces never drift apart.
  */
 export function TwinAssistantBody({ message, components, reducedMotion, showTakeMeThere, onTakeMeThere }: TwinAssistantBodyProps) {
-  return (
-    <>
-      {/* Tool calls appear as they execute — this is the part
-          that reads as an agent rather than a text box. */}
-      {message.toolCalls && message.toolCalls.length > 0 && (
-        <ul className="mb-3 flex flex-col gap-1.5 border-l-2 border-primary/25 pl-3">
-          {message.toolCalls.map((call) => (
+  const calls = message.toolCalls ?? [];
+  // Before any answer text, the running tools ARE the progress, so they lead.
+  // Once the answer starts they move under it: the answer is what people read,
+  // the tools are how it was produced.
+  const answered = message.content.length > 0;
+  const toolList =
+    calls.length > 0 ? (
+        <ul className={cn("flex flex-col gap-1.5 border-l-2 border-primary/25 pl-3", answered ? "mt-3" : "mb-1")}>
+          {calls.map((call) => (
             <li key={call.id} className="flex items-baseline gap-2 font-mono text-[11px] leading-relaxed">
               <Wrench
                 className={cn(
@@ -54,8 +56,11 @@ export function TwinAssistantBody({ message, components, reducedMotion, showTake
             </li>
           ))}
         </ul>
-      )}
+    ) : null;
 
+  return (
+    <>
+      {!answered && toolList}
       <PacedAnswer
         text={message.content}
         streaming={Boolean(message.streaming)}
@@ -76,6 +81,8 @@ export function TwinAssistantBody({ message, components, reducedMotion, showTake
           <span className="ml-1 animate-pulse motion-reduce:animate-none">…</span>
         </p>
       )}
+
+      {answered && toolList}
 
       {/* Collapsed by default: a recruiter never has to open it,
           an engineer can. */}

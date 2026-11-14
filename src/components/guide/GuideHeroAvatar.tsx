@@ -9,6 +9,7 @@ import { emitGuide } from "@/lib/guide/bus";
 import { ASLEEP_LINE, BORED_LINE, DIZZY_LINE, HOVER_LINE, PET_LINES, WAKE_LINE, greetingFor } from "@/lib/guide/hero-lines";
 import { startGuideTour } from "@/lib/guide/tour-control";
 import { useGuideView } from "@/lib/guide/useGuideView";
+import { useCompanionState } from "@/lib/guide/companion-store";
 
 /** Proof points that orbit the avatar. Each links to the work that backs it. */
 const ORBIT = [
@@ -28,6 +29,8 @@ const ORBIT = [
  */
 export function GuideHeroAvatar() {
   const view = useGuideView();
+  // While the ask bubble is open over the hero, step back: the companion is talking.
+  const askOpen = useCompanionState().bubble === "ask";
   const reduceMotion = Boolean(useReducedMotion());
   const [line, setLine] = useState<string | null>(null);
   const hideTimer = useRef<number | null>(null);
@@ -76,7 +79,7 @@ export function GuideHeroAvatar() {
         {/* Speech bubble */}
         <div className="pointer-events-none absolute -top-4 left-1/2 z-20 w-[min(22rem,80vw)] -translate-x-1/2 -translate-y-full">
           <AnimatePresence>
-            {line && (
+            {line && !askOpen && (
               <motion.p
                 key={line}
                 role="status"
@@ -94,13 +97,14 @@ export function GuideHeroAvatar() {
         </div>
 
         {/* Orbit of proof chips */}
-        <div aria-hidden="false" className="pointer-events-none absolute inset-0 z-10">
+        <div className={`pointer-events-none absolute inset-0 z-10 transition-opacity duration-300 ${askOpen ? "opacity-0" : "opacity-100"}`}>
           {ORBIT.map((chip) => {
             const radians = (chip.angle * Math.PI) / 180;
             return (
               <a
                 key={chip.label}
                 href={chip.href}
+                tabIndex={askOpen ? -1 : undefined}
                 className="pointer-events-auto absolute left-1/2 top-1/2 rounded-full border border-primary/25 glass-subtle px-3 py-1 font-mono text-[11px] uppercase tracking-wider text-primary-text shadow-accent-soft transition-colors hover:border-primary/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 style={{ transform: `translate(-50%, -50%) translate(${Math.cos(radians) * 196}px, ${Math.sin(radians) * 172}px)` }}
               >
