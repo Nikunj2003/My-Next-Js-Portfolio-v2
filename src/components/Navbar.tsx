@@ -153,9 +153,7 @@ const Navbar = () => {
   useEffect(() => {
     if (!isOpen) return;
 
-    const previousBodyOverflow = document.body.style.overflow;
     const menuButton = menuButtonRef.current;
-    document.body.style.overflow = "hidden";
 
     const focusTimer = window.setTimeout(() => {
       firstMobileLinkRef.current?.focus();
@@ -194,7 +192,6 @@ const Navbar = () => {
 
     return () => {
       window.clearTimeout(focusTimer);
-      document.body.style.overflow = previousBodyOverflow;
       document.removeEventListener("keydown", handleKeyDown);
 
       if (shouldRestoreFocusRef.current) {

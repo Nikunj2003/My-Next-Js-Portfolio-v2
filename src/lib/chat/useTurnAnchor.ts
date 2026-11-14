@@ -11,6 +11,12 @@ type Options = {
   reducedMotion: boolean;
   /** False while the surface is hidden; it re-measures when shown. */
   active: boolean;
+  /**
+   * Changes when the surface swaps its scroller for another element (the
+   * panel's mobile and desktop layouts are different trees), so the observers
+   * move to the new node instead of watching a detached one.
+   */
+  layoutKey?: string;
 };
 
 /**
@@ -20,7 +26,7 @@ type Options = {
  * Returns a ref for the spacer element to render after the last message, and
  * a "jump to latest" control for when the visitor scrolls up to reread.
  */
-export function useTurnAnchor(scrollerRef: RefObject<HTMLElement | null>, { anchorId, selector, reducedMotion, active }: Options) {
+export function useTurnAnchor(scrollerRef: RefObject<HTMLElement | null>, { anchorId, selector, reducedMotion, active, layoutKey }: Options) {
   const spacerRef = useRef<HTMLDivElement>(null);
   const lastAnchoredRef = useRef<string | null>(null);
   const targetRef = useRef<number | null>(null);
@@ -115,7 +121,8 @@ export function useTurnAnchor(scrollerRef: RefObject<HTMLElement | null>, { anch
       mutation.disconnect();
       scroller.removeEventListener("scroll", updateJump);
     };
-  }, [active, applyReserve, readContentHeight, scrollerRef]);
+    // layoutKey: re-attach to the new scroller after a layout swap.
+  }, [active, applyReserve, layoutKey, readContentHeight, scrollerRef]);
 
   const jumpToLatest = useCallback(() => {
     const scroller = scrollerRef.current;

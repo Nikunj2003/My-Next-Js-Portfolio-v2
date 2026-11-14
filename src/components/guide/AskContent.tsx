@@ -268,7 +268,7 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
             autoComplete="off"
             maxLength={MAX_QUESTION_LENGTH}
             disabled={unavailable}
-            className="min-h-10 flex-1 rounded-xl border border-border/40 bg-background/60 px-3 text-sm outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary/40 focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+            className="min-h-10 flex-1 rounded-xl border border-border/40 bg-background/60 px-3 text-base sm:text-sm outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary/40 focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
           />
           <button
             type="submit"

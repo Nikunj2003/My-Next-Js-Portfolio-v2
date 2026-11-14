@@ -4,7 +4,6 @@ import { useSyncExternalStore } from "react";
 import { initialBubbleState, reduceBubble, type BubbleAction, type BubbleState } from "@/lib/guide/bubble-policy";
 import { emitGuide } from "@/lib/guide/bus";
 import { readGuidePrefs, writeGuidePrefs } from "@/lib/guide/prefs";
-import { sendTwinMessage } from "@/lib/chat/twin-chat-store";
 
 /**
  * UI state shared by the companion avatar, its bubble and the full chat panel:
@@ -53,9 +52,11 @@ function loadPrefs() {
 
 /** Opens the ask bubble, optionally sending a question once it is up. */
 export function openAsk(question?: string) {
-  // The full panel is already showing the conversation: ask there.
+  // The full panel is already showing the conversation: queue it there. The
+  // panel sends it with its own options (offline state, navigation) once the
+  // chat is free, so a question asked mid-answer isn't dropped.
   if (state.panelOpen) {
-    if (question) void sendTwinMessage(question);
+    if (question) set({ ...state, pendingQuestion: question });
     return;
   }
   dispatchCompanion({ type: "ask/open" });

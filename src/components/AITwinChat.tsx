@@ -19,7 +19,7 @@ import { useLenisLock } from "@/hooks/useLenisLock";
 import { scrollToHash } from "@/lib/scroll";
 import { runGuideAction } from "@/lib/guide/actions";
 import { emitGuide } from "@/lib/guide/bus";
-import { closePanel, openPanel, useCompanionState } from "@/lib/guide/companion-store";
+import { closePanel, openPanel, takePendingQuestion, useCompanionState } from "@/lib/guide/companion-store";
 import { cn } from "@/lib/utils";
 
 const messageSelector = (id: string) => `[data-message-id="${id}"]`;
@@ -30,7 +30,8 @@ function isVisible(node: HTMLElement) {
   const style = getComputedStyle(node);
   return style.visibility !== "hidden" && style.display !== "none";
 }
-const FOCUSABLE_SELECTOR = 'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])';
+const FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
 
 /**
  * The full AI Twin conversation panel. The conversation itself lives in the
@@ -67,6 +68,7 @@ const AITwinChat = () => {
     selector: messageSelector,
     reducedMotion: Boolean(shouldReduceMotion),
     active: isOpen,
+    layoutKey: isMobile ? "mobile" : "desktop",
   });
 
   const navigateToSection = useCallback(
@@ -168,25 +170,12 @@ const AITwinChat = () => {
   }, [chatAvailabilityStatus]);
 
   useEffect(() => {
-    if (!isOpen || !isMobile) return;
-
-    const prevBodyOverflow = document.body.style.overflow;
-    const prevDocOverflow = document.documentElement.style.overflow;
-
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = prevBodyOverflow;
-      document.documentElement.style.overflow = prevDocOverflow;
-    };
-  }, [isOpen, isMobile]);
-
-  useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        // Another layer (the palette, the menu, an IME) already handled it.
+        if (event.defaultPrevented || event.isComposing) return;
         event.preventDefault();
         setIsOpen(false);
         return;
@@ -254,6 +243,19 @@ const AITwinChat = () => {
     },
     [chatAvailabilityStatus, handleAgentNavigate, input]
   );
+
+  // A question asked elsewhere while the panel is open ("Ask about this", the
+  // palette) is queued in the companion store; send it once the chat is free.
+  const { pendingQuestion } = useCompanionState();
+  useEffect(() => {
+    if (!isOpen || !pendingQuestion || isLoading) return;
+    const timer = window.setTimeout(() => {
+      if (isTwinChatBusy()) return;
+      const question = takePendingQuestion();
+      if (question) handleSend(question);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [handleSend, isLoading, isOpen, pendingQuestion]);
 
   const handleSuggestionClick = (text: string) => handleSend(text);
 
@@ -330,6 +332,8 @@ const AITwinChat = () => {
         data-lenis-prevent
         role="log"
         aria-live="off"
+        // Keyboard users can scroll the conversation.
+        tabIndex={0}
         className={cn(
           "scroll-panel flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain space-y-6 scrollbar-thin scrollbar-thumb-primary/10 hover:scrollbar-thumb-primary/20",
           isMobile ? "px-3 py-4" : "px-4 py-6"
@@ -541,7 +545,7 @@ const AITwinChat = () => {
             aria-label="Message Nikunj's AI twin"
             autoComplete="off"
             disabled={!canSendMessages}
-            className="flex-1 bg-background/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all placeholder:text-muted-foreground/50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex-1 bg-background/50 border border-border/40 rounded-xl px-4 py-2.5 text-base sm:text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all placeholder:text-muted-foreground/50 disabled:cursor-not-allowed disabled:opacity-60"
           />
           <button
             type="button"

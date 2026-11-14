@@ -148,6 +148,47 @@ function getErrorState(error: unknown, retryText: string, userMessageId: string 
   } satisfies Pick<Message, "content" | "error">;
 }
 
+/** Longest stored message kept; anything bigger is cut, not trusted. */
+const STORED_MESSAGE_MAX_CHARS = 20_000;
+
+const strings = (value: unknown, max = 20) =>
+  Array.isArray(value) ? value.filter((item): item is string => typeof item === "string").slice(0, max) : [];
+const finite = (value: unknown) => (typeof value === "number" && Number.isFinite(value) ? value : 0);
+
+/** A stored trace with every field the UI reads, or nothing. */
+function sanitizeStoredTrace(value: unknown): ChatTrace | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const trace = value as Record<string, unknown>;
+  return {
+    rounds: finite(trace.rounds),
+    toolCount: finite(trace.toolCount),
+    elapsedMs: finite(trace.elapsedMs),
+    sources: strings(trace.sources),
+    refusals: strings(trace.refusals),
+    model: typeof trace.model === "string" ? trace.model : "",
+  };
+}
+
+/** Only in-page hashes and same-site paths; `//host` would leave the site. */
+const SAFE_HREF = /^(#[\w-]+|\/(?![/\\])[^\s]*)$/;
+
+function sanitizeStoredToolCall(value: unknown): ChatToolCall | null {
+  if (!value || typeof value !== "object") return null;
+  const call = value as Record<string, unknown>;
+  if (typeof call.id !== "string" || typeof call.label !== "string") return null;
+  return {
+    id: call.id,
+    name: typeof call.name === "string" ? call.name : "",
+    label: call.label.slice(0, 200),
+    status: "done",
+    summary: typeof call.summary === "string" ? call.summary.slice(0, 500) : undefined,
+    durationMs: typeof call.durationMs === "number" ? call.durationMs : undefined,
+    refused: call.refused === true ? true : undefined,
+    href: typeof call.href === "string" && SAFE_HREF.test(call.href) ? call.href : undefined,
+    highlight: typeof call.highlight === "string" && /^[\w:-]{1,80}$/.test(call.highlight) ? call.highlight : undefined,
+  };
+}
+
 export function sanitizeStoredMessages(value: unknown): Message[] {
   if (!Array.isArray(value)) return INITIAL_MESSAGES;
 
@@ -164,18 +205,16 @@ export function sanitizeStoredMessages(value: unknown): Message[] {
     })
     .map((message) => ({
       ...message,
-      suggestions: Array.isArray(message.suggestions)
-        ? message.suggestions.filter((suggestion): suggestion is string => typeof suggestion === "string")
-        : undefined,
-      // Any stored tool call is finished by definition; a persisted "running"
+      content: message.content.slice(0, STORED_MESSAGE_MAX_CHARS),
+      suggestions: Array.isArray(message.suggestions) ? strings(message.suggestions, 8) : undefined,
+      // Stored data is untrusted: every field the UI reads is checked. Any
+      // stored tool call is finished by definition; a persisted "running"
       // state would spin forever, and a persisted `streaming` flag would leave
       // the caret blinking on a message that is already complete.
       toolCalls: Array.isArray(message.toolCalls)
-        ? message.toolCalls
-            .filter((call): call is ChatToolCall => Boolean(call) && typeof call.id === "string" && typeof call.label === "string")
-            .map((call) => ({ ...call, status: "done" as const }))
+        ? message.toolCalls.map(sanitizeStoredToolCall).filter((call): call is ChatToolCall => call !== null)
         : undefined,
-      trace: message.trace && typeof message.trace === "object" ? message.trace : undefined,
+      trace: sanitizeStoredTrace(message.trace),
       streaming: false,
       error: sanitizeMessageError(message.error),
     }));
@@ -316,22 +355,30 @@ export async function consumeChatStream(
     }
   };
 
-  while (true) {
-    let chunk: ReadableStreamReadResult<Uint8Array>;
-    try {
-      chunk = await reader.read();
-    } catch (error) {
-      // Our own timeout abort keeps its identity; any other read failure is a dropped connection.
-      if (isAbortError(error)) throw error;
-      throw networkError(content.length > 0 && !trace);
+  let finished = false;
+  try {
+    while (true) {
+      let chunk: ReadableStreamReadResult<Uint8Array>;
+      try {
+        chunk = await reader.read();
+      } catch (error) {
+        // Our own timeout abort keeps its identity; any other read failure is a dropped connection.
+        if (isAbortError(error)) throw error;
+        throw networkError(content.length > 0 && !trace);
+      }
+      const { done, value } = chunk;
+      if (done) break;
+      // Progress is proof of life: the caller's idle timer restarts here.
+      onActivity?.();
+      parser.push(decoder.decode(value, { stream: true })).forEach(handleEvent);
     }
-    const { done, value } = chunk;
-    if (done) break;
-    // Progress is proof of life: the caller's idle timer restarts here.
-    onActivity?.();
-    parser.push(decoder.decode(value, { stream: true })).forEach(handleEvent);
+    parser.flush().forEach(handleEvent);
+    finished = true;
+  } finally {
+    // Any failure mid-stream (a bad event, a handler error) closes the
+    // connection, so the server stops generating an answer nobody reads.
+    if (!finished) await reader.cancel().catch(() => undefined);
   }
-  parser.flush().forEach(handleEvent);
 
   if (streamError) throw streamError;
 
@@ -460,7 +507,13 @@ export function hydrateTwinChat() {
       else storage?.removeItem(CHAT_STORAGE_KEY);
     }
   } catch (error) {
+    // Unreadable: drop it, or it fails again on every load.
     console.warn("Failed to restore AI Twin chat history:", error);
+    try {
+      storage?.removeItem(CHAT_STORAGE_KEY);
+    } catch {
+      // Storage itself is unavailable; nothing to clean up.
+    }
   }
   const known = new Set(stored.map((message) => message.id));
   const added = snapshot.messages.filter((message) => message.id !== WELCOME_ID && !known.has(message.id));
@@ -510,11 +563,15 @@ export async function sendTwinMessage(request: SendRequest, options: SendOptions
   if (!msg || sending) return false;
 
   if (options.unavailable) {
-    setMessages((prev) => {
-      const last = prev[prev.length - 1];
-      if (last?.role === "assistant" && last.content === OFFLINE_ASSISTANT_MESSAGE) return prev;
-      return [...prev, { id: createMessageId(), role: "assistant", content: OFFLINE_ASSISTANT_MESSAGE }];
-    });
+    // Keep the question (it was cleared from the input) and anchor the turn on
+    // it, so the offline note is paired with it rather than an older question.
+    const userId = createMessageId();
+    setMessages((prev) => [
+      ...prev,
+      { id: userId, role: "user", content: msg },
+      { id: createMessageId(), role: "assistant", content: OFFLINE_ASSISTANT_MESSAGE },
+    ]);
+    update({ turnAnchorId: userId });
     return true;
   }
 

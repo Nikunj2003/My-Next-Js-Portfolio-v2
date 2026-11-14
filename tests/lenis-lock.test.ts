@@ -2,93 +2,88 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const SOURCE = readFileSync("src/hooks/useLenisLock.ts", "utf8");
-
-/**
- * Guards how overlays stop the page from scrolling behind them.
- *
- * The previous version of this file only re-implemented the reference counter
- * inline and asserted against its own copy — so it stayed green while the hook
- * switched mechanism entirely, and could never have caught the bug it was
- * nominally protecting: `data-lenis-prevent` on `body` matched every wheel
- * event and silently disabled smooth scrolling site-wide.
- *
- * These tests read the real hook instead.
- */
+const SOURCE = readFileSync("src/lib/scroll-lock.ts", "utf8");
 
 test("the lock never uses data-lenis-prevent on body", () => {
-  // Lenis slices composedPath() up to `rootElement` (document.documentElement),
-  // and `body` sits below html in that path — so it survives the slice and
-  // matches on EVERY wheel event, making Lenis bail out page-wide. The symptom
-  // is the page reverting to native scroll speed whenever an overlay is open.
-  assert.doesNotMatch(
-    SOURCE,
-    /data-lenis-prevent/,
-    "marking body prevents Lenis globally; lock the instance instead"
-  );
-  assert.doesNotMatch(SOURCE, /document\.body\.setAttribute/, "must not mark body at all");
+  // Lenis slices composedPath() up to html, and body survives the slice, so the
+  // attribute on body matches every wheel event and disables smooth scroll site-wide.
+  assert.doesNotMatch(SOURCE, /data-lenis-prevent/);
+  assert.doesNotMatch(SOURCE, /setAttribute/);
 });
 
 test("the lock uses isLocked, not stop()", () => {
-  // `stop()` and `isLocked` share the same early-return branch, but stop() also
-  // halts the animation loop, so the first scroll after closing jumps instead
-  // of easing.
-  assert.match(SOURCE, /isLocked = true/, "must lock the running Lenis instance");
-  assert.match(SOURCE, /isLocked = false/, "must release the lock on teardown");
-  assert.doesNotMatch(SOURCE, /\.stop\(\)/, "stop() kills the animation loop; use isLocked");
+  // stop() also halts the animation loop, so the first scroll after closing jumps.
+  assert.match(SOURCE, /lenis\.isLocked = locked/);
+  assert.doesNotMatch(SOURCE, /\.stop\(\)/);
 });
 
-test("the lock is reference counted", () => {
-  // The palette can open over the AI Twin; the first to close must not release
-  // the lock while the other is still open.
-  assert.match(SOURCE, /lockCount \+= 1/, "must count acquisitions");
-  assert.match(SOURCE, /lockCount === 1/, "must only lock on the first overlay");
-  assert.match(SOURCE, /lockCount === 0/, "must only release when the last one closes");
-  assert.match(SOURCE, /if \(lockCount === 0\) return;/, "a stray release must bail before decrementing");
+test("the lock is re-asserted after Lenis restarts", () => {
+  // lenis.start() resets the instance and clears isLocked: after a tab switch
+  // the page scrolled behind an open overlay.
+  const smooth = readFileSync("src/components/SmoothScroll.tsx", "utf8");
+  const resume = smooth.slice(smooth.indexOf("lenis.start();"));
+  assert.match(resume.slice(0, 200), /reapplyScrollLock\(\)/, "re-lock right after start()");
+  assert.match(smooth, /appWindow\.__lenis = lenis;\n\s*\/\/[^\n]*\n\s*reapplyScrollLock\(\)/, "and once Lenis exists");
 });
 
-test("a missing Lenis instance is tolerated", () => {
-  // Lenis is initialised by SmoothScroll in an effect, so an overlay opened
-  // before that runs (or with reduced motion) must not throw.
-  assert.match(SOURCE, /if \(lenis\)/, "must guard against Lenis not being ready");
+function fakeDom(lenis: { isLocked: boolean } | undefined, coarse = false) {
+  const body = { style: { overflow: "" } };
+  const html = { style: { overflow: "" } };
+  (globalThis as unknown as { window: unknown }).window = { __lenis: lenis, matchMedia: () => ({ matches: coarse }) };
+  (globalThis as unknown as { document: unknown }).document = { body, documentElement: html };
+  return { body, html };
+}
+
+test("nested overlays lock once and release once; a stray release is ignored", async () => {
+  const lock = await import("../src/lib/scroll-lock.ts");
+  const lenis = { isLocked: false };
+  fakeDom(lenis);
+  lock.acquireScrollLock();
+  lock.acquireScrollLock();
+  assert.equal(lenis.isLocked, true);
+  lock.releaseScrollLock();
+  assert.equal(lenis.isLocked, true, "the first to close must not release the other's lock");
+  lock.releaseScrollLock();
+  assert.equal(lenis.isLocked, false);
+  lock.releaseScrollLock();
+  assert.equal(lock.isScrollLocked(), false, "count must not go negative");
 });
 
-/**
- * Behavioural check on the counting itself, driven through the same branch
- * logic the hook uses, so a refactor that breaks pairing is caught.
- */
-test("nested overlays lock once and release once", () => {
-  let locked = 0;
-  let released = 0;
-  let count = 0;
+test("after Lenis resets itself, reapply locks it again", async () => {
+  const lock = await import("../src/lib/scroll-lock.ts");
+  const lenis = { isLocked: false };
+  fakeDom(lenis);
+  lock.acquireScrollLock();
+  lenis.isLocked = false; // what lenis.start() does
+  lock.reapplyScrollLock();
+  assert.equal(lenis.isLocked, true);
+  lock.releaseScrollLock();
+});
 
-  const acquire = () => {
-    count += 1;
-    if (count === 1) locked += 1;
-  };
-  const release = () => {
-    // Mirrors the hook: bail before decrementing, so a stray release cannot
-    // re-run the unlock.
-    if (count === 0) return;
-    count -= 1;
-    if (count === 0) released += 1;
-  };
+test("without Lenis (reduced motion) the page is locked with overflow, restored in order", async () => {
+  const lock = await import("../src/lib/scroll-lock.ts");
+  const { body, html } = fakeDom(undefined);
+  body.style.overflow = "clip";
+  lock.acquireScrollLock();
+  assert.equal(body.style.overflow, "hidden");
+  assert.equal(html.style.overflow, "hidden");
+  lock.acquireScrollLock();
+  lock.releaseScrollLock();
+  assert.equal(body.style.overflow, "hidden", "still locked while another overlay is open");
+  lock.releaseScrollLock();
+  assert.equal(body.style.overflow, "clip", "the original value comes back once");
+  assert.equal(html.style.overflow, "");
+});
 
-  acquire(); // AI Twin
-  acquire(); // palette over it
-  assert.deepEqual({ locked, released }, { locked: 1, released: 0 });
-
-  release(); // palette closes — page must stay locked
-  assert.deepEqual({ locked, released }, { locked: 1, released: 0 });
-
-  release(); // twin closes — now released
-  assert.deepEqual({ locked, released }, { locked: 1, released: 1 });
-
-  release(); // stray release
-  assert.equal(count, 0, "count must not go negative");
-
-  acquire();
-  assert.deepEqual({ locked, released }, { locked: 2, released: 1 }, "a later lock still applies");
+test("on touch screens overflow is locked too (touch bypasses Lenis)", async () => {
+  const lock = await import("../src/lib/scroll-lock.ts");
+  const lenis = { isLocked: false };
+  const { body } = fakeDom(lenis, true);
+  lock.acquireScrollLock();
+  assert.equal(lenis.isLocked, true);
+  assert.equal(body.style.overflow, "hidden");
+  lock.releaseScrollLock();
+  assert.equal(body.style.overflow, "");
 });
 
 /**

@@ -4,6 +4,8 @@ import { scrollToElement, scrollToHash } from "@/lib/scroll";
 
 const RING_MS = 2600;
 let ringTimer: ReturnType<typeof setTimeout> | null = null;
+/** Clears the gaze after a navigation; replaced (not stacked) by the next one. */
+let pointTimer: ReturnType<typeof setTimeout> | null = null;
 
 /** Rings an element for a moment. CSS does the drawing (`[data-guide-active]`). */
 export function highlightGuideTarget(target: string) {
@@ -20,6 +22,8 @@ export function highlightGuideTarget(target: string) {
 export function clearGuideHighlight() {
   if (ringTimer) clearTimeout(ringTimer);
   ringTimer = null;
+  if (pointTimer) clearTimeout(pointTimer);
+  pointTimer = null;
   if (typeof document === "undefined") return;
   document.querySelectorAll("[data-guide-active]").forEach((node) => node.removeAttribute("data-guide-active"));
 }
@@ -50,14 +54,16 @@ export function runGuideAction(action: GuideAction, router: Router, onDone?: () 
       const element = ringTarget ? document.querySelector(guideTargetSelector(ringTarget)) : document.querySelector(href);
       if (ringTarget) highlightGuideTarget(ringTarget);
       if (element) emitGuide({ type: "guide/point", pointAt: pointOfElement(element) });
-      window.setTimeout(() => emitGuide({ type: "guide/point", pointAt: null }), RING_MS);
+      if (pointTimer) clearTimeout(pointTimer);
+      pointTimer = setTimeout(() => emitGuide({ type: "guide/point", pointAt: null }), RING_MS);
       onDone?.();
     };
     if (highlight?.startsWith("project:")) {
       const card = document.querySelector(guideTargetSelector(highlight));
       if (card instanceof HTMLElement) {
         scrollToElement(card, { onComplete });
-        window.history.pushState(null, "", href);
+        // One history entry per destination, so Back isn't pressed twice.
+        if (window.location.hash !== href) window.history.pushState(null, "", href);
         return "scroll";
       }
     }

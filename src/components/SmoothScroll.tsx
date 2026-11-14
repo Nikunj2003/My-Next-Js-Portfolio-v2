@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import Lenis from 'lenis';
 import { scrollToHash, scrollToTop } from '@/lib/scroll';
+import { reapplyScrollLock } from '@/lib/scroll-lock';
 
 type LenisWindow = Window & typeof globalThis & {
   __lenis?: Lenis;
@@ -83,6 +84,8 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
 
     const appWindow = window as LenisWindow;
     appWindow.__lenis = lenis;
+    // An overlay may already be open (opened before Lenis existed).
+    reapplyScrollLock();
 
     /**
      * Align Lenis with wherever the browser actually restored the page.
@@ -129,6 +132,8 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
       }
 
       lenis.start();
+      // start() resets Lenis, clearing isLocked: re-lock behind open overlays.
+      reapplyScrollLock();
       startRaf();
     };
 
