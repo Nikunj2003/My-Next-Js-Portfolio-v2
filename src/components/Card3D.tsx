@@ -108,13 +108,7 @@ const Card3D = ({ children, className = "" }: Card3DProps) => {
   };
 
   return (
-    <motion.div
-      className={`relative ${className}`}
-      initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: shouldReduceMotion ? 0.2 : 1.0, delay: shouldReduceMotion ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
-      style={{ perspective: 1000 }}
-    >
+    <div className={`relative ${className}`} style={{ perspective: 1000 }}>
       <motion.div
         onPointerEnter={isInteractive ? handlePointerEnter : undefined}
         onPointerMove={isInteractive ? handlePointerMove : undefined}
@@ -136,7 +130,7 @@ const Card3D = ({ children, className = "" }: Card3DProps) => {
           }}
         />
       </motion.div>
-    </motion.div>
+    </div>
   );
 };
 

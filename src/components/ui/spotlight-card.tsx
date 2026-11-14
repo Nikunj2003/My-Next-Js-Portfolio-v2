@@ -1,18 +1,14 @@
 "use client";
 import { motion, useMotionTemplate, useMotionValue, useReducedMotion } from "framer-motion";
-import { useInView } from "react-intersection-observer";
 import { type PointerEvent, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { revealTransition } from "@/lib/motion";
 
 interface SpotlightCardProps {
   children: React.ReactNode;
-  delay?: number;
   className?: string;
   glowColor?: string;
   glowSize?: number;
   glowOpacity?: number;
-  animateOnEnter?: boolean;
   /**
    * Renders the card fully opaque with no backdrop blur.
    *
@@ -27,12 +23,10 @@ interface SpotlightCardProps {
 
 export function SpotlightCard({
   children,
-  delay = 0,
   className,
   glowColor = "hsl(var(--accent) / 0.08)", // Default teal accent glow
   glowSize = 650,
   glowOpacity = 100,
-  animateOnEnter = true,
   opaque = false,
 }: SpotlightCardProps) {
   const mouseX = useMotionValue(0);
@@ -43,7 +37,6 @@ export function SpotlightCard({
   const boundsRef = useRef<DOMRect | null>(null);
   const pointRef = useRef<{ x: number; y: number } | null>(null);
   const frameRef = useRef<number | null>(null);
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0, rootMargin: '100px 0px 100px 0px' });
   const shouldReduceMotion = useReducedMotion();
   const spotlightBackground = useMotionTemplate`
     radial-gradient(
@@ -126,26 +119,13 @@ export function SpotlightCard({
     setIsHovered(false);
   }
 
-  const setRefs = (node: HTMLDivElement | null) => {
-    elementRef.current = node;
-
-    if (animateOnEnter) {
-      ref(node);
-    }
-  };
-
   return (
     <motion.div
-      ref={setRefs}
       /*
-        Slide only, no opacity fade — matching `revealInitial` in lib/motion.
-        A glass card faded in from `opacity: 0` reads as flat until the fade
-        finishes, so every card on the page looked non-glass for up to a second
-        after load. See the note in lib/motion.ts.
+        No entrance animation: sections carry their own motion (sticky
+        panels, the card deck, the timeline), and a per-card slide on scroll
+        stacked on top of it.
       */
-      initial={animateOnEnter ? (shouldReduceMotion ? {} : { y: 30 }) : false}
-      animate={animateOnEnter ? (inView ? { y: 0 } : {}) : undefined}
-      transition={animateOnEnter ? revealTransition(shouldReduceMotion, delay) : undefined}
       onPointerEnter={isInteractive ? handlePointerEnter : undefined}
       onPointerMove={isInteractive ? handlePointerMove : undefined}
       onPointerLeave={isInteractive ? handlePointerLeave : undefined}

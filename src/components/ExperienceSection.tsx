@@ -15,7 +15,6 @@ import { getCaseStudyPath } from "@/data/case-studies";
 import AskAboutThis, { ReadCaseStudyLink } from "@/components/AskAboutThis";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import FlipWords from "@/components/ui/flip-words";
-import Reveal from "@/components/ui/reveal";
 
 function TimelineIcon({
   timelineRef,
@@ -90,12 +89,10 @@ function TimelineIcon({
 
 function ExperienceItem({
   exp,
-  index,
   timelineRef,
   lineProgress,
 }: {
   exp: Experience;
-  index: number;
   timelineRef: React.RefObject<HTMLDivElement | null>;
   lineProgress: MotionValue<number>;
 }) {
@@ -106,7 +103,7 @@ function ExperienceItem({
   return (
     <li ref={ref} className="relative mb-12 flex w-full flex-col gap-1 pl-[50px] sm:mb-16 sm:pl-[90px]">
       <TimelineIcon timelineRef={timelineRef} lineProgress={lineProgress} />
-      <SpotlightCard delay={index * 0.08} className="h-full">
+      <SpotlightCard className="h-full">
         <div className="p-6 md:p-8">
           <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
@@ -256,7 +253,7 @@ const ExperienceSection = () => {
       <div className="container-narrow">
         <div className="flex flex-col items-start gap-12 lg:flex-row lg:gap-20">
           <div className="w-full shrink-0 lg:sticky lg:top-32 lg:w-1/3">
-            <Reveal axis="x" offset={-24}>
+            <div>
               <div className="panel-sticky" data-guide-target="experience-intro">
                 <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
                 <div className="absolute -bottom-20 -left-16 h-40 w-40 rounded-full bg-accent/10 blur-3xl" />
@@ -282,7 +279,7 @@ const ExperienceSection = () => {
                   </div>
                 </div>
               </div>
-            </Reveal>
+            </div>
           </div>
 
           <div className="relative w-full lg:w-2/3" ref={timelineRef}>
@@ -294,11 +291,10 @@ const ExperienceSection = () => {
             />
 
             <ul className="relative w-full py-4">
-              {experiences.map((experience, index) => (
+              {experiences.map((experience) => (
                 <ExperienceItem
                   key={`${experience.company}-${experience.period}`}
                   exp={experience}
-                  index={index}
                   timelineRef={timelineRef}
                   lineProgress={scrollYProgress}
                 />

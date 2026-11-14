@@ -1,7 +1,6 @@
 import { Brain, Layers, Database, Server, Wrench } from "lucide-react";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import FlipWords from "@/components/ui/flip-words";
-import Reveal from "@/components/ui/reveal";
 import { skillCategories } from "@/data/portfolio";
 import AskAboutThis from "@/components/AskAboutThis";
 
@@ -51,11 +50,11 @@ const SkillsSection = () => {
 
           {/* Right Column: Spotlight Cards */}
           <div className="flex w-full flex-col gap-6 lg:w-2/3">
-            {skillCategories.map((cat, index) => {
+            {skillCategories.map((cat) => {
               const Icon = CATEGORY_ICONS[cat.title] ?? Wrench;
               return (
-                <Reveal key={cat.title} delay={index * 0.08}>
-                  <SpotlightCard animateOnEnter={false} className="w-full">
+                <div key={cat.title}>
+                  <SpotlightCard className="w-full">
                     <div className="p-8 sm:p-10">
                       {/*
                         The pill sits OUTSIDE this row, not in the text column.
@@ -96,7 +95,7 @@ const SkillsSection = () => {
                       </ul>
                     </div>
                   </SpotlightCard>
-                </Reveal>
+                </div>
               );
             })}
           </div>

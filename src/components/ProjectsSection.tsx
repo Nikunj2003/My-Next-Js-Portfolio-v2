@@ -17,7 +17,6 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import Reveal from "@/components/ui/reveal";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import ProjectImageViewer from "@/components/ProjectImageViewer";
 
@@ -184,13 +183,13 @@ function ProjectCard({
         glass; do not "fix" it to use a glass tier.
       */}
       {/*
-        animateOnEnter={false}: the reveal animation fades element opacity from 0
+       : the reveal animation fades element opacity from 0
         to 1, and a half-faded opaque card is translucent — so on refresh the card
         below showed through for the length of the animation. Fading in a member
         of a deliberately opaque stack cannot work; the deck reveals itself
         through the sticky scroll offsets instead.
       */}
-      <SpotlightCard opaque animateOnEnter={false} className="relative w-full border-black/10 dark:border-white/10">
+      <SpotlightCard opaque className="relative w-full border-black/10 dark:border-white/10">
         <div className={`flex min-h-[26rem] flex-col ${isEven ? "lg:flex-row" : "lg:flex-row-reverse"}`}>
           {/* Content */}
           <div className="static z-10 flex flex-1 flex-col justify-center p-6 sm:p-8 lg:w-[42%] lg:p-10">
@@ -297,7 +296,7 @@ const ProjectsSection = () => {
 
       <div className="container-narrow">
         {/* Centered Header */}
-        <Reveal className="mb-16 flex flex-col items-center text-center">
+        <div className="mb-16 flex flex-col items-center text-center">
           <div className="mb-6 inline-flex items-center rounded-full border border-primary/20 px-3 py-1.5 font-mono text-xs text-primary-text glass-subtle">
             Work
           </div>
@@ -308,30 +307,30 @@ const ProjectsSection = () => {
             Agent systems, retrieval, and platform work I own at ArmorCode, GenAI products shipped at Xansr Media,
             and the products I have built on my own.
           </p>
-        </Reveal>
+        </div>
 
         {/* Tier 1 — the featured case studies, the only cards carrying metrics on
             their face. Labelled by what they are rather than by employer, since the
             row sits above a link to all 13 studies across three contexts. */}
-        <Reveal className="mb-6">
+        <div className="mb-6">
           <div className="flex items-center gap-4">
             <h3 className="font-mono text-xs uppercase tracking-widest text-primary-text">Featured case studies</h3>
             <span className="h-px flex-1 bg-gradient-to-r from-primary/30 to-transparent" />
           </div>
-        </Reveal>
+        </div>
 
         <div className="grid gap-6 lg:grid-cols-3" data-guide-target="work-featured">
-          {featuredCaseStudies.map((study, index) => (
-            <Reveal key={study.slug} delay={index * 0.08} className="h-full">
+          {featuredCaseStudies.map((study) => (
+            <div key={study.slug} className="h-full">
               {/* h4: the group label above this row is an h3. */}
               <CaseStudyCard study={study} headingLevel="h4" />
-            </Reveal>
+            </div>
           ))}
         </div>
 
         {/* The row is a fixed three-column grid, so the rest of the studies are
             reached here rather than by growing it into a lopsided second row. */}
-        <Reveal className="mb-24 mt-6">
+        <div className="mb-24 mt-6">
           <Link
             href="/work"
             className="group/all inline-flex items-center gap-2 text-sm font-semibold text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -339,17 +338,17 @@ const ProjectsSection = () => {
             View all {caseStudies.length} case studies
             <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover/all:translate-x-1 motion-reduce:transition-none" />
           </Link>
-        </Reveal>
+        </div>
 
         {/* Tier 2 — shipped personal products */}
-        <Reveal className="mb-8">
+        <div className="mb-8">
           <div className="flex items-center gap-4">
             <h3 className="font-mono text-xs uppercase tracking-widest text-primary-text">
               Built and shipped
             </h3>
             <span className="h-px flex-1 bg-gradient-to-r from-primary/30 to-transparent" />
           </div>
-        </Reveal>
+        </div>
 
         {/* Sticky stacked deck — cards overlap into a stack as you scroll. */}
         <div className="relative mb-20 flex flex-col gap-8 pb-20">
@@ -361,7 +360,7 @@ const ProjectsSection = () => {
 
         {/* Also built — kept in the data and in the AI Twin context, just not
             consuming a full card each. */}
-        <Reveal>
+        <div>
           <div>
             <div className="mb-6 flex items-center gap-4">
               <h3 className="font-mono text-xs uppercase tracking-widest text-primary-text">Also built</h3>
@@ -411,10 +410,10 @@ const ProjectsSection = () => {
               ))}
             </ul>
           </div>
-        </Reveal>
+        </div>
 
         {/* View more on GitHub */}
-        <Reveal delay={0.1} className="mt-12 flex justify-center">
+        <div className="mt-12 flex justify-center">
           <a
             href="https://github.com/Nikunj2003"
             target="_blank"
@@ -424,7 +423,7 @@ const ProjectsSection = () => {
             <Github className="h-5 w-5" />
             Explore more repositories
           </a>
-        </Reveal>
+        </div>
 
         {activeViewerProject && (
           <ProjectImageViewer

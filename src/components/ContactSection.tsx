@@ -13,7 +13,6 @@ import {
 } from "@/lib/contact";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
-import Reveal from "@/components/ui/reveal";
 import Card3D from "./Card3D";
 import cardImage from "@/assets/card.png";
 
@@ -147,7 +146,7 @@ const ContactSection = () => {
       <div className="container-narrow">
 
         {/* Heading */}
-        <Reveal className="mb-14 text-center">
+        <div className="mb-14 text-center">
           <div className="inline-flex items-center px-3 py-1.5 rounded-full glass-subtle border border-primary/20 text-xs font-mono text-primary mb-6">
             Connect
           </div>
@@ -157,10 +156,10 @@ const ContactSection = () => {
           <p className="text-muted-foreground max-w-xl mx-auto text-base leading-relaxed">
             {personalInfo.focus}
           </p>
-        </Reveal>
+        </div>
 
         {/* Mobile-only card */}
-        <Reveal delay={0.05} className="mx-auto mb-10 block w-full max-w-xs sm:max-w-sm lg:hidden">
+        <div className="mx-auto mb-10 block w-full max-w-xs sm:max-w-sm lg:hidden">
           <Card3D>
             <Image
               src={cardImage}
@@ -171,13 +170,13 @@ const ContactSection = () => {
               sizes="(min-width: 640px) 384px, 100vw"
             />
           </Card3D>
-        </Reveal>
+        </div>
 
         {/* Two equal panels with Spotlight */}
         <div className="grid items-stretch gap-6 lg:grid-cols-2">
 
           {/* Left panel */}
-          <SpotlightCard delay={0.1} className="h-full">
+          <SpotlightCard className="h-full">
             <div className="p-6 sm:p-8 md:p-10 flex flex-col gap-6 h-full">
               {/* Grows to fill */}
               <div className="flex flex-col gap-6 flex-1">
@@ -230,7 +229,7 @@ const ContactSection = () => {
           </SpotlightCard>
 
           {/* Right panel — Form */}
-          <SpotlightCard delay={0.2} className="h-full">
+          <SpotlightCard className="h-full">
             <form data-guide-target="contact-form" onSubmit={handleSubmit} className="relative p-6 sm:p-8 md:p-10 flex flex-col gap-6 h-full" aria-busy={isSubmitting} noValidate>
               <div className="absolute left-[-10000px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
                 <label htmlFor="contact-website">Website</label>

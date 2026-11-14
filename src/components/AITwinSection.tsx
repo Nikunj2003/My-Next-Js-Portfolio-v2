@@ -3,7 +3,6 @@ import { Bot, MessageCircle } from "lucide-react";
 import { chatSuggestions } from "@/data/portfolio";
 import { useChatAvailability } from "@/hooks/useChatAvailability";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
-import Reveal from "@/components/ui/reveal";
 
 const AITwinSection = () => {
   const { isAvailable, status, canAttemptChat } = useChatAvailability();
@@ -33,7 +32,7 @@ const AITwinSection = () => {
   return (
     <section id="ai-twin" className="section-padding relative z-10">
       <div className="container-narrow">
-        <Reveal>
+        <div>
           <SpotlightCard className="w-full relative">
             <div className="relative p-6 sm:p-8 md:p-12 lg:p-16 flex flex-col lg:flex-row items-center gap-12 lg:gap-16 text-center lg:text-left">
               {/* Background Glow */}
@@ -110,7 +109,7 @@ const AITwinSection = () => {
               </div>
             </div>
           </SpotlightCard>
-        </Reveal>
+        </div>
       </div>
     </section>
   );
