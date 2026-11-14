@@ -16,6 +16,7 @@ import {
   clampToViewport,
   cornerPoint,
   easeInOutCubic,
+  FADE_SHARE,
   gutterPoint,
   heroHandoffFrame,
   heroHandoffProgress,
@@ -97,6 +98,7 @@ export default function GuideCompanion() {
   // The hero avatar reports itself (desktop homepage only, with hysteresis).
   const heroVisible = isHome && companion.heroVisible;
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const mirrorRef = useRef<HTMLSpanElement>(null);
 
   // Written by the frame loop below, read by the avatar layer and the bubble.
   const posX = useMotionValue(0);
@@ -108,6 +110,9 @@ export default function GuideCompanion() {
   const [lowPower] = useState(() => typeof navigator !== "undefined" && prefersStatic());
   // True while the hero hand-off is between its ends (set by the loop on change only).
   const [handingOffState, setHandingOffState] = useState(false);
+  // Past the cross-fade but still on its way to the spot (the hero is gone).
+  const [travelling, setTravelling] = useState(false);
+  const travellingRef = useRef(false);
   const handingOffRef = useRef(false);
 
   // Availability drives the "offline" sleep.
@@ -275,9 +280,18 @@ export default function GuideCompanion() {
 
       // Nothing to draw while hidden and not mid hand-off; keep tracking the section only.
       const handingOff = heroHere && morph > 0 && morph < 1;
-      if (handingOff !== handingOffRef.current) {
-        handingOffRef.current = handingOff;
-        setHandingOffState(handingOff);
+      // The copied hero face is only needed while the two discs overlap
+      // (the cross-fade); after it the hero is invisible and the companion's
+      // own avatar takes over for the rest of its trip, facing where it goes.
+      const mirroring = handingOff && morph < FADE_SHARE;
+      const onTheWay = handingOff && !mirroring;
+      if (onTheWay !== travellingRef.current) {
+        travellingRef.current = onTheWay;
+        setTravelling(onTheWay);
+      }
+      if (mirroring !== handingOffRef.current) {
+        handingOffRef.current = mirroring;
+        setHandingOffState(mirroring);
       }
       // The hand-off point decides which avatar is the guide (and hosts the
       // ask box), so the conversation moves exactly when the avatars swap.
@@ -312,6 +326,7 @@ export default function GuideCompanion() {
       if (heroHere && heroBox && morph < 1) {
         const frame = heroHandoffFrame({ t: morph, heroCentre, heroDiameter: heroBox.width, size, spot: target });
         styleHero(frame);
+        if (hero && morph < FADE_SHARE) mirrorHero(hero, mirrorRef.current, size);
         point = frame.position;
         glideRef.current = null;
         scale.set(frame.companionScale);
@@ -463,12 +478,23 @@ export default function GuideCompanion() {
             (visible ? "pointer-events-auto cursor-pointer" : "pointer-events-none")
           }
         >
+          {/* During the hand-off this shows the hero avatar's own drawing, copied
+              each frame (see `mirrorHero`), so the two discs are the same face in
+              the same pose and the cross-fade can't show two different
+              expressions. The companion's own live avatar takes over once the
+              hand-off is done. */}
+          <span
+            ref={mirrorRef}
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 flex items-center justify-center"
+            style={{ display: handingOffState ? "flex" : "none" }}
+          />
           {lowPower ? (
             <StaticGuideMark size={size - 16} />
           ) : (
-            // Live from the start of the hand-off, so the two avatars cross-fade
-            // as two live faces; paused only while it is fully hidden.
-            <GuideAvatar size={size - 16} lookAt={lookAt} settleAfterMs={10_000} paused={!visible && !handingOffState} />
+            <span style={{ visibility: handingOffState ? "hidden" : "visible", display: "inline-flex" }}>
+              <GuideAvatar size={size - 16} lookAt={lookAt} settleAfterMs={10_000} paused={!visible && !travelling} />
+            </span>
           )}
         </button>
       </motion.div>
@@ -498,6 +524,55 @@ export default function GuideCompanion() {
  * place and the avatar keeps its layout size, so read the wrapper's top and
  * left and the avatar's offset size: no transform is involved.
  */
+/**
+ * Copies the hero avatar's current drawing into the companion while the two
+ * cross-fade, scaled to the companion's face size. One face, one pose, one
+ * expression on both discs: two separate avatars, each with its own idle
+ * motion, gaze and blink, never line up. Cheap: the drawing is a few dozen
+ * SVG nodes, and only its attributes are copied when they change.
+ */
+let mirrorIds = 0;
+function mirrorHero(hero: HTMLElement, mirror: HTMLElement | null, size: number) {
+  if (!mirror) return;
+  const source = [...hero.querySelectorAll<SVGSVGElement>("svg")].find((svg) => svg.querySelectorAll("*").length > 20);
+  if (!source) return;
+  let copy = mirror.firstElementChild as SVGSVGElement | null;
+  if (!copy || copy.dataset.from !== source.dataset.mirrorId) {
+    source.dataset.mirrorId ??= String((mirrorIds += 1));
+    copy = source.cloneNode(true) as SVGSVGElement;
+    copy.dataset.from = source.dataset.mirrorId;
+    // Ids inside the clone (clip paths) must not collide with the hero's.
+    copy.querySelectorAll("[id]").forEach((node) => node.setAttribute("id", `m-${node.id}`));
+    copy.querySelectorAll("[clip-path]").forEach((node) => node.setAttribute("clip-path", (node.getAttribute("clip-path") ?? "").replace(/url\(#/g, "url(#m-")));
+    mirror.replaceChildren(copy);
+  } else {
+    const from = source.querySelectorAll("*");
+    const to = copy.querySelectorAll("*");
+    if (from.length !== to.length) {
+      mirror.replaceChildren();
+      return;
+    }
+    from.forEach((node, index) => {
+      const target = to[index];
+      for (const attr of ["d", "transform", "opacity", "visibility", "fill", "cx", "cy", "rx", "ry", "x", "y", "width", "height"]) {
+        const value = node.getAttribute(attr);
+        if (value !== target.getAttribute(attr)) {
+          if (value === null) target.removeAttribute(attr);
+          else target.setAttribute(attr, value);
+        }
+      }
+    });
+  }
+  // The library sizes its svg with an inline style (300px for the hero), which
+  // beats the width attribute: set the style, or the copy is drawn at the
+  // hero's size inside the scaled-up companion (a face filling the screen).
+  const inner = `${size - 16}px`;
+  if (copy.style.width !== inner) {
+    copy.style.width = inner;
+    copy.style.height = inner;
+  }
+}
+
 function heroLayoutRect(hero: HTMLElement) {
   const wrapper = cachedNode<HTMLElement>("hero-wrapper", () => hero.closest<HTMLElement>('[data-guide-target="hero-guide"]')) ?? hero;
   const box = wrapper.getBoundingClientRect();

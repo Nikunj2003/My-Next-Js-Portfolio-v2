@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { AnimatePresence, frameData, motion, useReducedMotion, useTransform, type MotionValue } from "framer-motion";
+import { AnimatePresence, cancelFrame, frame, motion, useMotionValue, useReducedMotion, type MotionValue } from "framer-motion";
 import { ArrowRight, X } from "lucide-react";
 import { AskContent } from "@/components/guide/AskContent";
 import { dispatchCompanion, useCompanionState } from "@/lib/guide/companion-store";
@@ -44,9 +44,9 @@ type TwinBubbleProps = {
  * The companion's speech bubble: the ask box, a tip, or the tour narration.
  *
  * On desktop its position is a pure function of the avatar's position
- * (`placeBubbleBeside`), computed with `useTransform` from the same motion
- * values the avatar is drawn with. So it is written in the same frame as the
- * avatar, every frame, whatever the scroll speed: it can't lag or jitter.
+ * (`placeBubbleBeside`), computed by one step on Framer Motion's frame loop
+ * right after the companion is placed. So it is written in the same frame as
+ * the avatar, every frame, whatever the scroll speed: it can't lag or jitter.
  * Its side is fixed per spot (it never swaps mid-scroll), it is clamped to the
  * screen, and its height is capped by the usable screen height, with the
  * answer scrolling inside. The same for every variant.
@@ -150,21 +150,13 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
     const settle = window.setTimeout(() => choose(false), 600);
     return () => window.clearTimeout(settle);
   }, [choose, open, spotKey, showing]);
+  // Once the avatar has been still for a moment, choose again from the free
+  // space where it now rests (the page moved under it while it rode along):
+  // the side held while scrolling may now cover the text being read.
   useEffect(() => {
     if (!open) return;
-    let frame = 0;
-    const schedule = () => {
-      if (!frame) frame = requestAnimationFrame(() => {
-        frame = 0;
-        choose(false);
-      });
-    };
-    // Once the avatar has been still for a moment, choose again from the free
-    // space where it now rests (the page moved under it while it rode along):
-    // the side held while scrolling may now cover the text being read.
     let rest = 0;
     const onMove = () => {
-      schedule();
       window.clearTimeout(rest);
       rest = window.setTimeout(() => choose(true), REST_MS);
     };
@@ -173,67 +165,89 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
     return () => {
       offX();
       offY();
-      cancelAnimationFrame(frame);
       window.clearTimeout(rest);
     };
   }, [anchorX, anchorY, choose, open]);
 
-  // Placed with the side checked for this very position, so a side that stops
-  // fitting is left at once. A change of side is a quick fade: out where it
-  // was, back in on the new side, both riding the avatar's live position. (A
-  // slide between the two crossed over the avatar on the way.)
+  // Placement runs as one step on Framer Motion's frame loop, right after the
+  // companion's (its `preRender`, after the companion's `update`), so the bubble is drawn in the same frame
+  // as the avatar. Each frame it checks the held side still fits, and a change
+  // of side is a short fade: out on the old side, in on the new, both riding
+  // the avatar's live position.
+  //
+  // Root cause of the lag it replaces: placement ran inside two motion-value transform
+  // callbacks, and while a side change was fading each call scheduled a fresh
+  // requestAnimationFrame that called it twice more, so the callbacks doubled
+  // every frame (18,000 in one 148ms task in a trace). Nothing here schedules
+  // itself: the loop is the clock.
+  const left = useMotionValue(0);
+  const top = useMotionValue(0);
+  const placeRef = useRef<(now: number) => void>(() => {});
   const switchRef = useRef<{ from: BubbleSide; start: number } | null>(null);
   const placedSideRef = useRef<BubbleSide | null>(null);
-  const place = (x: number, y: number) => {
-    const bubbleSize = { width: BUBBLE_WIDTH, height: heightRef.current };
-    let side = sideRef.current ?? openSide;
-    if (open) {
+  const filterRef = useRef("");
+  useLayoutEffect(() => {
+    placeRef.current = (now: number) => {
+      const x = anchorX.get();
+      const y = anchorY.get();
+      const bubbleSize = { width: BUBBLE_WIDTH, height: heightRef.current };
+      let side = sideRef.current ?? openSide;
       const fitted = chooseBubbleSide({ x, y }, anchorSize, bubbleSize, viewport, preferKey.split(",") as BubbleSide[], side);
       if (fitted !== side) {
         side = fitted;
         sideRef.current = fitted;
         // The data attribute and transform origin catch up on the next render.
-        queueMicrotask(() => setOpenSide(fitted));
+        setOpenSide(fitted);
       }
-    }
-    // Framer Motion's frame clock: the same timestamp the avatar was placed with.
-    const now = frameData.timestamp;
-    if (placedSideRef.current !== null && placedSideRef.current !== side && !reduceMotion) {
-      switchRef.current = { from: switchRef.current?.from ?? placedSideRef.current, start: now };
-    }
-    placedSideRef.current = side;
-    let shown = side;
-    let opacity = 1;
-    const run = switchRef.current;
-    if (run) {
-      const t = (now - run.start) / SIDE_SWITCH_MS;
-      if (t >= 1) switchRef.current = null;
-      else {
-        // First half: fading out on the old side, unless it would now cover
-        // the avatar (it moved into that side); then it only fades in, on the
-        // new side. Second half: in on the new one.
+      if (placedSideRef.current !== null && placedSideRef.current !== side && !reduceMotion) {
+        switchRef.current = { from: switchRef.current?.from ?? placedSideRef.current, start: now };
+      }
+      placedSideRef.current = side;
+
+      let shown = side;
+      let opacity = 1;
+      const run = switchRef.current;
+      if (run) {
+        // Skip the fade-out if the old side would now cover the avatar.
         const oldPlace = placeBubbleBeside({ x, y }, anchorSize, run.from, bubbleSize, viewport, GAP);
         const oldCovers =
           oldPlace.left < x + anchorSize && oldPlace.left + bubbleSize.width > x &&
           oldPlace.top < y + anchorSize && oldPlace.top + Math.min(bubbleSize.height, oldPlace.maxHeight) > y;
-        if (t < 0.5 && oldCovers) run.start = now - SIDE_SWITCH_MS / 2;
+        if ((now - run.start) / SIDE_SWITCH_MS < 0.5 && oldCovers) run.start = now - SIDE_SWITCH_MS / 2;
         const k = (now - run.start) / SIDE_SWITCH_MS;
-        shown = k < 0.5 ? run.from : side;
-        opacity = easeInOutCubic(Math.abs(1 - 2 * Math.min(1, k)));
-        // Keep it going even if the avatar is still.
-        requestAnimationFrame(() => {
-          left.set(place(anchorX.get(), anchorY.get()).left);
-          top.set(place(anchorX.get(), anchorY.get()).top);
-        });
+        if (k >= 1) switchRef.current = null;
+        else {
+          shown = k < 0.5 ? run.from : side;
+          opacity = easeInOutCubic(Math.abs(1 - 2 * k));
+        }
       }
+      const placed = placeBubbleBeside({ x, y }, anchorSize, shown, bubbleSize, viewport, GAP);
+      left.set(placed.left);
+      top.set(placed.top);
+      // The panel's entrance animates `opacity`; the swap uses `filter`, so they never fight.
+      const filter = opacity === 1 ? "" : `opacity(${opacity.toFixed(3)})`;
+      const el = nodeRef.current;
+      if (el && filter !== filterRef.current) {
+        filterRef.current = filter;
+        el.style.filter = filter;
+      }
+    };
+  });
+  useEffect(() => {
+    if (!open) {
+      switchRef.current = null;
+      placedSideRef.current = null;
+      filterRef.current = "";
+      return;
     }
-    // The panel's own entrance animates `opacity`; the swap uses `filter`, so the two never fight.
-    const el = nodeRef.current;
-    if (el) el.style.filter = opacity === 1 ? "" : `opacity(${opacity.toFixed(3)})`;
-    return placeBubbleBeside({ x, y }, anchorSize, shown, bubbleSize, viewport, GAP);
-  };
-  const left = useTransform([anchorX, anchorY], ([x, y]: number[]) => place(x, y).left);
-  const top = useTransform([anchorX, anchorY], ([x, y]: number[]) => place(x, y).top);
+    const step = ({ timestamp }: { timestamp: number }) => placeRef.current(timestamp);
+    // Placed once now (before the first paint of a new bubble), then every frame.
+    placeRef.current(performance.now());
+    // preRender: after every update step (the companion places the avatar
+    // there), before render, so the bubble always uses this frame's position.
+    frame.preRender(step, true);
+    return () => cancelFrame(step);
+  }, [open]);
   const maxHeight = bubbleMaxHeight(viewport);
 
   // Re-place when the content grows (an answer streaming in): bump the
@@ -258,8 +272,7 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
         const first = !measuredRef.current;
         measuredRef.current = true;
         heightRef.current = height;
-        left.set(place(anchorX.get(), anchorY.get()).left);
-        top.set(place(anchorX.get(), anchorY.get()).top);
+        placeRef.current(performance.now());
         // The first real measurement may show the guessed side doesn't fit.
         if (first) chooseRef.current(true);
         else chooseRef.current(false);
@@ -267,7 +280,6 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
     });
     observer.observe(node);
     return () => observer.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [node, open, showing, openSide, viewport]);
 
   // Wheel over the bubble: the answer area scrolls itself (it is marked

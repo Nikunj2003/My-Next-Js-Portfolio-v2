@@ -12,7 +12,8 @@ test("one frame loop places the avatar; the bubble is derived from the same valu
   const smooth = readFileSync(new URL("../src/components/SmoothScroll.tsx", import.meta.url), "utf8");
   assert.match(smooth, /frame\.read\(step, true\)/, "Lenis scrolls in the read step of the same loop");
   assert.match(companion, /anchorX=\{posX\}/);
-  assert.match(bubble, /useTransform\(\[anchorX, anchorY\]/);
+  // The bubble is placed by its own step on the same frame loop, after the companion's.
+  assert.match(bubble, /frame\.preRender\(step, true\)/);
   assert.match(bubble, /placeBubbleBeside/);
 });
 
@@ -67,7 +68,7 @@ test("phones keep the companion in the corner (touch scroll is native; riding it
 });
 
 test("the companion and the hero avatar pause when they can't be seen", () => {
-  assert.match(companion, /paused=\{!visible && !handingOffState\}/, "live during the hand-off");
+  assert.match(companion, /paused=\{!visible && !travelling\}/, "live while travelling to its spot");
   assert.match(companion, /prefersStatic\(\)/, "low-power devices get the still drawing");
   const hero = readFileSync(new URL("../src/components/guide/GuideHeroAvatar.tsx", import.meta.url), "utf8");
   assert.match(hero, /paused=\{isMobile \|\| handedOff\}/);
@@ -88,5 +89,18 @@ test("the hand-off is paced for a normal scroll, and a change of bubble side fad
   const placement = readFileSync(new URL("../src/lib/guide/placement.ts", import.meta.url), "utf8");
   assert.match(placement, /export const FADE_SHARE = 0\.45;/);
   assert.match(bubble, /const SIDE_SWITCH_MS = 260;/);
-  assert.match(bubble, /style\.filter = opacity === 1/);
+  assert.match(bubble, /el\.style\.filter = filter;/);
+});
+
+test("placing the bubble never schedules itself (it used to double its callbacks every frame)", () => {
+  assert.doesNotMatch(bubble, /useTransform/);
+  const placement = bubble.slice(bubble.indexOf("placeRef.current = (now: number) =>"), bubble.indexOf("frame.preRender(step, true)"));
+  assert.doesNotMatch(placement, /requestAnimationFrame/);
+});
+
+test("during the cross-fade both discs show one face (the companion mirrors the hero's drawing)", () => {
+  assert.match(companion, /mirrorHero\(hero, mirrorRef\.current, size\)/);
+  assert.match(companion, /const mirroring = handingOff && morph < FADE_SHARE;/);
+  // Sized by style: the library's inline 300px style beats a width attribute.
+  assert.match(companion, /copy\.style\.width = inner;/);
 });
