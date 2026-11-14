@@ -89,38 +89,59 @@ async function buildResponseError(response: Response) {
   });
 }
 
-function getErrorState(error: unknown, retryText: string, userMessageId?: string) {
-  if (error instanceof DOMException && error.name === "AbortError") {
+/**
+ * Error codes for an answer that started and then failed. The partial text
+ * stays on screen next to the error, so these never replace `content`.
+ */
+export const PARTIAL_ANSWER_NOTES: Record<string, string> = {
+  answer_cut_off: "The answer was cut off.",
+  answer_connection_lost: "The connection dropped before the answer finished.",
+  answer_timed_out: "The request timed out before the answer finished.",
+};
+
+/** The note to show beneath a kept partial answer, or null when the message isn't one. */
+export function partialAnswerNote(message: Pick<Message, "content" | "error">): string | null {
+  const code = message.error?.code;
+  if (!code || !message.content.trim()) return null;
+  return PARTIAL_ANSWER_NOTES[code] ?? null;
+}
+
+const NETWORK_ERROR_MESSAGE = "I couldn't reach the chat service just now. Check your connection and retry.";
+
+/** Wraps a failure of `fetch` or of reading the body. Only these count as network errors. */
+function networkError(partial: boolean) {
+  return createChatRequestError(partial ? PARTIAL_ANSWER_NOTES.answer_connection_lost : NETWORK_ERROR_MESSAGE, {
+    code: partial ? "answer_connection_lost" : "network_error",
+    retryable: true,
+  });
+}
+
+function isAbortError(error: unknown) {
+  return error instanceof DOMException && error.name === "AbortError";
+}
+
+function getErrorState(error: unknown, retryText: string, userMessageId: string | undefined, hasPartial: boolean) {
+  if (isAbortError(error)) {
+    const code = hasPartial ? "answer_timed_out" : "client_timeout";
     return {
-      content: "This request timed out before the assistant finished replying. Retry to send the same message again.",
-      error: {
-        code: "client_timeout",
-        retryable: true,
-        retryText,
-        userMessageId,
-      },
+      content: hasPartial
+        ? PARTIAL_ANSWER_NOTES.answer_timed_out
+        : "This request timed out before the assistant finished replying. Retry to send the same message again.",
+      error: { code, retryable: true, retryText, userMessageId },
     } satisfies Pick<Message, "content" | "error">;
   }
 
-  if (error instanceof TypeError) {
-    return {
-      content: "I couldn't reach the chat service just now. Check your connection and retry.",
-      error: {
-        code: "network_error",
-        retryable: true,
-        retryText,
-        userMessageId,
-      },
-    } satisfies Pick<Message, "content" | "error">;
-  }
-
-  const requestError = error as ChatRequestError;
+  // Anything else is a chat request error we raised on purpose. An unexpected
+  // exception (a bug, a TypeError from our own code) gets a generic message
+  // rather than being mislabelled as a network failure.
+  const requestError = error as Partial<ChatRequestError> | null;
+  const known = typeof requestError?.code === "string";
 
   return {
-    content: requestError.message || "Something went wrong while sending that message.",
+    content: known ? requestError!.message || "Something went wrong while sending that message." : "Something went wrong while sending that message.",
     error: {
-      code: requestError.code || "unknown_error",
-      retryable: requestError.retryable ?? true,
+      code: known ? requestError!.code! : "unknown_error",
+      retryable: requestError?.retryable ?? true,
       retryText,
       userMessageId,
     },
@@ -181,8 +202,8 @@ export async function consumeChatStream(
   onNavigate?: (call: ChatToolCall) => void,
   /**
    * Called when the answer text is final, which the server marks with `trace`.
-   * Suggestions are generated after that and can take a few seconds, so the
-   * input unlocks here instead of waiting for the stream to close.
+   * The answer is complete from here: later failures must not overwrite it.
+   * The send still counts as in flight until the stream closes.
    */
   onAnswerComplete?: () => void
 ): Promise<StreamOutcome> {
@@ -203,6 +224,7 @@ export async function consumeChatStream(
   let trace: ChatTrace | undefined;
   let toolCalls: ChatToolCall[] = [];
   let placed = false;
+  let sawDone = false;
   let streamError: unknown;
 
   const patch = (updater: (message: Message) => Message) => {
@@ -263,12 +285,14 @@ export async function consumeChatStream(
       case "trace": {
         trace = event.trace;
         patch((message) => ({ ...message, trace, streaming: false, status: undefined }));
-        emitGuide({ type: "chat/answer_end", grounded: event.trace.sources.length > 0 });
+        emitGuide({ type: "chat/answer_end", grounded: (event.trace?.sources?.length ?? 0) > 0 });
         onAnswerComplete?.();
         break;
       }
       case "suggestions": {
         suggestions = event.suggestions.filter((suggestion): suggestion is string => typeof suggestion === "string");
+        // Patched now, not only at the end, so they survive a stream that fails after the answer completed.
+        if (trace) patch((message) => ({ ...message, suggestions }));
         break;
       }
       case "status": {
@@ -283,13 +307,25 @@ export async function consumeChatStream(
         });
         break;
       }
+      case "done": {
+        sawDone = true;
+        break;
+      }
       default:
         break;
     }
   };
 
   while (true) {
-    const { done, value } = await reader.read();
+    let chunk: ReadableStreamReadResult<Uint8Array>;
+    try {
+      chunk = await reader.read();
+    } catch (error) {
+      // Our own timeout abort keeps its identity; any other read failure is a dropped connection.
+      if (isAbortError(error)) throw error;
+      throw networkError(content.length > 0 && !trace);
+    }
+    const { done, value } = chunk;
     if (done) break;
     // Progress is proof of life: the caller's idle timer restarts here.
     onActivity?.();
@@ -298,6 +334,12 @@ export async function consumeChatStream(
   parser.flush().forEach(handleEvent);
 
   if (streamError) throw streamError;
+
+  // The server ends every answer with `done`. Text without it (and without the
+  // `trace` that marks a complete answer) means the stream was cut short.
+  if (!sawDone && !trace && content.trim().length > 0) {
+    throw createChatRequestError(PARTIAL_ANSWER_NOTES.answer_cut_off, { code: "answer_cut_off", retryable: true, status: 502 });
+  }
 
   return { content, suggestions, toolCalls, trace };
 }
@@ -370,12 +412,19 @@ function setMessages(updater: (prev: Message[]) => Message[]) {
 
 function persist(messages: Message[]) {
   if (!snapshot.hydrated) return;
+  // A half-written answer would restore as a finished one. Wait for the end.
+  if (messages.some((message) => message.streaming)) return;
   try {
     const memory = [...INITIAL_MESSAGES, ...trimConversationHistory(messages, CHAT_MEMORY_WINDOW)];
     getDeps().storage?.setItem(CHAT_STORAGE_KEY, JSON.stringify(createStoredChatEnvelope(memory)));
   } catch (error) {
     console.warn("Failed to persist AI Twin chat history:", error);
   }
+}
+
+/** True while a request is in flight, including the stream tail. A send is rejected while this is true. */
+export function isTwinChatBusy() {
+  return sending;
 }
 
 export function subscribeTwinChat(listener: () => void) {
@@ -394,32 +443,53 @@ export function getServerTwinChatSnapshot() {
   return serverSnapshot;
 }
 
-/** Restores the conversation from this device. Safe to call more than once. */
+/**
+ * Restores the conversation from this device. Safe to call more than once.
+ * Messages appended before hydration (an exchange handed off from the bubble,
+ * a question already sent) are kept after the stored history, not overwritten.
+ */
 export function hydrateTwinChat() {
   if (snapshot.hydrated) return;
-  let messages = INITIAL_MESSAGES;
+  let stored = INITIAL_MESSAGES;
   const storage = getDeps().storage;
   try {
-    const stored = storage?.getItem(CHAT_STORAGE_KEY);
-    if (stored) {
-      const envelope = parseStoredChatEnvelope<Message>(JSON.parse(stored));
-      if (envelope) messages = sanitizeStoredMessages(envelope.messages);
+    const raw = storage?.getItem(CHAT_STORAGE_KEY);
+    if (raw) {
+      const envelope = parseStoredChatEnvelope<Message>(JSON.parse(raw));
+      if (envelope) stored = sanitizeStoredMessages(envelope.messages);
       else storage?.removeItem(CHAT_STORAGE_KEY);
     }
   } catch (error) {
     console.warn("Failed to restore AI Twin chat history:", error);
   }
+  const known = new Set(stored.map((message) => message.id));
+  const added = snapshot.messages.filter((message) => message.id !== WELCOME_ID && !known.has(message.id));
+  const messages = added.length > 0 ? [...stored, ...added] : stored;
   snapshot = { ...snapshot, messages, hydrated: true };
+  if (added.length > 0) persist(messages);
   listeners.forEach((listener) => listener());
 }
+
+const WELCOME_ID = INITIAL_MESSAGES[0]!.id;
+/** Longest message sent back as history; a pasted wall of text shouldn't ride along every turn. */
+const HISTORY_ITEM_MAX_CHARS = 4000;
 
 function conversationHistory(source: Message[], beforeMessageId?: string) {
   const endIndex = beforeMessageId ? source.findIndex((message) => message.id === beforeMessageId) : -1;
   const scoped = endIndex >= 0 ? source.slice(0, endIndex) : source;
+  // A failed answer is dropped along with the question it failed to answer, so
+  // the model never sees a question that has no reply.
+  const dropped = new Set<string>();
+  scoped.forEach((message, index) => {
+    if (!message.error) return;
+    dropped.add(message.id);
+    const askedBy = message.error.userMessageId ?? (scoped[index - 1]?.role === "user" ? scoped[index - 1]!.id : undefined);
+    if (askedBy) dropped.add(askedBy);
+  });
   return trimConversationHistory(
-    scoped.filter((message) => !message.error),
+    scoped.filter((message) => !dropped.has(message.id)),
     CHAT_MEMORY_WINDOW
-  ).map((message) => ({ content: message.content, sender: message.role === "user" ? "user" : "ai" }));
+  ).map((message) => ({ content: message.content.slice(0, HISTORY_ITEM_MAX_CHARS), sender: message.role === "user" ? "user" : "ai" }));
 }
 
 export type SendOptions = {
@@ -429,10 +499,15 @@ export type SendOptions = {
   onNavigate?: (call: ChatToolCall) => void;
 };
 
-export async function sendTwinMessage(request: SendRequest, options: SendOptions = {}) {
+/**
+ * Sends one message. Resolves `true` when the message was accepted (even if
+ * the request then failed; the failure is shown on the answer) and `false`
+ * when it was rejected: empty, or another request is still in flight.
+ */
+export async function sendTwinMessage(request: SendRequest, options: SendOptions = {}): Promise<boolean> {
   const normalized = typeof request === "string" ? { text: request } : request;
   const msg = normalized.text?.trim();
-  if (!msg || sending) return;
+  if (!msg || sending) return false;
 
   if (options.unavailable) {
     setMessages((prev) => {
@@ -440,7 +515,7 @@ export async function sendTwinMessage(request: SendRequest, options: SendOptions
       if (last?.role === "assistant" && last.content === OFFLINE_ASSISTANT_MESSAGE) return prev;
       return [...prev, { id: createMessageId(), role: "assistant", content: OFFLINE_ASSISTANT_MESSAGE }];
     });
-    return;
+    return true;
   }
 
   sending = true;
@@ -478,18 +553,27 @@ export async function sendTwinMessage(request: SendRequest, options: SendOptions
   // Declared out here so the catch block clears `streaming` on the exact
   // message that was mid-stream instead of appending a second bubble.
   const assistantId = isRetry && retryMessageId ? retryMessageId : createMessageId();
+  /** Set once `trace` arrives: the answer is final and nothing may overwrite it. */
+  let answerComplete = false;
 
   try {
-    const response = await getDeps().fetch(CHAT_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: msg,
-        conversationHistory: conversationHistory(before, isRetry ? retryUserMessageId : undefined),
-      }),
-      redirect: "error",
-      signal: controller.signal,
-    });
+    let response: Response;
+    try {
+      response = await getDeps().fetch(CHAT_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: msg,
+          conversationHistory: conversationHistory(before, isRetry ? retryUserMessageId : undefined),
+        }),
+        redirect: "error",
+        signal: controller.signal,
+      });
+    } catch (error) {
+      // fetch rejects with a TypeError when the network fails; that is the only place one means "offline".
+      if (isAbortError(error)) throw error;
+      throw networkError(false);
+    }
 
     if (!response.ok) throw await buildResponseError(response);
 
@@ -500,7 +584,10 @@ export async function sendTwinMessage(request: SendRequest, options: SendOptions
       isRetry && Boolean(retryMessageId),
       resetIdleTimer,
       options.onNavigate,
-      () => update({ isLoading: false, announcement: "Answer ready" })
+      () => {
+        answerComplete = true;
+        update({ announcement: "Answer ready" });
+      }
     );
 
     if (outcome.content.trim().length === 0) {
@@ -527,21 +614,46 @@ export async function sendTwinMessage(request: SendRequest, options: SendOptions
         : [...prev, finished]
     );
   } catch (error) {
-    // A cleared chat aborts on purpose; there is nothing left to patch.
-    if (abortController !== controller && controller.signal.aborted) return;
+    // A cleared chat aborts on purpose; there is nothing left to patch. The
+    // avatar still has to hear that the request it was watching is over.
+    if (abortController !== controller && controller.signal.aborted) {
+      emitGuide({ type: "chat/reset" });
+      return true;
+    }
+    // The answer was already complete (`trace` arrived); a late failure while
+    // the stream wound down must not turn it into an error.
+    if (answerComplete) {
+      console.warn("AI Chat: stream failed after the answer completed:", error);
+      return true;
+    }
     console.error("AI Chat Error:", error);
-    const errorState = getErrorState(error, msg, userMsgId);
+    // Only a message that is streaming right now holds text from THIS request;
+    // on a retry the placeholder still carries the previous error's wording.
+    const existing = snapshot.messages.find((message) => message.id === assistantId);
+    const keepPartial = Boolean(existing?.streaming && existing.content.trim());
+    const raw = getErrorState(error, msg, userMsgId, keepPartial);
+    const errorState = keepPartial && !(raw.error.code in PARTIAL_ANSWER_NOTES)
+      ? { ...raw, error: { ...raw.error, code: "answer_cut_off" } }
+      : raw;
     emitGuide({ type: "chat/error", retryable: Boolean(errorState.error?.retryable) });
     update({ announcement: errorState.content });
 
     // Patch the message that was already streaming rather than appending
     // beside it, and always clear `streaming`, so a failure mid-answer never
-    // leaves a caret blinking on a half-written reply.
+    // leaves a caret blinking on a half-written reply. A partial answer keeps
+    // its text; the error sits beside it.
     setMessages((prev) =>
       prev.some((message) => message.id === assistantId)
         ? prev.map((message) =>
             message.id === assistantId
-              ? { ...message, content: errorState.content, suggestions: undefined, streaming: false, error: { ...errorState.error, isRetrying: false } }
+              ? {
+                  ...message,
+                  content: keepPartial ? message.content : errorState.content,
+                  suggestions: undefined,
+                  status: undefined,
+                  streaming: false,
+                  error: { ...errorState.error, isRetrying: false },
+                }
               : message
           )
         : [
@@ -559,11 +671,12 @@ export async function sendTwinMessage(request: SendRequest, options: SendOptions
       update({ isLoading: false });
     }
   }
+  return true;
 }
 
-export function retryTwinMessage(message: Message, options: SendOptions = {}) {
-  if (!message.error?.retryable || !message.error.retryText || !message.error.userMessageId) return;
-  void sendTwinMessage(
+export function retryTwinMessage(message: Message, options: SendOptions = {}): Promise<boolean> {
+  if (!message.error?.retryable || !message.error.retryText || !message.error.userMessageId) return Promise.resolve(false);
+  return sendTwinMessage(
     { text: message.error.retryText, retryMessageId: message.id, retryUserMessageId: message.error.userMessageId },
     options
   );

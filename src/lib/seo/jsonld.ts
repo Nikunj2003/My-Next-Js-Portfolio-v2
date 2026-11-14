@@ -11,7 +11,8 @@ const caseStudyListId = `${siteConfig.siteUrl}#case-studies`;
 type JsonLd = Record<string, unknown>;
 
 export function toJsonLd(schema: JsonLd): string {
-  return JSON.stringify(schema);
+  // "<" is escaped so a string value can never close the surrounding <script>.
+  return JSON.stringify(schema).replace(/</g, "\\u003c");
 }
 
 export function getWebsiteSchema(): JsonLd {

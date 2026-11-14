@@ -57,11 +57,29 @@ const TARGET_SUGGESTION_COUNT = 4;
 const MAX_SUGGESTION_LENGTH = 44;
 const MAX_MESSAGE_LENGTH = 1200;
 const MAX_HISTORY_MESSAGE_LENGTH = 4000;
+/** Request bodies above this are refused before they are parsed. */
+const MAX_REQUEST_BODY_BYTES = 64 * 1024;
+/**
+ * Output cap for every upstream completion. Keeps an answer within what the
+ * 4000-char history limit will accept back on the next turn.
+ */
+const MAX_COMPLETION_TOKENS = 1200;
+/**
+ * Wall-clock budget for the whole request, measured from its start. Sits below
+ * `maxDuration` so this route ends the stream itself, with an error event,
+ * instead of the platform killing it mid-answer.
+ */
+const REQUEST_DEADLINE_MS = 50_000;
 
 const requestStore = new Map<string, { count: number; resetAt: number }>();
 
 const chatHistoryMessageSchema = z.object({
-  content: z.string().trim().min(1).max(MAX_HISTORY_MESSAGE_LENGTH),
+  // Stored history is truncated, not rejected: an old long answer should not
+  // make every later turn fail with a 400. Only the current message is capped hard.
+  content: z
+    .string()
+    .transform((value) => value.trim().slice(0, MAX_HISTORY_MESSAGE_LENGTH))
+    .pipe(z.string().min(1)),
   sender: z.enum(["user", "ai"]),
 });
 
@@ -278,25 +296,39 @@ function isAbortError(error: unknown) {
   return candidate.name === "AbortError" || candidate.code === 20 || candidate.code === "ABORT_ERR";
 }
 
-async function postChatCompletion(
+/**
+ * POSTs a non-streaming completion and reads its JSON body, with ONE timeout
+ * covering both the headers and the body. Clearing the timer once headers
+ * arrived left a stalled body with no deadline at all. Returns null for a
+ * non-2xx response.
+ */
+async function postChatCompletionJson(
   invokeUrl: string,
   headers: Record<string, string>,
   body: object,
   timeoutMs: number,
   parentSignal?: AbortSignal
-) {
+): Promise<unknown | null> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   const onParentAbort = () => controller.abort();
+  if (parentSignal?.aborted) controller.abort();
   parentSignal?.addEventListener("abort", onParentAbort, { once: true });
 
   try {
-    return await fetch(invokeUrl, {
+    const response = await fetch(invokeUrl, {
       method: "POST",
       headers,
       body: JSON.stringify(body),
       signal: controller.signal,
     });
+
+    if (!response.ok) {
+      await response.body?.cancel().catch(() => undefined);
+      return null;
+    }
+
+    return await response.json();
   } finally {
     clearTimeout(timeoutId);
     parentSignal?.removeEventListener("abort", onParentAbort);
@@ -337,7 +369,9 @@ async function streamCompletion(
   firstByteTimeoutMs: number,
   onText: (text: string) => void,
   /** Aborted when the visitor disconnects, so upstream work stops too. */
-  parentSignal?: AbortSignal
+  parentSignal: AbortSignal | undefined,
+  /** Absolute epoch-ms by which this request must be finished. */
+  deadlineAt: number
 ): Promise<{ content: string; toolCalls: StreamedToolCall[] }> {
   const controller = new AbortController();
   const onParentAbort = () => controller.abort();
@@ -352,17 +386,19 @@ async function streamCompletion(
    * reported to the visitor as a timeout. While tokens keep arriving the request
    * is healthy; only a stall is a fault, so the timer restarts on every chunk.
    */
-  let timeoutId = setTimeout(() => controller.abort(), firstByteTimeoutMs);
+  // No timer may outlive the request deadline, or the stream could run past maxDuration.
+  const clamp = (ms: number) => Math.max(1, Math.min(ms, deadlineAt - Date.now()));
+  let timeoutId = setTimeout(() => controller.abort(), clamp(firstByteTimeoutMs));
   const resetIdleTimer = () => {
     clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    timeoutId = setTimeout(() => controller.abort(), clamp(timeoutMs));
   };
 
   try {
     const response = await fetch(invokeUrl, {
       method: "POST",
       headers: { ...headers, Accept: "text/event-stream" },
-      body: JSON.stringify({ ...body, stream: true }),
+      body: JSON.stringify({ ...body, stream: true, max_tokens: MAX_COMPLETION_TOKENS }),
       signal: controller.signal,
     });
 
@@ -374,7 +410,55 @@ async function streamCompletion(
     const decoder = new TextDecoder();
     let buffer = "";
     let content = "";
+    // True once the provider said the response is complete ([DONE] or a
+    // finish_reason). A stream that just closes without either was cut off.
+    let finished = false;
     const toolCallsByIndex = new Map<number, StreamedToolCall>();
+
+    const processLine = (line: string) => {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith("data:")) return;
+
+      const payload = trimmed.slice(5).trim();
+      if (!payload) return;
+      if (payload === "[DONE]") {
+        finished = true;
+        return;
+      }
+
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(payload);
+      } catch {
+        // A malformed SSE frame should not abort a working stream.
+        return;
+      }
+
+      const choice = (parsed as { choices?: Array<{ delta?: Record<string, unknown>; finish_reason?: unknown }> })
+        ?.choices?.[0];
+      if (choice?.finish_reason) finished = true;
+
+      const delta = choice?.delta;
+      if (!delta) return;
+
+      if (typeof delta.content === "string" && delta.content.length > 0) {
+        content += delta.content;
+        onText(delta.content);
+      }
+
+      const deltaToolCalls = delta.tool_calls;
+      if (Array.isArray(deltaToolCalls)) {
+        for (const rawCall of deltaToolCalls) {
+          const call = rawCall as { index?: number; id?: string; function?: { name?: string; arguments?: string } };
+          const index = call.index ?? 0;
+          const existing = toolCallsByIndex.get(index) ?? { id: undefined, name: "", args: "" };
+          if (call.id) existing.id = call.id;
+          if (call.function?.name) existing.name += call.function.name;
+          if (call.function?.arguments) existing.args += call.function.arguments;
+          toolCallsByIndex.set(index, existing);
+        }
+      }
+    };
 
     while (true) {
       const { done, value } = await reader.read();
@@ -385,49 +469,27 @@ async function streamCompletion(
       const lines = buffer.split("\n");
       // Trailing element is a partial line until its newline arrives.
       buffer = lines.pop() ?? "";
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed.startsWith("data:")) continue;
-
-        const payload = trimmed.slice(5).trim();
-        if (!payload || payload === "[DONE]") continue;
-
-        let parsed: unknown;
-        try {
-          parsed = JSON.parse(payload);
-        } catch {
-          // A malformed SSE frame should not abort a working stream.
-          continue;
-        }
-
-        const delta = (parsed as { choices?: Array<{ delta?: Record<string, unknown> }> })?.choices?.[0]?.delta;
-        if (!delta) continue;
-
-        if (typeof delta.content === "string" && delta.content.length > 0) {
-          content += delta.content;
-          onText(delta.content);
-        }
-
-        const deltaToolCalls = delta.tool_calls;
-        if (Array.isArray(deltaToolCalls)) {
-          for (const rawCall of deltaToolCalls) {
-            const call = rawCall as { index?: number; id?: string; function?: { name?: string; arguments?: string } };
-            const index = call.index ?? 0;
-            const existing = toolCallsByIndex.get(index) ?? { id: undefined, name: "", args: "" };
-            if (call.id) existing.id = call.id;
-            if (call.function?.name) existing.name += call.function.name;
-            if (call.function?.arguments) existing.args += call.function.arguments;
-            toolCallsByIndex.set(index, existing);
-          }
-        }
-      }
+      lines.forEach(processLine);
     }
+
+    // The last frame may arrive without a trailing newline.
+    buffer += decoder.decode();
+    if (buffer) processLine(buffer);
+
+    if (!finished) throw new TruncatedStreamError();
 
     return { content, toolCalls: Array.from(toolCallsByIndex.values()) };
   } finally {
     clearTimeout(timeoutId);
     parentSignal?.removeEventListener("abort", onParentAbort);
+  }
+}
+
+/** The upstream stream closed without [DONE] or a finish_reason. */
+class TruncatedStreamError extends Error {
+  constructor() {
+    super("Upstream stream ended before completion");
+    this.name = "TruncatedStreamError";
   }
 }
 
@@ -468,9 +530,10 @@ async function streamCompletionWithRetry(
    * nothing sent to the client — comfortably longer than its idle timeout,
    * which would then abort a retry that was still in progress.
    */
-  onAttempt?: (attempt: number) => void,
-  attempts = CHAT_TOOL_ROUND_ATTEMPTS,
-  parentSignal?: AbortSignal
+  onAttempt: ((attempt: number) => void) | undefined,
+  attempts: number,
+  parentSignal: AbortSignal | undefined,
+  deadlineAt: number
 ) {
   let lastError: unknown;
   /*
@@ -485,9 +548,22 @@ async function streamCompletionWithRetry(
   };
 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    // A retry is only worth starting if it can get a full first-byte window
+    // inside the request deadline; otherwise report the stall now.
+    if (attempt > 1 && deadlineAt - Date.now() < firstByteTimeoutMs) break;
+
     onAttempt?.(attempt);
     try {
-      return await streamCompletion(invokeUrl, headers, body, timeoutMs, firstByteTimeoutMs, trackedOnText, parentSignal);
+      return await streamCompletion(
+        invokeUrl,
+        headers,
+        body,
+        timeoutMs,
+        firstByteTimeoutMs,
+        trackedOnText,
+        parentSignal,
+        deadlineAt
+      );
     } catch (error) {
       // Only a stall is worth replaying. A non-2xx is a decision by the
       // provider and would fail identically. A visitor disconnect is final.
@@ -501,6 +577,33 @@ async function streamCompletionWithRetry(
   }
 
   throw lastError;
+}
+
+/** Reads a request body as text, giving up once it exceeds `maxBytes`. Null means too large. */
+async function readBodyTextCapped(request: Request, maxBytes: number): Promise<string | null> {
+  const declared = Number(request.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > maxBytes) return null;
+
+  if (!request.body) return "";
+
+  const reader = request.body.getReader();
+  const decoder = new TextDecoder();
+  let received = 0;
+  let text = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    received += value.byteLength;
+    if (received > maxBytes) {
+      await reader.cancel().catch(() => undefined);
+      return null;
+    }
+    text += decoder.decode(value, { stream: true });
+  }
+
+  return text + decoder.decode();
 }
 
 function isChatConfigured() {
@@ -572,9 +675,20 @@ export async function POST(request: Request) {
     );
   }
 
+  let rawBody: string | null;
+  try {
+    rawBody = await readBodyTextCapped(request, MAX_REQUEST_BODY_BYTES);
+  } catch {
+    return createChatErrorResponse(400, "invalid_request", "Invalid chat request.", rateLimitHeaders, false);
+  }
+
+  if (rawBody === null) {
+    return createChatErrorResponse(413, "invalid_request", "That request is too large.", rateLimitHeaders, false);
+  }
+
   let parsedBody;
   try {
-    parsedBody = chatRequestSchema.safeParse(await request.json());
+    parsedBody = chatRequestSchema.safeParse(JSON.parse(rawBody));
   } catch {
     return createChatErrorResponse(400, "invalid_request", "Invalid chat request.", rateLimitHeaders, false);
   }
@@ -630,6 +744,7 @@ export async function POST(request: Request) {
   });
   messages.push({ role: "user", content: message });
 
+  const deadlineAt = requestStartedAt + REQUEST_DEADLINE_MS;
   const encoder = new TextEncoder();
   /**
    * One abort for every upstream call this request makes (tool rounds, final
@@ -693,6 +808,8 @@ export async function POST(request: Request) {
        * thing still has to be sent.
        */
       let streamedText = "";
+      /** True once the answer is final and its trace has been sent. */
+      let traceSent = false;
 
       const emitTrace = () => {
         const trace: ChatTrace = {
@@ -764,13 +881,22 @@ export async function POST(request: Request) {
                */
               () => send({ type: "status", label: mustAnswer ? "Writing answer" : "Thinking" }),
               CHAT_TOOL_ROUND_ATTEMPTS,
-              upstreamAbort.signal
+              upstreamAbort.signal,
+              deadlineAt
             );
           } catch (error) {
             if (error instanceof UpstreamStatusError) {
               console.error("LLM API error", error.status);
               const failure = classifyUpstreamFailure(error.status);
               send({ type: "error", ...failure });
+            } else if (error instanceof TruncatedStreamError) {
+              console.error("LLM stream ended early");
+              send({
+                type: "error",
+                error: "The AI service ended its response early. Please try again.",
+                code: "upstream_error",
+                retryable: true,
+              });
             } else if (isAbortError(error)) {
               send({
                 type: "error",
@@ -793,13 +919,17 @@ export async function POST(request: Request) {
             return;
           }
 
-          streamedText += chunks;
-
           // No tools requested (or none allowed): this round's text is the answer.
           if (streamOutcome.toolCalls.length === 0) {
             answer = streamOutcome.content;
+            streamedText += chunks;
             break;
           }
+
+          // Text that came with tool calls is the model narrating ("Let me
+          // check..."), not the answer. It was already streamed, so clear it
+          // here; otherwise the next round's answer is appended straight after it.
+          if (chunks) send({ type: "text_replace", text: "" });
 
           /*
            * Text alongside tool_calls has already reached the client as
@@ -899,40 +1029,51 @@ export async function POST(request: Request) {
         }
 
         emitTrace();
+        traceSent = true;
 
-        // Suggestions last: off the critical path entirely now.
-        const elapsedMs = Date.now() - requestStartedAt;
-        const remainingBudgetMs = CHAT_TOTAL_RESPONSE_BUDGET_MS - elapsedMs;
-        const priorUserTexts = getPriorUserTexts(recentMessages, message);
+        // Suggestions last. The answer is already complete and delivered, so
+        // nothing here may surface as an error: on any failure the stream just
+        // ends with `done`.
+        try {
+          const elapsedMs = Date.now() - requestStartedAt;
+          const remainingBudgetMs = Math.min(CHAT_TOTAL_RESPONSE_BUDGET_MS, REQUEST_DEADLINE_MS) - elapsedMs;
+          const priorUserTexts = getPriorUserTexts(recentMessages, message);
 
-        const followUpSuggestions =
-          remainingBudgetMs >= 1_200
-            ? await generateAISuggestions(
-                message,
-                answer,
-                recentMessages,
-                invokeUrl,
-                headers,
-                Math.min(CHAT_SUGGESTION_TIMEOUT_MS, remainingBudgetMs - 250),
-                priorUserTexts,
-                upstreamAbort.signal
-              )
-            : buildFallbackSuggestions(message, answer, recentMessages, priorUserTexts);
+          const followUpSuggestions =
+            remainingBudgetMs >= 1_200
+              ? await generateAISuggestions(
+                  message,
+                  answer,
+                  recentMessages,
+                  invokeUrl,
+                  headers,
+                  Math.min(CHAT_SUGGESTION_TIMEOUT_MS, remainingBudgetMs - 250),
+                  priorUserTexts,
+                  upstreamAbort.signal
+                )
+              : buildFallbackSuggestions(message, answer, recentMessages, priorUserTexts);
 
-        if (followUpSuggestions.length > 0) {
-          send({ type: "suggestions", suggestions: followUpSuggestions });
+          if (followUpSuggestions.length > 0) {
+            send({ type: "suggestions", suggestions: followUpSuggestions });
+          }
+        } catch {
+          console.warn("Suggestion step failed after the answer was delivered");
         }
 
         send({ type: "done" });
         finish();
       } catch {
         console.error("AI response handling failed");
-        send({
-          type: "error",
-          error: "Something went wrong while processing that message. Please retry.",
-          code: "internal_error",
-          retryable: true,
-        });
+        // After the trace the client already holds a complete answer; an error
+        // event now would make it discard that answer.
+        if (!traceSent) {
+          send({
+            type: "error",
+            error: "Something went wrong while processing that message. Please retry.",
+            code: "internal_error",
+            retryable: true,
+          });
+        }
         send({ type: "done" });
         finish();
       }
@@ -1004,7 +1145,7 @@ Rules:
       },
     ];
 
-    const suggestionResp = await postChatCompletion(
+    const data = (await postChatCompletionJson(
       invokeUrl,
       headers,
       {
@@ -1015,15 +1156,15 @@ Rules:
       },
       timeoutMs,
       signal
-    );
+    )) as { choices?: Array<{ message?: { content?: unknown } }> } | null;
 
-    if (!suggestionResp.ok) {
+    if (!data) {
       return buildFallbackSuggestions(currentMessage, aiResponse, recentMessages, priorUserTexts);
     }
 
-    const data = await suggestionResp.json();
-    let raw = data.choices?.[0]?.message?.content?.trim() || "[]";
-    
+    const content = data.choices?.[0]?.message?.content;
+    let raw = (typeof content === "string" ? content.trim() : "") || "[]";
+
     raw = raw.replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
     
     let parsed: unknown = [];

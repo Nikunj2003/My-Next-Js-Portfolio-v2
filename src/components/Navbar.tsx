@@ -208,12 +208,13 @@ const Navbar = () => {
     <>
       <div className="fixed top-0 inset-x-0 z-50 flex justify-center px-4 pt-[max(1rem,env(safe-area-inset-top))] sm:pt-[max(1.5rem,env(safe-area-inset-top))] pointer-events-none">
         <nav
+          aria-label="Main"
           className={`pointer-events-auto transition-all duration-500 rounded-2xl sm:rounded-full container-width flex items-center justify-between px-4 sm:px-6 h-14 sm:h-16 border ${
             scrolled ? "glass-nav shadow-accent-card border-white/10" : "bg-transparent border-transparent"
           }`}
         >
           <Link href="/" onClick={handleHomeClick} aria-label="Go to the top of the homepage" className="flex items-center gap-2 group">
-            <Image src={logo} alt="" aria-hidden="true" className="w-10 h-10 sm:w-12 sm:h-12 transition-transform duration-300 group-hover:scale-110 pointer-events-none" draggable={false} />
+            <Image src={logo} alt="" aria-hidden="true" sizes="48px" className="w-10 h-10 sm:w-12 sm:h-12 transition-transform duration-300 group-hover:scale-110 pointer-events-none" draggable={false} />
             <span className="font-bold text-lg tracking-wide hidden sm:block">Nikunj Khitha</span>
           </Link>
 

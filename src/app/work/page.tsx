@@ -25,13 +25,11 @@ export const metadata: Metadata = {
     title,
     description,
     siteName: siteConfig.siteName,
-    images: [{ url: siteConfig.ogImage, alt: title }],
   },
   twitter: {
     card: "summary_large_image",
     title,
     description,
-    images: [siteConfig.ogImage],
   },
 };
 
@@ -39,7 +37,7 @@ export const metadata: Metadata = {
 const GroupHeading = ({ label, count, blurb }: { label: string; count: number; blurb: string }) => (
   <Reveal className="mb-6">
     <div className="flex items-center gap-4">
-      <h2 className="font-mono text-xs uppercase tracking-widest text-primary">{label}</h2>
+      <h2 className="font-mono text-xs uppercase tracking-widest text-primary-text">{label}</h2>
       <span className="font-mono text-[10.5px] text-muted-foreground/70 tabular-nums">{count}</span>
       <span className="h-px flex-1 bg-gradient-to-r from-primary/30 to-transparent" />
     </div>
@@ -55,7 +53,7 @@ const WorkIndexPage = () => (
         static HTML that crawlers read, matching the pattern in layout.tsx. */}
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: toJsonLd(getWorkIndexGraph()).replace(/</g, "\\u003c") }}
+      dangerouslySetInnerHTML={{ __html: toJsonLd(getWorkIndexGraph()) }}
     />
 
     <Navbar />
@@ -66,7 +64,7 @@ const WorkIndexPage = () => (
           <Reveal className="mb-8">
             <Link
               href="/"
-              className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+              className="-my-3 inline-flex min-h-11 items-center gap-2 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
             >
               <ArrowLeft className="h-4 w-4" />
               Home
@@ -74,7 +72,7 @@ const WorkIndexPage = () => (
           </Reveal>
 
           <Reveal delay={0.05}>
-            <div className="mb-4 font-mono text-xs uppercase tracking-widest text-primary">Case studies</div>
+            <div className="mb-4 font-mono text-xs uppercase tracking-widest text-primary-text">Case studies</div>
             <h1 className="heading-xl mb-6">
               Engineering <span className="text-gradient">Case Studies</span>
             </h1>

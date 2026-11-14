@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Compass, MessageCircle } from "lucide-react";
 import { GuideAvatarSlot } from "@/components/guide/GuideAvatarSlot";
@@ -9,7 +9,14 @@ import { emitGuide } from "@/lib/guide/bus";
 import { ASLEEP_LINE, BORED_LINE, DIZZY_LINE, HOVER_LINE, PET_LINES, WAKE_LINE, greetingFor } from "@/lib/guide/hero-lines";
 import { startGuideTour } from "@/lib/guide/tour-control";
 import { useGuideView } from "@/lib/guide/useGuideView";
-import { useCompanionState } from "@/lib/guide/companion-store";
+import { dispatchCompanion, openPanel, setHeroVisible, useCompanionState } from "@/lib/guide/companion-store";
+import { AskContent } from "@/components/guide/AskContent";
+import { useIsMobile } from "@/hooks/use-mobile";
+
+/** While the ask box is open the avatar shrinks to this, toward its top edge. */
+const AVATAR_ASK_SCALE = 0.55;
+/** The avatar block is 364px (300 + padding); the box starts just under the shrunken avatar. */
+const ASK_TOP = Math.round(364 * AVATAR_ASK_SCALE) + 14;
 
 /** Proof points that orbit the avatar. Each links to the work that backs it. */
 const ORBIT = [
@@ -29,8 +36,52 @@ const ORBIT = [
  */
 export function GuideHeroAvatar() {
   const view = useGuideView();
-  // While the ask bubble is open over the hero, step back: the companion is talking.
-  const askOpen = useCompanionState().bubble === "ask";
+  const companion = useCompanionState();
+  const isMobile = useIsMobile();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const avatarRef = useRef<HTMLButtonElement>(null);
+  // While the hero is on screen this avatar is the only character: it hosts
+  // the ask box inline, in place of its speech line and buttons. Scroll away
+  // and the companion carries the same conversation on.
+  const askOpen = companion.bubble === "ask" && companion.heroVisible && !isMobile;
+
+  // Whether the hero avatar is the guide right now (`heroVisible`) is set by
+  // the companion's frame loop from the scroll hand-off, so the conversation
+  // moves exactly when the two avatars swap. Reset when the hero unmounts.
+  useEffect(() => () => setHeroVisible(false), []);
+
+  // The box may grow past the buttons, down to the bottom of the hero section.
+  const [askMaxHeight, setAskMaxHeight] = useState(480);
+  useLayoutEffect(() => {
+    if (!askOpen) return;
+    const measure = () => {
+      const root = rootRef.current;
+      const section = root?.closest("section");
+      if (!root || !section) return;
+      const top = root.getBoundingClientRect().top + ASK_TOP;
+      setAskMaxHeight(Math.max(280, Math.min(520, section.getBoundingClientRect().bottom - top - 16)));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [askOpen]);
+
+  const closeAsk = useCallback(() => {
+    dispatchCompanion({ type: "ask/close" });
+    avatarRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  // Escape closes the inline ask box (the companion's own handler is idle while it is hidden).
+  useEffect(() => {
+    if (!askOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      event.preventDefault();
+      closeAsk();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [askOpen, closeAsk]);
   const reduceMotion = Boolean(useReducedMotion());
   const [line, setLine] = useState<string | null>(null);
   const hideTimer = useRef<number | null>(null);
@@ -74,8 +125,13 @@ export function GuideHeroAvatar() {
   };
 
   return (
-    <div className="relative flex flex-col items-center gap-4" data-guide-target="hero-guide">
-      <div className="relative">
+    <div ref={rootRef} className="relative flex flex-col items-center gap-4" data-guide-target="hero-guide">
+      <motion.div
+        className="relative"
+        style={{ transformOrigin: "50% 0%" }}
+        animate={{ scale: askOpen ? AVATAR_ASK_SCALE : 1 }}
+        transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 260, damping: 28 }}
+      >
         {/* Orbit of proof chips */}
         <div className={`pointer-events-none absolute inset-0 z-10 transition-opacity duration-300 ${askOpen ? "opacity-0" : "opacity-100"}`}>
           {ORBIT.map((chip) => {
@@ -95,6 +151,7 @@ export function GuideHeroAvatar() {
         </div>
 
         <button
+          ref={avatarRef}
           type="button"
           data-guide-hero-avatar
           onClick={onClick}
@@ -105,7 +162,7 @@ export function GuideHeroAvatar() {
           onPointerLeave={() => emitGuide({ type: "page/hover", active: false })}
           onFocus={() => emitGuide({ type: "page/hover", active: true })}
           onBlur={() => emitGuide({ type: "page/hover", active: false })}
-          aria-label="Nikunj's AI Twin. Click to play."
+          aria-label="Nikunj's AI Twin avatar. Activate for a reaction."
           className="group relative flex cursor-pointer items-center justify-center rounded-full p-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           {/* Glow and a slow ring, static under reduced motion */}
@@ -115,19 +172,28 @@ export function GuideHeroAvatar() {
             className="pointer-events-none absolute inset-2 rounded-full border border-dashed border-primary/25 motion-safe:animate-[spin_40s_linear_infinite]"
           />
           <span aria-hidden="true" className="pointer-events-none absolute inset-10 rounded-full border border-primary/10 transition-colors group-hover:border-primary/30" />
-          <GuideAvatarSlot size={300} followPointer />
+          <GuideAvatarSlot size={300} followPointer settleAfterMs={10_000} />
         </button>
-      </div>
+      </motion.div>
 
+      {/* The speech line and buttons stay in the layout while the ask box is
+          open, so the hero never changes height and the copy beside it never
+          moves. The ask box opens over them and the space the avatar frees as
+          it shrinks back, with its tail pointing at the avatar. */}
+      <div
+        className={`flex flex-col items-center gap-4 transition-opacity duration-150 ${askOpen ? "pointer-events-none opacity-0" : "opacity-100"}`}
+        aria-hidden={askOpen || undefined}
+        inert={askOpen || undefined}
+      >
       {/* What it says goes here, between the avatar and its buttons: a fixed
           slot, so the face is never covered and nothing shifts when it talks.
           At rest it shows the status line. */}
       <div className="relative flex h-14 w-[min(24rem,80vw)] items-center justify-center">
         <AnimatePresence mode="wait" initial={false}>
-          {line && !askOpen ? (
+          {line ? (
             <motion.p
               key={line}
-              role="status"
+              aria-live="off"
               initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4, scale: 0.98 }}
@@ -175,6 +241,27 @@ export function GuideHeroAvatar() {
           </button>
         </div>
       </div>
+      </div>
+
+      <AnimatePresence initial={false}>
+        {askOpen && (
+          <motion.div
+            key="ask"
+            id="twin-bubble-hero"
+            role="dialog"
+            aria-label="Nikunj's AI Twin"
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 12, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8, scale: 0.98 }}
+            transition={{ duration: reduceMotion ? 0.12 : 0.22 }}
+            style={{ top: ASK_TOP, maxHeight: askMaxHeight, x: "-50%" }}
+            className="absolute left-1/2 z-20 flex w-[min(26rem,100%)] flex-col overflow-hidden rounded-2xl border border-primary/25 glass-strong glass-overlay shadow-accent-card"
+          >
+            <span aria-hidden="true" className="absolute -top-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-l border-t border-primary/25 bg-background/80" />
+            <AskContent inline activeSection="hero" onExpand={openPanel} onClose={closeAsk} isMobile={false} reduceMotion={reduceMotion} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

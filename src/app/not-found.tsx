@@ -3,6 +3,8 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Page not found",
+  // Without this the root layout's homepage canonical is inherited.
+  alternates: { canonical: null },
   robots: {
     index: false,
     follow: false,

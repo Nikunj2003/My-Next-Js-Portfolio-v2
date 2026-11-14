@@ -9,6 +9,10 @@ import type { GuideEvent, GuideModel, GuideView } from "@/lib/guide/types";
  * Read with `useSyncExternalStore(subscribeGuide, getGuideView, getServerGuideView)`.
  * It owns the timers (transient expiry and the idle doze) so the reducer can
  * stay pure, and it listens to the window bus so emitters never import it.
+ *
+ * The bus listener attaches when this module loads, so events that fire before
+ * anything subscribes (availability, the section, chat/open) still reach the
+ * model. Timers and activity listeners only run while something is subscribed.
  */
 
 let model: GuideModel = initialGuideModel;
@@ -16,7 +20,6 @@ let view: GuideView = selectGuideView(model);
 const listeners = new Set<() => void>();
 let transientTimer: ReturnType<typeof setTimeout> | null = null;
 let idleTimers: ReturnType<typeof setTimeout>[] = [];
-let detachBus: (() => void) | null = null;
 let detachActivity: (() => void) | null = null;
 
 function dispatch(event: GuideEvent) {
@@ -27,8 +30,10 @@ function dispatch(event: GuideEvent) {
     return;
   }
   model = next;
-  scheduleTransientExpiry();
-  if (event.type !== "page/idle" && event.type !== "tick") scheduleIdle();
+  if (listeners.size > 0) {
+    scheduleTransientExpiry();
+    if (event.type !== "page/idle" && event.type !== "tick") scheduleIdle();
+  }
   const nextView = selectGuideView(model);
   if (!sameView(view, nextView)) {
     view = nextView;
@@ -65,7 +70,9 @@ function sameView(a: GuideView, b: GuideView) {
 }
 
 function start() {
-  detachBus = onGuide(dispatch);
+  // Expire anything that ran out while nobody was watching, then arm the timers.
+  dispatch({ type: "tick", now: Date.now() });
+  scheduleTransientExpiry();
 
   // Any real input wakes a dozing guide. Throttled: one event per second is plenty.
   let lastActivity = 0;
@@ -83,14 +90,16 @@ function start() {
 }
 
 function stop() {
-  detachBus?.();
   detachActivity?.();
-  detachBus = detachActivity = null;
+  detachActivity = null;
   if (transientTimer) clearTimeout(transientTimer);
   idleTimers.forEach(clearTimeout);
   idleTimers = [];
   transientTimer = null;
 }
+
+// Attached once, for the life of the page; there is nothing to detach from.
+if (typeof window !== "undefined") onGuide(dispatch);
 
 export function subscribeGuide(listener: () => void) {
   if (listeners.size === 0) start();

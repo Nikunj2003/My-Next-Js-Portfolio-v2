@@ -40,7 +40,14 @@ const AnimatedCounter = ({ value, suffix, start }: { value: number; suffix: stri
     };
   }, [shouldReduceMotion, start, value]);
 
-  return <span className="tabular-nums">{displayCount}{suffix}</span>;
+  // The final value is always in the markup (server HTML, assistive tech); the
+  // animated number is decorative and hidden from them.
+  return (
+    <>
+      <span className="sr-only">{value}{suffix}</span>
+      <span aria-hidden="true" className="tabular-nums">{displayCount}{suffix}</span>
+    </>
+  );
 };
 
 const HeroSection = () => {

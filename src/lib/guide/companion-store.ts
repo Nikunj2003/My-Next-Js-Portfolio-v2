@@ -4,6 +4,7 @@ import { useSyncExternalStore } from "react";
 import { initialBubbleState, reduceBubble, type BubbleAction, type BubbleState } from "@/lib/guide/bubble-policy";
 import { emitGuide } from "@/lib/guide/bus";
 import { readGuidePrefs, writeGuidePrefs } from "@/lib/guide/prefs";
+import { sendTwinMessage } from "@/lib/chat/twin-chat-store";
 
 /**
  * UI state shared by the companion avatar, its bubble and the full chat panel:
@@ -13,9 +14,15 @@ import { readGuidePrefs, writeGuidePrefs } from "@/lib/guide/prefs";
 type CompanionState = BubbleState & {
   /** A question to send as soon as the ask bubble opens (from "Ask about this"). */
   pendingQuestion: string | null;
+  /**
+   * The hero avatar is on screen (desktop homepage). While it is, it is the
+   * only character: it hosts the conversation inline and the scroll companion
+   * stays hidden. Reported by the hero avatar itself.
+   */
+  heroVisible: boolean;
 };
 
-let state: CompanionState = { ...initialBubbleState, pendingQuestion: null };
+let state: CompanionState = { ...initialBubbleState, pendingQuestion: null, heroVisible: false };
 let prefsLoaded = false;
 const listeners = new Set<() => void>();
 
@@ -46,6 +53,11 @@ function loadPrefs() {
 
 /** Opens the ask bubble, optionally sending a question once it is up. */
 export function openAsk(question?: string) {
+  // The full panel is already showing the conversation: ask there.
+  if (state.panelOpen) {
+    if (question) void sendTwinMessage(question);
+    return;
+  }
   dispatchCompanion({ type: "ask/open" });
   if (question) set({ ...state, pendingQuestion: question });
 }
@@ -54,6 +66,23 @@ export function takePendingQuestion() {
   const question = state.pendingQuestion;
   if (question) set({ ...state, pendingQuestion: null });
   return question;
+}
+
+export function setHeroVisible(visible: boolean) {
+  if (state.heroVisible !== visible) set({ ...state, heroVisible: visible });
+}
+
+/**
+ * What the visitor has typed but not sent. Shared so it survives the ask box
+ * moving between the hero and the companion. Not reactive on purpose: each
+ * composer reads it once when it mounts.
+ */
+let draft = "";
+export function getAskDraft() {
+  return draft;
+}
+export function setAskDraft(text: string) {
+  draft = text;
 }
 
 export function openPanel() {
@@ -72,6 +101,7 @@ export function subscribeCompanion(listener: () => void) {
 }
 
 export function getCompanionState() {
+  loadPrefs();
   return state;
 }
 

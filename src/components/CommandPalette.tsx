@@ -35,7 +35,7 @@ const SECTIONS = [
 ];
 
 const groupClass =
-  "mb-1 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted-foreground/60";
+  "mb-1 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted-foreground";
 
 /** Matches the item chrome used across the site: subtle glass, primary on hover. */
 const itemClass =
@@ -144,7 +144,7 @@ const CommandPalette = () => {
                 value={query}
                 onValueChange={setQuery}
                 placeholder="Search, or ask a question..."
-                className="h-14 w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/60"
+                className="h-14 w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
               />
               <kbd className="hidden shrink-0 rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground sm:block">
                 ESC
@@ -286,7 +286,7 @@ const CommandPalette = () => {
             </Command.List>
 
             {/* Footer hints, matching the mono micro-copy used site-wide. */}
-            <div className="flex shrink-0 items-center gap-4 border-t border-white/10 px-4 py-2.5 font-mono text-[10px] text-muted-foreground/60">
+            <div className="flex shrink-0 items-center gap-4 border-t border-white/10 px-4 py-2.5 font-mono text-[10px] text-muted-foreground">
               <span className="inline-flex items-center gap-1.5">
                 <kbd className="rounded border border-white/10 bg-white/5 px-1 py-0.5">↑↓</kbd>
                 navigate

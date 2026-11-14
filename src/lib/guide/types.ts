@@ -28,6 +28,8 @@ export type IdleStage = 0 | 1 | 2 | 3;
 export type GuideEvent =
   | { type: "chat/open" }
   | { type: "chat/close" }
+  /** The request behind a busy phase ended without an answer or error (cleared or superseded). */
+  | { type: "chat/reset" }
   | { type: "chat/typing"; active: boolean }
   | { type: "chat/send" }
   | { type: "chat/tool_call"; name: string }
@@ -41,6 +43,8 @@ export type GuideEvent =
   | { type: "page/idle"; stage: IdleStage }
   /** The visitor clicked the hero avatar. `now` makes streak timing testable. */
   | { type: "pet/click"; now: number }
+  /** A tour run began. `tour/step` is ignored unless a run is active, so a late step can't revive a closed tour. */
+  | { type: "tour/start" }
   | { type: "tour/step"; cue: AvatarCue; pointAt?: ViewportPoint | null }
   | { type: "tour/end"; completed: boolean }
   | { type: "guide/point"; pointAt: ViewportPoint | null }
@@ -54,6 +58,10 @@ export type Transient = AvatarCue & { until: number };
 
 export type GuideModel = {
   phase: ChatPhase;
+  /** A conversation surface (ask bubble or panel) is open. Tracked apart from `phase`, which can be busy while closed. */
+  chatOpen: boolean;
+  /** A tour run is active; gates `tour/step`. */
+  touring: boolean;
   /** Name of the tool currently running, for the tool → expression mapping. */
   tool: string | null;
   hovering: boolean;

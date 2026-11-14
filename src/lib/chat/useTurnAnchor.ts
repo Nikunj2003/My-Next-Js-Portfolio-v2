@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
-import { anchorScrollTop, computeReserve, distanceToContentEnd, shouldAnchor } from "@/lib/chat/turn-anchor";
+import { anchorScrollTop, computeReserve, contentHeightAboveSpacer, distanceToContentEnd, reachedAnchor, shouldAnchor } from "@/lib/chat/turn-anchor";
 
 type Options = {
   /** Id of the latest user message; a new id anchors once. */
@@ -24,22 +24,32 @@ export function useTurnAnchor(scrollerRef: RefObject<HTMLElement | null>, { anch
   const spacerRef = useRef<HTMLDivElement>(null);
   const lastAnchoredRef = useRef<string | null>(null);
   const targetRef = useRef<number | null>(null);
+  /** The anchor scroll was issued and the target hasn't been reached yet. */
+  const seekingRef = useRef(false);
   const [showJump, setShowJump] = useState(false);
 
-  const readReserve = () => spacerRef.current?.offsetHeight ?? 0;
+  /** Height of everything above the spacer, measured from where the spacer sits. */
+  const readContentHeight = useCallback(() => {
+    const scroller = scrollerRef.current;
+    const spacer = spacerRef.current;
+    if (!scroller || !spacer) return 0;
+    return contentHeightAboveSpacer({
+      spacerRectTop: spacer.getBoundingClientRect().top,
+      scrollerRectTop: scroller.getBoundingClientRect().top,
+      scrollTop: scroller.scrollTop,
+    });
+  }, [scrollerRef]);
 
   const applyReserve = useCallback(() => {
     const scroller = scrollerRef.current;
     const spacer = spacerRef.current;
     if (!scroller || !spacer) return;
     const target = targetRef.current;
-    const current = readReserve();
+    const current = spacer.offsetHeight;
     const next =
-      target === null
-        ? 0
-        : computeReserve({ targetScrollTop: target, clientHeight: scroller.clientHeight, scrollHeight: scroller.scrollHeight, currentReserve: current });
+      target === null ? 0 : computeReserve({ targetScrollTop: target, clientHeight: scroller.clientHeight, contentHeight: readContentHeight() });
     if (Math.abs(next - current) >= 1) spacer.style.height = `${next}px`;
-  }, [scrollerRef]);
+  }, [readContentHeight, scrollerRef]);
 
   // Scroll the new question to the top, once per turn.
   useLayoutEffect(() => {
@@ -51,6 +61,7 @@ export function useTurnAnchor(scrollerRef: RefObject<HTMLElement | null>, { anch
     const target = anchorScrollTop(anchor.getBoundingClientRect().top, scroller.getBoundingClientRect().top, scroller.scrollTop);
     targetRef.current = target;
     applyReserve();
+    seekingRef.current = true;
     scroller.scrollTo({ top: target, behavior: reducedMotion ? "auto" : "smooth" });
   }, [active, anchorId, applyReserve, reducedMotion, scrollerRef, selector]);
 
@@ -63,15 +74,24 @@ export function useTurnAnchor(scrollerRef: RefObject<HTMLElement | null>, { anch
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         applyReserve();
+        // The first scrollTo can land before the spacer has grown, which clamps it
+        // short. Issue it again until the target is reached; a visitor scroll ends the chase.
+        const target = targetRef.current;
+        if (seekingRef.current && target !== null) {
+          if (reachedAnchor(scroller.scrollTop, target)) seekingRef.current = false;
+          else if (scroller.scrollHeight - scroller.clientHeight >= target) scroller.scrollTo({ top: target, behavior: "auto" });
+        }
         updateJump();
       });
+    };
+    const stopSeeking = () => {
+      seekingRef.current = false;
     };
     const updateJump = () => {
       const distance = distanceToContentEnd({
         scrollTop: scroller.scrollTop,
         clientHeight: scroller.clientHeight,
-        scrollHeight: scroller.scrollHeight,
-        reserve: readReserve(),
+        contentHeight: readContentHeight(),
       });
       setShowJump((current) => (current === distance > 48 ? current : distance > 48));
     };
@@ -84,26 +104,33 @@ export function useTurnAnchor(scrollerRef: RefObject<HTMLElement | null>, { anch
     });
     mutation.observe(scroller, { childList: true, subtree: true, characterData: true });
     scroller.addEventListener("scroll", updateJump, { passive: true });
+    // Wheel and touch are the visitor, not our own scrollTo.
+    scroller.addEventListener("wheel", stopSeeking, { passive: true });
+    scroller.addEventListener("touchstart", stopSeeking, { passive: true });
     return () => {
+      scroller.removeEventListener("wheel", stopSeeking);
+      scroller.removeEventListener("touchstart", stopSeeking);
       cancelAnimationFrame(frame);
       resize.disconnect();
       mutation.disconnect();
       scroller.removeEventListener("scroll", updateJump);
     };
-  }, [active, applyReserve, scrollerRef]);
+  }, [active, applyReserve, readContentHeight, scrollerRef]);
 
   const jumpToLatest = useCallback(() => {
     const scroller = scrollerRef.current;
     if (!scroller) return;
-    const end = scroller.scrollHeight - readReserve() - scroller.clientHeight;
+    seekingRef.current = false;
+    const end = readContentHeight() - scroller.clientHeight;
     scroller.scrollTo({ top: Math.max(0, end), behavior: reducedMotion ? "auto" : "smooth" });
-  }, [reducedMotion, scrollerRef]);
+  }, [readContentHeight, reducedMotion, scrollerRef]);
 
   /** Restores the reading position when the surface is (re)opened: the end of the history. */
   const restoreToEnd = useCallback(() => {
     const scroller = scrollerRef.current;
     if (!scroller) return;
     targetRef.current = null;
+    seekingRef.current = false;
     if (spacerRef.current) spacerRef.current.style.height = "0px";
     scroller.scrollTop = scroller.scrollHeight;
   }, [scrollerRef]);

@@ -18,6 +18,33 @@ test("getClientKey hashes forwarded IP values", () => {
   assert.notEqual(key, "ip:203.0.113.10");
 });
 
+test("getClientKey ignores the client-controlled leftmost x-forwarded-for hop", () => {
+  const a = getClientKey(createRequest({ "x-forwarded-for": "1.1.1.1, 198.51.100.7" }));
+  const b = getClientKey(createRequest({ "x-forwarded-for": "2.2.2.2, 198.51.100.7" }));
+  const other = getClientKey(createRequest({ "x-forwarded-for": "1.1.1.1, 198.51.100.8" }));
+
+  assert.equal(a, b, "spoofing the first hop must not change the key");
+  assert.notEqual(a, other, "a different edge-observed address must change the key");
+});
+
+test("getClientKey prefers x-vercel-forwarded-for, then cf-connecting-ip, then x-real-ip, then x-forwarded-for", () => {
+  const key = (headers: Record<string, string>) => getClientKey(createRequest(headers));
+  const all = {
+    "x-vercel-forwarded-for": "10.0.0.1",
+    "cf-connecting-ip": "10.0.0.2",
+    "x-real-ip": "10.0.0.3",
+    "x-forwarded-for": "9.9.9.9, 10.0.0.4",
+  };
+
+  assert.equal(key(all), key({ "x-vercel-forwarded-for": "10.0.0.1" }));
+  assert.equal(key({ ...all, "x-vercel-forwarded-for": "" }), key({ "cf-connecting-ip": "10.0.0.2" }));
+  assert.equal(
+    key({ "x-real-ip": "10.0.0.3", "x-forwarded-for": "9.9.9.9, 10.0.0.4" }),
+    key({ "x-real-ip": "10.0.0.3" })
+  );
+  assert.equal(key({ "x-forwarded-for": "9.9.9.9, 10.0.0.4" }), key({ "x-forwarded-for": "8.8.8.8, 10.0.0.4" }));
+});
+
 test("getClientKey falls back to a hashed fingerprint when IP headers are missing", () => {
   const key = getClientKey(
     createRequest({

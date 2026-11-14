@@ -123,7 +123,7 @@ test("a click never overrides an answer in flight", () => {
 });
 
 test("tour steps outrank hover and ambient, and completion celebrates", () => {
-  const touring = run([{ type: "page/hover", active: true }, { type: "page/section", id: "work" }, { type: "tour/step", cue: { state: "proud" } }]);
+  const touring = run([{ type: "tour/start" }, { type: "page/hover", active: true }, { type: "page/section", id: "work" }, { type: "tour/step", cue: { state: "proud" } }]);
   assert.equal(selectGuideView(touring).state, "proud");
   const done = reduceGuide(touring, { type: "tour/end", completed: true });
   assert.equal(selectGuideView(done).state, "celebrate");
@@ -145,4 +145,55 @@ test("no-op events return the same model reference", () => {
   assert.equal(reduceGuide(streaming, { type: "chat/stream_start" }), streaming);
   const bored = run([{ type: "page/idle", stage: 2 }]);
   assert.equal(reduceGuide(bored, { type: "page/idle", stage: 1 }), bored);
+});
+
+test("closing the chat mid-answer keeps the busy phase, and the answer ends closed", () => {
+  const busy = run([{ type: "chat/open" }, { type: "chat/send" }, { type: "chat/stream_start" }, { type: "chat/close" }]);
+  assert.equal(busy.phase, "streaming");
+  assert.equal(busy.chatOpen, false);
+  const done = reduceGuide({ ...busy, transient: null }, { type: "chat/answer_end", grounded: false });
+  assert.equal(done.phase, "closed");
+  const settled = reduceGuide(done, { type: "tick", now: done.transient!.until + 1 });
+  assert.equal(selectGuideView(settled).caption, "Ready to help");
+  assert.equal(selectGuideView(settled).state, "idle", "not stuck listening with nothing open");
+  const failed = run([{ type: "chat/open" }, { type: "chat/send" }, { type: "chat/close" }, { type: "chat/error", retryable: true }]);
+  assert.equal(failed.phase, "closed");
+});
+
+test("opening the chat while an answer is in flight keeps the busy phase", () => {
+  const model = run([{ type: "chat/send" }, { type: "chat/tool_call", name: "search_work" }, { type: "chat/open" }]);
+  assert.equal(model.phase, "tool");
+  assert.equal(model.chatOpen, true);
+  assert.equal(reduceGuide(model, { type: "chat/answer_end", grounded: false }).phase, "open");
+});
+
+test("the idle ladder stands still behind an open chat, and closing does not play a false waking", () => {
+  const open = run([{ type: "chat/open" }]);
+  assert.equal(reduceGuide(open, { type: "page/idle", stage: 3 }), open);
+  const closed = reduceGuide(open, { type: "chat/close" });
+  assert.equal(closed.idle, 0);
+  assert.equal(closed.transient, null);
+  // Opening resets a ladder that had climbed before the chat opened.
+  const asleep = run([{ type: "page/idle", stage: 3 }, { type: "chat/open" }]);
+  assert.equal(asleep.idle, 0);
+});
+
+test("chat/reset returns a request that ended without an answer to open or closed", () => {
+  const sending = run([{ type: "chat/open" }, { type: "chat/send" }, { type: "chat/tool_call", name: "search_work" }]);
+  assert.equal(reduceGuide(sending, { type: "chat/reset" }).phase, "open");
+  const hidden = run([{ type: "chat/send" }, { type: "chat/stream_start" }]);
+  assert.equal(reduceGuide(hidden, { type: "chat/reset" }).phase, "closed");
+  const idle = run([{ type: "chat/open" }]);
+  assert.equal(reduceGuide(idle, { type: "chat/reset" }), idle, "no-op when nothing is in flight");
+});
+
+test("a late tour step cannot revive a tour that has ended", () => {
+  const touring = run([{ type: "tour/start" }, { type: "tour/step", cue: { state: "proud" } }]);
+  assert.equal(touring.tour?.state, "proud");
+  const ended = reduceGuide(touring, { type: "tour/end", completed: false });
+  assert.equal(ended.tour, null);
+  const late = reduceGuide(ended, { type: "tour/step", cue: { state: "proud" }, pointAt: { x: 1, y: 2 } });
+  assert.equal(late, ended);
+  assert.equal(late.pointAt, null);
+  assert.equal(reduceGuide(ended, { type: "tour/end", completed: true }), ended, "a stray end does not celebrate");
 });

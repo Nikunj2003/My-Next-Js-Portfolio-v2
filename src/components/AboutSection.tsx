@@ -39,7 +39,7 @@ const AboutSection = () => {
                 <div aria-hidden="true" className="absolute -bottom-20 -left-16 h-40 w-40 rounded-full bg-accent/10 blur-3xl" />
 
                 <div className="relative">
-                  <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 font-mono text-xs text-primary">
+                  <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 font-mono text-xs text-primary-text">
                     <span className="h-2 w-2 rounded-full bg-primary shadow-[0_0_12px_hsl(var(--accent)/0.6)]" />
                     Profile
                   </div>
@@ -57,7 +57,7 @@ const AboutSection = () => {
                       that closes the Experience and Skills sidebars. */}
                   <dl className="mt-8 flex flex-col gap-3 border-t border-white/10 pt-6 text-sm">
                     <div className="flex items-start gap-3">
-                      <dt className="w-14 shrink-0 pt-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground/60">
+                      <dt className="w-14 shrink-0 pt-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                         Role
                       </dt>
                       <dd className="min-w-0 flex-1">
@@ -69,7 +69,7 @@ const AboutSection = () => {
                     </div>
 
                     <div className="flex items-baseline gap-3">
-                      <dt className="w-14 shrink-0 font-mono text-[10px] uppercase tracking-wider text-muted-foreground/60">
+                      <dt className="w-14 shrink-0 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                         Based
                       </dt>
                       <dd className="inline-flex min-w-0 flex-1 items-center gap-1.5 text-muted-foreground">
@@ -128,7 +128,7 @@ const AboutSection = () => {
                     <Award className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-mono text-xs uppercase tracking-[0.25em] text-primary/80">Recognition</p>
+                    <p className="font-mono text-xs uppercase tracking-[0.25em] text-primary-text">Recognition</p>
                     <h3 className="heading-md mt-1 text-foreground">{recognition.title}</h3>
                     <p className="mt-2 text-sm leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
                       {recognition.detail}
@@ -148,7 +148,7 @@ const AboutSection = () => {
                       <span className="text-2xl font-bold leading-none tracking-tighter text-foreground tabular-nums">
                         {highlight.metric}
                       </span>
-                      <span className="font-mono text-[11px] uppercase leading-snug tracking-wider text-primary">
+                      <span className="font-mono text-[11px] uppercase leading-snug tracking-wider text-primary-text">
                         {highlight.label}
                       </span>
                     </div>

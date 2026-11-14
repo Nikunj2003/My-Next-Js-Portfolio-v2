@@ -195,9 +195,9 @@ function ProjectCard({
           {/* Content */}
           <div className="static z-10 flex flex-1 flex-col justify-center p-6 sm:p-8 lg:w-[42%] lg:p-10">
             <div className="mb-3 flex items-center gap-3">
-              <span className="font-mono text-[11px] uppercase tracking-widest text-primary">{project.category}</span>
+              <span className="font-mono text-[11px] uppercase tracking-widest text-primary-text">{project.category}</span>
               {project.live && (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 font-mono text-[10px] text-primary">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 font-mono text-[10px] text-primary-text">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                   Live
                 </span>
@@ -225,11 +225,11 @@ function ProjectCard({
             {/* Always visible: the ratio carries it without a hover reveal. */}
             <dl className="mt-5 flex flex-col gap-2 border-l-2 border-primary/30 pl-3 text-xs">
               <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
-                <dt className="shrink-0 font-mono uppercase tracking-wider text-muted-foreground/60 sm:w-14">Role</dt>
+                <dt className="shrink-0 font-mono uppercase tracking-wider text-muted-foreground sm:w-14">Role</dt>
                 <dd className="text-foreground/80">{project.role}</dd>
               </div>
               <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
-                <dt className="shrink-0 font-mono uppercase tracking-wider text-muted-foreground/60 sm:w-14">Impact</dt>
+                <dt className="shrink-0 font-mono uppercase tracking-wider text-muted-foreground sm:w-14">Impact</dt>
                 <dd className="text-muted-foreground">{project.impact}</dd>
               </div>
             </dl>
@@ -238,7 +238,7 @@ function ProjectCard({
               {project.tech.map((tech) => (
                 <li
                   key={tech}
-                  className="rounded-md border border-primary/20 bg-primary/10 px-2 py-1 font-mono text-[10px] text-primary"
+                  className="rounded-md border border-primary/20 bg-primary/10 px-2 py-1 font-mono text-[10px] text-primary-text"
                 >
                   {tech}
                 </li>
@@ -298,7 +298,7 @@ const ProjectsSection = () => {
       <div className="container-narrow">
         {/* Centered Header */}
         <Reveal className="mb-16 flex flex-col items-center text-center">
-          <div className="mb-6 inline-flex items-center rounded-full border border-primary/20 px-3 py-1.5 font-mono text-xs text-primary glass-subtle">
+          <div className="mb-6 inline-flex items-center rounded-full border border-primary/20 px-3 py-1.5 font-mono text-xs text-primary-text glass-subtle">
             Work
           </div>
           <h2 className="heading-xl mb-6">
@@ -315,7 +315,7 @@ const ProjectsSection = () => {
             row sits above a link to all 13 studies across three contexts. */}
         <Reveal className="mb-6">
           <div className="flex items-center gap-4">
-            <h3 className="font-mono text-xs uppercase tracking-widest text-primary">Featured case studies</h3>
+            <h3 className="font-mono text-xs uppercase tracking-widest text-primary-text">Featured case studies</h3>
             <span className="h-px flex-1 bg-gradient-to-r from-primary/30 to-transparent" />
           </div>
         </Reveal>
@@ -334,7 +334,7 @@ const ProjectsSection = () => {
         <Reveal className="mb-24 mt-6">
           <Link
             href="/work"
-            className="group/all inline-flex items-center gap-2 text-sm font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="group/all inline-flex items-center gap-2 text-sm font-semibold text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             View all {caseStudies.length} case studies
             <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover/all:translate-x-1 motion-reduce:transition-none" />
@@ -344,7 +344,7 @@ const ProjectsSection = () => {
         {/* Tier 2 — shipped personal products */}
         <Reveal className="mb-8">
           <div className="flex items-center gap-4">
-            <h3 className="font-mono text-xs uppercase tracking-widest text-primary">
+            <h3 className="font-mono text-xs uppercase tracking-widest text-primary-text">
               Built and shipped
             </h3>
             <span className="h-px flex-1 bg-gradient-to-r from-primary/30 to-transparent" />
@@ -364,7 +364,7 @@ const ProjectsSection = () => {
         <Reveal>
           <div>
             <div className="mb-6 flex items-center gap-4">
-              <h3 className="font-mono text-xs uppercase tracking-widest text-primary">Also built</h3>
+              <h3 className="font-mono text-xs uppercase tracking-widest text-primary-text">Also built</h3>
               <span className="h-px flex-1 bg-gradient-to-r from-primary/30 to-transparent" />
             </div>
 
@@ -399,7 +399,7 @@ const ProjectsSection = () => {
                           href={project.live}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-primary transition-colors hover:text-primary/80"
+                          className="inline-flex items-center gap-1.5 text-primary-text transition-colors hover:text-primary-text/80"
                         >
                           <ExternalLink className="h-3.5 w-3.5" />
                           Live

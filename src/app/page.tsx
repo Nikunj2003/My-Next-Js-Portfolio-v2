@@ -20,7 +20,7 @@ export default function Home() {
           homepage and /work declared the same @id twice. */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: toJsonLd(getPortfolioGraph()).replace(/</g, "\\u003c") }}
+        dangerouslySetInnerHTML={{ __html: toJsonLd(getPortfolioGraph()) }}
       />
 
       <Navbar />

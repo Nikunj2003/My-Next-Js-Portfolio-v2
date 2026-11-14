@@ -40,3 +40,14 @@ test("a sticky target is measured from its first non-sticky ancestor", () => {
   const plain = resolveTargetBox(panel, () => false);
   assert.deepEqual(plain, { top: 128, height: 420 });
 });
+
+test("planning again after the target moved corrects the scroll once, then settles", () => {
+  // First plan: target at 700 in the viewport. After landing, an entrance animation
+  // leaves it 30px lower than measured, so the second plan nudges by the same amount.
+  const first = planTourScroll({ ...base, box: { top: 700, height: 300 } })!;
+  const landed = { ...base, scrollY: first };
+  const moved = planTourScroll({ ...landed, box: { top: 176.5 + 30 + 300, height: 300 } });
+  assert.ok(moved !== null && moved > first, "scrolls further down to follow the target");
+  const settled = planTourScroll({ ...landed, box: { top: 176, height: 300 } });
+  assert.equal(settled, null, "a target already inside the band needs no correction");
+});

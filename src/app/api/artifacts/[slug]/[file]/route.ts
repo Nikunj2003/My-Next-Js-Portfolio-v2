@@ -29,6 +29,10 @@ export async function GET(_request: Request, { params }: RouteParams) {
       status: 200,
       headers: {
         "Content-Type": "text/html; charset=utf-8",
+        // Stored HTML is served from this origin: sandbox it into an opaque
+        // origin so its scripts cannot reach the site's cookies or storage.
+        "Content-Security-Policy": "sandbox allow-scripts allow-popups",
+        "X-Content-Type-Options": "nosniff",
         // Re-hosting overwrites in place, so keep this short: fresh enough to
         // pick up an update quickly, but still cacheable between requests.
         "Cache-Control": "public, max-age=60, must-revalidate",

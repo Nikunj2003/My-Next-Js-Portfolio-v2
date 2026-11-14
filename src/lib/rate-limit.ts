@@ -28,8 +28,14 @@ function sanitizeFingerprintSegment(value?: string | null) {
   return value?.trim().replace(/\s+/g, " ").slice(0, MAX_FINGERPRINT_LENGTH) ?? "";
 }
 
-function getFirstForwardedValue(value?: string | null) {
-  return value?.split(",")[0]?.trim() ?? "";
+/**
+ * The LAST hop of an `x-forwarded-for` chain. Each proxy appends the address it
+ * received the connection from, so the rightmost entry was written by our own
+ * edge and the leftmost entries are whatever the client chose to send.
+ */
+function getLastForwardedValue(value?: string | null) {
+  const hops = value?.split(",").map((hop) => hop.trim()).filter(Boolean) ?? [];
+  return sanitizeFingerprintSegment(hops[hops.length - 1]);
 }
 
 function pruneStore(store: Map<string, RateLimitEntry>, now: number) {
@@ -59,11 +65,13 @@ function pruneStore(store: Map<string, RateLimitEntry>, now: number) {
 }
 
 export function getClientKey(request: Request) {
+  // Edge-set headers first (the platform overwrites any client-sent copy), then
+  // the rightmost x-forwarded-for hop. Never the leftmost: the client controls it.
   const forwardedIp =
-    getFirstForwardedValue(request.headers.get("x-forwarded-for")) ||
-    getFirstForwardedValue(request.headers.get("x-vercel-forwarded-for")) ||
+    sanitizeFingerprintSegment(request.headers.get("x-vercel-forwarded-for")?.split(",")[0]) ||
     sanitizeFingerprintSegment(request.headers.get("cf-connecting-ip")) ||
-    sanitizeFingerprintSegment(request.headers.get("x-real-ip"));
+    sanitizeFingerprintSegment(request.headers.get("x-real-ip")) ||
+    getLastForwardedValue(request.headers.get("x-forwarded-for"));
 
   if (forwardedIp) {
     return `ip:${hashKey(forwardedIp)}`;

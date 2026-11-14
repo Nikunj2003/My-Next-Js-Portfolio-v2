@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Mail, Linkedin, Github, Send, Download, ArrowUpRight, Briefcase, Users, GitPullRequest, MessageSquare } from "lucide-react";
 import { personalInfo } from "@/data/portfolio";
 import { toast } from "@/components/ui/sonner";
@@ -67,9 +67,12 @@ const ContactSection = () => {
   const [startedAt, setStartedAt] = useState(() => Date.now());
   const [errors, setErrors] = useState<ContactErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // State updates are async, so a fast second submit could slip past isSubmitting.
+  const inFlightRef = useRef(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (inFlightRef.current) return;
 
     const parsed = contactSchema.safeParse(form);
     if (!parsed.success) {
@@ -93,6 +96,7 @@ const ContactSection = () => {
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), CONTACT_CLIENT_TIMEOUT_MS);
 
+    inFlightRef.current = true;
     try {
       setIsSubmitting(true);
 
@@ -133,6 +137,7 @@ const ContactSection = () => {
       });
     } finally {
       window.clearTimeout(timeoutId);
+      inFlightRef.current = false;
       setIsSubmitting(false);
     }
   };

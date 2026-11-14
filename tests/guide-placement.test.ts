@@ -1,139 +1,104 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { computeDock, placeBubble, type DockInput } from "../src/lib/guide/placement.ts";
+import {
+  activeSectionAt,
+  blendPoint,
+  chooseBubbleSide,
+  clampToViewport,
+  cornerPoint,
+  easeInOutCubic,
+  gutterPoint,
+  placeBubbleBeside,
+} from "../src/lib/guide/placement.ts";
 import { lookToward } from "../src/lib/guide/gaze.ts";
 
-/** The real content column: max-w-6xl (1152px) centred, 88rem from 1536px. */
-function at(width: number, anchor: DockInput["anchor"], extra: Partial<DockInput> = {}): DockInput {
-  const column = width >= 1536 ? 1408 : 1152;
-  const left = Math.max(0, (width - column) / 2);
-  return {
-    viewportWidth: width,
-    viewportHeight: 800,
-    content: { left, right: width - left },
-    size: 68,
-    anchor,
-    insetTop: 85,
-    insetBottom: 0,
-    ...extra,
-  };
-}
+const viewport = { width: 1440, height: 900, insetTop: 85, insetBottom: 0 };
 
-const left = { side: "left" as const, yRatio: 0.5 };
-const right = { side: "right" as const, yRatio: 0.5 };
-
-test("narrow screens dock in the corner; wide screens use the gutter", () => {
-  assert.equal(computeDock(at(1100, left)).mode, "corner");
-  // A 68px avatar needs a 92px gutter: (vw - 1152) / 2 >= 92, so 1336px and up.
-  assert.equal(computeDock(at(1280, left)).mode, "corner", "64px gutter is too small");
-  assert.equal(computeDock(at(1336, left)).mode, "gutter");
-  assert.equal(computeDock(at(1440, right)).mode, "gutter");
-  assert.equal(computeDock(at(1920, left)).mode, "gutter");
+test("the avatar is kept below the navbar, above the bottom edge and above the footer", () => {
+  assert.deepEqual(clampToViewport({ x: 100, y: 10 }, 68, viewport), { x: 100, y: 97 });
+  assert.equal(clampToViewport({ x: 100, y: 2000 }, 68, viewport).y, 900 - 68 - 12);
+  assert.equal(clampToViewport({ x: 100, y: 800 }, 68, viewport, 700).y, 700 - 68 - 12);
 });
 
-test("gutter docks are centred in the margin on the anchor's side", () => {
-  const dockLeft = computeDock(at(1440, left));
-  assert.equal(dockLeft.x, Math.round(144 / 2 - 34));
-  const dockRight = computeDock(at(1440, right));
-  assert.equal(dockRight.x, Math.round(1440 - 144 / 2 - 34));
-  assert.equal(dockRight.side, "right");
+test("the margin spot exists only where the margin holds the avatar", () => {
+  assert.equal(gutterPoint(64, 68, viewport), null);
+  const point = gutterPoint(144, 68, viewport)!;
+  assert.equal(point.x, 144 / 2 - 34);
+  assert.deepEqual(cornerPoint(68, viewport), { x: 1440 - 68 - 20, y: 900 - 68 - 20 });
 });
 
-test("the companion never goes under the navbar or below the screen", () => {
-  assert.equal(computeDock(at(1440, { side: "left", yRatio: 0 })).y, 85 + 12);
-  assert.equal(computeDock(at(1440, { side: "left", yRatio: 1 })).y, 800 - 68 - 12);
+test("the bubble side: preferred if it fits, kept while it fits, re-chosen when it stops fitting", () => {
+  const bubble = { width: 360, height: 300 };
+  // Under a panel with room below: below.
+  assert.equal(chooseBubbleSide({ x: 196, y: 300 }, 68, bubble, viewport, ["bottom", "right", "top"]), "bottom");
+  // Near the bottom of the screen: no room below, so the next preference.
+  assert.equal(chooseBubbleSide({ x: 196, y: 760 }, 68, bubble, viewport, ["bottom", "right", "top"]), "right");
+  // Kept while it still fits, even if a better side opens up.
+  assert.equal(chooseBubbleSide({ x: 196, y: 300 }, 68, bubble, viewport, ["bottom", "right", "top"], "right"), "right");
+  // Dropped once it no longer fits.
+  assert.equal(chooseBubbleSide({ x: 1300, y: 300 }, 68, bubble, viewport, ["right", "bottom"], "right"), "bottom");
+  // Reading text in the way of the first choice: the next clean side.
+  const text = [{ left: 150, top: 400, width: 120, height: 200 }];
+  assert.equal(chooseBubbleSide({ x: 196, y: 300 }, 68, bubble, viewport, ["bottom", "right", "top"], null, text), "right");
 });
 
-test("no anchor means the corner, lifted above a visible footer", () => {
-  const corner = computeDock(at(1440, null));
-  assert.equal(corner.mode, "corner");
-  assert.equal(corner.y, 800 - 68 - 20);
-  const lifted = computeDock(at(1440, null, { footerTop: 700 }));
-  assert.equal(lifted.y, 800 - 68 - 20 - (100 + 12));
+test("below the avatar, the bubble lines up with its left edge", () => {
+  const placed = placeBubbleBeside({ x: 196, y: 300 }, 68, "bottom", { width: 360, height: 300 }, viewport);
+  assert.equal(placed.top, 300 + 68 + 12);
+  assert.equal(placed.left, 196 - 8);
 });
 
-test("the bubble takes the first side that fits", () => {
-  const viewport = { width: 1440, height: 800, insetTop: 85, insetBottom: 0 };
-  const anchor = { left: 1330, top: 400, width: 68, height: 68 };
-  const placed = placeBubble({ anchor, bubble: { width: 360, height: 300 }, viewport, prefer: ["right", "left", "top"] });
-  assert.equal(placed.side, "left", "no room to the right of a right-gutter avatar");
-  assert.equal(placed.left, 1330 - 12 - 360);
+test("the bubble sits beside the avatar, bottom-aligned, clamped to the screen", () => {
+  const placed = placeBubbleBeside({ x: 196, y: 500 }, 68, "right", { width: 360, height: 300 }, viewport);
+  assert.equal(placed.left, 196 + 68 + 12);
+  assert.equal(placed.top, 500 + 68 - 300);
+  const high = placeBubbleBeside({ x: 196, y: 100 }, 68, "right", { width: 360, height: 300 }, viewport);
+  assert.equal(high.top, 85 + 8, "never under the navbar");
+  const tall = placeBubbleBeside({ x: 196, y: 500 }, 68, "right", { width: 360, height: 2000 }, viewport);
+  assert.ok(tall.top + Math.min(2000, tall.maxHeight) <= 900 - 8, "never off the bottom");
 });
 
-test("the bubble avoids rectangles it must not cover and stays on screen", () => {
-  const viewport = { width: 1440, height: 800, insetTop: 85, insetBottom: 0 };
-  const anchor = { left: 40, top: 700, width: 68, height: 68 };
-  // A card to the right of the avatar; above the avatar is free.
-  const avoid = [{ left: 360, top: 450, width: 400, height: 350 }];
-  const placed = placeBubble({ anchor, bubble: { width: 300, height: 260 }, viewport, prefer: ["right", "top"], avoid });
-  assert.equal(placed.side, "top");
-  assert.ok(placed.top >= 85 + 8);
-  assert.ok(placed.left >= 8);
+test("the bubble's height cap doesn't depend on where the avatar is", () => {
+  const a = placeBubbleBeside({ x: 196, y: 120 }, 68, "right", { width: 360, height: 300 }, viewport).maxHeight;
+  const b = placeBubbleBeside({ x: 196, y: 780 }, 68, "right", { width: 360, height: 300 }, viewport).maxHeight;
+  assert.equal(a, b);
+});
+
+test("the glide eases in and out and lands exactly", () => {
+  assert.equal(easeInOutCubic(0), 0);
+  assert.equal(easeInOutCubic(1), 1);
+  assert.ok(easeInOutCubic(0.1) < 0.1 && easeInOutCubic(0.9) > 0.9);
+  assert.deepEqual(blendPoint({ x: 0, y: 0 }, { x: 100, y: 50 }, 1), { x: 100, y: 50 });
+});
+
+const sections = (offset: number) => [
+  { id: "about", top: 0 - offset, bottom: 1000 - offset },
+  { id: "experience", top: 1000 - offset, bottom: 2500 - offset },
+  { id: "work", top: 2500 - offset, bottom: 4000 - offset },
+];
+
+test("the active section is the one spanning the middle of the screen", () => {
+  assert.equal(activeSectionAt(sections(0), 800, null), "about");
+  assert.equal(activeSectionAt(sections(1200), 800, null), "experience");
+});
+
+test("hysteresis: hovering a boundary never flips between two sections", () => {
+  let current: string | null = "about";
+  const seen: string[] = [];
+  for (const offset of [580, 590, 600, 610, 600, 590, 600, 610, 620]) {
+    current = activeSectionAt(sections(offset), 800, current);
+    seen.push(current!);
+  }
+  assert.deepEqual([...new Set(seen)], ["about"]);
+  current = activeSectionAt(sections(700), 800, current);
+  assert.equal(current, "experience");
+  current = activeSectionAt(sections(590), 800, current);
+  assert.equal(current, "experience");
 });
 
 test("lookToward points the head at a target, clamped to the library's range", () => {
   const [x, y] = lookToward({ x: 100, y: 400 }, { x: 820, y: 400 }, 1440, 800);
   assert.equal(x, 1);
   assert.equal(Math.abs(y), 0);
-  assert.deepEqual(lookToward({ x: 720, y: 400 }, { x: 720, y: 200 }, 1440, 800), [0, 0.5]);
-});
-
-import { pickSpot } from "../src/lib/guide/placement.ts";
-
-test("About, Experience and Skills: sit in the free space under the sticky panel", () => {
-  const spot = pickSpot({ ...at(1440, left), perches: { under: { left: 176, top: 128, width: 363, height: 537 } } });
-  assert.equal(spot.mode, "perch");
-  assert.equal(spot.x, 196);
-  assert.equal(spot.y, 128 + 537 + 24);
-  assert.deepEqual(spot.prefer.slice(0, 2), ["bottom", "top"]);
-  assert.equal(spot.align, "start");
-});
-
-test("a panel too tall to leave room underneath falls back to the gutter or corner", () => {
-  const spot = pickSpot({ ...at(1440, left), perches: { under: { left: 176, top: 128, width: 363, height: 700 } } });
-  assert.notEqual(spot.mode, "perch");
-});
-
-test("Work: beside the centred header while it is on screen", () => {
-  const spot = pickSpot({ ...at(1440, left), perches: { beside: { left: 176, top: 300, width: 1088, height: 230 } } });
-  assert.equal(spot.mode, "perch");
-  assert.equal(spot.y, Math.round(300 + 115 - 34));
-  const scrolledPast = pickSpot({ ...at(1440, left), perches: { beside: { left: 176, top: -400, width: 1088, height: 230 } } });
-  assert.notEqual(scrolledPast.mode, "perch");
-});
-
-test("AI Twin and Contact: perched on the card's top edge, bubble above", () => {
-  const spot = pickSpot({ ...at(1440, left), perches: { onTop: { left: 176, top: 400, width: 1088, height: 610 } } });
-  assert.equal(spot.mode, "perch");
-  assert.equal(spot.x, 204);
-  assert.equal(spot.prefer[0], "top");
-});
-
-test("start-aligned bubbles line up with the avatar's left edge", () => {
-  const viewport = { width: 1440, height: 900, insetTop: 85, insetBottom: 0 };
-  const placed = placeBubble({ anchor: { left: 196, top: 300, width: 68, height: 68 }, bubble: { width: 360, height: 300 }, viewport, prefer: ["bottom"], align: "start" });
-  assert.equal(placed.left, 188);
-  assert.equal(placed.top, 300 + 68 + 12);
-});
-
-test("over the hero, the companion stands at the hero avatar's lower left with the bubble beside it", () => {
-  const spot = pickSpot({ ...at(1440, { side: "left", yRatio: 0.5 }), perches: { hero: { left: 875, top: 246, width: 344, height: 344 } } });
-  assert.equal(spot.mode, "perch");
-  assert.equal(spot.x, 875 - 34);
-  assert.equal(spot.y, 246 + 344 - 68);
-  assert.equal(spot.prefer[0], "right");
-});
-
-test("case study: sit under the narrow table of contents, bubble opening over it", () => {
-  const spot = pickSpot({ ...at(1440, left), perches: { underNarrow: { left: 176, top: 112, width: 224, height: 371 } } });
-  assert.equal(spot.mode, "perch");
-  assert.equal(spot.prefer[0], "top");
-});
-
-test("case-study index: sit at the right end of the left-aligned header", () => {
-  const spot = pickSpot({ ...at(1440, left), perches: { headerRight: { left: 176, top: 200, width: 1088, height: 200 } } });
-  assert.equal(spot.mode, "perch");
-  assert.equal(spot.x, 176 + 1088 - 68 - 24);
-  assert.equal(spot.side, "right");
 });

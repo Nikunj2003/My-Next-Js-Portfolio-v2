@@ -22,6 +22,8 @@ export type GuideAvatarProps = {
   lookAt?: readonly [number, number] | null;
   /** Stop computing frames after this long without a new request. */
   settleAfterMs?: number;
+  /** Stop the frame loop entirely (the avatar is hidden). */
+  paused?: boolean;
   className?: string;
 };
 
@@ -32,7 +34,7 @@ export type GuideAvatarProps = {
  * Gaze priority: a point the guide store asks every avatar to look at (tour
  * target, composer), then this instance's own `lookAt`, then the pointer.
  */
-export default function GuideAvatar({ size, followPointer = false, lookAt = null, settleAfterMs, className }: GuideAvatarProps) {
+export default function GuideAvatar({ size, followPointer = false, lookAt = null, settleAfterMs, paused = false, className }: GuideAvatarProps) {
   const view = useGuideView();
   const ref = useRef<AvatarHandle>(null);
   const boxRef = useRef<HTMLSpanElement>(null);
@@ -76,6 +78,7 @@ export default function GuideAvatar({ size, followPointer = false, lookAt = null
         lookAt={gaze}
         followPointer={followPointer && !gaze}
         settleAfterMs={settleAfterMs}
+        paused={paused}
       />
     </span>
   );

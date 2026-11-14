@@ -36,6 +36,8 @@ import type { AvatarCue, GestureName, GuideEvent, GuideModel, GuideView, Transie
 
 export const initialGuideModel: GuideModel = {
   phase: "closed",
+  chatOpen: false,
+  touring: false,
   tool: null,
   hovering: false,
   idle: 0,
@@ -57,6 +59,11 @@ function isBusy(model: GuideModel) {
   return model.phase !== "closed" && model.phase !== "open";
 }
 
+/** Where the phase settles once a request ends: back to the surface that is open, or closed. */
+function restingPhase(model: GuideModel) {
+  return model.chatOpen ? "open" : "closed";
+}
+
 /**
  * Pure state transition for the guide.
  *
@@ -76,10 +83,20 @@ export function reduceGuide(model: GuideModel, event: GuideEvent): GuideModel {
         now: event.now,
       };
     }
-    case "chat/open":
-      return wake(withPoke({ ...model, phase: "open", tool: null }, "nod"));
-    case "chat/close":
-      return wake({ ...model, phase: "closed", tool: null, transient: null });
+    case "chat/open": {
+      // Opening mid-answer keeps the busy expression; only the surface changed.
+      const phase = isBusy(model) ? model.phase : "open";
+      return wake(withPoke({ ...model, chatOpen: true, phase }, "nod"));
+    }
+    case "chat/close": {
+      // Closing mid-answer leaves the request running, so the avatar keeps showing it.
+      if (isBusy(model)) return wake({ ...model, chatOpen: false });
+      return wake({ ...model, chatOpen: false, phase: "closed", tool: null, transient: null });
+    }
+    case "chat/reset": {
+      if (!isBusy(model)) return model;
+      return { ...model, phase: restingPhase(model), tool: null };
+    }
     case "chat/typing": {
       if (model.phase !== "open" && model.phase !== "typing") return model;
       const phase = event.active ? "typing" : "open";
@@ -101,12 +118,12 @@ export function reduceGuide(model: GuideModel, event: GuideEvent): GuideModel {
     case "chat/stream_start":
       return model.phase === "streaming" ? model : { ...model, phase: "streaming", tool: null };
     case "chat/answer_end": {
-      const next = withTransient({ ...model, phase: "open", tool: null }, FINISHED, TRANSIENT_MS.finished);
+      const next = withTransient({ ...model, phase: restingPhase(model), tool: null }, FINISHED, TRANSIENT_MS.finished);
       return event.grounded ? withPoke(next, "nod") : next;
     }
     case "chat/error":
       return withTransient(
-        { ...model, phase: "open", tool: null },
+        { ...model, phase: restingPhase(model), tool: null },
         event.retryable ? RETRYABLE_ERROR : FAILED,
         TRANSIENT_MS.error,
       );
@@ -121,14 +138,18 @@ export function reduceGuide(model: GuideModel, event: GuideEvent): GuideModel {
     case "page/activity":
       return model.idle > 0 ? wake(model) : model;
     case "page/idle": {
-      // Never doze in the middle of something, or further than asked.
-      if (isBusy(model) || model.tour || event.stage <= model.idle) return model;
+      // Never doze in the middle of something (including behind an open chat), or further than asked.
+      if (model.phase !== "closed" || model.tour || event.stage <= model.idle) return model;
       return { ...model, idle: event.stage };
     }
+    case "tour/start":
+      return model.touring ? model : { ...model, touring: true };
     case "tour/step":
+      if (!model.touring) return model;
       return wake({ ...model, tour: event.cue, pointAt: event.pointAt ?? null });
     case "tour/end": {
-      const next = wake({ ...model, tour: null, pointAt: null });
+      if (!model.touring && !model.tour) return model;
+      const next = wake({ ...model, touring: false, tour: null, pointAt: null });
       return event.completed ? withPoke(withTransient(next, CELEBRATE, TRANSIENT_MS.celebrate), "spin") : next;
     }
     case "guide/point":

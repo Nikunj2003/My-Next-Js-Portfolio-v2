@@ -283,14 +283,14 @@ interface MetricEntry {
 
 const METRICS: MetricEntry[] = [
   {
-    keys: ["mcp server", "mcp servers", "servers", "registry size", "10+"],
+    keys: ["mcp server", "mcp servers", "servers", "registry size"],
     value: "10+",
     context:
       "Production MCP servers Nikunj delivered into ArmorCode's shared enterprise registry. Others in the same registry were built by teammates against the same policy, so this is his contribution rather than the registry total.",
     source: "Governed MCP Tool Registry",
   },
   {
-    keys: ["authorization", "authorization checks", "permission tier", "tiers", "20 of 20"],
+    keys: ["authorization", "authorization checks", "permission tier", "tiers"],
     value: "20 of 20",
     context: "Authorization checks passing across three permission tiers on a 23-tool integration.",
     source: "Governed MCP Tool Registry",
@@ -324,28 +324,28 @@ const METRICS: MetricEntry[] = [
     source: "Knowledge Graph RAG",
   },
   {
-    keys: ["business function", "functions", "teams served", "20"],
+    keys: ["business function", "functions", "teams served"],
     value: "20+",
     context:
       "Business functions reachable by Slack-accessible agents through Agentic Office OS, which Nikunj co-built with teammates.",
     source: "Agentic Office OS",
   },
   {
-    keys: ["cost", "spend", "gateway cost", "57"],
+    keys: ["cost", "spend", "gateway cost"],
     value: "57%",
     context:
       "Share of LiteLLM gateway cost traced to 10+ automations across 50,000+ requests, root-caused to a bulk historical backfill rather than the model. Fixed by model migration and prompt caching. A deterministic rewrite was documented as worth a further ~95% reduction. Percentages only — absolute internal spend is not published.",
     source: "LiteLLM gateway",
   },
   {
-    keys: ["empty queries", "100", "outage", "zero content", "failing queries"],
+    keys: ["empty queries", "outage", "zero content", "failing queries"],
     value: "100+ → 0",
     context:
       "Codebase-search queries returning zero content before the fix; two independent root causes were isolated by reading SDK source and host internals.",
     source: "Governed MCP Tool Registry",
   },
   {
-    keys: ["sub agent", "sub agents", "platform agent", "migration", "2 of 6"],
+    keys: ["sub agent", "sub agents", "platform agent", "migration"],
     value: "2 of 6",
     context:
       "Platform agent sub-agents Nikunj helped migrate from LangChain4j to Spring AI during his internship, reimplementing memory and evaluation integrations.",
@@ -358,7 +358,7 @@ const METRICS: MetricEntry[] = [
     source: "LLM Evaluation Platform",
   },
   {
-    keys: ["efs", "storage throughput", "throttling", "76 kb", "14 minutes", "copy time", "burst credit"],
+    keys: ["efs", "storage throughput", "throttling", "14 minutes", "copy time", "burst credit"],
     value: "76 KB in 14 minutes",
     context:
       "The copy time that identified the cause of a service crash loop as storage-throughput throttling rather than an application defect: latency uncorrelated with data volume is the signature of a credit-based volume running at baseline.",
@@ -386,7 +386,7 @@ const METRICS: MetricEntry[] = [
     source: "Business Data Layer for Agents",
   },
   {
-    keys: ["serving tables", "schema size", "32 to 12", "tables pruned"],
+    keys: ["serving tables", "schema size", "tables pruned"],
     value: "32 → 12",
     context:
       "Serving tables after pruning an over-scoped schema down to only those whose every column traces to a surface that reads it.",
@@ -407,7 +407,7 @@ const METRICS: MetricEntry[] = [
     source: "CodeNex AI API Proxy",
   },
   {
-    keys: ["sports queries", "fantasy gpt", "98%", "query resolution"],
+    keys: ["sports queries", "fantasy gpt", "query resolution"],
     value: "98%",
     context:
       "Complex sports queries resolved end to end by Fantasy GPT, a multi-step SQL RAG system on a fine-tuned in-house model answering against live match data in under thirty seconds.",
@@ -436,23 +436,40 @@ function getMetric(name: string) {
   }
 
   /**
-   * Scored rather than first-match.
+   * Whole-token, scored matching over descriptive aliases only.
    *
-   * `find` with bidirectional substring matching let a short key swallow a longer
-   * query: the key "8" sits earlier in METRICS than "8 repositories", so asking
-   * for repositories returned the business-functions figure — and "3 tiers"
-   * returned "20 of 20". A tool whose contract is "never state an unverified
-   * number" returning a confidently wrong one is the worst possible failure, so
-   * matches are ranked by how much of the key the query actually accounts for
-   * and ties go to the longest key.
+   * Earlier versions used substring matching and kept bare figures ("20",
+   * "100", "efs") as aliases, so "20 years" returned "20+ business functions"
+   * and "chefs" matched "efs". A tool whose contract is "never state an
+   * unverified number" must not return a confident wrong one, so:
+   *  - a key matches only as a run of whole words in the query (or the query as
+   *    a run of whole words inside the key);
+   *  - a key must contain a real word (3+ letters); bare numbers and
+   *    number-only phrases ("20 of 20", "98%") can never match;
+   *  - ties go to the longest key.
    */
+  const queryTokens = query.split(" ");
+  const containsRun = (haystack: string[], needle: string[]) => {
+    if (needle.length === 0 || needle.length > haystack.length) return false;
+    for (let start = 0; start + needle.length <= haystack.length; start += 1) {
+      if (needle.every((token, offset) => haystack[start + offset] === token)) return true;
+    }
+    return false;
+  };
+  const isDescriptive = (tokens: string[]) => tokens.some((token) => /^[a-z]{3,}$/.test(token));
+
   const scored = METRICS.flatMap((metric) => {
     const scores = metric.keys.map((key) => {
       const k = normalizeText(key);
-      if (!k) return 0;
+      const keyTokens = k.split(" ");
+      if (!k || !isDescriptive(keyTokens)) return 0;
       if (k === query) return 1000 + k.length; // exact key wins outright
-      if (query.includes(k)) return k.length; // key is contained in the question
-      if (k.includes(query)) return query.length - (k.length - query.length) / 100; // partial, penalised by overshoot
+      if (containsRun(queryTokens, keyTokens)) return k.length; // key is contained in the question
+      // The query is a fragment of the key; it needs a real word of its own so
+      // a lone number or "of" cannot select a metric.
+      if (isDescriptive(queryTokens) && containsRun(keyTokens, queryTokens)) {
+        return query.length - (k.length - query.length) / 100;
+      }
       return 0;
     });
     const best = Math.max(...scores, 0);
@@ -492,7 +509,10 @@ const SECTION_TARGETS: Record<string, string> = {
 function navigateTo(target: string) {
   const query = normalizeText(target).replace(/^#/, "");
 
-  const section = SECTION_TARGETS[query] ?? SECTION_TARGETS[query.replace(/ section$/, "")];
+  // Own-property lookups only: "constructor" / "__proto__" must not resolve
+  // through Object.prototype.
+  const sectionKey = [query, query.replace(/ section$/, "")].find((key) => Object.prototype.hasOwnProperty.call(SECTION_TARGETS, key));
+  const section = sectionKey === undefined ? undefined : SECTION_TARGETS[sectionKey];
   if (section) {
     return { ok: true as const, href: section, label: `${query} section` };
   }
@@ -633,7 +653,7 @@ export function executeTool(request: ToolCallRequest): ToolCallResult {
       };
 
       return finish(
-        section !== "all" && pick[section] ? pick[section] : { ...base, ...study },
+        section !== "all" && Object.prototype.hasOwnProperty.call(pick, section) ? pick[section] : { ...base, ...study },
         section === "all" ? "full case study" : section,
         [study.title]
       );

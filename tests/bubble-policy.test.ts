@@ -59,3 +59,8 @@ test("escape closes the bubble first, then the panel", () => {
   assert.equal(first.panelOpen, true);
   assert.equal(reduceBubble(first, { type: "escape" }).panelOpen, false);
 });
+
+test("the ask bubble does not open beside the full panel", () => {
+  const panel = run([{ type: "panel/open" }]);
+  assert.equal(reduceBubble(panel, { type: "ask/open" }).bubble, "none");
+});

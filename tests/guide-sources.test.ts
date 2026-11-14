@@ -17,5 +17,7 @@ test("the hero avatar is the handoff source for the companion", () => {
   const hero = readFileSync("src/components/guide/GuideHeroAvatar.tsx", "utf8");
   assert.match(hero, /data-guide-hero-avatar/);
   assert.match(hero, /followPointer/, "the hero avatar follows the pointer");
-  assert.match(readFileSync("src/components/guide/GuideCompanion.tsx", "utf8"), /\[data-guide-hero-avatar\]/);
+  // The hero reports whether it is on screen; the companion only shows once it isn't.
+  assert.match(hero, /setHeroVisible\(/);
+  assert.match(readFileSync("src/components/guide/GuideCompanion.tsx", "utf8"), /companion\.heroVisible/);
 });

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, MessageCircle, X } from "lucide-react";
-import { highlightGuideTarget, pointOfElement } from "@/lib/guide/actions";
+import { clearGuideHighlight, highlightGuideTarget, pointOfElement } from "@/lib/guide/actions";
 import { emitGuide } from "@/lib/guide/bus";
 import { dispatchCompanion, openAsk, useCompanionState } from "@/lib/guide/companion-store";
 import { writeGuidePrefs } from "@/lib/guide/prefs";
@@ -17,6 +17,9 @@ const NAVBAR = 85;
 /** Room the narrator takes at the bottom: the companion in the corner with its bubble beside it. */
 const DESKTOP_RESERVE = 232;
 const MOBILE_RESERVE = 260;
+/** Focus here means the visitor is operating a control, so the tour's keys must stay out of the way. */
+const INTERACTIVE_FOCUS =
+  'input, textarea, select, [contenteditable=""], [contenteditable="true"], [role="slider"], [role="tablist"], [role="tab"]';
 
 /**
  * Runs the guided tour and renders its narration inside the companion's
@@ -28,6 +31,10 @@ export function useGuideTour(isMobile: boolean) {
   const [drifted, setDrifted] = useState(false);
   const [announcement, setAnnouncement] = useState("");
   const scrollingRef = useRef(false);
+  /** Bumped by every step change and by teardown; a settle from an older run does nothing. */
+  const runRef = useRef(0);
+  const cancelScrollRef = useRef<(() => void) | null>(null);
+  const routeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
   const pathname = usePathname();
   const companion = useCompanionState();
@@ -37,26 +44,13 @@ export function useGuideTour(isMobile: boolean) {
     return (highlighted ?? document.querySelector(step.href)) as HTMLElement | null;
   }, []);
 
-  const goTo = useCallback(
-    (next: number) => {
-      const step = TOUR_STEPS[next];
-      if (!step) return;
-      setIndex(next);
-      setDrifted(false);
-      dispatchCompanion({ type: "tour/open" });
-      setAnnouncement(`Step ${next + 1} of ${TOUR_STEPS.length}: ${step.title}. ${step.line}`);
+  /** Where the page should scroll for this step right now, or null when the target is already clear. */
+  const planFor = useCallback(
+    (step: (typeof TOUR_STEPS)[number]) => {
       const element = targetOf(step);
-      const settle = () => {
-        scrollingRef.current = false;
-        if (step.highlight) highlightGuideTarget(step.highlight);
-        emitGuide({ type: "tour/step", cue: step.cue, pointAt: element ? pointOfElement(element) : null });
-      };
-      if (!element) {
-        settle();
-        return;
-      }
+      if (!element) return null;
       const box = resolveTargetBox(element, (node) => getComputedStyle(node as unknown as Element).position === "sticky");
-      const top = planTourScroll({
+      return planTourScroll({
         box,
         scrollY: window.scrollY,
         viewportHeight: window.innerHeight,
@@ -64,55 +58,159 @@ export function useGuideTour(isMobile: boolean) {
         reserve: isMobile ? MOBILE_RESERVE : DESKTOP_RESERVE,
         maxScroll: document.documentElement.scrollHeight - window.innerHeight,
       });
-      if (top === null) {
-        settle();
-        return;
-      }
-      scrollingRef.current = true;
-      scrollToOffset(top, { onComplete: settle });
     },
     [isMobile, targetOf]
   );
 
-  const end = useCallback((completed: boolean) => {
-    setIndex(null);
-    setDrifted(false);
-    setAnnouncement(completed ? "Tour complete." : "Tour closed.");
-    dispatchCompanion({ type: "tour/close" });
-    emitGuide({ type: "tour/end", completed });
-    if (completed) writeGuidePrefs({ tourDone: true });
-  }, []);
+  /** Scrolls to a step and, once settled, rings it and points the avatar at it. */
+  const runStep = useCallback(
+    (next: number) => {
+      const step = TOUR_STEPS[next];
+      if (!step) return;
+      const run = ++runRef.current;
+      cancelScrollRef.current?.();
+      cancelScrollRef.current = null;
 
-  // Start requests can come from anywhere; the tour lives on the homepage.
-  useEffect(() => {
-    const onStart = () => {
-      if (pathname !== "/") {
-        router.push("/");
-        window.setTimeout(() => goTo(0), 700);
+      const finish = () => {
+        if (run !== runRef.current) return;
+        scrollingRef.current = false;
+        cancelScrollRef.current = null;
+        const element = targetOf(step);
+        if (step.highlight) highlightGuideTarget(step.highlight);
+        emitGuide({ type: "tour/step", cue: step.cue, pointAt: element ? pointOfElement(element) : null });
+      };
+      const settle = () => {
+        if (run !== runRef.current) return;
+        // Entrance animations can still be moving the target when the scroll
+        // lands. Measure once more and correct once if it ended up elsewhere.
+        const again = planFor(step);
+        if (again !== null && Math.abs(again - window.scrollY) > 6) {
+          cancelScrollRef.current = scrollToOffset(again, { onComplete: finish });
+          return;
+        }
+        finish();
+      };
+
+      const top = planFor(step);
+      if (top === null) {
+        scrollingRef.current = false;
+        finish();
         return;
       }
-      goTo(0);
+      scrollingRef.current = true;
+      cancelScrollRef.current = scrollToOffset(top, { onComplete: settle });
+    },
+    [planFor, targetOf]
+  );
+
+  const goTo = useCallback(
+    (next: number) => {
+      const step = TOUR_STEPS[next];
+      if (!step) return;
+      setIndex(next);
+      setDrifted(false);
+      dispatchCompanion({ type: "tour/open" });
+      emitGuide({ type: "tour/start" });
+      setAnnouncement(`Step ${next + 1} of ${TOUR_STEPS.length}: ${step.title}. ${step.line}`);
+      runStep(next);
+    },
+    [runStep]
+  );
+
+  /** Stops whatever the tour has in flight: pending scroll, settle, route timer and the ring. */
+  const stopRun = useCallback(() => {
+    runRef.current += 1;
+    cancelScrollRef.current?.();
+    cancelScrollRef.current = null;
+    if (routeTimerRef.current) clearTimeout(routeTimerRef.current);
+    routeTimerRef.current = null;
+    scrollingRef.current = false;
+    clearGuideHighlight();
+  }, []);
+
+  const end = useCallback(
+    (completed: boolean) => {
+      stopRun();
+      setIndex(null);
+      setDrifted(false);
+      setAnnouncement(completed ? "Tour complete." : "Tour closed.");
+      dispatchCompanion({ type: "tour/close" });
+      emitGuide({ type: "tour/end", completed });
+      if (completed) writeGuidePrefs({ tourDone: true });
+    },
+    [stopRun]
+  );
+
+  const goToRef = useRef(goTo);
+  useEffect(() => {
+    goToRef.current = goTo;
+  }, [goTo]);
+
+  // Start requests can come from anywhere; the tour lives on the homepage.
+  // The route timer lives in a ref: routing home changes `pathname`, which
+  // re-runs this effect, and its cleanup must not cancel the pending start.
+  useEffect(() => {
+    const onStart = () => {
+      if (routeTimerRef.current) clearTimeout(routeTimerRef.current);
+      routeTimerRef.current = null;
+      if (pathname !== "/") {
+        router.push("/");
+        routeTimerRef.current = setTimeout(() => {
+          routeTimerRef.current = null;
+          goToRef.current(0);
+        }, 700);
+        return;
+      }
+      goToRef.current(0);
     };
     window.addEventListener(START_TOUR_EVENT, onStart);
-    return () => window.removeEventListener(START_TOUR_EVENT, onStart);
-  }, [goTo, pathname, router]);
+    // The idle-mounted wrapper waits for this to know a start request will be heard.
+    document.documentElement.dataset.guideTour = "ready";
+    return () => {
+      window.removeEventListener(START_TOUR_EVENT, onStart);
+      delete document.documentElement.dataset.guideTour;
+    };
+  }, [pathname, router]);
 
-  // Something else took the bubble (the visitor opened ask), or they left: the tour is over.
+  useEffect(
+    () => () => {
+      if (routeTimerRef.current) clearTimeout(routeTimerRef.current);
+      routeTimerRef.current = null;
+    },
+    []
+  );
+
+  // Something else took the bubble (the visitor opened ask), or they left "/": the tour is over.
   const active = index !== null && companion.bubble === "tour" && pathname === "/";
+  // Reset the step when the tour stops being active for any reason (adjusted
+  // during render, which React supports for state derived from other state).
+  const [wasActive, setWasActive] = useState(false);
+  if (active !== wasActive) {
+    setWasActive(active);
+    if (!active) {
+      setIndex(null);
+      setDrifted(false);
+    }
+  }
   const wasActiveRef = useRef(false);
   useEffect(() => {
-    if (wasActiveRef.current && !active && index !== null) {
+    if (wasActiveRef.current && !active) {
+      stopRun();
+      dispatchCompanion({ type: "tour/close" });
       emitGuide({ type: "tour/end", completed: false });
     }
     wasActiveRef.current = active;
-  }, [active, index]);
+  }, [active, stopRun]);
 
-  // Keyboard: arrows step, Escape skips.
+  // Keyboard: arrows step, Escape skips. Leaves alone anything the visitor is operating.
   useEffect(() => {
     if (!active) return;
     const onKey = (event: KeyboardEvent) => {
-      const typing = event.target instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName);
-      if (typing) return;
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
+      const target = event.target;
+      if (target instanceof HTMLElement) {
+        if (target.isContentEditable || target.closest(INTERACTIVE_FOCUS)) return;
+      }
       if (event.key === "Escape") {
         event.preventDefault();
         end(false);
@@ -126,6 +224,21 @@ export function useGuideTour(isMobile: boolean) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [active, end, goTo, index]);
+
+  // The layout changes under the tour (rotation, keyboard, resize): plan the current step again.
+  useEffect(() => {
+    if (!active) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const onResize = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => runStep(index!), 150);
+    };
+    window.addEventListener("resize", onResize);
+    return () => {
+      if (timer) clearTimeout(timer);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [active, index, runStep]);
 
   // Offer to resume if the visitor scrolls away from the step on their own.
   useEffect(() => {
@@ -174,6 +287,11 @@ type NarrationProps = {
 function TourNarration({ index, drifted, onBack, onNext, onResume, onSkip, onAsk }: NarrationProps) {
   const step = TOUR_STEPS[index];
   const isLast = index === TOUR_STEPS.length - 1;
+  const nextRef = useRef<HTMLButtonElement>(null);
+  // The tour has just started: put the keyboard on "Next" without moving the page.
+  useEffect(() => {
+    nextRef.current?.focus({ preventScroll: true });
+  }, []);
   return (
     <div className="px-5 py-4" role="region" aria-label="Guided tour">
       <div className="mb-1.5 flex items-center justify-between gap-3">
@@ -220,6 +338,7 @@ function TourNarration({ index, drifted, onBack, onNext, onResume, onSkip, onAsk
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           </button>
           <button
+            ref={nextRef}
             type="button"
             onClick={onNext}
             className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-primary px-5 text-sm font-bold text-primary-foreground transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -229,6 +348,7 @@ function TourNarration({ index, drifted, onBack, onNext, onResume, onSkip, onAsk
           </button>
         </div>
       </div>
+      <p className="mt-2 text-[11px] text-muted-foreground/70 max-sm:hidden">← → to move, Esc to exit</p>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 type LenisLike = {
   scrollTo: (
     target: number | string | HTMLElement,
-    options?: { offset?: number; onComplete?: () => void; immediate?: boolean }
+    options?: { offset?: number; onComplete?: () => void; immediate?: boolean; force?: boolean }
   ) => void;
 };
 
@@ -97,27 +97,45 @@ export function scrollToElement(target: HTMLElement, options: ScrollToElementOpt
 /**
  * Scrolls the page to an absolute position, through Lenis when it is running,
  * and reports when the scroll has settled.
+ *
+ * `force` lets the scroll run while Lenis is locked (the mobile chat sheet
+ * locks it), which the guided tour needs. Returns a function that cancels the
+ * pending completion: the timer is cleared and `onComplete` is never called.
+ * It does not stop a scroll already under way.
  */
 export function scrollToOffset(top: number, options: { onComplete?: () => void } = {}) {
   let done = false;
+  let fallback: ReturnType<typeof setTimeout> | null = null;
+  const finish = () => {
+    done = true;
+    if (fallback) clearTimeout(fallback);
+    fallback = null;
+    window.removeEventListener("scrollend", complete);
+  };
   const complete = () => {
     if (done) return;
-    done = true;
+    finish();
     options.onComplete?.();
+  };
+  const cancel = () => {
+    if (done) return;
+    finish();
   };
   const lenis = (window as ScrollWindow).__lenis;
   if (lenis) {
-    lenis.scrollTo(top, { onComplete: complete });
-    window.setTimeout(complete, 1600);
-    return;
+    lenis.scrollTo(top, { onComplete: complete, force: true });
+    // Lenis skips onComplete when it is already at the target.
+    fallback = setTimeout(complete, 1600);
+    return cancel;
   }
   if (Math.abs(top - window.scrollY) < 2) {
     complete();
-    return;
+    return cancel;
   }
   window.addEventListener("scrollend", complete, { once: true });
-  window.setTimeout(complete, 1200);
+  fallback = setTimeout(complete, 1200);
   window.scrollTo({ top, behavior: prefersReducedMotion() ? "auto" : "smooth" });
+  return cancel;
 }
 
 export function scrollToTop(updateHash = false) {

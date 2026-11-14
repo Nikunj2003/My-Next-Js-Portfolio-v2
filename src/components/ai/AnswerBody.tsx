@@ -1,7 +1,9 @@
 "use client";
 
+import { useMemo } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { scrollToHash } from "@/lib/scroll";
 
@@ -13,7 +15,11 @@ import { scrollToHash } from "@/lib/scroll";
  * and the panel render identically rather than forking the markdown/link
  * styling into two implementations that drift.
  */
-export function buildAnswerComponents(navigateToSection: (href: string) => void): Components {
+export function buildAnswerComponents(
+  navigateToSection: (href: string) => void,
+  /** Client-side navigation for internal paths such as /work/... Without it they load normally. */
+  navigateToPath?: (href: string) => void
+): Components {
   return {
     a: ({ href = "", children, ...props }) => {
       const isHashLink = href.startsWith("#");
@@ -30,9 +36,19 @@ export function buildAnswerComponents(navigateToSection: (href: string) => void)
           rel={isExternalLink ? "noopener noreferrer" : undefined}
           onClick={(event) => {
             props.onClick?.(event);
-            if (event.defaultPrevented || !isHashLink) return;
-            event.preventDefault();
-            navigateToSection(href);
+            if (event.defaultPrevented) return;
+            if (isHashLink) {
+              event.preventDefault();
+              navigateToSection(href);
+              return;
+            }
+            // Plain left-clicks on internal pages go through the router; modified
+            // clicks keep the browser's own behaviour (new tab, download, etc.).
+            const plain = event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
+            if (navigateToPath && isInternalPath && !isResumeLink && plain) {
+              event.preventDefault();
+              navigateToPath(href);
+            }
           }}
           className="font-medium text-primary underline decoration-primary/40 underline-offset-4 transition-colors hover:text-primary/80 break-words"
         >
@@ -103,8 +119,10 @@ export function AnswerBody({
   content: string;
   navigateToSection?: (href: string) => void;
 }) {
+  const router = useRouter();
+  const components = useMemo(() => buildAnswerComponents(navigateToSection, (href) => router.push(href)), [navigateToSection, router]);
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]} components={buildAnswerComponents(navigateToSection)}>
+    <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
       {content}
     </ReactMarkdown>
   );

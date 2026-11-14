@@ -42,13 +42,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title,
       description: study.oneLiner,
       siteName: siteConfig.siteName,
-      images: [{ url: siteConfig.ogImage, alt: title }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description: study.oneLiner,
-      images: [siteConfig.ogImage],
     },
   };
 }
@@ -91,7 +89,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
             <Reveal className="mb-8">
               <Link
                 href="/work"
-                className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                className="-my-3 inline-flex min-h-11 items-center gap-2 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
               >
                 <ArrowLeft className="h-4 w-4" />
                 All work
@@ -147,9 +145,9 @@ const CaseStudyPage = async ({ params }: PageProps) => {
 
             {/* Two columns from here: sticky TOC beside the prose. */}
             <div className="mt-16 flex flex-col gap-10 lg:flex-row lg:gap-14">
-              <aside className="w-full shrink-0 lg:w-56">
+              <div className="w-full shrink-0 lg:w-56">
                 <CaseStudyToc items={tocItems} />
-              </aside>
+              </div>
 
               <div className="min-w-0 flex-1">
 

@@ -9,7 +9,7 @@ import { TwinAssistantBody } from "@/components/ai/TwinAssistantBody";
 import { StaticGuideMark } from "@/components/guide/GuideAvatarSlot";
 import { chatSuggestions } from "@/data/portfolio";
 import type { ChatToolCall } from "@/lib/chat-contract";
-import { clearTwinChat, retryTwinMessage, sendTwinMessage } from "@/lib/chat/twin-chat-store";
+import { clearTwinChat, isTwinChatBusy, partialAnswerNote, retryTwinMessage, sendTwinMessage } from "@/lib/chat/twin-chat-store";
 import type { Message } from "@/lib/chat/types";
 import { useTurnAnchor } from "@/lib/chat/useTurnAnchor";
 import { useTwinChat } from "@/lib/chat/useTwinChat";
@@ -25,6 +25,11 @@ import { cn } from "@/lib/utils";
 const messageSelector = (id: string) => `[data-message-id="${id}"]`;
 /** Stable module-level setter: the open state lives in the companion store. */
 const setIsOpen = (open: boolean) => (open ? openPanel() : closePanel());
+function isVisible(node: HTMLElement) {
+  if (node.getClientRects().length === 0) return false;
+  const style = getComputedStyle(node);
+  return style.visibility !== "hidden" && style.display !== "none";
+}
 const FOCUSABLE_SELECTOR = 'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
@@ -79,12 +84,22 @@ const AITwinChat = () => {
     [isMobile, shouldReduceMotion]
   );
 
+  // Internal pages (/work/...) go through the router. On mobile the sheet
+  // closes first so the new page isn't hidden behind it.
+  const navigateToPath = useCallback(
+    (href: string) => {
+      if (isMobile) setIsOpen(false);
+      router.push(href);
+    },
+    [isMobile, router]
+  );
+
   // Shared with every inline answer surface via `buildAnswerComponents`, so
   // the panel and an in-page answer render markdown identically rather than
   // maintaining two copies that quietly drift.
   const markdownComponents = useMemo<Components>(
-    () => buildAnswerComponents(navigateToSection),
-    [navigateToSection]
+    () => buildAnswerComponents(navigateToSection, navigateToPath),
+    [navigateToPath, navigateToSection]
   );
 
   // Opening the panel shows the end of the history once. After that, nothing
@@ -96,21 +111,30 @@ const AITwinChat = () => {
   useEffect(() => {
     if (!isOpen) {
       if (wasOpenRef.current) {
-        const focusTarget = restoreFocusRef.current ?? document.querySelector<HTMLElement>("[data-guide-companion-button]");
-        if (focusTarget && document.contains(focusTarget)) {
-          focusTarget.focus();
-        }
+        // Back to where the visitor was, if that is still on screen; otherwise
+        // the companion button; otherwise leave focus alone.
+        // The opener may have been inside the ask box, which closed when the
+        // panel opened; the hero avatar stands in for it on the homepage.
+        const candidates = [
+          restoreFocusRef.current,
+          document.querySelector<HTMLElement>("[data-guide-companion-button]"),
+          document.querySelector<HTMLElement>("[data-guide-hero-avatar]"),
+        ];
+        const focusTarget = candidates.find((node): node is HTMLElement => Boolean(node) && document.contains(node) && isVisible(node!) && node!.tabIndex >= 0 && !node!.closest("[aria-hidden='true']"));
+        focusTarget?.focus({ preventScroll: true });
       }
 
+      restoreFocusRef.current = null;
       wasOpenRef.current = false;
       return;
     }
 
-    wasOpenRef.current = true;
-    const activeElement = document.activeElement;
-    if (activeElement instanceof HTMLElement && activeElement !== document.body) {
-      restoreFocusRef.current = activeElement;
+    if (!wasOpenRef.current) {
+      const activeElement = document.activeElement;
+      restoreFocusRef.current =
+        activeElement instanceof HTMLElement && activeElement !== document.body ? activeElement : null;
     }
+    wasOpenRef.current = true;
 
     const focusTimer = window.setTimeout(() => {
       inputRef.current?.focus();
@@ -118,6 +142,20 @@ const AITwinChat = () => {
 
     return () => window.clearTimeout(focusTimer);
   }, [isMobile, isOpen, shouldReduceMotion]);
+
+  // The input stays enabled while an answer streams, so focus isn't lost when
+  // sending. If focus drifted off it during the wait (the visitor tapped a
+  // chip or the send button), put it back inside the panel when the answer ends.
+  const wasLoadingRef = useRef(false);
+  useEffect(() => {
+    if (wasLoadingRef.current && !isLoading && isOpen) {
+      const dialog = dialogRef.current;
+      const active = document.activeElement;
+      const focusInPanel = !active || active === document.body || Boolean(dialog?.contains(active));
+      if (focusInPanel && active !== inputRef.current) inputRef.current?.focus({ preventScroll: true });
+    }
+    wasLoadingRef.current = isLoading;
+  }, [isLoading, isOpen]);
 
   const isTyping = input.trim().length > 0;
   useEffect(() => {
@@ -187,7 +225,8 @@ const AITwinChat = () => {
   const handleAgentNavigate = useCallback(
     (call: ChatToolCall) => {
       if (!call.href) return;
-      if (isMobile && call.href.startsWith("#")) return;
+      // The sheet covers the page, so neither a scroll nor a route change would be seen.
+      if (isMobile) return;
       window.setTimeout(() => runGuideAction({ href: call.href!, highlight: call.highlight }, router), 300);
     },
     [isMobile, router]
@@ -208,8 +247,9 @@ const AITwinChat = () => {
   const handleSend = useCallback(
     (text?: string) => {
       const message = (text ?? input).trim();
-      if (!message) return;
-      setInput("");
+      if (!message || isTwinChatBusy()) return;
+      // The busy check above is synchronous, so the store will take this one.
+      if (text === undefined) setInput("");
       void sendTwinMessage(message, { unavailable: chatAvailabilityStatus === "unavailable", onNavigate: handleAgentNavigate });
     },
     [chatAvailabilityStatus, handleAgentNavigate, input]
@@ -327,6 +367,12 @@ const AITwinChat = () => {
                       showTakeMeThere={isMobile}
                       onTakeMeThere={takeMeThere}
                     />
+                    {/* A kept partial answer: the text above, why it stopped here. */}
+                    {partialAnswerNote(msg) && (
+                      <p role="alert" className="mt-3 border-t border-amber-500/30 pt-2 text-xs font-medium text-amber-600 dark:text-amber-400">
+                        {partialAnswerNote(msg)}
+                      </p>
+                    )}
                   </>
                 ) : (
                   <span className="line-clamp-6">{msg.content}</span>
@@ -494,7 +540,7 @@ const AITwinChat = () => {
             placeholder={canSendMessages ? "Type a message..." : "AI chat is currently unavailable."}
             aria-label="Message Nikunj's AI twin"
             autoComplete="off"
-            disabled={!canSendMessages || isLoading}
+            disabled={!canSendMessages}
             className="flex-1 bg-background/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all placeholder:text-muted-foreground/50 disabled:cursor-not-allowed disabled:opacity-60"
           />
           <button
@@ -548,7 +594,7 @@ const AITwinChat = () => {
                 onClick={(e) => e.stopPropagation()}
                 role="dialog"
                 aria-modal="true"
-                aria-labelledby="ai-twin-title"
+                aria-label="Nikunj's AI Twin conversation"
                 aria-describedby="ai-twin-status"
               >
                 {renderChatContent()}
@@ -583,7 +629,7 @@ const AITwinChat = () => {
                 height: "32rem",
                 maxHeight: "calc(100vh - 8rem)",
               }}
-              aria-labelledby="ai-twin-title"
+              aria-label="Nikunj's AI Twin conversation"
               aria-describedby="ai-twin-status"
               role="dialog"
               aria-modal="false"

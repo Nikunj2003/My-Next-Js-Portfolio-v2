@@ -16,6 +16,14 @@ export function highlightGuideTarget(target: string) {
   return true;
 }
 
+/** Removes the ring right away and cancels its pending removal. */
+export function clearGuideHighlight() {
+  if (ringTimer) clearTimeout(ringTimer);
+  ringTimer = null;
+  if (typeof document === "undefined") return;
+  document.querySelectorAll("[data-guide-active]").forEach((node) => node.removeAttribute("data-guide-active"));
+}
+
 /** The on-screen centre of an element, for avatars to look at. */
 export function pointOfElement(element: Element) {
   const rect = element.getBoundingClientRect();

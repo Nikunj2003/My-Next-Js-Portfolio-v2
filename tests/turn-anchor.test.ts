@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { anchorScrollTop, computeReserve, distanceToContentEnd, shouldAnchor } from "../src/lib/chat/turn-anchor.ts";
+import { anchorScrollTop, computeReserve, contentHeightAboveSpacer, distanceToContentEnd, reachedAnchor, shouldAnchor } from "../src/lib/chat/turn-anchor.ts";
 import { selectLatestExchange } from "../src/lib/chat/latest-exchange.ts";
 
 test("the anchor lands just below the top of the scroller", () => {
@@ -13,19 +13,42 @@ test("the anchor lands just below the top of the scroller", () => {
 test("the reserve makes room for a short answer and is a fixed point", () => {
   const target = 884;
   const clientHeight = 500;
-  const first = computeReserve({ targetScrollTop: target, clientHeight, scrollHeight: 1100, currentReserve: 0 });
+  const first = computeReserve({ targetScrollTop: target, clientHeight, contentHeight: 1100 });
   assert.equal(first, 284);
-  const again = computeReserve({ targetScrollTop: target, clientHeight, scrollHeight: 1100 + first, currentReserve: first });
-  assert.equal(again, first, "recomputing with the spacer applied gives the same height");
+  // Applying the spacer moves the spacer's own offset not at all: content above it is unchanged.
+  assert.equal(computeReserve({ targetScrollTop: target, clientHeight, contentHeight: 1100 }), first);
 });
 
 test("the reserve shrinks as the answer grows and reaches zero", () => {
-  const base = { targetScrollTop: 884, clientHeight: 500, currentReserve: 0 };
-  const short = computeReserve({ ...base, scrollHeight: 1100 });
-  const longer = computeReserve({ ...base, scrollHeight: 1300 });
-  const full = computeReserve({ ...base, scrollHeight: 1500 });
+  const base = { targetScrollTop: 884, clientHeight: 500 };
+  const short = computeReserve({ ...base, contentHeight: 1100 });
+  const longer = computeReserve({ ...base, contentHeight: 1300 });
+  const full = computeReserve({ ...base, contentHeight: 1500 });
   assert.ok(longer < short);
   assert.equal(full, 0);
+});
+
+test("content shorter than the scroller still gets the full reserve (first question on a short mobile sheet)", () => {
+  // Welcome + first question: 300px of content in a 600px scroller. scrollHeight is
+  // clamped to 600, so "scrollHeight - spacer" would say 600 and under-reserve.
+  const scrollerTop = 100;
+  const content = contentHeightAboveSpacer({ spacerRectTop: 400, scrollerRectTop: scrollerTop, scrollTop: 0 });
+  assert.equal(content, 300);
+  // Question sits at y=150 inside the scroller; target = 150 - 16.
+  const target = anchorScrollTop(250, scrollerTop, 0, 16);
+  assert.equal(target, 134);
+  assert.equal(computeReserve({ targetScrollTop: target, clientHeight: 600, contentHeight: content }), 434);
+});
+
+test("content height follows the spacer when the scroller is scrolled", () => {
+  assert.equal(contentHeightAboveSpacer({ spacerRectTop: 100, scrollerRectTop: 100, scrollTop: 884 }), 884);
+  assert.equal(contentHeightAboveSpacer({ spacerRectTop: 0, scrollerRectTop: 100, scrollTop: 0 }), 0, "never negative");
+});
+
+test("the anchor counts as reached within a couple of pixels", () => {
+  assert.equal(reachedAnchor(884, 884), true);
+  assert.equal(reachedAnchor(882, 884), true);
+  assert.equal(reachedAnchor(700, 884), false);
 });
 
 test("anchors once per new question", () => {
@@ -36,8 +59,8 @@ test("anchors once per new question", () => {
 });
 
 test("distance to the real end ignores the spacer", () => {
-  assert.equal(distanceToContentEnd({ scrollTop: 884, clientHeight: 500, scrollHeight: 1384, reserve: 284 }), -284);
-  assert.equal(distanceToContentEnd({ scrollTop: 0, clientHeight: 500, scrollHeight: 2000, reserve: 0 }), 1500);
+  assert.equal(distanceToContentEnd({ scrollTop: 884, clientHeight: 500, contentHeight: 1100 }), -284);
+  assert.equal(distanceToContentEnd({ scrollTop: 0, clientHeight: 500, contentHeight: 2000 }), 1500);
 });
 
 test("latest exchange picks the last question and the answer after it", () => {

@@ -1,10 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { whenIdle } from "@/components/guide/GuideAvatarSlot";
 import { appendTwinExchange } from "@/lib/chat/twin-chat-store";
 import { openAsk, openPanel } from "@/lib/guide/companion-store";
+import { START_TOUR_EVENT } from "@/lib/guide/tour-control";
 
 const GuideCompanion = dynamic(() => import("@/components/guide/GuideCompanion"), { ssr: false, loading: () => null });
 
@@ -20,8 +21,42 @@ const GuideCompanion = dynamic(() => import("@/components/guide/GuideCompanion")
  */
 export function GuideCompanionMount() {
   const [ready, setReady] = useState(false);
+  const [pendingTour, setPendingTour] = useState(false);
+  const replayingRef = useRef(false);
 
   useEffect(() => whenIdle(() => setReady(true)), []);
+
+  // A tour start before the companion has loaded would reach nobody. Load it
+  // now, then replay the event once the narrator is listening (it marks <html>).
+  useEffect(() => {
+    const onStart = () => {
+      if (replayingRef.current || document.documentElement.dataset.guideTour === "ready") return;
+      setReady(true);
+      setPendingTour(true);
+    };
+    window.addEventListener(START_TOUR_EVENT, onStart);
+    return () => window.removeEventListener(START_TOUR_EVENT, onStart);
+  }, []);
+
+  useEffect(() => {
+    if (!ready || !pendingTour) return;
+    const startedAt = performance.now();
+    let frame = 0;
+    const poll = () => {
+      if (document.documentElement.dataset.guideTour === "ready") {
+        replayingRef.current = true;
+        window.dispatchEvent(new CustomEvent(START_TOUR_EVENT));
+        replayingRef.current = false;
+        setPendingTour(false);
+      } else if (performance.now() - startedAt < 5000) {
+        frame = requestAnimationFrame(poll);
+      } else {
+        setPendingTour(false);
+      }
+    };
+    frame = requestAnimationFrame(poll);
+    return () => cancelAnimationFrame(frame);
+  }, [ready, pendingTour]);
 
   useEffect(() => {
     const onOpen = (event: Event) => {

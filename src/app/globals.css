@@ -15,7 +15,8 @@
     --card-foreground: 220 25% 10%;
     --popover: 40 15% 95%;
     --popover-foreground: 220 25% 10%;
-    --primary: 175 84% 32%;
+    /* 28% lightness gives white button text 4.6:1 (32% was 3.65:1). Light theme only. */
+    --primary: 175 84% 28%;
     --primary-foreground: 0 0% 100%;
     /* Teal for small text: #0D968B fills fail AA (~3.4:1) at body sizes on paper. */
     --primary-text: 175 84% 26%;

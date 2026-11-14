@@ -19,12 +19,25 @@ export function anchorScrollTop(anchorRectTop: number, scrollerRectTop: number, 
 
 /**
  * Spacer height needed so the scroller can reach `targetScrollTop`.
- * `scrollHeight` includes the current spacer, so it is subtracted first; that
- * makes the result a fixed point (applying it and recomputing gives the same).
+ *
+ * `contentHeight` is the height of everything above the spacer, taken from the
+ * spacer's own offset inside the scroller. Deriving it as `scrollHeight - spacer`
+ * is wrong when the content is shorter than the scroller: `scrollHeight` is then
+ * clamped to `clientHeight`, so the subtraction under-reports the content and the
+ * first question never reaches the top (the short mobile sheet).
  */
-export function computeReserve(opts: { targetScrollTop: number; clientHeight: number; scrollHeight: number; currentReserve: number }) {
-  const content = opts.scrollHeight - opts.currentReserve;
-  return Math.max(0, Math.ceil(opts.targetScrollTop + opts.clientHeight - content));
+export function computeReserve(opts: { targetScrollTop: number; clientHeight: number; contentHeight: number }) {
+  return Math.max(0, Math.ceil(opts.targetScrollTop + opts.clientHeight - opts.contentHeight));
+}
+
+/** Content height above the spacer, from the spacer's rect and the scroller's (viewport coordinates). */
+export function contentHeightAboveSpacer(opts: { spacerRectTop: number; scrollerRectTop: number; scrollTop: number }) {
+  return Math.max(0, opts.spacerRectTop - opts.scrollerRectTop + opts.scrollTop);
+}
+
+/** Whether the scroller has reached the anchor target (within a pixel or two). */
+export function reachedAnchor(scrollTop: number, target: number, tolerance = 2) {
+  return Math.abs(scrollTop - target) <= tolerance;
 }
 
 /** Anchor once per turn: only when a new anchor id appears. */
@@ -33,6 +46,6 @@ export function shouldAnchor(previousId: string | null, nextId: string | null) {
 }
 
 /** How far the real content extends below the view, ignoring the spacer. */
-export function distanceToContentEnd(opts: { scrollTop: number; clientHeight: number; scrollHeight: number; reserve: number }) {
-  return opts.scrollHeight - opts.reserve - (opts.scrollTop + opts.clientHeight);
+export function distanceToContentEnd(opts: { scrollTop: number; clientHeight: number; contentHeight: number }) {
+  return opts.contentHeight - (opts.scrollTop + opts.clientHeight);
 }

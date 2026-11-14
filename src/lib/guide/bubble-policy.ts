@@ -43,6 +43,9 @@ function dropTip(state: BubbleState): BubbleState {
 export function reduceBubble(state: BubbleState, action: BubbleAction): BubbleState {
   switch (action.type) {
     case "ask/open":
+      // With the full panel open the conversation is already on screen; a
+      // second surface beside it would split it in two.
+      if (state.panelOpen) return state;
       return state.bubble === "ask" ? state : { ...dropTip(state), bubble: "ask" };
     case "ask/close":
       return state.bubble === "ask" ? { ...state, bubble: "none" } : state;
@@ -70,7 +73,8 @@ export function reduceBubble(state: BubbleState, action: BubbleAction): BubbleSt
       const dismissals = state.tipBudget.dismissals + 1;
       return {
         ...dropTip(state),
-        tipBudget: { ...state.tipBudget, dismissals, muted: state.tipBudget.muted || action.forever || dismissals >= 2 },
+        // One dismissal silences tips for this visit (canOfferTip); "Don't show tips" persists it.
+        tipBudget: { ...state.tipBudget, dismissals, muted: state.tipBudget.muted || action.forever },
       };
     }
     case "companion/visible": {
