@@ -34,7 +34,22 @@ const MOBILE_SIZE = 56;
 /** How long the glide between two sections' spots takes. */
 const GLIDE_MS = 650;
 /** The hand-off progress at which the conversation moves (mid cross-fade, while both are one disc). */
-const HANDOFF_SWAP_AT = 0.125;
+const HANDOFF_SWAP_AT = 0.22;
+/**
+ * How the hand-off maps onto scrolling: it begins once the visitor has
+ * scrolled HANDOFF_LEAD px from where the hero avatar rests, and runs over
+ * HANDOFF_SPAN of the screen height. It used to begin only as the avatar
+ * reached the navbar and finish 450px later, so one flick of the wheel (Lenis
+ * eases ~300px in about 0.4s) played the whole hand-off in a blink.
+ */
+const HANDOFF_LEAD = 40;
+const HANDOFF_SPAN = 1.1;
+function handoffProgress(heroBox: { top: number }, viewport: Viewport) {
+  // Measured from the hero's place at the top of the page (its top plus the
+  // scroll so far), so the start doesn't depend on the screen's height.
+  const restingTop = heroBox.top + window.scrollY;
+  return heroHandoffProgress(heroBox.top, restingTop - HANDOFF_LEAD, viewport.height * HANDOFF_SPAN);
+}
 /** How long after mounting the page counts as still settling (scroll restore, hero entrance). */
 const SETTLE_MS = 300;
 /** Per-frame movement above this while riding is a discontinuity, smoothed into a glide. */
@@ -228,7 +243,7 @@ export default function GuideCompanion() {
         if (now - mountedAtRef.current > SETTLE_MS && columnShown) {
           settledRef.current = true;
           // Decide who is the guide from the settled page, before anything is drawn.
-          if (hero) setHeroVisible(heroHere && heroBox ? heroHandoffProgress(heroBox.top, NAVBAR + 20, heroBox.height * 0.9) < HANDOFF_SWAP_AT : false);
+          if (hero) setHeroVisible(heroHere && heroBox ? handoffProgress(heroBox, viewport) < HANDOFF_SWAP_AT : false);
           setSettled(true);
           opacity.set(0);
           return;
@@ -246,7 +261,7 @@ export default function GuideCompanion() {
       // later). No smoothing and no timer: the same scroll position always
       // draws the same frame, a stop mid-way holds mid-way, and scrolling back
       // plays the same frames in reverse. Lenis already smooths the scroll.
-      const morph = heroHere && heroBox ? heroHandoffProgress(heroBox.top, NAVBAR + 20, heroBox.height * 0.9) : 1;
+      const morph = heroHere && heroBox ? handoffProgress(heroBox, viewport) : 1;
       const heroCentre = heroBox ? { x: heroBox.left + heroBox.width / 2, y: heroBox.top + heroBox.height / 2 } : { x: 0, y: 0 };
       // Styles the hero from the same hand-off frame the companion is drawn
       // from, so the two can't disagree by a frame.

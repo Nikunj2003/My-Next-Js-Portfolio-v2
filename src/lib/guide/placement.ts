@@ -175,10 +175,13 @@ export function underPanelPoint(input: {
  * One continuous motion: the avatar leaves the hero, shrinking as it goes,
  * and lands on its spot at its own size. The big hero avatar and the small
  * companion are drawn as the same disc (same centre, same face size) while
- * they cross-fade over the first quarter, so it reads as one character
+ * they cross-fade over the first 45%, so it reads as one character
  * moving, not one fading out and another appearing. Every output is
  * monotonic in `t`, so the motion never reverses.
  */
+/** The share of the hand-off spent cross-fading the two avatars. */
+export const FADE_SHARE = 0.45;
+
 export function heroHandoffFrame(input: {
   t: number;
   /** The hero avatar's centre and diameter, as laid out (untransformed). */
@@ -203,8 +206,10 @@ export function heroHandoffFrame(input: {
 
   // The big one is drawn at the small one's size and place as long as it is
   // visible, so the two are one disc while they cross-fade. It fades out over
-  // the first quarter and the small one fades in over the same stretch.
-  const swap = clamp(t / 0.25, 0, 1);
+  // the first part and the small one fades in over the same stretch.
+  // Over the first 45%: long enough to read as one face turning into the
+  // other at a normal scroll speed (a quarter was over in about 70ms).
+  const swap = clamp(t / FADE_SHARE, 0, 1);
   const companionOpacity = easeInOutCubic(swap);
   const heroOpacity = 1 - companionOpacity;
 

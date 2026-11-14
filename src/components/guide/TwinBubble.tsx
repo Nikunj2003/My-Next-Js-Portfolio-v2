@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { AnimatePresence, motion, useReducedMotion, useTransform, type MotionValue } from "framer-motion";
+import { AnimatePresence, frameData, motion, useReducedMotion, useTransform, type MotionValue } from "framer-motion";
 import { ArrowRight, X } from "lucide-react";
 import { AskContent } from "@/components/guide/AskContent";
 import { dispatchCompanion, useCompanionState } from "@/lib/guide/companion-store";
-import { bubbleMaxHeight, chooseBubbleSide, placeBubbleBeside, type BubbleSide, type Rect, type Viewport } from "@/lib/guide/placement";
+import { bubbleMaxHeight, chooseBubbleSide, easeInOutCubic, placeBubbleBeside, type BubbleSide, type Rect, type Viewport } from "@/lib/guide/placement";
 import { useLenisLock } from "@/hooks/useLenisLock";
 import { TIP_RULES } from "@/lib/guide/tips";
 import { NAVBAR_CLEARANCE as NAVBAR } from "@/lib/scroll";
@@ -16,6 +16,8 @@ const INITIAL_HEIGHT = 220;
 const GAP = 12;
 /** How long the avatar must be still before the bubble's side is chosen again. */
 const REST_MS = 350;
+/** A change of side fades out and back in over this long. */
+const SIDE_SWITCH_MS = 260;
 
 type TwinBubbleProps = {
   /** The avatar's position, written every frame by the companion. */
@@ -86,7 +88,12 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
   // The bubble's current DOM node. A callback ref, kept in state: when the
   // content kind changes (tip -> ask) AnimatePresence swaps nodes, and the
   // size observer below must follow the new one, not the one leaving.
-  const [node, setNode] = useState<HTMLDivElement | null>(null);
+  const [node, setNodeState] = useState<HTMLDivElement | null>(null);
+  const nodeRef = useRef<HTMLDivElement | null>(null);
+  const setNode = useCallback((next: HTMLDivElement | null) => {
+    nodeRef.current = next;
+    setNodeState(next);
+  }, []);
 
   // The bubble's natural height (content), measured; the layout below caps it.
   const heightRef = useRef(INITIAL_HEIGHT);
@@ -171,9 +178,12 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
     };
   }, [anchorX, anchorY, choose, open]);
 
-  // Placed with the side checked for this very position: when the held side
-  // stops fitting, the bubble moves to the next side in the same frame
-  // (waiting for React to re-render left it over the avatar for a frame or two).
+  // Placed with the side checked for this very position, so a side that stops
+  // fitting is left at once. A change of side is a quick fade: out where it
+  // was, back in on the new side, both riding the avatar's live position. (A
+  // slide between the two crossed over the avatar on the way.)
+  const switchRef = useRef<{ from: BubbleSide; start: number } | null>(null);
+  const placedSideRef = useRef<BubbleSide | null>(null);
   const place = (x: number, y: number) => {
     const bubbleSize = { width: BUBBLE_WIDTH, height: heightRef.current };
     let side = sideRef.current ?? openSide;
@@ -186,7 +196,41 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
         queueMicrotask(() => setOpenSide(fitted));
       }
     }
-    return placeBubbleBeside({ x, y }, anchorSize, side, bubbleSize, viewport, GAP);
+    // Framer Motion's frame clock: the same timestamp the avatar was placed with.
+    const now = frameData.timestamp;
+    if (placedSideRef.current !== null && placedSideRef.current !== side && !reduceMotion) {
+      switchRef.current = { from: switchRef.current?.from ?? placedSideRef.current, start: now };
+    }
+    placedSideRef.current = side;
+    let shown = side;
+    let opacity = 1;
+    const run = switchRef.current;
+    if (run) {
+      const t = (now - run.start) / SIDE_SWITCH_MS;
+      if (t >= 1) switchRef.current = null;
+      else {
+        // First half: fading out on the old side, unless it would now cover
+        // the avatar (it moved into that side); then it only fades in, on the
+        // new side. Second half: in on the new one.
+        const oldPlace = placeBubbleBeside({ x, y }, anchorSize, run.from, bubbleSize, viewport, GAP);
+        const oldCovers =
+          oldPlace.left < x + anchorSize && oldPlace.left + bubbleSize.width > x &&
+          oldPlace.top < y + anchorSize && oldPlace.top + Math.min(bubbleSize.height, oldPlace.maxHeight) > y;
+        if (t < 0.5 && oldCovers) run.start = now - SIDE_SWITCH_MS / 2;
+        const k = (now - run.start) / SIDE_SWITCH_MS;
+        shown = k < 0.5 ? run.from : side;
+        opacity = easeInOutCubic(Math.abs(1 - 2 * Math.min(1, k)));
+        // Keep it going even if the avatar is still.
+        requestAnimationFrame(() => {
+          left.set(place(anchorX.get(), anchorY.get()).left);
+          top.set(place(anchorX.get(), anchorY.get()).top);
+        });
+      }
+    }
+    // The panel's own entrance animates `opacity`; the swap uses `filter`, so the two never fight.
+    const el = nodeRef.current;
+    if (el) el.style.filter = opacity === 1 ? "" : `opacity(${opacity.toFixed(3)})`;
+    return placeBubbleBeside({ x, y }, anchorSize, shown, bubbleSize, viewport, GAP);
   };
   const left = useTransform([anchorX, anchorY], ([x, y]: number[]) => place(x, y).left);
   const top = useTransform([anchorX, anchorY], ([x, y]: number[]) => place(x, y).top);

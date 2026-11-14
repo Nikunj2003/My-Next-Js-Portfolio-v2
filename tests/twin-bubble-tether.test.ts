@@ -82,3 +82,11 @@ test("the bubble keeps the side being read after a spot change, and follows its 
   assert.match(bubble, /ref=\{setNode\}/);
   assert.match(bubble, /AnimatePresence mode="wait"/);
 });
+
+test("the hand-off is paced for a normal scroll, and a change of bubble side fades", () => {
+  assert.match(companion, /const HANDOFF_SPAN = 1\.1;/);
+  const placement = readFileSync(new URL("../src/lib/guide/placement.ts", import.meta.url), "utf8");
+  assert.match(placement, /export const FADE_SHARE = 0\.45;/);
+  assert.match(bubble, /const SIDE_SWITCH_MS = 260;/);
+  assert.match(bubble, /style\.filter = opacity === 1/);
+});
