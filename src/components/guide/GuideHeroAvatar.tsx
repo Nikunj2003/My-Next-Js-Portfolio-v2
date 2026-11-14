@@ -44,6 +44,10 @@ export function GuideHeroAvatar() {
   // the ask box inline, in place of its speech line and buttons. Scroll away
   // and the companion carries the same conversation on.
   const askOpen = companion.bubble === "ask" && companion.heroVisible && !isMobile;
+  // The companion has taken over (the hand-off is past its swap): the hero is
+  // faded out, so its frame loop can rest. Before the companion has loaded,
+  // and during the tour (narrated from the corner), the hero stays live.
+  const handedOff = companion.companionVisible && !companion.heroVisible && companion.bubble !== "tour";
 
   // Whether the hero avatar is the guide right now (`heroVisible`) is set by
   // the companion's frame loop from the scroll hand-off, so the conversation
@@ -141,7 +145,8 @@ export function GuideHeroAvatar() {
                 key={chip.label}
                 href={chip.href}
                 tabIndex={askOpen ? -1 : undefined}
-                className="pointer-events-auto absolute left-1/2 top-1/2 rounded-full border border-primary/25 glass-subtle px-3 py-1 font-mono text-[11px] uppercase tracking-wider text-primary-text shadow-accent-soft transition-colors hover:border-primary/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                // Hidden while the ask box is open: not clickable either.
+                className={`${askOpen ? "pointer-events-none" : "pointer-events-auto"} absolute left-1/2 top-1/2 rounded-full border border-primary/25 glass-subtle px-3 py-1 font-mono text-[11px] uppercase tracking-wider text-primary-text shadow-accent-soft transition-colors hover:border-primary/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
                 style={{ transform: `translate(-50%, -50%) translate(${Math.cos(radians) * 214}px, ${Math.sin(radians) * 186}px)` }}
               >
                 {chip.label}
@@ -172,7 +177,10 @@ export function GuideHeroAvatar() {
             className="pointer-events-none absolute inset-2 rounded-full border border-dashed border-primary/25 motion-safe:animate-[spin_40s_linear_infinite]"
           />
           <span aria-hidden="true" className="pointer-events-none absolute inset-10 rounded-full border border-primary/10 transition-colors group-hover:border-primary/30" />
-          <GuideAvatarSlot size={300} followPointer settleAfterMs={10_000} />
+          {/* Paused once the companion has taken over (it sits at opacity 0 then, which the
+              library's own offscreen check still counts as visible) and below lg, where
+              the hero column is display:none. */}
+          <GuideAvatarSlot size={300} followPointer settleAfterMs={10_000} paused={isMobile || handedOff} />
         </button>
       </motion.div>
 

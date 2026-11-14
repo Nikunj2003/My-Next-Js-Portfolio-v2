@@ -32,7 +32,7 @@ const AITwinSection = () => {
   return (
     <section id="ai-twin" className="section-padding relative z-10">
       <div className="container-narrow">
-        <div>
+        <div data-guide-spot="ai-twin">
           <SpotlightCard className="w-full relative">
             <div className="relative p-6 sm:p-8 md:p-12 lg:p-16 flex flex-col lg:flex-row items-center gap-12 lg:gap-16 text-center lg:text-left">
               {/* Background Glow */}

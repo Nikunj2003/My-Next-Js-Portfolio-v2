@@ -16,7 +16,7 @@ type NavigatorWithHints = Navigator & {
 };
 
 /** Low-power devices keep the static mark: the avatar is a nicety, not content. */
-function prefersStatic() {
+export function prefersStatic() {
   const nav = navigator as NavigatorWithHints;
   return Boolean(nav.connection?.saveData) || (typeof nav.deviceMemory === "number" && nav.deviceMemory <= 2);
 }

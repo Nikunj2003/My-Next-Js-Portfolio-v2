@@ -9,9 +9,7 @@ export const SECTION_TIPS: Record<string, string> = {
 };
 
 export const TIP_RULES = {
-  /** Section must be at least this visible... */
-  visibleRatio: 0.5,
-  /** ...for this long before a tip shows. */
+  /** How long a section must hold the screen before its tip shows. */
   dwellMs: 2500,
   /** Minimum gap between two tips. */
   gapMs: 20_000,

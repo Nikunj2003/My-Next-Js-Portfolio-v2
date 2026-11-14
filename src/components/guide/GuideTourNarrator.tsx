@@ -11,9 +11,8 @@ import { guideTargetSelector } from "@/lib/guide/targets";
 import { START_TOUR_EVENT } from "@/lib/guide/tour-control";
 import { planTourScroll, resolveTargetBox } from "@/lib/guide/tour-plan";
 import { TOUR_STEPS } from "@/lib/guide/tour";
-import { scrollToOffset } from "@/lib/scroll";
+import { scrollToOffset, NAVBAR_CLEARANCE as NAVBAR } from "@/lib/scroll";
 
-const NAVBAR = 85;
 /** Room the narrator takes at the bottom: the companion in the corner with its bubble beside it. */
 const DESKTOP_RESERVE = 232;
 const MOBILE_RESERVE = 260;
@@ -35,6 +34,7 @@ export function useGuideTour(isMobile: boolean) {
   const runRef = useRef(0);
   const cancelScrollRef = useRef<(() => void) | null>(null);
   const routeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingStartRef = useRef(false);
   const router = useRouter();
   const pathname = usePathname();
   const companion = useCompanionState();
@@ -154,11 +154,10 @@ export function useGuideTour(isMobile: boolean) {
       if (routeTimerRef.current) clearTimeout(routeTimerRef.current);
       routeTimerRef.current = null;
       if (pathname !== "/") {
+        // Start once the homepage has actually arrived (below), not after a
+        // guessed delay: a slow route left the bubble stuck on an empty tour.
+        pendingStartRef.current = true;
         router.push("/");
-        routeTimerRef.current = setTimeout(() => {
-          routeTimerRef.current = null;
-          goToRef.current(0);
-        }, 700);
         return;
       }
       goToRef.current(0);
@@ -172,8 +171,28 @@ export function useGuideTour(isMobile: boolean) {
     };
   }, [pathname, router]);
 
+  // A start requested from another route: run it once "/" is here and its
+  // first target exists (checked per frame, for up to five seconds).
+  useEffect(() => {
+    if (pathname !== "/" || !pendingStartRef.current) return;
+    let frame = 0;
+    const giveUp = performance.now() + 5000;
+    const wait = () => {
+      if (!pendingStartRef.current) return;
+      if (targetOf(TOUR_STEPS[0]) || performance.now() > giveUp) {
+        pendingStartRef.current = false;
+        goToRef.current(0);
+        return;
+      }
+      frame = requestAnimationFrame(wait);
+    };
+    frame = requestAnimationFrame(wait);
+    return () => cancelAnimationFrame(frame);
+  }, [pathname, targetOf]);
+
   useEffect(
     () => () => {
+      pendingStartRef.current = false;
       if (routeTimerRef.current) clearTimeout(routeTimerRef.current);
       routeTimerRef.current = null;
     },
@@ -229,7 +248,12 @@ export function useGuideTour(isMobile: boolean) {
   useEffect(() => {
     if (!active) return;
     let timer: ReturnType<typeof setTimeout> | null = null;
+    // Only a width change re-plans. Phone toolbars resize the height while the
+    // visitor scrolls, and re-planning then pulled the page back to the step.
+    let width = window.innerWidth;
     const onResize = () => {
+      if (window.innerWidth === width) return;
+      width = window.innerWidth;
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => runStep(index!), 150);
     };

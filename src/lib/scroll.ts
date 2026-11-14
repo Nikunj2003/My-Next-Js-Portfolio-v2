@@ -22,7 +22,9 @@ type ScrollToElementOptions = {
   onComplete?: () => void;
 };
 
-export const SECTION_SCROLL_OFFSET = 85;
+/** Height kept clear for the floating navbar, shared by scrolling and the guide's layout. */
+export const NAVBAR_CLEARANCE = 85;
+export const SECTION_SCROLL_OFFSET = NAVBAR_CLEARANCE;
 
 function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -89,8 +91,14 @@ export function scrollToElement(target: HTMLElement, options: ScrollToElementOpt
     complete();
     return;
   }
-  window.addEventListener("scrollend", complete, { once: true });
-  window.setTimeout(complete, 1200);
+  // Whichever comes first completes; the other is removed so nothing lingers.
+  const finish = () => {
+    window.removeEventListener("scrollend", finish);
+    window.clearTimeout(backstop);
+    complete();
+  };
+  window.addEventListener("scrollend", finish, { once: true });
+  const backstop = window.setTimeout(finish, 1200);
   window.scrollTo({ top, behavior: prefersReducedMotion() ? "auto" : "smooth" });
 }
 

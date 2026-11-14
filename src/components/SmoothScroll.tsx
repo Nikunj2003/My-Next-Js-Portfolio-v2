@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import Lenis from 'lenis';
+import { cancelFrame, frame } from 'framer-motion';
 import { scrollToHash, scrollToTop } from '@/lib/scroll';
 import { reapplyScrollLock } from '@/lib/scroll-lock';
 
@@ -106,22 +107,27 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
     const syncFrame = window.requestAnimationFrame(syncToRestoredPosition);
     const syncTimer = window.setTimeout(syncToRestoredPosition, 120);
 
-    let rafId: number | null = null;
-
-    function raf(time: number) {
-      lenis.raf(time);
-      rafId = window.requestAnimationFrame(raf);
-    }
+    /**
+     * Lenis runs on Framer Motion's frame loop, in its `read` step, rather than
+     * on a separate requestAnimationFrame. Every scroll-driven thing on the page
+     * (the guide companion, its bubble, the hero hand-off, the progress bar)
+     * then reads the scroll position Lenis has just written and renders in the
+     * same frame. With two separate loops their order could invert (it did
+     * after every tab switch), and the companion trailed the page by a frame.
+     */
+    let running = false;
+    const step = ({ timestamp }: { timestamp: number }) => lenis.raf(timestamp);
 
     const startRaf = () => {
-      if (rafId !== null) return;
-      rafId = window.requestAnimationFrame(raf);
+      if (running) return;
+      running = true;
+      frame.read(step, true);
     };
 
     const stopRaf = () => {
-      if (rafId === null) return;
-      window.cancelAnimationFrame(rafId);
-      rafId = null;
+      if (!running) return;
+      running = false;
+      cancelFrame(step);
     };
 
     const handleVisibilityChange = () => {

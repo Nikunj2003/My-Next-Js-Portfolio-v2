@@ -108,13 +108,16 @@ export function chooseBubbleSide(
     return avoid.reduce((sum, other) => sum + overlapArea(rect, other), 0);
   };
   if (fitting.length > 0) {
+    // The side that covers the least of what is being read. Preference order
+    // only breaks near-ties (within a tenth of the bubble's own area), so a
+    // preferred side covering a paragraph never beats a free one beside it.
+    const slack = bubble.width * Math.min(bubble.height, bubbleMaxHeight(viewport)) * 0.1;
     let best = fitting[0];
     let bestCovered = covered(best);
     for (const side of fitting.slice(1)) {
       if (bestCovered === 0) break;
       const area = covered(side);
-      // Only switch away from a preferred side for a clear improvement.
-      if (area < bestCovered * 0.6) {
+      if (area + slack < bestCovered) {
         best = side;
         bestCovered = area;
       }

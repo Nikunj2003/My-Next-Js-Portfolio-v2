@@ -172,3 +172,14 @@ test("hand-off progress is a plain function of the hero's position (same scroll,
   assert.equal(heroHandoffProgress(-500, 105, 300), 1);
   assert.equal(heroHandoffProgress(-45, 105, 300), heroHandoffProgress(-45, 105, 300));
 });
+
+test("the bubble opens on the side covering the least text, even against preference", () => {
+  const viewport = { width: 972, height: 575, insetTop: 85, insetBottom: 0 };
+  // A paragraph to the left of the avatar, nothing above it.
+  const text = [{ left: 400, top: 430, width: 470, height: 145 }];
+  // From the corner, "left" is preferred but lands on the paragraph; "top" is clear of it.
+  const side = chooseBubbleSide({ x: 884, y: 487 }, 68, { width: 360, height: 112 }, viewport, ["left", "top"], null, text);
+  assert.equal(side, "top");
+  // With nothing to avoid, preference still decides.
+  assert.equal(chooseBubbleSide({ x: 884, y: 487 }, 68, { width: 360, height: 112 }, viewport, ["left", "top"], null, []), "left");
+});

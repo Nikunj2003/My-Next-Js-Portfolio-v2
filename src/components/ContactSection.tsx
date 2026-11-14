@@ -173,7 +173,7 @@ const ContactSection = () => {
         </div>
 
         {/* Two equal panels with Spotlight */}
-        <div className="grid items-stretch gap-6 lg:grid-cols-2">
+        <div data-guide-spot="contact" className="grid items-stretch gap-6 lg:grid-cols-2">
 
           {/* Left panel */}
           <SpotlightCard className="h-full">

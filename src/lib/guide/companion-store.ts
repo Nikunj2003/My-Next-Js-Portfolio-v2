@@ -3,6 +3,9 @@
 import { useSyncExternalStore } from "react";
 import { initialBubbleState, reduceBubble, type BubbleAction, type BubbleState } from "@/lib/guide/bubble-policy";
 import { emitGuide } from "@/lib/guide/bus";
+// Loads the mood store with this module, so it hears events (chat/open) sent
+// before the lazily mounted companion has loaded.
+import "@/lib/guide/store";
 import { readGuidePrefs, writeGuidePrefs } from "@/lib/guide/prefs";
 
 /**

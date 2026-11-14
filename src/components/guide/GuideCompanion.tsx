@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { animate, motion, useMotionValue, useReducedMotion } from "framer-motion";
+import { animate, cancelFrame, frame as frameLoop, motion, useMotionValue, useReducedMotion } from "framer-motion";
 import GuideAvatar from "@/components/guide/GuideAvatar";
+import { StaticGuideMark, prefersStatic } from "@/components/guide/GuideAvatarSlot";
 import { TwinBubble } from "@/components/guide/TwinBubble";
 import { useGuideTour } from "@/components/guide/GuideTourNarrator";
 import { SECTION_IDS } from "@/lib/guide/anchors";
@@ -26,10 +27,10 @@ import {
 import { SECTION_TIPS, TIP_RULES } from "@/lib/guide/tips";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useChatAvailability } from "@/hooks/useChatAvailability";
+import { NAVBAR_CLEARANCE as NAVBAR } from "@/lib/scroll";
 
 const SIZE = 68;
 const MOBILE_SIZE = 56;
-const NAVBAR = 85;
 /** How long the glide between two sections' spots takes. */
 const GLIDE_MS = 650;
 /** The hand-off progress at which the conversation moves (mid cross-fade, while both are one disc). */
@@ -38,6 +39,8 @@ const HANDOFF_SWAP_AT = 0.125;
 const SETTLE_MS = 300;
 /** Per-frame movement above this while riding is a discontinuity, smoothed into a glide. */
 const MAX_RIDE_STEP = 90;
+/** While a tip is waiting its turn (cooldown, another bubble), ask again this often. */
+const TIP_RETRY_MS = 5000;
 
 /**
  * A spot is a rule for where the avatar sits, evaluated every frame: either
@@ -86,6 +89,11 @@ export default function GuideCompanion() {
   const opacity = useMotionValue(0);
   const scale = useMotionValue(1);
   const [spotKind, setSpotKind] = useState<"ride" | "corner">("ride");
+  // Save-data and low-memory devices get the still drawing, as the hero does.
+  const [lowPower] = useState(() => typeof navigator !== "undefined" && prefersStatic());
+  // True while the hero hand-off is between its ends (set by the loop on change only).
+  const [handingOffState, setHandingOffState] = useState(false);
+  const handingOffRef = useRef(false);
 
   // Availability drives the "offline" sleep.
   useEffect(() => {
@@ -120,7 +128,10 @@ export default function GuideCompanion() {
 
   // The rule for where to sit: per section on the homepage, the corner for the
   // tour, the panel, other pages and narrow screens.
-  const cornerOnly = touring || companion.panelOpen || !isHome;
+  // Phones scroll natively (touch bypasses Lenis), and a main-thread loop
+  // riding on content always trails a compositor scroll, so there it sits in
+  // the corner instead.
+  const cornerOnly = touring || companion.panelOpen || !isHome || isMobile;
   const rule = useMemo<SpotRule>(() => {
     if (cornerOnly || !activeSection) {
       if (!cornerOnly && isHome && !activeSection) return marginRule("margin");
@@ -163,17 +174,23 @@ export default function GuideCompanion() {
   }, [touring, visible]);
 
   useEffect(() => {
-    let frame = 0;
     mountedAtRef.current = performance.now();
-    const footer = () => document.querySelector("footer");
-    const tick = (now: number) => {
-      frame = requestAnimationFrame(tick);
+    // Coming back to the homepage is a fresh load for the hero: wait for it again.
+    settledRef.current = false;
+    watchLayoutCache();
+    const footer = () => cachedNode("footer", () => document.querySelector("footer"));
+    // Runs on Framer Motion's frame loop, in its update step: after Lenis has
+    // scrolled (SmoothScroll drives Lenis from the read step) and before the
+    // render step, so the avatar, the hero and the bubble are all drawn in the
+    // frame the page moved in. A separate requestAnimationFrame could run
+    // before Lenis and draw last frame's scroll.
+    const tick = ({ timestamp: now }: { timestamp: number }) => {
       const viewport: Viewport = { width: document.documentElement.clientWidth, height: window.innerHeight, insetTop: NAVBAR, insetBottom: 0 };
 
       if (isHome) {
         const sections = ["hero", ...SECTION_IDS]
           .map((id) => {
-            const node = document.getElementById(id);
+            const node = cachedNode(`section:${id}`, () => document.getElementById(id));
             if (!node) return null;
             const box = node.getBoundingClientRect();
             return { id, top: box.top, bottom: box.bottom };
@@ -192,7 +209,7 @@ export default function GuideCompanion() {
       // the companion grows out of it on its way to its spot. Scrolling back
       // up plays it in reverse. `morph` is 0 with the hero fully in view and 1
       // once it has handed over.
-      const hero = isHome && !isMobileRef.current ? document.querySelector<HTMLElement>("[data-guide-hero-avatar]") : null;
+      const hero = isHome && !isMobileRef.current ? cachedNode<HTMLElement>("hero", () => document.querySelector<HTMLElement>("[data-guide-hero-avatar]")) : null;
       // The hero's layout box, without the scale and fade this loop applies to
       // it: measuring the transformed box fed each frame's shrink back into the
       // next frame's progress, so the hand-off never settled (and thrashed
@@ -206,7 +223,7 @@ export default function GuideCompanion() {
       // Once settled, the companion simply appears at its spot (or stays
       // hidden over the hero); the hand-off only ever plays from real scrolling.
       if (!settledRef.current) {
-        const column = hero?.closest<HTMLElement>(".lg\\:col-span-5");
+        const column = hero?.closest<HTMLElement>("[data-guide-hero-column]");
         const columnShown = !column || Number(getComputedStyle(column).opacity) >= 0.99;
         if (now - mountedAtRef.current > SETTLE_MS && columnShown) {
           settledRef.current = true;
@@ -243,6 +260,10 @@ export default function GuideCompanion() {
 
       // Nothing to draw while hidden and not mid hand-off; keep tracking the section only.
       const handingOff = heroHere && morph > 0 && morph < 1;
+      if (handingOff !== handingOffRef.current) {
+        handingOffRef.current = handingOff;
+        setHandingOffState(handingOff);
+      }
       // The hand-off point decides which avatar is the guide (and hosts the
       // ask box), so the conversation moves exactly when the avatars swap.
       if (hero) setHeroVisible(heroHere ? morph < HANDOFF_SWAP_AT : heroBox ? heroBox.bottom > NAVBAR + heroBox.height * 0.5 && heroBox.width > 0 : false);
@@ -259,7 +280,9 @@ export default function GuideCompanion() {
 
       const current = ruleRef.current;
       const fallback = CORNER.point(size, viewport)!;
-      let target = current.point(size, viewport) ?? marginRule("").point(size, viewport) ?? fallback;
+      const ruled = current.point(size, viewport) ?? marginRule("").point(size, viewport);
+      const usedFallback = ruled === null;
+      let target = ruled ?? fallback;
       const footerTop = footer()?.getBoundingClientRect().top ?? null;
       target = clampToViewport(target, size, viewport, footerTop);
 
@@ -299,6 +322,10 @@ export default function GuideCompanion() {
           hero.style.transform = "";
           hero.style.opacity = morph >= 1 ? "0" : "";
           hero.style.pointerEvents = morph >= 1 ? "none" : "";
+        } else if (hero) {
+          // The hand-off isn't running (the tour started mid-way, reduced
+          // motion): the hero must not keep a half-faded, unclickable style.
+          styleHero(null);
         }
         scale.set(1);
         // Away from the hero (or with the hand-off complete): fully shown, or
@@ -310,15 +337,15 @@ export default function GuideCompanion() {
       posX.set(Math.round(point.x * 2) / 2);
       posY.set(Math.round(point.y * 2) / 2);
 
-      const kind = current === CORNER || target.x === fallback.x ? "corner" : "ride";
+      const kind = current === CORNER || usedFallback ? "corner" : "ride";
       if (kind !== kindRef.current) {
         kindRef.current = kind;
         setSpotKind(kind);
       }
     };
-    frame = requestAnimationFrame(tick);
+    frameLoop.update(tick, true);
     return () => {
-      cancelAnimationFrame(frame);
+      cancelFrame(tick);
       const hero = document.querySelector<HTMLElement>("[data-guide-hero-avatar]");
       if (hero) {
         hero.style.opacity = "";
@@ -332,11 +359,15 @@ export default function GuideCompanion() {
   // decides whether one may show (budget, cooldown, nothing else open).
   useEffect(() => {
     if (!isHome || !activeSection || !SECTION_TIPS[activeSection]) return;
-    const offer = () => dispatchCompanion({ type: "tip/offer", section: activeSection, text: SECTION_TIPS[activeSection], now: Date.now() });
+    // Not in a background tab: the session's few tips would be spent unseen.
+    const offer = () => {
+      if (document.visibilityState !== "visible") return;
+      dispatchCompanion({ type: "tip/offer", section: activeSection, text: SECTION_TIPS[activeSection], now: Date.now() });
+    };
     let interval = 0;
     const timer = window.setTimeout(() => {
       offer();
-      interval = window.setInterval(offer, 5000);
+      interval = window.setInterval(offer, TIP_RETRY_MS);
     }, TIP_RULES.dwellMs);
     return () => {
       window.clearTimeout(timer);
@@ -379,13 +410,17 @@ export default function GuideCompanion() {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || event.defaultPrevented) return;
       if (companion.bubble === "none") return; // the panel handles its own Escape
+      // The tour narrator ends the tour itself (announcement, one tour/end).
+      if (companion.bubble === "tour") return;
+      // The hero hosts the ask box while it is the guide; its own handler closes it.
+      if (companion.bubble === "ask" && heroVisible) return;
       event.preventDefault();
       dispatchCompanion({ type: "escape" });
       returnFocus();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [companion.bubble, companion.panelOpen, returnFocus]);
+  }, [companion.bubble, companion.panelOpen, heroVisible, returnFocus]);
 
   return (
     <>
@@ -413,7 +448,13 @@ export default function GuideCompanion() {
             (visible ? "pointer-events-auto cursor-pointer" : "pointer-events-none")
           }
         >
-          <GuideAvatar size={size - 16} lookAt={lookAt} settleAfterMs={10_000} paused={!visible} />
+          {lowPower ? (
+            <StaticGuideMark size={size - 16} />
+          ) : (
+            // Live from the start of the hand-off, so the two avatars cross-fade
+            // as two live faces; paused only while it is fully hidden.
+            <GuideAvatar size={size - 16} lookAt={lookAt} settleAfterMs={10_000} paused={!visible && !handingOffState} />
+          )}
         </button>
       </motion.div>
 
@@ -443,7 +484,7 @@ export default function GuideCompanion() {
  * left and the avatar's offset size: no transform is involved.
  */
 function heroLayoutRect(hero: HTMLElement) {
-  const wrapper = hero.closest<HTMLElement>('[data-guide-target="hero-guide"]') ?? hero;
+  const wrapper = cachedNode<HTMLElement>("hero-wrapper", () => hero.closest<HTMLElement>('[data-guide-target="hero-guide"]')) ?? hero;
   const box = wrapper.getBoundingClientRect();
   const width = hero.offsetWidth;
   const height = hero.offsetHeight;
@@ -457,11 +498,42 @@ function heroLayoutRect(hero: HTMLElement) {
 /* Spots                                                                     */
 /* ------------------------------------------------------------------------ */
 
+/*
+ * Reads that don't change while scrolling (which element, its computed
+ * padding or sticky offset) are cached, so each frame only reads the rects it
+ * needs. A resize or a DOM change (route, a section mounting) clears them; a
+ * cached node that has left the page is looked up again.
+ */
+const nodeCache = new Map<string, Element | null>();
+const styleCache = new Map<string, number | { panel: HTMLElement; stickyTop: number } | null>();
+let cacheWatched = false;
+function clearLayoutCache() {
+  nodeCache.clear();
+  styleCache.clear();
+}
+function watchLayoutCache() {
+  if (cacheWatched || typeof window === "undefined") return;
+  cacheWatched = true;
+  window.addEventListener("resize", clearLayoutCache);
+  new MutationObserver(clearLayoutCache).observe(document.body, { childList: true, subtree: false });
+}
+function cachedNode<T extends Element>(key: string, find: () => T | null): T | null {
+  const hit = nodeCache.get(key) as T | null | undefined;
+  if (hit && hit.isConnected) return hit;
+  const found = find();
+  nodeCache.set(key, found);
+  return found;
+}
+
 function contentLeft() {
-  const column = document.querySelector("#main-content .container-narrow") ?? document.querySelector(".container-narrow");
+  const column = cachedNode("content", () => document.querySelector("#main-content .container-narrow") ?? document.querySelector(".container-narrow"));
   if (!column) return 0;
-  const box = column.getBoundingClientRect();
-  return box.left + (parseFloat(getComputedStyle(column).paddingLeft) || 0);
+  let padding = styleCache.get("content-padding") as number | undefined;
+  if (padding === undefined) {
+    padding = parseFloat(getComputedStyle(column).paddingLeft) || 0;
+    styleCache.set("content-padding", padding);
+  }
+  return column.getBoundingClientRect().left + padding;
 }
 
 /** The left margin, at mid-height. Fixed to the screen. */
@@ -474,13 +546,21 @@ const CORNER: SpotRule = { key: "corner", prefer: ["left", "top"], point: (size,
 /** Is this element laid out as a sticky side column right now (desktop)? */
 /** The section's sticky intro panel and the column that sticks, when the sticky layout is on (desktop). */
 function stickyPanel(section: string) {
-  const panel = document.getElementById(section)?.querySelector<HTMLElement>(".panel-sticky");
-  if (!panel) return null;
-  for (let node: HTMLElement | null = panel; node && node.id !== section; node = node.parentElement) {
+  const key = `sticky:${section}`;
+  const hit = styleCache.get(key) as { panel: HTMLElement; stickyTop: number } | null | undefined;
+  if (hit !== undefined && (hit === null || hit.panel.isConnected)) return hit;
+  let result: { panel: HTMLElement; stickyTop: number } | null = null;
+  const panel = document.getElementById(section)?.querySelector<HTMLElement>("[data-guide-panel]");
+  for (let node: HTMLElement | null = panel ?? null; panel && node && node.id !== section; node = node.parentElement) {
     const style = getComputedStyle(node);
-    if (style.position === "sticky") return { panel, stickyTop: parseFloat(style.top) || 0 };
+    if (style.position === "sticky") {
+      result = { panel, stickyTop: parseFloat(style.top) || 0 };
+      break;
+    }
   }
-  return null;
+  // Only remember a miss once the section exists, so it is looked for again after it mounts.
+  if (result || document.getElementById(section)) styleCache.set(key, result);
+  return result;
 }
 
 /**
@@ -518,7 +598,7 @@ function blockCornerRule(section: string, selector: string, offset: Point = { x:
     key: `block:${section}`,
     prefer: ["right", "bottom", "top"],
     point: (size, viewport) => {
-      const block = document.getElementById(section)?.querySelector(selector);
+      const block = cachedNode(`block:${section}`, () => document.getElementById(section)?.querySelector(selector) ?? null);
       const left = contentLeft();
       if (!block) return gutterPoint(left, size, viewport);
       const box = block.getBoundingClientRect();
@@ -540,6 +620,6 @@ const SECTION_RULES: Record<string, SpotRule> = {
   experience: underPanelRule("experience"),
   skills: underPanelRule("skills"),
   work: blockCornerRule("work", '[data-guide-target="work-featured"]', { x: 0, y: -12 }),
-  "ai-twin": blockCornerRule("ai-twin", ".container-narrow > div", { x: 0, y: 24 }),
-  contact: blockCornerRule("contact", ".grid.items-stretch", { x: 0, y: 24 }),
+  "ai-twin": blockCornerRule("ai-twin", '[data-guide-spot="ai-twin"]', { x: 0, y: 24 }),
+  contact: blockCornerRule("contact", '[data-guide-spot="contact"]', { x: 0, y: 24 }),
 };

@@ -192,6 +192,7 @@ const HeroSection = () => {
             initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: shouldReduceMotion ? 0.2 : 1.2, delay: shouldReduceMotion ? 0 : 0.4, ease: [0.16, 1, 0.3, 1] }}
+            data-guide-hero-column
             className="hidden lg:flex items-center justify-end lg:col-span-5 relative"
           >
              <div className="absolute inset-0 bg-[radial-gradient(circle,hsl(var(--primary)/0.15)_0%,transparent_70%)] rounded-full scale-150" />

@@ -90,7 +90,9 @@ export function reduceGuide(model: GuideModel, event: GuideEvent): GuideModel {
     }
     case "chat/close": {
       // Closing mid-answer leaves the request running, so the avatar keeps showing it.
-      if (isBusy(model)) return wake({ ...model, chatOpen: false });
+      // Typing isn't a request: closing with a draft ends it (it used to stay
+      // "Listening" for good, blocking the idle ladder and click reactions).
+      if (isBusy(model) && model.phase !== "typing") return wake({ ...model, chatOpen: false });
       return wake({ ...model, chatOpen: false, phase: "closed", tool: null, transient: null });
     }
     case "chat/reset": {

@@ -37,12 +37,12 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
   const { status } = useChatAvailability();
   const router = useRouter();
   const [input, setInputState] = useState(getAskDraft);
+  // The draft is shared with the other ask surface (hero <-> companion). It is
+  // written outside the state updater, which must stay pure.
   const setInput = useCallback((next: string | ((current: string) => string)) => {
-    setInputState((current) => {
-      const value = typeof next === "function" ? next(current) : next;
-      setAskDraft(value);
-      return value;
-    });
+    const value = typeof next === "function" ? next(getAskDraft()) : next;
+    setAskDraft(value);
+    setInputState(value);
   }, []);
   const inputRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -60,10 +60,11 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
   );
 
   const send = useCallback(
-    (text: string) => {
+    (text: string, fromComposer = true) => {
       const message = text.trim();
       if (!message || isTwinChatBusy()) return false;
-      setInput("");
+      // A queued question ("Ask about this") leaves what the visitor is typing alone.
+      if (fromComposer) setInput("");
       void sendTwinMessage(message, { unavailable, onNavigate }).then((accepted) => {
         // Put the text back if the store turned it down, so nothing is lost.
         if (!accepted) setInput((current) => current || message);
@@ -110,7 +111,7 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
     const timer = window.setTimeout(() => {
       if (isTwinChatBusy()) return;
       const question = takePendingQuestion();
-      if (question) send(question);
+      if (question) send(question, false);
     }, 0);
     return () => window.clearTimeout(timer);
   }, [isLoading, pendingQuestion, send]);
@@ -230,7 +231,7 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
               <button
                 key={chip}
                 type="button"
-                onClick={() => send(chip)}
+                onClick={() => send(chip, false)}
                 disabled={unavailable}
                 className="min-h-11 max-w-full truncate rounded-full bg-primary/10 md:min-h-8 px-3 text-xs text-foreground transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-60"
               >

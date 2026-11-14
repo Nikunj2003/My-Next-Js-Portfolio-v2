@@ -7,13 +7,15 @@ import { AskContent } from "@/components/guide/AskContent";
 import { dispatchCompanion, useCompanionState } from "@/lib/guide/companion-store";
 import { bubbleMaxHeight, chooseBubbleSide, placeBubbleBeside, type BubbleSide, type Rect, type Viewport } from "@/lib/guide/placement";
 import { useLenisLock } from "@/hooks/useLenisLock";
+import { TIP_RULES } from "@/lib/guide/tips";
+import { NAVBAR_CLEARANCE as NAVBAR } from "@/lib/scroll";
 
 const BUBBLE_WIDTH = 360;
 /** A guess at the bubble's height before it has been measured. */
 const INITIAL_HEIGHT = 220;
 const GAP = 12;
-/** Space kept clear at the top for the floating navbar. */
-const NAVBAR = 85;
+/** How long the avatar must be still before the bubble's side is chosen again. */
+const REST_MS = 350;
 
 type TwinBubbleProps = {
   /** The avatar's position, written every frame by the companion. */
@@ -81,15 +83,27 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
   const reduceMotion = Boolean(useReducedMotion());
   const close = useClose(showing, returnFocus);
   const open = showing !== "none";
-  const nodeRef = useRef<HTMLDivElement | null>(null);
+  // The bubble's current DOM node. A callback ref, kept in state: when the
+  // content kind changes (tip -> ask) AnimatePresence swaps nodes, and the
+  // size observer below must follow the new one, not the one leaving.
+  const [node, setNode] = useState<HTMLDivElement | null>(null);
 
   // The bubble's natural height (content), measured; the layout below caps it.
   const heightRef = useRef(INITIAL_HEIGHT);
+  /** Whether the current bubble node has been measured yet. */
+  const measuredRef = useRef(false);
   const [viewport, setViewport] = useState<Viewport>(readViewport);
   useEffect(() => {
-    const onResize = () => setViewport(readViewport());
+    let timer = 0;
+    const onResize = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => setViewport(readViewport()), 120);
+    };
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("resize", onResize);
+    };
   }, []);
 
   // The side. Chosen from the free space when the bubble opens, when the
@@ -124,9 +138,9 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
       return;
     }
     choose(true);
-    // The spot changed: the avatar is gliding there now. Choose again, from
-    // the free space at the new spot, once it has arrived.
-    const settle = window.setTimeout(() => choose(true), 600);
+    // The spot changed: the avatar is gliding there now. Check again once it
+    // has arrived, keeping the side the visitor is reading while it still fits.
+    const settle = window.setTimeout(() => choose(false), 600);
     return () => window.clearTimeout(settle);
   }, [choose, open, spotKey, showing]);
   useEffect(() => {
@@ -138,42 +152,79 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
         choose(false);
       });
     };
-    const offX = anchorX.on("change", schedule);
-    const offY = anchorY.on("change", schedule);
+    // Once the avatar has been still for a moment, choose again from the free
+    // space where it now rests (the page moved under it while it rode along):
+    // the side held while scrolling may now cover the text being read.
+    let rest = 0;
+    const onMove = () => {
+      schedule();
+      window.clearTimeout(rest);
+      rest = window.setTimeout(() => choose(true), REST_MS);
+    };
+    const offX = anchorX.on("change", onMove);
+    const offY = anchorY.on("change", onMove);
     return () => {
       offX();
       offY();
       cancelAnimationFrame(frame);
+      window.clearTimeout(rest);
     };
   }, [anchorX, anchorY, choose, open]);
 
-  const place = (x: number, y: number) =>
-    placeBubbleBeside({ x, y }, anchorSize, openSide, { width: BUBBLE_WIDTH, height: heightRef.current }, viewport, GAP);
+  // Placed with the side checked for this very position: when the held side
+  // stops fitting, the bubble moves to the next side in the same frame
+  // (waiting for React to re-render left it over the avatar for a frame or two).
+  const place = (x: number, y: number) => {
+    const bubbleSize = { width: BUBBLE_WIDTH, height: heightRef.current };
+    let side = sideRef.current ?? openSide;
+    if (open) {
+      const fitted = chooseBubbleSide({ x, y }, anchorSize, bubbleSize, viewport, preferKey.split(",") as BubbleSide[], side);
+      if (fitted !== side) {
+        side = fitted;
+        sideRef.current = fitted;
+        // The data attribute and transform origin catch up on the next render.
+        queueMicrotask(() => setOpenSide(fitted));
+      }
+    }
+    return placeBubbleBeside({ x, y }, anchorSize, side, bubbleSize, viewport, GAP);
+  };
   const left = useTransform([anchorX, anchorY], ([x, y]: number[]) => place(x, y).left);
   const top = useTransform([anchorX, anchorY], ([x, y]: number[]) => place(x, y).top);
   const maxHeight = bubbleMaxHeight(viewport);
 
   // Re-place when the content grows (an answer streaming in): bump the
   // motion values so the transforms re-run with the new height.
+  const chooseRef = useRef(choose);
+  useLayoutEffect(() => {
+    chooseRef.current = choose;
+  }, [choose]);
+  // Each bubble is measured afresh. The height used to carry over from the
+  // previous one: after the ask box (about 290px) a tip (about 110px) was
+  // placed as if it were 290px tall, so "below the avatar" didn't fit and it
+  // went beside it, over the text, and stayed there once measured.
+  useLayoutEffect(() => {
+    heightRef.current = INITIAL_HEIGHT;
+    measuredRef.current = false;
+  }, [node]);
   useEffect(() => {
-    const node = nodeRef.current;
     if (!node || !open) return;
     const observer = new ResizeObserver(() => {
       const height = node.scrollHeight;
-      if (height > 0 && Math.abs(height - heightRef.current) >= 1) {
-        const first = heightRef.current === INITIAL_HEIGHT;
+      if (height > 0 && (!measuredRef.current || Math.abs(height - heightRef.current) >= 1)) {
+        const first = !measuredRef.current;
+        measuredRef.current = true;
         heightRef.current = height;
         left.set(place(anchorX.get(), anchorY.get()).left);
         top.set(place(anchorX.get(), anchorY.get()).top);
         // The first real measurement may show the guessed side doesn't fit.
-        if (first) choose(true);
-        else choose(false);
+        if (first) chooseRef.current(true);
+        else chooseRef.current(false);
       }
     });
     observer.observe(node);
     return () => observer.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, showing, openSide, viewport]);
+  }, [node, open, showing, openSide, viewport]);
 
   // Wheel over the bubble: the answer area scrolls itself (it is marked
   // data-lenis-prevent and contains its own overscroll). Everywhere else the
@@ -183,11 +234,13 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
   const content = bubbleContent(showing, tip, { activeSection, onExpand, close, reduceMotion, tourContent });
 
   return (
-    <AnimatePresence>
+    // One bubble node at a time: the old one leaves before the new one enters,
+    // so `#twin-bubble` is never on two elements.
+    <AnimatePresence mode="wait">
       {open && content && (
         <motion.div
           key={`twin-bubble-${showing}`}
-          ref={nodeRef}
+          ref={setNode}
           id="twin-bubble"
           data-placement={openSide}
           role={showing === "ask" ? "dialog" : "group"}
@@ -287,7 +340,7 @@ function TipContent({ text }: { text: string }) {
   const [hovered, setHovered] = useState(false);
   useEffect(() => {
     if (hovered) return;
-    const timer = window.setTimeout(() => dispatchCompanion({ type: "tip/expire" }), 6000);
+    const timer = window.setTimeout(() => dispatchCompanion({ type: "tip/expire" }), TIP_RULES.showMs);
     return () => window.clearTimeout(timer);
   }, [hovered]);
 

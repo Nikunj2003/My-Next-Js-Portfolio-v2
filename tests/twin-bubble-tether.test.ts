@@ -6,7 +6,11 @@ const bubble = readFileSync(new URL("../src/components/guide/TwinBubble.tsx", im
 const companion = readFileSync(new URL("../src/components/guide/GuideCompanion.tsx", import.meta.url), "utf8");
 
 test("one frame loop places the avatar; the bubble is derived from the same values in the same frame", () => {
-  assert.match(companion, /requestAnimationFrame\(tick\)/);
+  // On Framer Motion's frame loop, after Lenis (read step) and before render.
+  assert.match(companion, /frameLoop\.update\(tick, true\)/);
+  assert.doesNotMatch(companion, /requestAnimationFrame\(tick\)/);
+  const smooth = readFileSync(new URL("../src/components/SmoothScroll.tsx", import.meta.url), "utf8");
+  assert.match(smooth, /frame\.read\(step, true\)/, "Lenis scrolls in the read step of the same loop");
   assert.match(companion, /anchorX=\{posX\}/);
   assert.match(bubble, /useTransform\(\[anchorX, anchorY\]/);
   assert.match(bubble, /placeBubbleBeside/);
@@ -56,4 +60,25 @@ test("the hero hands off straight to About's spot (no second hop at the hero/Abo
 
 test("the faded hero never catches clicks", () => {
   assert.match(companion, /hero\.style\.pointerEvents = frame && frame\.heroOpacity < 0\.5 \? "none" : ""/);
+});
+
+test("phones keep the companion in the corner (touch scroll is native; riding it trails)", () => {
+  assert.match(companion, /const cornerOnly = touring \|\| companion\.panelOpen \|\| !isHome \|\| isMobile;/);
+});
+
+test("the companion and the hero avatar pause when they can't be seen", () => {
+  assert.match(companion, /paused=\{!visible && !handingOffState\}/, "live during the hand-off");
+  assert.match(companion, /prefersStatic\(\)/, "low-power devices get the still drawing");
+  const hero = readFileSync(new URL("../src/components/guide/GuideHeroAvatar.tsx", import.meta.url), "utf8");
+  assert.match(hero, /paused=\{isMobile \|\| handedOff\}/);
+});
+
+test("the companion finds its anchors by data attributes, not layout class names", () => {
+  assert.doesNotMatch(companion, /col-span-5|\.panel-sticky|container-narrow > div|\.grid\.items-stretch/);
+});
+
+test("the bubble keeps the side being read after a spot change, and follows its current node", () => {
+  assert.match(bubble, /setTimeout\(\(\) => choose\(false\), 600\)/);
+  assert.match(bubble, /ref=\{setNode\}/);
+  assert.match(bubble, /AnimatePresence mode="wait"/);
 });

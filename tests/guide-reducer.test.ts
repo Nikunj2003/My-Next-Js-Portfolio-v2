@@ -197,3 +197,12 @@ test("a late tour step cannot revive a tour that has ended", () => {
   assert.equal(late.pointAt, null);
   assert.equal(reduceGuide(ended, { type: "tour/end", completed: true }), ended, "a stray end does not celebrate");
 });
+
+test("closing the chat with a draft typed ends 'typing' (it stayed Listening for good)", () => {
+  let model = reduceGuide(initialGuideModel, { type: "chat/open" } as GuideEvent);
+  model = reduceGuide(model, { type: "chat/typing", active: true } as GuideEvent);
+  assert.equal(model.phase, "typing");
+  model = reduceGuide(model, { type: "chat/close" } as GuideEvent);
+  assert.equal(model.phase, "closed");
+  assert.equal(model.chatOpen, false);
+});
