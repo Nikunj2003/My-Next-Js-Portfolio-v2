@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 
 import { DEFAULT_CHAT_COMPLETIONS_URL, resolveChatCompletionsUrl } from "../src/lib/llm-url.ts";
 
-test("empty or missing value falls back to the default endpoint", () => {
+test("empty or missing value falls back to the Bifrost endpoint", () => {
+  assert.equal(DEFAULT_CHAT_COMPLETIONS_URL, "https://bifrost.codenex.dev/v1/chat/completions");
   assert.equal(resolveChatCompletionsUrl(undefined), DEFAULT_CHAT_COMPLETIONS_URL);
   assert.equal(resolveChatCompletionsUrl("   "), DEFAULT_CHAT_COMPLETIONS_URL);
 });
@@ -21,8 +22,8 @@ test("an OpenAI-style /v1 base gets /chat/completions appended", () => {
 
 test("a full endpoint URL is kept as-is", () => {
   assert.equal(
-    resolveChatCompletionsUrl("https://integrate.api.nvidia.com/v1/chat/completions/"),
-    "https://integrate.api.nvidia.com/v1/chat/completions",
+    resolveChatCompletionsUrl("https://llm.example.com/v1/chat/completions/"),
+    "https://llm.example.com/v1/chat/completions",
   );
 });
 

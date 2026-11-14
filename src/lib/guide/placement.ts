@@ -79,6 +79,13 @@ export function computeDock(input: DockInput): Dock {
 export type Perches = {
   /** A sticky intro panel the companion can sit under (About, Experience, Skills). */
   under?: Rect | null;
+  /**
+   * Narrow sticky column (a case study's table of contents): sit in the empty
+   * space under it; the bubble opens upward over the table of contents.
+   */
+  underNarrow?: Rect | null;
+  /** A left-aligned page header: sit in the empty space at its right end. */
+  headerRight?: Rect | null;
   /** A centred header with free space on its left (Work). */
   beside?: Rect | null;
   /** A card whose top edge the companion can perch on (AI Twin, Contact). */
@@ -104,6 +111,26 @@ export function pickSpot(input: DockInput & { perches: Perches }): Dock {
     const y = hero.top + hero.height - size;
     if (fits(y)) {
       return { mode: "perch", x: Math.round(hero.left - size / 2), y: Math.round(y), side: "left", prefer: ["right", "top"], align: "end" };
+    }
+  }
+
+  const narrow = perches.underNarrow;
+  if (narrow && narrow.height > 0) {
+    const y = narrow.top + narrow.height + 24;
+    if (fits(y)) {
+      // The column is narrower than the bubble, so the bubble opens upward
+      // over the table of contents (which is just navigation) rather than
+      // down or sideways across the article text.
+      return { mode: "perch", x: Math.round(narrow.left + 20), y: Math.round(y), side: "left", prefer: ["top", "bottom", "right"], align: "start" };
+    }
+  }
+
+  const headerRight = perches.headerRight;
+  if (headerRight && headerRight.height > 0) {
+    const y = headerRight.top + headerRight.height / 2 - size / 2;
+    if (fits(y)) {
+      const x = headerRight.left + headerRight.width - size - 24;
+      return { mode: "perch", x: Math.round(x), y: Math.round(y), side: "right", prefer: ["left", "bottom"], align: "end" };
     }
   }
 
@@ -176,7 +203,13 @@ export function placeBubble({ anchor, bubble, viewport, prefer, avoid = [], gap 
     return { side, left: Math.round(left), top: Math.round(top), score: overflow + (collides ? 10_000 : 0) };
   });
   const best = candidates.find((candidate) => candidate.score === 0) ?? [...candidates].sort((a, b) => a.score - b.score)[0];
-  return { side: best.side, left: best.left, top: best.top };
+  // Whatever wins, it is always pulled fully back on screen. Covering a little
+  // text beats being cut off at the window edge.
+  return {
+    side: best.side,
+    left: Math.round(clamp(best.left, 8, viewport.width - 8 - bubble.width)),
+    top: Math.round(clamp(best.top, minTop, maxBottom - bubble.height)),
+  };
 }
 
 function intersects(a: Rect, b: Rect) {

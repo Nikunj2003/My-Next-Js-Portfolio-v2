@@ -124,3 +124,16 @@ test("over the hero, the companion stands at the hero avatar's lower left with t
   assert.equal(spot.y, 246 + 344 - 68);
   assert.equal(spot.prefer[0], "right");
 });
+
+test("case study: sit under the narrow table of contents, bubble opening over it", () => {
+  const spot = pickSpot({ ...at(1440, left), perches: { underNarrow: { left: 176, top: 112, width: 224, height: 371 } } });
+  assert.equal(spot.mode, "perch");
+  assert.equal(spot.prefer[0], "top");
+});
+
+test("case-study index: sit at the right end of the left-aligned header", () => {
+  const spot = pickSpot({ ...at(1440, left), perches: { headerRight: { left: 176, top: 200, width: 1088, height: 200 } } });
+  assert.equal(spot.mode, "perch");
+  assert.equal(spot.x, 176 + 1088 - 68 - 24);
+  assert.equal(spot.side, "right");
+});

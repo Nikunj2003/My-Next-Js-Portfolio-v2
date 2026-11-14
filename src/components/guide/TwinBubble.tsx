@@ -69,8 +69,11 @@ export function TwinBubble(props: TwinBubbleProps) {
 
   const placement = useMemo(() => {
     if (!dock || typeof window === "undefined") return { side: "left" as const, dx: -BUBBLE_WIDTH - 12, dy: 0 };
-    const prefer = dock.prefer;
+    // Try the dock's preferred sides first, then the rest, and skip any spot
+    // that would cover the reading text currently on screen.
+    const prefer = [...dock.prefer, ...(["left", "right", "top", "bottom"] as const).filter((side) => !dock.prefer.includes(side))];
     const placed = placeBubble({
+      avoid: readingRects(),
       align: dock.align,
       anchor: { left: dock.x, top: dock.y, width: size, height: size },
       bubble: { width: BUBBLE_WIDTH, height: bubbleHeight },
@@ -172,6 +175,23 @@ export function TwinBubble(props: TwinBubbleProps) {
       )}
     </AnimatePresence>
   );
+}
+
+/**
+ * Text the bubble must not cover: headings and paragraphs inside the page's
+ * reading column that are on screen. Cards and navigation are fair game.
+ */
+function readingRects() {
+  if (typeof document === "undefined") return [];
+  const nodes = document.querySelectorAll("main h1, main h2, main h3, main p, main li");
+  const rects: { left: number; top: number; width: number; height: number }[] = [];
+  nodes.forEach((node) => {
+    if (node.closest("[data-guide-target], nav, #twin-bubble, [data-guide-hero-avatar]")) return;
+    const box = node.getBoundingClientRect();
+    if (box.width === 0 || box.bottom < 0 || box.top > window.innerHeight) return;
+    rects.push({ left: box.left, top: box.top, width: box.width, height: box.height });
+  });
+  return rects;
 }
 
 function originFor(side: string) {

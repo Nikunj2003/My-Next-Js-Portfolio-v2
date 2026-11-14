@@ -23,7 +23,7 @@ for X" box that answers through the same AI Twin backend. Source of truth: `src/
 
 ### 2. AI Twin — a tool-calling agent, not a chat widget
 `src/components/AITwinChat.tsx` and `src/app/api/chat/route.ts` implement a real agent loop against
-an OpenAI-compatible LLM (NVIDIA NIM by default):
+an OpenAI-compatible LLM (`gpt-6-luna` through a self-hosted Bifrost gateway by default):
 - **Real tools** (`src/lib/ai-tools.ts`): `search_work`, `get_case_study`, `get_metric`,
   `compare_systems`, `navigate_to` — all pure, in-process lookups over the site's own data, so the
   agent cites the same facts the pages show.
@@ -76,7 +76,7 @@ modal and locks the page; its desktop layout is a non-modal corner panel and doe
 - **Radix UI / shadcn-style primitives** (`src/components/ui/`)
 - **Zod** — request validation for the chat and contact API routes
 - **Resend** — contact form delivery
-- **NVIDIA NIM (OpenAI-compatible)** — the AI Twin's LLM provider
+- **Bifrost (self-hosted, OpenAI-compatible gateway)** — serves the AI Twin's model, `gpt-6-luna`
 
 ---
 
@@ -87,8 +87,8 @@ Create a `.env.local`:
 ```bash
 # LLM / AI Twin — used in src/app/api/chat/route.ts
 LLM_API_KEY=your-api-key
-LLM_BASE_URL=https://integrate.api.nvidia.com/v1/chat/completions
-AI_MODEL=openai/gpt-oss-20b
+LLM_BASE_URL=https://bifrost.codenex.dev/v1
+AI_MODEL=gpt-6-luna
 
 # Contact form (Resend)
 RESEND_API_KEY=re_your_resend_api_key

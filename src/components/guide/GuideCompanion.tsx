@@ -137,12 +137,17 @@ export default function GuideCompanion() {
     // tour and the full panel send it to the corner.
     const anchored = companion.bubble !== "tour";
     const section = activeSection === "hero" ? "hero" : activeSection;
+    const route = routeKind(pathname);
+    const free = anchored && !companion.panelOpen;
     const anchor =
-      isHome && anchored && !companion.panelOpen && section
+      free && isHome && section
         ? SECTION_ANCHORS[section] ?? (section === "hero" ? HERO_ANCHOR : null)
-        : null;
+        : free && route !== "other"
+          ? HERO_ANCHOR
+          : null;
+    const perches = !anchor ? {} : isHome && section ? measurePerches(section) : measureRoutePerches(route);
     const next = pickSpot({
-      perches: anchor && section ? measurePerches(section) : {},
+      perches,
       viewportWidth: vw,
       viewportHeight: vh,
       content: rect ? { left: rect.left + padLeft, right: rect.right - padRight } : { left: 0, right: vw },
@@ -157,7 +162,7 @@ export default function GuideCompanion() {
         ? current
         : next
     );
-  }, [activeSection, companion.bubble, companion.panelOpen, isHome, size]);
+  }, [activeSection, companion.bubble, companion.panelOpen, isHome, pathname, size]);
 
   useLayoutEffect(() => {
     const frame = requestAnimationFrame(recompute);
@@ -329,5 +334,44 @@ function measurePerches(section: string): Perches {
     return { hero: rect(root.querySelector('[data-guide-hero-avatar]')) };
   }
   if (section === "contact") return { onTop: rect(root.querySelector(".grid.items-stretch")) };
+  return {};
+}
+
+type RouteKind = "home" | "work-index" | "case-study" | "other";
+
+function routeKind(pathname: string | null): RouteKind {
+  if (pathname === "/") return "home";
+  if (pathname === "/work") return "work-index";
+  if (pathname?.startsWith("/work/")) return "case-study";
+  return "other";
+}
+
+/**
+ * Free space on the other pages. A case study has a sticky "On this page"
+ * table of contents in a narrow left column, with nothing beneath it; the
+ * case-study index has a page header, then theme groups whose top edges make
+ * a natural perch as you scroll.
+ */
+function measureRoutePerches(route: RouteKind): Perches {
+  const rect = (el: Element | null | undefined): Rect | null => {
+    if (!el) return null;
+    const box = el.getBoundingClientRect();
+    return box.width > 0 ? { left: box.left, top: box.top, width: box.width, height: box.height } : null;
+  };
+  if (route === "case-study") {
+    return { underNarrow: rect(document.querySelector('#case-study-article nav[aria-label="On this page"]')) };
+  }
+  if (route === "work-index") {
+    // The header is left-aligned prose (max-w-2xl) with an empty right side.
+    // Measure the free area: from the end of the intro paragraph to the
+    // column's right edge, at the paragraph's height. Further down, the gutter
+    // beside the two-column card grid takes over.
+    const header = document.querySelector("main h1")?.parentElement;
+    const intro = header?.querySelector("p");
+    const column = rect(header);
+    const text = rect(intro);
+    if (!column || !text) return {};
+    return { headerRight: { left: text.left + text.width, top: text.top, width: column.left + column.width - (text.left + text.width), height: text.height } };
+  }
   return {};
 }

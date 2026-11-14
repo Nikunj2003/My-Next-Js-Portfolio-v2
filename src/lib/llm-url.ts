@@ -1,4 +1,5 @@
-export const DEFAULT_CHAT_COMPLETIONS_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
+/** Self-hosted Bifrost gateway (OpenAI-compatible) in front of the model provider. */
+export const DEFAULT_CHAT_COMPLETIONS_URL = "https://bifrost.codenex.dev/v1/chat/completions";
 
 const CHAT_COMPLETIONS_SUFFIX = "/chat/completions";
 
