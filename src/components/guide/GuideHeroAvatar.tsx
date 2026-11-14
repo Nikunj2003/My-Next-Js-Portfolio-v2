@@ -74,30 +74,8 @@ export function GuideHeroAvatar() {
   };
 
   return (
-    <div className="relative flex h-full flex-col items-center justify-between gap-6" data-guide-target="hero-guide">
+    <div className="relative flex flex-col items-center gap-4" data-guide-target="hero-guide">
       <div className="relative">
-        {/* Speech bubble */}
-        {/* Inside the avatar's own box, over its upper half, so it never
-            reaches up under the navbar however the column is sized. */}
-        <div className="pointer-events-none absolute left-1/2 top-2 z-20 w-[min(22rem,80vw)] -translate-x-1/2">
-          <AnimatePresence>
-            {line && !askOpen && (
-              <motion.p
-                key={line}
-                role="status"
-                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8, scale: 0.96 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4, scale: 0.98 }}
-                transition={{ duration: reduceMotion ? 0.12 : 0.22 }}
-                className="relative mx-auto w-fit rounded-2xl border border-primary/25 glass-strong px-4 py-2.5 text-center text-sm font-medium text-foreground shadow-accent-soft"
-              >
-                {line}
-                <span aria-hidden="true" className="absolute -bottom-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-b border-r border-primary/25 bg-background/80" />
-              </motion.p>
-            )}
-          </AnimatePresence>
-        </div>
-
         {/* Orbit of proof chips */}
         <div className={`pointer-events-none absolute inset-0 z-10 transition-opacity duration-300 ${askOpen ? "opacity-0" : "opacity-100"}`}>
           {ORBIT.map((chip) => {
@@ -108,7 +86,7 @@ export function GuideHeroAvatar() {
                 href={chip.href}
                 tabIndex={askOpen ? -1 : undefined}
                 className="pointer-events-auto absolute left-1/2 top-1/2 rounded-full border border-primary/25 glass-subtle px-3 py-1 font-mono text-[11px] uppercase tracking-wider text-primary-text shadow-accent-soft transition-colors hover:border-primary/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                style={{ transform: `translate(-50%, -50%) translate(${Math.cos(radians) * 196}px, ${Math.sin(radians) * 172}px)` }}
+                style={{ transform: `translate(-50%, -50%) translate(${Math.cos(radians) * 214}px, ${Math.sin(radians) * 186}px)` }}
               >
                 {chip.label}
               </a>
@@ -137,8 +115,44 @@ export function GuideHeroAvatar() {
             className="pointer-events-none absolute inset-2 rounded-full border border-dashed border-primary/25 motion-safe:animate-[spin_40s_linear_infinite]"
           />
           <span aria-hidden="true" className="pointer-events-none absolute inset-10 rounded-full border border-primary/10 transition-colors group-hover:border-primary/30" />
-          <GuideAvatarSlot size={280} followPointer />
+          <GuideAvatarSlot size={300} followPointer />
         </button>
+      </div>
+
+      {/* What it says goes here, between the avatar and its buttons: a fixed
+          slot, so the face is never covered and nothing shifts when it talks.
+          At rest it shows the status line. */}
+      <div className="relative flex h-14 w-[min(24rem,80vw)] items-center justify-center">
+        <AnimatePresence mode="wait" initial={false}>
+          {line && !askOpen ? (
+            <motion.p
+              key={line}
+              role="status"
+              initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4, scale: 0.98 }}
+              transition={{ duration: reduceMotion ? 0.12 : 0.2 }}
+              className="relative w-fit rounded-2xl border border-primary/25 glass-strong px-4 py-2.5 text-center text-sm font-medium text-foreground shadow-accent-soft"
+            >
+              {/* Tail points up at the avatar */}
+              <span aria-hidden="true" className="absolute -top-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-l border-t border-primary/25 bg-background/80" />
+              {line}
+            </motion.p>
+          ) : (
+            <motion.p
+              key="status"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-muted-foreground"
+              aria-live="off"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 motion-safe:animate-pulse" aria-hidden="true" />
+              {view.caption}
+            </motion.p>
+          )}
+        </AnimatePresence>
       </div>
 
       <div className="flex flex-col items-center gap-3">
@@ -160,10 +174,6 @@ export function GuideHeroAvatar() {
             60-second tour
           </button>
         </div>
-        <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-muted-foreground" aria-live="off">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 motion-safe:animate-pulse" aria-hidden="true" />
-          {view.caption}
-        </p>
       </div>
     </div>
   );
