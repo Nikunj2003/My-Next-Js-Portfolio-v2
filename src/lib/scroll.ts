@@ -1,5 +1,8 @@
 type LenisLike = {
-  scrollTo: (target: number | string | HTMLElement, options?: { offset?: number }) => void;
+  scrollTo: (
+    target: number | string | HTMLElement,
+    options?: { offset?: number; onComplete?: () => void; immediate?: boolean }
+  ) => void;
 };
 
 type ScrollWindow = Window & typeof globalThis & {
@@ -10,6 +13,13 @@ type ScrollToHashOptions = {
   offset?: number;
   updateHash?: boolean;
   focusTarget?: boolean;
+  /** Called once the scroll has settled. */
+  onComplete?: () => void;
+};
+
+type ScrollToElementOptions = {
+  offset?: number;
+  onComplete?: () => void;
 };
 
 export const SECTION_SCROLL_OFFSET = 85;
@@ -43,23 +53,71 @@ export function scrollToHash(href: string, options: ScrollToHashOptions = {}) {
     target.focus({ preventScroll: true });
   }
 
-  const lenis = (window as ScrollWindow).__lenis;
-
-  if (lenis) {
-    lenis.scrollTo(target, { offset: -offset });
-  } else {
-    const top = target.getBoundingClientRect().top + window.scrollY - offset;
-    window.scrollTo({
-      top,
-      behavior: prefersReducedMotion() ? "auto" : "smooth",
-    });
-  }
+  scrollToElement(target, { offset, onComplete: options.onComplete });
 
   if (shouldUpdateHash) {
     updateHash(href);
   }
 
   return true;
+}
+
+/**
+ * Scrolls an element into view under the fixed navbar, through Lenis when it
+ * is running, and reports when the scroll has settled. The native fallback
+ * listens for `scrollend` with a timer as a backstop for browsers without it.
+ */
+export function scrollToElement(target: HTMLElement, options: ScrollToElementOptions = {}) {
+  const { offset = SECTION_SCROLL_OFFSET, onComplete } = options;
+  let done = false;
+  const complete = () => {
+    if (done) return;
+    done = true;
+    onComplete?.();
+  };
+
+  const lenis = (window as ScrollWindow).__lenis;
+  if (lenis) {
+    lenis.scrollTo(target, { offset: -offset, onComplete: complete });
+    // Lenis skips onComplete when it is already at the target.
+    window.setTimeout(complete, 1600);
+    return;
+  }
+
+  const top = target.getBoundingClientRect().top + window.scrollY - offset;
+  if (Math.abs(top - window.scrollY) < 2) {
+    complete();
+    return;
+  }
+  window.addEventListener("scrollend", complete, { once: true });
+  window.setTimeout(complete, 1200);
+  window.scrollTo({ top, behavior: prefersReducedMotion() ? "auto" : "smooth" });
+}
+
+/**
+ * Scrolls the page to an absolute position, through Lenis when it is running,
+ * and reports when the scroll has settled.
+ */
+export function scrollToOffset(top: number, options: { onComplete?: () => void } = {}) {
+  let done = false;
+  const complete = () => {
+    if (done) return;
+    done = true;
+    options.onComplete?.();
+  };
+  const lenis = (window as ScrollWindow).__lenis;
+  if (lenis) {
+    lenis.scrollTo(top, { onComplete: complete });
+    window.setTimeout(complete, 1600);
+    return;
+  }
+  if (Math.abs(top - window.scrollY) < 2) {
+    complete();
+    return;
+  }
+  window.addEventListener("scrollend", complete, { once: true });
+  window.setTimeout(complete, 1200);
+  window.scrollTo({ top, behavior: prefersReducedMotion() ? "auto" : "smooth" });
 }
 
 export function scrollToTop(updateHash = false) {

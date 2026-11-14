@@ -95,6 +95,8 @@ export type ChatToolCall = {
   refused?: boolean;
   /** Set by navigate_to so the client can actually move the page. */
   href?: string;
+  /** Set by navigate_to: an allow-listed element to ring after scrolling. */
+  highlight?: string;
 };
 
 /** Closing summary of how the answer was produced. */

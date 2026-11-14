@@ -1,5 +1,4 @@
 "use client";
-import Image from "next/image";
 import { useEffect, useState, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
@@ -7,8 +6,7 @@ import { ArrowDown, MessageCircle, Download } from "lucide-react";
 import Link from "next/link";
 import { personalInfo, stats } from "@/data/portfolio";
 import { REVEAL_DURATION_REDUCED, REVEAL_EASE, REVEAL_OFFSET } from "@/lib/motion";
-import Card3D from "./Card3D";
-import cardImage from "@/assets/card.png";
+import { GuideHeroAvatar } from "@/components/guide/GuideHeroAvatar";
 
 const AnimatedCounter = ({ value, suffix, start }: { value: number; suffix: string; start: boolean }) => {
   const [count, setCount] = useState(0);
@@ -131,6 +129,7 @@ const HeroSection = () => {
               ref={statsTriggerRef}
               variants={item}
               onAnimationStart={() => setStatsRevealStarted(true)}
+              data-guide-target="hero-proof"
               className="grid grid-cols-2 gap-4 sm:grid-cols-4"
             >
               {/* Deliberately no ask affordance here. Each stat already links to
@@ -180,7 +179,7 @@ const HeroSection = () => {
 
           </motion.div>
 
-          {/* Right - 3D Card wrapped in a delicate glow */}
+          {/* Right - the live AI Twin avatar, in the slot the 3D card used to fill */}
           <motion.div
             initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -188,18 +187,8 @@ const HeroSection = () => {
             className="hidden lg:flex justify-end lg:col-span-5 relative"
           >
              <div className="absolute inset-0 bg-[radial-gradient(circle,hsl(var(--primary)/0.15)_0%,transparent_70%)] rounded-full scale-150" />
-             <div className="relative z-10 w-full max-w-[500px] xl:max-w-[600px] lg:scale-110 xl:scale-125 lg:origin-right lg:translate-x-4 xl:translate-x-12">
-              <Card3D className="w-full">
-                  <Image
-                     src={cardImage}
-                     alt=""
-                     aria-hidden="true"
-                     className="w-full h-auto rounded-3xl border border-white/10 shadow-accent-strong pointer-events-none select-none"
-                    draggable={false}
-                    priority
-                    sizes="(min-width: 1280px) 600px, (min-width: 1024px) 500px, 100vw"
-                  />
-              </Card3D>
+             <div className="relative z-10 flex w-full max-w-[500px] justify-center xl:max-w-[600px]">
+              <GuideHeroAvatar />
              </div>
           </motion.div>
         </div>

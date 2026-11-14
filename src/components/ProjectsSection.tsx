@@ -320,7 +320,7 @@ const ProjectsSection = () => {
           </div>
         </Reveal>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-3" data-guide-target="work-featured">
           {featuredCaseStudies.map((study, index) => (
             <Reveal key={study.slug} delay={index * 0.08} className="h-full">
               {/* h4: the group label above this row is an h3. */}

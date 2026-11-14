@@ -37,6 +37,8 @@
   },
   "license": "ISC",
   "dependencies": {
+    "@bible-strong/avatar-core": "1.0.1",
+    "@bible-strong/avatar-react": "1.0.1",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",

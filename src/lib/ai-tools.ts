@@ -1,6 +1,7 @@
 import { caseStudies, caseStudyBySlug, getCaseStudyPath } from "@/data/case-studies";
 import { bulletText, experiences, personalInfo, projects, stats } from "@/data/portfolio";
-import { getProjectAnchor, normalizeText } from "@/lib/ai-twin";
+import { PROJECT_ANCHOR_PREFIX, getProjectAnchor, normalizeText } from "@/lib/ai-twin";
+import { GUIDE_HIGHLIGHTS, GUIDE_HIGHLIGHT_IDS, isGuideHighlight } from "@/lib/guide/targets";
 
 /**
  * Tools the AI Twin can call.
@@ -131,7 +132,7 @@ export const TOOL_DEFINITIONS = [
     function: {
       name: "navigate_to",
       description:
-        "Take the visitor to a section or page on this site. Use it when showing something is more useful than describing it. Only targets on the allow-list work.",
+        "Take the visitor to a section or page on this site, and optionally highlight one element there. Use it when showing something is more useful than describing it. Only targets on the allow-list work.",
       parameters: {
         type: "object",
         properties: {
@@ -139,6 +140,14 @@ export const TOOL_DEFINITIONS = [
             type: "string",
             description:
               "A section anchor (#about, #experience, #work, #skills, #contact), a case study slug, or a project slug.",
+          },
+          highlight: {
+            type: "string",
+            enum: GUIDE_HIGHLIGHT_IDS,
+            description:
+              "Optional element to highlight after scrolling: " +
+              GUIDE_HIGHLIGHT_IDS.map((id) => `${id} (${GUIDE_HIGHLIGHTS[id]})`).join(", ") +
+              ". Project cards are highlighted automatically when the target is a project slug.",
           },
         },
         required: ["target"],
@@ -515,6 +524,16 @@ function navigateTo(target: string) {
   };
 }
 
+/**
+ * What to ring after navigating. Only allow-listed ids are honoured, and only
+ * for on-page destinations; a project anchor highlights its own card.
+ */
+function resolveHighlight(href: string, requested: unknown): string | undefined {
+  if (!href.startsWith("#")) return undefined;
+  if (href.startsWith(`#${PROJECT_ANCHOR_PREFIX}`)) return `project:${href.slice(PROJECT_ANCHOR_PREFIX.length + 1)}`;
+  return isGuideHighlight(requested) ? requested : undefined;
+}
+
 /* ------------------------------------------------------------------ *
  * Dispatch
  * ------------------------------------------------------------------ */
@@ -680,7 +699,9 @@ export function executeTool(request: ToolCallRequest): ToolCallResult {
 
     case "navigate_to": {
       const result = navigateTo(String(args.target ?? ""));
-      return finish(result, result.ok ? result.label : "invalid target", [], !result.ok);
+      if (!result.ok) return finish(result, "invalid target", [], true);
+      const output = { ...result, highlight: resolveHighlight(result.href, args.highlight) };
+      return finish(output, result.label, [], false);
     }
 
     default:

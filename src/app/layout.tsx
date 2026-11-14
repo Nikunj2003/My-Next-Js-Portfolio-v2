@@ -6,6 +6,7 @@ import { Providers } from './providers'
 import { SmoothScroll } from '@/components/SmoothScroll'
 import ScrollProgress from '@/components/ScrollProgress'
 import { siteConfig, ogLocale } from '@/lib/seo/site'
+import { GuideCompanionMount } from '@/components/guide/GuideCompanionMount'
 
 // Mounted at the layout so every route gets the background layer, including
 // /work/*. Self-gates on pointer:fine, >=1280px, and reduced motion.
@@ -118,6 +119,7 @@ export default function RootLayout({
               <ScrollProgress />
               {children}
               <AITwinChat />
+              <GuideCompanionMount />
               <CommandPalette />
             </Providers>
           </SmoothScroll>

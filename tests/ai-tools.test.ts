@@ -277,3 +277,21 @@ test("a refused comparison explains how to recover", () => {
   assert.equal(refused.refused, true);
   assert.match(reason, /get_case_study|two or more/i, "the refusal must name a recovery path");
 });
+
+test("navigate_to passes through an allow-listed highlight for on-page targets", () => {
+  const output = call("navigate_to", { target: "#work", highlight: "work-featured" }).output as { href: string; highlight?: string };
+  assert.equal(output.href, "#work");
+  assert.equal(output.highlight, "work-featured");
+});
+
+test("navigate_to drops highlights that are not allow-listed or not on the page", () => {
+  const bogus = call("navigate_to", { target: "#work", highlight: "body" }).output as { highlight?: string };
+  assert.equal(bogus.highlight, undefined);
+  const routed = call("navigate_to", { target: "knowledge-graph-rag", highlight: "work-featured" }).output as { highlight?: string };
+  assert.equal(routed.highlight, undefined);
+});
+
+test("navigate_to to a project card highlights that card", () => {
+  const output = call("navigate_to", { target: "resume-fit-codenex" }).output as { href: string; highlight?: string };
+  assert.equal(output.highlight, `project:${output.href.replace("#project-", "")}`);
+});

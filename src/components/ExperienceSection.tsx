@@ -257,7 +257,7 @@ const ExperienceSection = () => {
         <div className="flex flex-col items-start gap-12 lg:flex-row lg:gap-20">
           <div className="w-full shrink-0 lg:sticky lg:top-32 lg:w-1/3">
             <Reveal axis="x" offset={-24}>
-              <div className="panel-sticky">
+              <div className="panel-sticky" data-guide-target="experience-intro">
                 <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
                 <div className="absolute -bottom-20 -left-16 h-40 w-40 rounded-full bg-accent/10 blur-3xl" />
 
