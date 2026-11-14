@@ -19,6 +19,7 @@ import {
 import { TOOL_DEFINITIONS, executeTool, formatToolCall } from "@/lib/ai-tools";
 import { CHAT_MEMORY_WINDOW, appendContextualLinks, findMatchingProjects, normalizeText, trimConversationHistory } from "@/lib/ai-twin";
 import { checkRateLimit, getClientKey, getRateLimitHeaders } from "@/lib/rate-limit";
+import { resolveChatCompletionsUrl } from "@/lib/llm-url";
 
 interface Message {
   content: string;
@@ -281,10 +282,13 @@ async function postChatCompletion(
   invokeUrl: string,
   headers: Record<string, string>,
   body: object,
-  timeoutMs: number
+  timeoutMs: number,
+  parentSignal?: AbortSignal
 ) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const onParentAbort = () => controller.abort();
+  parentSignal?.addEventListener("abort", onParentAbort, { once: true });
 
   try {
     return await fetch(invokeUrl, {
@@ -295,6 +299,7 @@ async function postChatCompletion(
     });
   } finally {
     clearTimeout(timeoutId);
+    parentSignal?.removeEventListener("abort", onParentAbort);
   }
 }
 
@@ -330,9 +335,14 @@ async function streamCompletion(
    * begin.
    */
   firstByteTimeoutMs: number,
-  onText: (text: string) => void
+  onText: (text: string) => void,
+  /** Aborted when the visitor disconnects, so upstream work stops too. */
+  parentSignal?: AbortSignal
 ): Promise<{ content: string; toolCalls: StreamedToolCall[] }> {
   const controller = new AbortController();
+  const onParentAbort = () => controller.abort();
+  if (parentSignal?.aborted) controller.abort();
+  parentSignal?.addEventListener("abort", onParentAbort, { once: true });
 
   /*
    * The deadline applies to SILENCE, not to total duration.
@@ -417,6 +427,7 @@ async function streamCompletion(
     return { content, toolCalls: Array.from(toolCallsByIndex.values()) };
   } finally {
     clearTimeout(timeoutId);
+    parentSignal?.removeEventListener("abort", onParentAbort);
   }
 }
 
@@ -458,18 +469,29 @@ async function streamCompletionWithRetry(
    * which would then abort a retry that was still in progress.
    */
   onAttempt?: (attempt: number) => void,
-  attempts = CHAT_TOOL_ROUND_ATTEMPTS
+  attempts = CHAT_TOOL_ROUND_ATTEMPTS,
+  parentSignal?: AbortSignal
 ) {
   let lastError: unknown;
+  /*
+   * Text already forwarded to the client. A stall AFTER text started is an
+   * idle abort mid-answer; replaying it would send the same words twice, so
+   * only an attempt that produced no text is retried.
+   */
+  let deliveredText = false;
+  const trackedOnText = (text: string) => {
+    deliveredText = true;
+    onText(text);
+  };
 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     onAttempt?.(attempt);
     try {
-      return await streamCompletion(invokeUrl, headers, body, timeoutMs, firstByteTimeoutMs, onText);
+      return await streamCompletion(invokeUrl, headers, body, timeoutMs, firstByteTimeoutMs, trackedOnText, parentSignal);
     } catch (error) {
       // Only a stall is worth replaying. A non-2xx is a decision by the
-      // provider and would fail identically.
-      if (!isAbortError(error)) throw error;
+      // provider and would fail identically. A visitor disconnect is final.
+      if (!isAbortError(error) || deliveredText || parentSignal?.aborted) throw error;
 
       lastError = error;
       if (attempt < attempts) {
@@ -581,7 +603,19 @@ export async function POST(request: Request) {
     );
   }
 
-  const invokeUrl = process.env.LLM_BASE_URL?.trim() || "https://integrate.api.nvidia.com/v1/chat/completions";
+  let invokeUrl: string;
+  try {
+    invokeUrl = resolveChatCompletionsUrl(process.env.LLM_BASE_URL);
+  } catch {
+    console.error("LLM_BASE_URL is misconfigured");
+    return createChatErrorResponse(
+      503,
+      "service_unavailable",
+      "The AI service is not configured right now. Please contact Nikunj directly if you need help.",
+      rateLimitHeaders,
+      false
+    );
+  }
   const headers = {
     Authorization: `Bearer ${apiKey}`,
     Accept: "application/json",
@@ -597,8 +631,17 @@ export async function POST(request: Request) {
   messages.push({ role: "user", content: message });
 
   const encoder = new TextEncoder();
+  /**
+   * One abort for every upstream call this request makes (tool rounds, final
+   * answer, suggestions). Fired when the client disconnects or cancels the
+   * stream, so an abandoned request stops spending provider tokens.
+   */
+  const upstreamAbort = new AbortController();
 
   const stream = new ReadableStream<Uint8Array>({
+    cancel() {
+      upstreamAbort.abort();
+    },
     async start(controller) {
       /**
        * True once the client has gone away or the stream has been closed.
@@ -635,6 +678,7 @@ export async function POST(request: Request) {
       // leave the loop running against the provider.
       request.signal.addEventListener("abort", () => {
         closed = true;
+        upstreamAbort.abort();
       });
 
       const sources: string[] = [];
@@ -718,7 +762,9 @@ export async function POST(request: Request) {
                * idle timer alive, so any label works; the visitor only needs to
                * know it is still working.
                */
-              () => send({ type: "status", label: mustAnswer ? "Writing answer" : "Thinking" })
+              () => send({ type: "status", label: mustAnswer ? "Writing answer" : "Thinking" }),
+              CHAT_TOOL_ROUND_ATTEMPTS,
+              upstreamAbort.signal
             );
           } catch (error) {
             if (error instanceof UpstreamStatusError) {
@@ -796,6 +842,15 @@ export async function POST(request: Request) {
                 ? String((result.output as { href: unknown }).href)
                 : undefined;
 
+            const highlight =
+              name === "navigate_to" &&
+              result.output &&
+              typeof result.output === "object" &&
+              "highlight" in result.output &&
+              typeof (result.output as { highlight: unknown }).highlight === "string"
+                ? String((result.output as { highlight: string }).highlight)
+                : undefined;
+
             send({
               type: "tool_result",
               call: {
@@ -805,6 +860,7 @@ export async function POST(request: Request) {
                 durationMs: result.durationMs,
                 refused: result.refused,
                 href,
+                highlight,
               },
             });
 
@@ -858,7 +914,8 @@ export async function POST(request: Request) {
                 invokeUrl,
                 headers,
                 Math.min(CHAT_SUGGESTION_TIMEOUT_MS, remainingBudgetMs - 250),
-                priorUserTexts
+                priorUserTexts,
+                upstreamAbort.signal
               )
             : buildFallbackSuggestions(message, answer, recentMessages, priorUserTexts);
 
@@ -886,7 +943,7 @@ export async function POST(request: Request) {
     headers: {
       ...rateLimitHeaders,
       "Content-Type": CHAT_STREAM_CONTENT_TYPE,
-      "Cache-Control": "no-store",
+      "Cache-Control": "no-store, no-transform",
       "X-Accel-Buffering": "no",
     },
   });
@@ -901,6 +958,7 @@ async function generateAISuggestions(
   headers: Record<string, string>,
   timeoutMs: number,
   priorUserTexts: string[],
+  signal?: AbortSignal,
 ): Promise<string[]> {
   try {
     const usedCategories = Array.from(detectCategories(...recentMessages.map((m) => m.content), currentMessage));
@@ -955,7 +1013,8 @@ Rules:
         temperature: 0.7,
         top_p: 0.9,
       },
-      timeoutMs
+      timeoutMs,
+      signal
     );
 
     if (!suggestionResp.ok) {
