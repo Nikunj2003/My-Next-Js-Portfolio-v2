@@ -184,9 +184,11 @@ const HeroSection = () => {
             initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: shouldReduceMotion ? 0.2 : 1.2, delay: shouldReduceMotion ? 0 : 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="hidden lg:flex justify-end lg:col-span-5 relative"
+            className="hidden lg:flex justify-end lg:col-span-5 lg:self-stretch relative"
           >
              <div className="absolute inset-0 bg-[radial-gradient(circle,hsl(var(--primary)/0.15)_0%,transparent_70%)] rounded-full scale-150" />
+             {/* Stretched to the left column's height so the avatar's top and its
+                 buttons line up with the badge and the CTA row. */}
              <div className="relative z-10 flex w-full max-w-[500px] justify-center xl:max-w-[600px]">
               <GuideHeroAvatar />
              </div>

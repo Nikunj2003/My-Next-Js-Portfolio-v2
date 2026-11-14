@@ -74,10 +74,12 @@ export function GuideHeroAvatar() {
   };
 
   return (
-    <div className="relative flex flex-col items-center gap-6" data-guide-target="hero-guide">
+    <div className="relative flex h-full flex-col items-center justify-between gap-6" data-guide-target="hero-guide">
       <div className="relative">
         {/* Speech bubble */}
-        <div className="pointer-events-none absolute -top-4 left-1/2 z-20 w-[min(22rem,80vw)] -translate-x-1/2 -translate-y-full">
+        {/* Inside the avatar's own box, over its upper half, so it never
+            reaches up under the navbar however the column is sized. */}
+        <div className="pointer-events-none absolute left-1/2 top-2 z-20 w-[min(22rem,80vw)] -translate-x-1/2">
           <AnimatePresence>
             {line && !askOpen && (
               <motion.p
