@@ -6,9 +6,12 @@
  * panel — importing the dispatcher back from `AskAboutThis` would make the two
  * modules depend on each other.
  *
- * @param answer When supplied, the panel appends the exchange as an already
- *   answered turn instead of re-sending the question.
+ * By default this opens the inline ask bubble beside the guide avatar.
+ *
+ * @param answer When supplied, the exchange is appended as an already
+ *   answered turn instead of re-sending the question, and the full panel opens.
+ * @param options.expand Open the full conversation panel instead of the bubble.
  */
-export function openAiTwin(question: string, answer?: string) {
-  window.dispatchEvent(new CustomEvent("open-ai-twin", { detail: { question, answer } }));
+export function openAiTwin(question: string, answer?: string, options: { expand?: boolean } = {}) {
+  window.dispatchEvent(new CustomEvent("open-ai-twin", { detail: { question, answer, expand: options.expand } }));
 }

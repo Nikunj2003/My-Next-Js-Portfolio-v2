@@ -50,7 +50,7 @@ export function InlineAnswer({
     // Hands the already-answered exchange to the panel rather than making the
     // visitor re-ask: the panel appends it to its own message list and
     // persists it, same as any other turn.
-    openAiTwin(question, status === "done" ? content : undefined);
+    openAiTwin(question, status === "done" ? content : undefined, { expand: true });
     handleClose();
   };
 
