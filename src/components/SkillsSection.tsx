@@ -26,7 +26,7 @@ const SkillsSection = () => {
               <div className="absolute -bottom-20 -left-16 h-40 w-40 rounded-full bg-accent/10 blur-3xl" />
 
               <div className="relative">
-                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 font-mono text-xs text-primary">
+                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 font-mono text-xs text-primary-text">
                   Expertise
                 </div>
                 <h2 className="heading-xl mb-6">
@@ -64,7 +64,7 @@ const SkillsSection = () => {
                         gap under the icon varied between categories.
                       */}
                       <div className="flex items-center gap-4">
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/5 glass-subtle transition-transform duration-500 group-hover:scale-110 group-hover:border-primary/30">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-foreground/5 glass-subtle transition-transform duration-500 group-hover:scale-110 group-hover:border-primary/30">
                           <Icon className="h-5 w-5 text-primary" />
                         </div>
                         <div>
@@ -87,7 +87,7 @@ const SkillsSection = () => {
                         {cat.skills.map((skill) => (
                           <li
                             key={skill}
-                            className="select-none rounded-xl border border-white/5 px-4 py-2 text-sm font-medium glass-subtle text-foreground/80 transition-all duration-300 hover:border-primary/40 hover:bg-white/10 hover:text-primary"
+                            className="select-none rounded-xl border border-foreground/5 px-4 py-2 text-sm font-medium glass-subtle text-foreground/80 transition-all duration-300 hover:border-primary/40 hover:bg-foreground/10 hover:text-primary"
                           >
                             {skill}
                           </li>

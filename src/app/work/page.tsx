@@ -100,7 +100,7 @@ const WorkIndexPage = () => (
             </section>
           ))}
 
-          <div className="mt-20 border-t border-white/10 pt-10">
+          <div className="mt-20 border-t border-foreground/10 pt-10">
             <p className="mb-6 text-base leading-relaxed text-muted-foreground">
               Looking for the shorter version, or the side projects? Both are on the homepage.
             </p>

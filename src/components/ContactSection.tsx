@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import { useRef, useState } from "react";
-import { Mail, Linkedin, Github, Send, Download, ArrowUpRight, Briefcase, Users, GitPullRequest, MessageSquare } from "lucide-react";
+import { Send, Download, ArrowUpRight, Briefcase, Users, GitPullRequest, MessageSquare } from "lucide-react";
 import { personalInfo } from "@/data/portfolio";
 import { toast } from "@/components/ui/sonner";
 import {
@@ -13,8 +13,8 @@ import {
 } from "@/lib/contact";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
-import Card3D from "./Card3D";
 import cardImage from "@/assets/card.png";
+import { SOCIAL_LINKS } from "@/data/site-links";
 
 /**
  * One icon per contact reason.
@@ -28,27 +28,6 @@ const REASON_ICONS: Record<(typeof CONTACT_REASONS)[number], React.ElementType> 
   "Open Source": GitPullRequest,
   Other: MessageSquare,
 };
-
-const SOCIAL_LINKS = [
-  {
-    icon: Mail,
-    label: "Email",
-    value: personalInfo.email,
-    href: `mailto:${personalInfo.email}`,
-  },
-  {
-    icon: Linkedin,
-    label: "LinkedIn",
-    value: personalInfo.linkedin.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""),
-    href: personalInfo.linkedin,
-  },
-  {
-    icon: Github,
-    label: "GitHub",
-    value: personalInfo.github.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""),
-    href: personalInfo.github,
-  },
-];
 
 const INITIAL_FORM: ContactFormData = {
   name: "",
@@ -158,18 +137,16 @@ const ContactSection = () => {
           </p>
         </div>
 
-        {/* Mobile-only card */}
+        {/* Mobile-only card (the pointer tilt it had never ran on touch screens). */}
         <div className="mx-auto mb-10 block w-full max-w-xs sm:max-w-sm lg:hidden">
-          <Card3D>
             <Image
               src={cardImage}
               alt=""
               aria-hidden="true"
-              className="w-full h-auto rounded-3xl border border-white/10 shadow-accent-strong pointer-events-none select-none"
+              className="w-full h-auto rounded-3xl border border-foreground/10 shadow-accent-strong pointer-events-none select-none"
               draggable={false}
               sizes="(min-width: 640px) 384px, 100vw"
             />
-          </Card3D>
         </div>
 
         {/* Two equal panels with Spotlight */}

@@ -160,7 +160,7 @@ function ProjectCard({
             <div className="mb-3 flex items-center gap-3">
               <span className="font-mono text-[11px] uppercase tracking-widest text-primary-text">{project.category}</span>
               {project.live && (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 font-mono text-[10px] text-primary-text">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 font-mono text-xs text-primary-text">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                   Live
                 </span>
@@ -201,7 +201,7 @@ function ProjectCard({
               {project.tech.map((tech) => (
                 <li
                   key={tech}
-                  className="rounded-md border border-primary/20 bg-primary/10 px-2 py-1 font-mono text-[10px] text-primary-text"
+                  className="rounded-md border border-primary/20 bg-primary/10 px-2 py-1 font-mono text-xs text-primary-text"
                 >
                   {tech}
                 </li>

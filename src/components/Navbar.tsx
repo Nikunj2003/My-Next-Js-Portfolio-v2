@@ -10,15 +10,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { useLenisLock } from "@/hooks/useLenisLock";
 import { scrollToHash, scrollToTop } from "@/lib/scroll";
 import { usePathname, useRouter } from "next/navigation";
-
-const navLinks = [
-  { href: "#about", label: "About" },
-  { href: "#experience", label: "Experience" },
-  { href: "#work", label: "Work" },
-  { href: "#skills", label: "Skills" },
-  { href: "#ai-twin", label: "AI Twin" },
-  { href: "#contact", label: "Contact" },
-];
+import { SECTION_LINKS } from "@/data/site-links";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -73,7 +65,7 @@ const Navbar = () => {
   // instead of reading every section's rect on every scroll frame.
   useEffect(() => {
     if (!isHome) return;
-    const sections = navLinks
+    const sections = SECTION_LINKS
       .map((link) => document.querySelector(link.href))
       .filter((node): node is HTMLElement => node instanceof HTMLElement);
     const crossing = new Set<string>();
@@ -84,7 +76,7 @@ const Navbar = () => {
           if (entry.isIntersecting) crossing.add(id);
           else crossing.delete(id);
         }
-        const next = navLinks.find((link) => crossing.has(link.href))?.href ?? null;
+        const next = SECTION_LINKS.find((link) => crossing.has(link.href))?.href ?? null;
         setActiveSection((prev) => (prev === next ? prev : next));
       },
       { rootMargin: "-35% 0px -65% 0px", threshold: 0 }
@@ -212,7 +204,7 @@ const Navbar = () => {
         <nav
           aria-label="Main"
           className={`pointer-events-auto transition-all duration-500 rounded-2xl sm:rounded-full container-width flex items-center justify-between px-4 sm:px-6 h-14 sm:h-16 border ${
-            scrolled ? "glass-nav shadow-accent-card border-white/10" : "bg-transparent border-transparent"
+            scrolled ? "glass-nav shadow-accent-card border-foreground/10" : "bg-transparent border-transparent"
           }`}
         >
           <Link href="/" onClick={handleHomeClick} aria-label="Go to the top of the homepage" className="flex items-center gap-2 group">
@@ -221,7 +213,7 @@ const Navbar = () => {
           </Link>
 
           <div className="hidden md:flex items-center gap-1.5">
-            {navLinks.map((link) => (
+            {SECTION_LINKS.map((link) => (
               <a
                 key={link.href}
                 href={sectionHref(link.href)}
@@ -230,19 +222,19 @@ const Navbar = () => {
                 className={`px-3 py-2 text-sm font-medium transition-all duration-200 rounded-full ${
                   currentSection === link.href
                     ? "bg-primary/10 text-primary shadow-[0_0_14px_hsl(var(--accent)/0.1)]"
-                    : "text-muted-foreground hover:text-foreground hover:bg-white/10"
+                    : "text-muted-foreground hover:text-foreground hover:bg-foreground/10"
                 }`}
               >
                 {link.label}
               </a>
             ))}
-            <div className="w-px h-4 bg-white/10 mx-2" />
+            <div className="w-px h-4 bg-foreground/10 mx-2" />
             {/* Discoverability for the shortcut — most visitors never guess it exists. */}
             <button
               type="button"
               onClick={() => window.dispatchEvent(new CustomEvent("open-command-palette"))}
               aria-label="Open command palette"
-              className="hidden items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 font-mono text-[11px] text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary lg:flex"
+              className="hidden items-center gap-1.5 rounded-full border border-foreground/10 px-3 py-1.5 font-mono text-[11px] text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary lg:flex"
             >
               <Search className="h-3 w-3" />
               <kbd className="font-sans">⌘K</kbd>
@@ -262,7 +254,7 @@ const Navbar = () => {
             ref={menuButtonRef}
             type="button"
             onClick={() => (isOpen ? closeMenu() : setIsOpen(true))}
-            className="md:hidden p-2 rounded-xl glass-subtle border border-white/10 hover:bg-white/10 transition-colors active:scale-95"
+            className="md:hidden p-2 rounded-xl glass-subtle border border-foreground/10 hover:bg-foreground/10 transition-colors active:scale-95"
             aria-label="Toggle menu"
             aria-expanded={isOpen}
             aria-controls="mobile-navigation"
@@ -291,29 +283,29 @@ const Navbar = () => {
               animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, height: "auto", y: 0 }}
               exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, height: 0, y: -10 }}
               transition={mobileMenuTransition}
-              className="md:hidden fixed top-[calc(max(1rem,env(safe-area-inset-top))+3.5rem)] inset-x-4 z-[100] glass-nav border border-white/10 overflow-hidden rounded-2xl shadow-accent-card sm:top-[calc(max(1.5rem,env(safe-area-inset-top))+4rem)]"
+              className="md:hidden fixed top-[calc(max(1rem,env(safe-area-inset-top))+3.5rem)] inset-x-4 z-[100] glass-nav border border-foreground/10 overflow-hidden rounded-2xl shadow-accent-card sm:top-[calc(max(1.5rem,env(safe-area-inset-top))+4rem)]"
               role="dialog"
               aria-modal="true"
               aria-label="Mobile navigation"
             >
             <div className="py-4 flex flex-col gap-1 px-4">
-              {navLinks.map((link) => (
+              {SECTION_LINKS.map((link) => (
                 <a
                   key={link.href}
-                  ref={link === navLinks[0] ? firstMobileLinkRef : undefined}
+                  ref={link === SECTION_LINKS[0] ? firstMobileLinkRef : undefined}
                   href={sectionHref(link.href)}
                   onClick={(e) => handleNavClick(e, link.href, true)}
                   aria-current={currentSection === link.href ? "location" : undefined}
                   className={`block px-4 py-3 text-sm rounded-lg transition-colors font-medium w-full ${
                     currentSection === link.href
                       ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                      : "text-muted-foreground hover:text-foreground hover:bg-foreground/5"
                   }`}
                 >
                   {link.label}
                 </a>
               ))}
-              <div className="flex items-center justify-between mt-2 pt-4 border-t border-white/5">
+              <div className="flex items-center justify-between mt-2 pt-4 border-t border-foreground/5">
                 <ThemeToggle />
                 <a
                   href={personalInfo.resumeUrl}

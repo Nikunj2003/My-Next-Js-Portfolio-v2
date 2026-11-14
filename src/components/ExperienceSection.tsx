@@ -108,11 +108,11 @@ function ExperienceItem({
             </div>
 
             <div className="flex w-full flex-col items-end gap-2 md:w-auto md:flex-none">
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 glass-subtle px-3 py-1.5 text-[11px] font-mono font-medium uppercase tracking-wide text-muted-foreground">
+              <span className="inline-flex items-center gap-2 rounded-full border border-foreground/10 glass-subtle px-3 py-1.5 text-[11px] font-mono font-medium uppercase tracking-wide text-muted-foreground">
                 <MetaIcon className="h-3.5 w-3.5" />
                 {metaLabel}
               </span>
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 glass-subtle px-3 py-1.5 text-xs font-mono font-medium text-muted-foreground">
+              <span className="inline-flex items-center gap-2 rounded-full border border-foreground/10 glass-subtle px-3 py-1.5 text-xs font-mono font-medium text-muted-foreground">
                 <CalendarDays className="h-3.5 w-3.5" />
                 {exp.period}
               </span>
@@ -255,7 +255,7 @@ const ExperienceSection = () => {
                 <div className="absolute -bottom-20 -left-16 h-40 w-40 rounded-full bg-accent/10 blur-3xl" />
 
                 <div className="relative">
-                  <div className="mb-6 inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-mono text-primary">
+                  <div className="mb-6 inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-mono text-primary-text">
                     Journey
                   </div>
                   <h2 className="heading-xl mb-6">
@@ -279,7 +279,7 @@ const ExperienceSection = () => {
           </div>
 
           <div className="relative w-full lg:w-2/3" ref={timelineRef}>
-            <div className="absolute bottom-0 left-[24px] top-0 w-[2px] rounded-full bg-white/10 sm:left-[44px]" />
+            <div className="absolute bottom-0 left-[24px] top-0 w-[2px] rounded-full bg-foreground/10 sm:left-[44px]" />
 
             <motion.div
               style={{ scaleY: shouldReduceMotion ? 1 : scrollYProgress }}

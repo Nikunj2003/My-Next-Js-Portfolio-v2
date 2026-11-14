@@ -81,7 +81,7 @@ export function InlineAnswer({
         </button>
       </span>
 
-      <span className="mt-3 block border-t border-white/10 pt-3">
+      <span className="mt-3 block border-t border-foreground/10 pt-3">
         {toolCalls.length > 0 && (
           <span className="mb-3 flex flex-col gap-1.5 border-l-2 border-primary/25 pl-3">
             {toolCalls.map((call) => (

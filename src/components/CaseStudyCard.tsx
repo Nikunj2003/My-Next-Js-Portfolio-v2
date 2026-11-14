@@ -99,7 +99,7 @@ const CaseStudyCard = ({
 
         {/* Tags and stack merged into one meta line: two separate
             rows of pills was the other half of the height problem. */}
-        <p className="mt-5 border-t border-white/10 pt-4 font-mono text-[10.5px] leading-relaxed text-muted-foreground/70">
+        <p className="mt-5 border-t border-foreground/10 pt-4 font-mono text-[10.5px] leading-relaxed text-muted-foreground/70">
           {study.stack.slice(0, 4).join(" · ")}
         </p>
 

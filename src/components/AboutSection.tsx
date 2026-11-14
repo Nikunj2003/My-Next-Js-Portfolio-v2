@@ -54,9 +54,9 @@ const AboutSection = () => {
 
                   {/* Identity facts, matching the weight of the FlipWords line
                       that closes the Experience and Skills sidebars. */}
-                  <dl className="mt-8 flex flex-col gap-3 border-t border-white/10 pt-6 text-sm">
+                  <dl className="mt-8 flex flex-col gap-3 border-t border-foreground/10 pt-6 text-sm">
                     <div className="flex items-start gap-3">
-                      <dt className="w-14 shrink-0 pt-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                      <dt className="w-14 shrink-0 pt-0.5 font-mono text-xs uppercase tracking-wider text-muted-foreground">
                         Role
                       </dt>
                       <dd className="min-w-0 flex-1">
@@ -68,7 +68,7 @@ const AboutSection = () => {
                     </div>
 
                     <div className="flex items-baseline gap-3">
-                      <dt className="w-14 shrink-0 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                      <dt className="w-14 shrink-0 font-mono text-xs uppercase tracking-wider text-muted-foreground">
                         Based
                       </dt>
                       <dd className="inline-flex min-w-0 flex-1 items-center gap-1.5 text-muted-foreground">
@@ -78,7 +78,7 @@ const AboutSection = () => {
                     </div>
                   </dl>
 
-                  <div className="mt-6 flex items-center justify-between gap-4 border-t border-white/10 pt-6">
+                  <div className="mt-6 flex items-center justify-between gap-4 border-t border-foreground/10 pt-6">
                     <p className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground">
                       <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-primary motion-reduce:animate-none" />
                       Open to new roles

@@ -41,11 +41,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title,
       description: study.oneLiner,
       siteName: siteConfig.siteName,
+      // Setting openGraph here replaces the root one, images included: without
+      // this, case studies shared with no preview image.
+      images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: title }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description: study.oneLiner,
+      images: ["/twitter-image"],
     },
   };
 }
@@ -106,7 +110,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                 )}
                 <span className="text-muted-foreground">{study.period}</span>
                 {study.tags.map((tag) => (
-                  <span key={tag} className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-muted-foreground">
+                  <span key={tag} className="rounded-full border border-foreground/10 bg-foreground/5 px-3 py-1.5 text-muted-foreground">
                     {tag}
                   </span>
                 ))}
@@ -121,7 +125,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
             </div>
 
             <div>
-              <dl className="mt-10 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/10 glass-subtle glow-accent-panel sm:grid-cols-4">
+              <dl className="mt-10 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-foreground/10 glass-subtle glow-accent-panel sm:grid-cols-4">
                 {study.results.map((result) => (
                   <div key={result.label} className="bg-background/20 p-5">
                     <dt className="sr-only">{result.label}</dt>
@@ -158,7 +162,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                       className="ml-0"
                     />
                   </div>
-                  <div className="mt-4 rounded-2xl border border-white/10 glass-subtle p-6">
+                  <div className="mt-4 rounded-2xl border border-foreground/10 glass-subtle p-6">
                     <p className="text-base leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
                       {study.problem}
                     </p>
@@ -173,7 +177,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                       className="ml-0"
                     />
                   </div>
-                  <ul className="mt-4 flex flex-col divide-y divide-white/10 overflow-hidden rounded-2xl glass-subtle">
+                  <ul className="mt-4 flex flex-col divide-y divide-foreground/10 overflow-hidden rounded-2xl glass-subtle">
                     {study.constraints.map((constraint) => (
                       <li key={constraint} className="flex gap-3 p-5 text-base leading-relaxed text-muted-foreground">
                         <span aria-hidden="true" className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/60" />
@@ -225,7 +229,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                         {decision.why}
                       </p>
                       {decision.rejected && decision.rejected.length > 0 && (
-                        <div className="mt-5 border-t border-white/10 pt-4">
+                        <div className="mt-5 border-t border-foreground/10 pt-4">
                           <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground/70">
                             Considered and rejected
                           </p>
@@ -310,7 +314,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
               </div>
             </div>
 
-            <nav aria-label="More case studies" className="mt-16 grid gap-4 border-t border-white/10 pt-8 sm:grid-cols-2">
+            <nav aria-label="More case studies" className="mt-16 grid gap-4 border-t border-foreground/10 pt-8 sm:grid-cols-2">
               {previous ? (
                 <Link
                   href={getCaseStudyPath(previous.slug)}

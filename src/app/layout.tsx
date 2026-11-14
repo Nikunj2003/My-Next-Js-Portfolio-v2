@@ -9,6 +9,7 @@ import { siteConfig, ogLocale } from '@/lib/seo/site'
 import { GuideCompanionMount } from '@/components/guide/GuideCompanionMount'
 // The full conversation panel, on every route; it loads on first open.
 import AITwinChatMount from '@/components/AITwinChatMount'
+import { QuietBoundary } from '@/components/QuietBoundary'
 
 // Mounted at the layout so every route gets the background layer, including
 // /work/*. Self-gates on pointer:fine, >=1280px, and reduced motion.
@@ -110,9 +111,15 @@ export default function RootLayout({
                   and above {children} so every route gets the reading bar. */}
               <ScrollProgress />
               {children}
-              <AITwinChatMount />
-              <GuideCompanionMount />
-              <CommandPalette />
+              <QuietBoundary name="AI Twin panel">
+                <AITwinChatMount />
+              </QuietBoundary>
+              <QuietBoundary name="Guide">
+                <GuideCompanionMount />
+              </QuietBoundary>
+              <QuietBoundary name="Command palette">
+                <CommandPalette />
+              </QuietBoundary>
             </Providers>
           </SmoothScroll>
         </div>

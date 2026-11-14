@@ -3,9 +3,11 @@
 
 
 @layer base {
-  /* Applied before JS to prevent white flash — matches .dark --background value */
+  /* The page colour for each theme, from the first paint (the theme class is
+     set by an inline script before anything renders). It was a fixed navy, so
+     light mode showed navy on overscroll and behind the page. */
   html {
-    background-color: hsl(224, 47%, 7%);
+    background-color: hsl(var(--background));
   }
 
   :root {
@@ -302,10 +304,6 @@ textarea,
     background-color: hsl(var(--primary) / 0.1);
   }
 
-  :is(.dark *).btn-cta-secondary:hover {
-    background-color: hsl(var(--primary) / 0.1);
-  }
-
   .shadow-accent-soft {
     box-shadow: 0 10px 24px hsl(var(--accent) / 0.12);
   }
@@ -371,7 +369,7 @@ textarea,
     position: relative;
     overflow: hidden;
     border-radius: 2rem;
-    border: 1px solid rgb(255 255 255 / 0.1);
+    border: 1px solid hsl(var(--foreground) / 0.1);
     padding: 1.5rem;
     background-color: color-mix(in oklab, hsl(var(--background)) 68%, transparent);
     box-shadow: 0 0 40px hsl(var(--accent) / 0.08);

@@ -44,11 +44,6 @@ const EXEMPT = [
   "src/components/ContactSection.tsx",
   "src/components/Navbar.tsx",
   "src/components/ui/select.tsx",
-  // Unused shadcn boilerplate with no call sites.
-  "src/components/ui/card.tsx",
-  "src/components/ui/alert-dialog.tsx",
-  "src/components/ui/chart.tsx",
-  "src/components/ui/sidebar.tsx",
 ];
 
 function walk(dir: string, out: string[] = []): string[] {

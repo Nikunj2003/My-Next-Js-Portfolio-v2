@@ -86,7 +86,7 @@ const AITwinSection = () => {
 
               {/* Right Content - The Prompt Chips */}
               <div className="w-full lg:w-1/2 relative z-10 flex flex-col gap-3">
-                <p className="text-xs font-mono text-foreground/50 mb-2 uppercase tracking-widest hidden lg:block ml-2">Suggested prompts</p>
+                <p className="text-xs font-mono text-muted-foreground mb-2 uppercase tracking-widest hidden lg:block ml-2">Suggested prompts</p>
                 {chatSuggestions.map((s) => (
                   <button
                     key={s}

@@ -62,7 +62,7 @@ export function ReadingPathAsk() {
             key={example}
             type="button"
             onClick={() => ask(example)}
-            className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground"
+            className="rounded-full border border-foreground/10 bg-foreground/5 px-3 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground"
           >
             {example}
           </button>

@@ -121,9 +121,10 @@ const HeroSection = () => {
               <motion.h1 variants={item} className="text-4xl sm:text-7xl lg:text-[5.5rem] font-bold tracking-tighter leading-[1.1] sm:leading-[1.05]">
                 {personalInfo.name}
               </motion.h1>
-              <motion.h2 variants={item} className="text-xl sm:text-4xl font-semibold tracking-tight text-muted-foreground mt-2">
+              {/* A tagline, not a heading: the section headings below are the h2s. */}
+              <motion.p variants={item} className="text-xl sm:text-4xl font-semibold tracking-tight text-muted-foreground mt-2">
                 {personalInfo.role.split(" ").slice(0, -1).join(" ")} <span className="text-gradient">{personalInfo.role.split(" ").slice(-1)[0]}</span>
-              </motion.h2>
+              </motion.p>
             </div>
 
             <motion.p variants={item} className="text-muted-foreground text-base sm:text-lg leading-relaxed max-w-xl font-medium" style={{ textWrap: "pretty" }}>
@@ -178,7 +179,7 @@ const HeroSection = () => {
               </a>
               <a
                 href="#ai-twin"
-                className="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-6 py-3.5 rounded-full hover:bg-white/5 transition-all duration-300 font-semibold text-sm text-muted-foreground hover:text-foreground active:scale-95"
+                className="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-6 py-3.5 rounded-full hover:bg-foreground/5 transition-all duration-300 font-semibold text-sm text-muted-foreground hover:text-foreground active:scale-95"
               >
                 <MessageCircle className="w-4 h-4 text-primary" />
                 Talk to AI Twin
