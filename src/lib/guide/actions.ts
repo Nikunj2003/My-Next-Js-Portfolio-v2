@@ -63,7 +63,8 @@ export function runGuideAction(action: GuideAction, router: Router, onDone?: () 
     }
     return scrollToHash(href, { onComplete }) ? "scroll" : "missing";
   }
-  if (href.startsWith("/") && !/\.pdf$/i.test(href)) {
+  // `//host` is protocol-relative: it would leave the site.
+  if (/^\/(?![/\\])/.test(href) && !/\.pdf$/i.test(href)) {
     router.push(href);
     onDone?.();
     return "route";

@@ -1,5 +1,6 @@
 "use client";
 import { motion, useMotionTemplate, useMotionValue, useReducedMotion } from "framer-motion";
+import { useFinePointer } from "@/hooks/use-fine-pointer";
 import { type PointerEvent, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -32,12 +33,13 @@ export function SpotlightCard({
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const [isHovered, setIsHovered] = useState(false);
-  const [isInteractive, setIsInteractive] = useState(false);
   const elementRef = useRef<HTMLDivElement | null>(null);
   const boundsRef = useRef<DOMRect | null>(null);
   const pointRef = useRef<{ x: number; y: number } | null>(null);
   const frameRef = useRef<number | null>(null);
   const shouldReduceMotion = useReducedMotion();
+  const finePointer = useFinePointer();
+  const isInteractive = finePointer && !shouldReduceMotion;
   const spotlightBackground = useMotionTemplate`
     radial-gradient(
       ${glowSize}px circle at ${mouseX}px ${mouseY}px,
@@ -53,23 +55,6 @@ export function SpotlightCard({
       }
     };
   }, []);
-
-  useEffect(() => {
-    if (shouldReduceMotion) {
-      setIsInteractive(false);
-      return;
-    }
-
-    const mediaQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
-    const updateInteractivity = (event?: MediaQueryListEvent) => {
-      setIsInteractive(event ? event.matches : mediaQuery.matches);
-    };
-
-    updateInteractivity();
-    mediaQuery.addEventListener("change", updateInteractivity);
-
-    return () => mediaQuery.removeEventListener("change", updateInteractivity);
-  }, [shouldReduceMotion]);
 
   function flushPointerPosition() {
     frameRef.current = null;

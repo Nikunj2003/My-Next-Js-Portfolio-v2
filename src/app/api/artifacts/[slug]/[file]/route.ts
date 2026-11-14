@@ -31,7 +31,9 @@ export async function GET(_request: Request, { params }: RouteParams) {
         "Content-Type": "text/html; charset=utf-8",
         // Stored HTML is served from this origin: sandbox it into an opaque
         // origin so its scripts cannot reach the site's cookies or storage.
-        "Content-Security-Policy": "sandbox allow-scripts allow-popups",
+        // No fetch/XHR/WebSocket and no form posts: a hosted report renders
+        // itself, it never needs to send anything anywhere.
+        "Content-Security-Policy": "sandbox allow-scripts allow-popups; connect-src 'none'; form-action 'none'",
         "X-Content-Type-Options": "nosniff",
         // Re-hosting overwrites in place, so keep this short: fresh enough to
         // pick up an update quickly, but still cacheable between requests.

@@ -93,7 +93,8 @@ const Carousel = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEl
         return;
       }
 
-      onSelect(api);
+      // Initial sync from the carousel's own state, after this commit.
+      queueMicrotask(() => onSelect(api));
       api.on("reInit", onSelect);
       api.on("select", onSelect);
 

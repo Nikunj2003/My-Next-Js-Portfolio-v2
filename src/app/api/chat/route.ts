@@ -18,7 +18,8 @@ import {
 } from "@/lib/chat-contract";
 import { TOOL_DEFINITIONS, executeTool, formatToolCall } from "@/lib/ai-tools";
 import { CHAT_MEMORY_WINDOW, appendContextualLinks, findMatchingProjects, normalizeText, trimConversationHistory } from "@/lib/ai-twin";
-import { checkRateLimit, getClientKey, getRateLimitHeaders } from "@/lib/rate-limit";
+import { checkGlobalBudget, checkRateLimit, getClientKey, getRateLimitHeaders } from "@/lib/rate-limit";
+import { readBodyTextCapped } from "@/lib/request-body";
 import { resolveChatCompletionsUrl } from "@/lib/llm-url";
 
 interface Message {
@@ -53,6 +54,10 @@ export const maxDuration = 60;
 
 const RATE_LIMIT = 39;
 const WINDOW_MS = 60_000;
+/** Ceiling across all visitors per instance, per hour: the paid upstream's backstop. */
+const GLOBAL_HOURLY_BUDGET = 600;
+/** The follow-up suggestions are a short JSON list. */
+const MAX_SUGGESTION_TOKENS = 300;
 const TARGET_SUGGESTION_COUNT = 4;
 const MAX_SUGGESTION_LENGTH = 44;
 const MAX_MESSAGE_LENGTH = 1200;
@@ -579,33 +584,6 @@ async function streamCompletionWithRetry(
   throw lastError;
 }
 
-/** Reads a request body as text, giving up once it exceeds `maxBytes`. Null means too large. */
-async function readBodyTextCapped(request: Request, maxBytes: number): Promise<string | null> {
-  const declared = Number(request.headers.get("content-length"));
-  if (Number.isFinite(declared) && declared > maxBytes) return null;
-
-  if (!request.body) return "";
-
-  const reader = request.body.getReader();
-  const decoder = new TextDecoder();
-  let received = 0;
-  let text = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    received += value.byteLength;
-    if (received > maxBytes) {
-      await reader.cancel().catch(() => undefined);
-      return null;
-    }
-    text += decoder.decode(value, { stream: true });
-  }
-
-  return text + decoder.decode();
-}
-
 function isChatConfigured() {
   return Boolean(process.env.LLM_API_KEY?.trim());
 }
@@ -672,6 +650,16 @@ export async function POST(request: Request) {
         ...rateLimitHeaders,
         "Retry-After": String(rateLimitResult.retryAfter),
       }
+    );
+  }
+
+  const budget = checkGlobalBudget("chat", GLOBAL_HOURLY_BUDGET, 60 * 60_000);
+  if (budget.exhausted) {
+    return createChatErrorResponse(
+      429,
+      "rate_limited",
+      "The AI Twin is very busy right now. Please try again later.",
+      { ...rateLimitHeaders, "Retry-After": String(budget.retryAfter) }
     );
   }
 
@@ -1153,6 +1141,7 @@ Rules:
         messages: suggestionMessages,
         temperature: 0.7,
         top_p: 0.9,
+        max_tokens: MAX_SUGGESTION_TOKENS,
       },
       timeoutMs,
       signal

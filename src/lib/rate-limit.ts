@@ -64,13 +64,26 @@ function pruneStore(store: Map<string, RateLimitEntry>, now: number) {
   }
 }
 
+/**
+ * Which client-IP header the deployment's edge sets (and overwrites), so it
+ * can be trusted. Any other header is whatever the client chose to send:
+ * trusting it gives every spoofed value a fresh bucket.
+ * - On Vercel (`VERCEL` is set by the platform): `x-vercel-forwarded-for`.
+ * - Behind another proxy: name its header in `TRUSTED_PROXY_HEADER`
+ *   (for example `cf-connecting-ip` or `x-real-ip`).
+ * - Otherwise: the rightmost `x-forwarded-for` hop, written by our own edge.
+ */
+function trustedIpHeader(): string | null {
+  const configured = process.env.TRUSTED_PROXY_HEADER?.trim().toLowerCase();
+  if (configured) return configured;
+  if (process.env.VERCEL) return "x-vercel-forwarded-for";
+  return null;
+}
+
 export function getClientKey(request: Request) {
-  // Edge-set headers first (the platform overwrites any client-sent copy), then
-  // the rightmost x-forwarded-for hop. Never the leftmost: the client controls it.
+  const header = trustedIpHeader();
   const forwardedIp =
-    sanitizeFingerprintSegment(request.headers.get("x-vercel-forwarded-for")?.split(",")[0]) ||
-    sanitizeFingerprintSegment(request.headers.get("cf-connecting-ip")) ||
-    sanitizeFingerprintSegment(request.headers.get("x-real-ip")) ||
+    (header ? sanitizeFingerprintSegment(request.headers.get(header)?.split(",")[0]) : "") ||
     getLastForwardedValue(request.headers.get("x-forwarded-for"));
 
   if (forwardedIp) {
@@ -134,4 +147,22 @@ export function checkRateLimit(
     retryAfter: 0,
     resetAt: entry.resetAt,
   };
+}
+
+type BudgetState = { count: number; resetAt: number };
+const budgets = new Map<string, BudgetState>();
+
+/**
+ * A ceiling shared by every client of one route on this instance, so rotating
+ * client keys (or evicting the per-client store) can't buy unlimited calls to
+ * a paid upstream. True when the budget is spent.
+ */
+export function checkGlobalBudget(name: string, limit: number, windowMs: number, now = Date.now()) {
+  let state = budgets.get(name);
+  if (!state || now >= state.resetAt) {
+    state = { count: 0, resetAt: now + windowMs };
+    budgets.set(name, state);
+  }
+  state.count += 1;
+  return { exhausted: state.count > limit, retryAfter: Math.max(1, Math.ceil((state.resetAt - now) / 1000)) };
 }

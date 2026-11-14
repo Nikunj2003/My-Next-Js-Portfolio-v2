@@ -23,7 +23,8 @@ export function buildAnswerComponents(
   return {
     a: ({ href = "", children, ...props }) => {
       const isHashLink = href.startsWith("#");
-      const isInternalPath = href.startsWith("/");
+      // `//host` and `/\host` are protocol-relative: they leave the site.
+      const isInternalPath = /^\/(?![/\\])/.test(href);
       const isResumeLink = /resume|\.pdf$/i.test(href);
       const isExternalLink = !isHashLink && !isInternalPath && !href.startsWith("mailto:");
 
@@ -56,6 +57,13 @@ export function buildAnswerComponents(
         </a>
       );
     },
+    // Images in an answer are never loaded: a model (or a pasted prompt) could
+    // point one anywhere. Show the alt text and the address instead.
+    img: ({ src, alt }) => (
+      <span className="text-muted-foreground">
+        [{alt || "image"}{typeof src === "string" && src ? `: ${src}` : ""}]
+      </span>
+    ),
     p: ({ children }) => <p className="mb-3 last:mb-0 whitespace-pre-wrap">{children}</p>,
     ul: ({ children }) => <ul className="mb-3 list-disc space-y-2 pl-5 marker:text-primary last:mb-0">{children}</ul>,
     ol: ({ children }) => <ol className="mb-3 list-decimal space-y-2 pl-5 marker:text-primary last:mb-0">{children}</ol>,

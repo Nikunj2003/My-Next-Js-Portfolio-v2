@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useRef, type PointerEvent } from "react";
 import { motion, useMotionTemplate, useMotionValue, useReducedMotion, useSpring, useTransform } from "framer-motion";
+import { useFinePointer } from "@/hooks/use-fine-pointer";
 
 interface Card3DProps {
   children: React.ReactNode;
@@ -15,8 +16,9 @@ const Card3D = ({ children, className = "" }: Card3DProps) => {
   const boundsRef = useRef<DOMRect | null>(null);
   const pointRef = useRef<{ x: number; y: number } | null>(null);
   const frameRef = useRef<number | null>(null);
-  const [isInteractive, setIsInteractive] = useState(false);
   const shouldReduceMotion = useReducedMotion();
+  const finePointer = useFinePointer();
+  const isInteractive = finePointer && !shouldReduceMotion;
 
   const mouseXSpring = useSpring(x, { stiffness: 300, damping: 30 });
   const mouseYSpring = useSpring(y, { stiffness: 300, damping: 30 });
@@ -37,23 +39,6 @@ const Card3D = ({ children, className = "" }: Card3DProps) => {
       }
     };
   }, []);
-
-  useEffect(() => {
-    if (shouldReduceMotion) {
-      setIsInteractive(false);
-      return;
-    }
-
-    const mediaQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
-    const updateInteractivity = (event?: MediaQueryListEvent) => {
-      setIsInteractive(event ? event.matches : mediaQuery.matches);
-    };
-
-    updateInteractivity();
-    mediaQuery.addEventListener("change", updateInteractivity);
-
-    return () => mediaQuery.removeEventListener("change", updateInteractivity);
-  }, [shouldReduceMotion]);
 
   const flushPointerPosition = () => {
     frameRef.current = null;

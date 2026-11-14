@@ -127,6 +127,7 @@ The app currently uses these environment variables:
 - `LLM_API_KEY`
 - `LLM_BASE_URL` (an OpenAI-style base such as `https://bifrost.codenex.dev/v1`, or a full `/chat/completions` URL; see `src/lib/llm-url.ts`)
 - `BLOB_READ_WRITE_TOKEN`, `ARTIFACT_UPLOAD_TOKEN` (artifact hosting)
+- `TRUSTED_PROXY_HEADER` (optional): the client-IP header your proxy sets, for rate limiting off Vercel (e.g. `cf-connecting-ip`). On Vercel `x-vercel-forwarded-for` is used; otherwise the rightmost `x-forwarded-for` hop. Never trust a header the client can set.
 
 ## Working conventions
 
