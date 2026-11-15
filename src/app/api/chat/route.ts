@@ -1,4 +1,5 @@
 import { cardForToolResult } from "@/lib/chat/cards";
+import { addToolCallDelta } from "@/lib/chat/tool-name";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { AI_MODEL, AI_REASONING_EFFORT, SYSTEM_PROMPT, SUGGESTION_SYSTEM_PROMPT } from "@/lib/ai-config";
@@ -456,12 +457,7 @@ async function streamCompletion(
       if (Array.isArray(deltaToolCalls)) {
         for (const rawCall of deltaToolCalls) {
           const call = rawCall as { index?: number; id?: string; function?: { name?: string; arguments?: string } };
-          const index = call.index ?? 0;
-          const existing = toolCallsByIndex.get(index) ?? { id: undefined, name: "", args: "" };
-          if (call.id) existing.id = call.id;
-          if (call.function?.name) existing.name += call.function.name;
-          if (call.function?.arguments) existing.args += call.function.arguments;
-          toolCallsByIndex.set(index, existing);
+          addToolCallDelta(toolCallsByIndex, call);
         }
       }
     };
