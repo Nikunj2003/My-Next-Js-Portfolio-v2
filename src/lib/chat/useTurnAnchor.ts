@@ -33,6 +33,11 @@ export function useTurnAnchor(scrollerRef: RefObject<HTMLElement | null>, { anch
   /** The anchor scroll was issued and the target hasn't been reached yet. */
   const seekingRef = useRef(false);
   const [showJump, setShowJump] = useState(false);
+  // Read by restoreToEnd, so it stays one stable callback across turns.
+  const anchorIdRef = useRef(anchorId);
+  useLayoutEffect(() => {
+    anchorIdRef.current = anchorId;
+  }, [anchorId]);
 
   /** Height of everything above the spacer, measured from where the spacer sits. */
   const readContentHeight = useCallback(() => {
@@ -132,15 +137,27 @@ export function useTurnAnchor(scrollerRef: RefObject<HTMLElement | null>, { anch
     scroller.scrollTo({ top: Math.max(0, end), behavior: reducedMotion ? "auto" : "smooth" });
   }, [readContentHeight, reducedMotion, scrollerRef]);
 
-  /** Restores the reading position when the surface is (re)opened: the end of the history. */
+  /**
+   * Restores the reading position when the surface is (re)opened: the latest
+   * question at the top, its answer below, the same frame a new turn anchors
+   * to. With no question yet (only the welcome), the top of the log, so the
+   * welcome is never clipped.
+   */
   const restoreToEnd = useCallback(() => {
     const scroller = scrollerRef.current;
     if (!scroller) return;
     targetRef.current = null;
     seekingRef.current = false;
     if (spacerRef.current) spacerRef.current.style.height = "0px";
-    scroller.scrollTop = scroller.scrollHeight;
-  }, [scrollerRef]);
+    const id = anchorIdRef.current;
+    const anchor = id ? scroller.querySelector(selector(id)) : null;
+    if (!(anchor instanceof HTMLElement)) {
+      scroller.scrollTop = 0;
+      return;
+    }
+    const top = anchorScrollTop(anchor.getBoundingClientRect().top, scroller.getBoundingClientRect().top, scroller.scrollTop);
+    scroller.scrollTop = Math.min(top, scroller.scrollHeight - scroller.clientHeight);
+  }, [scrollerRef, selector]);
 
   return { spacerRef, showJump, jumpToLatest, restoreToEnd };
 }

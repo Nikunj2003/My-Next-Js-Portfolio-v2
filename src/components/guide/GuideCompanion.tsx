@@ -434,8 +434,10 @@ export default function GuideCompanion() {
       const usedFallback = ruled === null;
       let target = ruled ?? fallback;
       const landing = heroHere && morph < 1 ? null : footerLanding(viewport);
-      // The footer is an obstacle for every spot but its own slot.
-      const footerTop = landing ? null : footer()?.getBoundingClientRect().top ?? null;
+      // The footer is an obstacle for every spot but its own slot. With the
+      // panel open the corner sits just below the panel, over the page's end:
+      // pushing it above the footer put it inside the panel.
+      const footerTop = landing || panelOpenRef.current ? null : footer()?.getBoundingClientRect().top ?? null;
       target = clampToViewport(target, size, viewport, footerTop);
 
       let point = target;
