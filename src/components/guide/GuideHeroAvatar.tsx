@@ -258,7 +258,7 @@ export function GuideHeroAvatar() {
           <button
             type="button"
             onClick={() => openNex("")}
-            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-primary/30 glass-subtle px-5 text-sm font-semibold text-foreground shadow-accent-soft transition-colors hover:border-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary motion-reduce:transition-none"
+            className="btn-cta-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary motion-reduce:transition-none"
           >
             <MessageCircle className="h-4 w-4 text-primary" aria-hidden="true" />
             Ask Nex
@@ -266,7 +266,7 @@ export function GuideHeroAvatar() {
           <button
             type="button"
             onClick={startGuideTour}
-            className="inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold text-primary-text transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary motion-reduce:transition-none"
+            className="inline-flex items-center gap-2 rounded-full border border-transparent px-5 py-3.5 text-sm font-bold tracking-wide text-primary-text transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary motion-reduce:transition-none"
           >
             <Compass className="h-4 w-4" aria-hidden="true" />
             60-second tour

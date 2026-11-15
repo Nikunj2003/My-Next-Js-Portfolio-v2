@@ -291,7 +291,7 @@ const NexChat = () => {
         isMobile ? "px-4 py-3 bg-background" : "px-5 py-4 bg-accent/5"
       )}>
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#090e1a] ring-1 ring-primary/30">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full guide-disc ring-1 ring-primary/30">
             <StaticGuideMark size={30} />
           </div>
           <div>

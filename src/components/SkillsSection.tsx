@@ -1,7 +1,7 @@
 import { Brain, Layers, Database, Server, Wrench } from "lucide-react";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import FlipWords from "@/components/ui/flip-words";
-import { skillCategories } from "@/data/portfolio";
+import { skillCategories, skillEvidence } from "@/data/portfolio";
 import AskAboutThis from "@/components/AskAboutThis";
 
 /** Keyed by exact category title — a miss falls back to Wrench silently, so
@@ -21,7 +21,7 @@ const SkillsSection = () => {
 
           {/* Left Column: Sticky Header */}
           <div className="w-full shrink-0 lg:sticky lg:top-32 lg:w-1/3">
-            <div data-guide-panel className="panel-sticky">
+            <div data-guide-panel data-guide-target="skills-panel" className="panel-sticky">
               <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
               <div className="absolute -bottom-20 -left-16 h-40 w-40 rounded-full bg-accent/10 blur-3xl" />
 
@@ -34,7 +34,7 @@ const SkillsSection = () => {
                   <span className="text-gradient">Stack</span>
                 </h2>
                 <p className="max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
-                  The technologies I reach for most often when building agent systems, governed MCP tools, evaluation pipelines, and full-stack AI products.
+                  The technologies I reach for most often when building agent systems, governed MCP tools, evaluation pipelines, and full-stack AI products. Highlighted ones link to the work that proves them.
                 </p>
 
                 <p className="mt-10 text-left text-base font-semibold text-foreground sm:text-xl md:text-2xl">
@@ -84,14 +84,27 @@ const SkillsSection = () => {
                       </p>
 
                       <ul className="flex flex-wrap gap-2.5">
-                        {cat.skills.map((skill) => (
-                          <li
-                            key={skill}
-                            className="select-none rounded-xl border border-foreground/5 px-4 py-2 text-sm font-medium glass-subtle text-foreground/80 transition-all duration-300 hover:border-primary/40 hover:bg-foreground/10 hover:text-primary"
-                          >
-                            {skill}
-                          </li>
-                        ))}
+                        {cat.skills.map((skill) => {
+                          // A skill with evidence on the site links to it; the rest stay plain.
+                          const evidence = skillEvidence[skill];
+                          const chip = "block rounded-xl border px-4 py-2 text-sm font-medium glass-subtle transition-all duration-300";
+                          return (
+                            <li key={skill}>
+                              {evidence ? (
+                                <a
+                                  href={evidence.href}
+                                  title={`Proof: ${evidence.label}`}
+                                  className={`${chip} border-primary/25 text-foreground/90 hover:border-primary/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
+                                >
+                                  {skill}
+                                  <span className="sr-only"> (proof: {evidence.label})</span>
+                                </a>
+                              ) : (
+                                <span className={`${chip} select-none border-foreground/5 text-foreground/70`}>{skill}</span>
+                              )}
+                            </li>
+                          );
+                        })}
                       </ul>
                     </div>
                   </SpotlightCard>

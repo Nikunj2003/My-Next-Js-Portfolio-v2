@@ -11,6 +11,8 @@
   }
 
   :root {
+    --gradient-mid: hsl(170 62% 38%);
+    --guide-disc: hsl(168 38% 92% / 0.95);
     --background: 40 20% 97%;
     --foreground: 220 25% 10%;
     --card: 40 15% 95%;
@@ -71,6 +73,8 @@
   }
 
   .dark {
+    --gradient-mid: hsl(var(--accent));
+    --guide-disc: rgb(9 14 26 / 0.9);
     --background: 224 47% 7%;
     --foreground: 170 20% 92%;
     --card: 221 39% 11%;
@@ -272,8 +276,20 @@ textarea,
     backdrop-filter: blur(var(--blur-overlay)) saturate(150%);
   }
 
+  /* The accent's middle stop is set per theme: in light mode the raw accent
+     (50% lightness) washed out to near-white against the cream background,
+     so it is darkened there to stay in the same family as dark mode's look. */
   .text-gradient {
-    @apply bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent;
+    background-image: linear-gradient(to right, hsl(var(--primary)), var(--gradient-mid), hsl(var(--primary)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* The companion's disc: dark in both themes would be a black hole on the
+     cream page, so light mode uses a soft tinted surface instead. */
+  .guide-disc {
+    background-color: var(--guide-disc);
   }
 
   /* Call-to-action buttons.

@@ -8,6 +8,16 @@ import { ArrowRight, ExternalLink, Github, Maximize2 } from "lucide-react";
 import { projects, type Project } from "@/data/portfolio";
 import AskAboutThis from "@/components/AskAboutThis";
 import { PROJECT_ANCHOR_PREFIX } from "@/lib/chat/shared";
+import { caseStudyIndex } from "@/data/case-study-index";
+import { THESIS } from "@/data/thesis";
+import { PillarRow } from "@/components/PillarRow";
+
+/** Project cards whose product also has a case study: the card links to the deeper write-up. */
+const PROJECT_STUDY: Record<string, string> = { codenex: "codenex", "codenex-ai-api-proxy": "codenex-ai-proxy", serenify: "serenify" };
+const studyPath = (projectSlug: string) => {
+  const slug = PROJECT_STUDY[projectSlug];
+  return slug && caseStudyIndex.some((entry) => entry.slug === slug) ? `/work/${slug}` : null;
+};
 import {
   Carousel,
   CarouselContent,
@@ -229,6 +239,15 @@ function ProjectCard({
                 <Github className="h-3.5 w-3.5" />
                 Source
               </a>
+              {studyPath(project.slug) && (
+                <Link
+                  href={studyPath(project.slug)!}
+                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold text-primary-text transition-colors hover:text-primary"
+                >
+                  Case study
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              )}
             </div>
           </div>
 
@@ -264,7 +283,7 @@ const ProjectsSection = ({ featured, caseStudyCount }: { featured: ReactNode; ca
 
       <div className="container-narrow">
         {/* Centered Header */}
-        <div className="mb-16 flex flex-col items-center text-center">
+        <div className="mb-10 flex flex-col items-center text-center">
           <div className="mb-6 inline-flex items-center rounded-full border border-primary/20 px-3 py-1.5 font-mono text-xs text-primary-text glass-subtle">
             Work
           </div>
@@ -272,10 +291,11 @@ const ProjectsSection = ({ featured, caseStudyCount }: { featured: ReactNode; ca
             Selected <span className="text-gradient">Work</span>
           </h2>
           <p className="mb-4 max-w-xl text-lg leading-relaxed text-muted-foreground">
-            Agent systems, retrieval, and platform work I own at ArmorCode, GenAI products shipped at Xansr Media,
-            and the products I have built on my own.
+            {THESIS} Each case study below is evidence for one of four things.
           </p>
         </div>
+
+        <PillarRow />
 
         {/* Tier 1 — the featured case studies, the only cards carrying metrics on
             their face. Labelled by what they are rather than by employer, since the

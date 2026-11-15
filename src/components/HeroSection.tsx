@@ -1,10 +1,11 @@
 "use client";
 import { useInView } from "react-intersection-observer";
-import { ArrowDown, MessageCircle, Download } from "lucide-react";
+import { ArrowDown, Download } from "lucide-react";
 import Link from "next/link";
 import { personalInfo, stats } from "@/data/portfolio";
 import { GuideHeroAvatar } from "@/components/guide/GuideHeroAvatar";
 import { HeroIntro } from "@/components/HeroIntro";
+import { HeroAskButton } from "@/components/HeroAskButton";
 
 /**
  * The hero. Its markup is static and final: the entrance is played over it by
@@ -106,13 +107,7 @@ const HeroSection = () => {
                 <Download className="w-4 h-4 mr-1 text-primary" />
                 Resume
               </a>
-              <a
-                href="#nex"
-                className="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-6 py-3.5 rounded-full hover:bg-foreground/5 transition-all duration-300 font-semibold text-sm text-muted-foreground hover:text-foreground active:scale-95"
-              >
-                <MessageCircle className="w-4 h-4 text-primary" />
-                Ask Nex
-              </a>
+              <HeroAskButton />
             </div>
           </div>
 

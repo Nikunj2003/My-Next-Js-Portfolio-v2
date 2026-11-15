@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { Award, Download, MapPin } from "lucide-react";
-import { about, experiences, personalInfo, recognition } from "@/data/portfolio";
+import { about, experiences, personalInfo, recognition, stats } from "@/data/portfolio";
+import { THESIS } from "@/data/thesis";
 import { siteConfig } from "@/lib/seo/site";
 import logo from "@/assets/logo.png";
 
@@ -11,6 +12,16 @@ import AskAboutThis from "@/components/AskAboutThis";
 const currentRole = experiences[experiences.length - 1];
 const armorCodeStart = experiences.find((experience) => experience.company === "ArmorCode");
 const tenureLabel = armorCodeStart ? `${armorCodeStart.period.split(/\s*[-–]\s*/)[0]} — present` : currentRole.period;
+
+/**
+ * Highlights whose number the hero already shows in full. Here they are a
+ * compact line linking to the same proof, so the page doesn't repeat itself;
+ * the rest keep their full cards.
+ */
+const heroFigures = new Set(stats.map((stat) => `${stat.value}${stat.suffix}`));
+const repeated = about.highlights.filter((highlight) => heroFigures.has(highlight.metric));
+const unique = about.highlights.filter((highlight) => !heroFigures.has(highlight.metric));
+const proofHref = (metric: string) => stats.find((stat) => `${stat.value}${stat.suffix}` === metric)?.href ?? "#work";
 
 /**
  * About section.
@@ -33,7 +44,7 @@ const AboutSection = () => {
           {/* Left Column: Sticky Header */}
           <div className="w-full shrink-0 lg:sticky lg:top-32 lg:w-1/3">
             <div>
-              <div data-guide-panel className="panel-sticky">
+              <div data-guide-panel data-guide-target="about-panel" className="panel-sticky">
                 <div aria-hidden="true" className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
                 <div aria-hidden="true" className="absolute -bottom-20 -left-16 h-40 w-40 rounded-full bg-accent/10 blur-3xl" />
 
@@ -49,7 +60,7 @@ const AboutSection = () => {
                   </h2>
 
                   <p className="max-w-md leading-relaxed text-muted-foreground">
-                    {personalInfo.tagline}
+                    {THESIS}
                   </p>
 
                   {/* Identity facts, matching the weight of the FlipWords line
@@ -140,7 +151,7 @@ const AboutSection = () => {
             {/* Metric-led proof. Two across inside a 2/3 column keeps each card
                 at a readable measure — three across gave ~23 chars per line. */}
             <div className="grid gap-4 sm:grid-cols-2">
-              {about.highlights.map((highlight) => (
+              {unique.map((highlight) => (
                 <SpotlightCard key={highlight.label} className="h-full">
                   <div className="flex h-full flex-col gap-3 p-6">
                     <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -166,6 +177,20 @@ const AboutSection = () => {
                 </SpotlightCard>
               ))}
             </div>
+
+            {repeated.length > 0 && (
+              <ul className="flex flex-col divide-y divide-foreground/10 rounded-2xl glass-subtle">
+                {repeated.map((highlight) => (
+                  <li key={highlight.label} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-5 py-3 text-sm">
+                    <span className="font-bold tabular-nums text-foreground">{highlight.metric}</span>
+                    <span className="text-muted-foreground">{highlight.label}</span>
+                    <a href={proofHref(highlight.metric)} className="ml-auto font-mono text-[11px] uppercase tracking-wider text-primary-text hover:text-primary">
+                      See the proof
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
 
           </div>
 

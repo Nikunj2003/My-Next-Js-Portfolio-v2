@@ -84,10 +84,13 @@ function TimelineIcon({
 
 function ExperienceItem({
   exp,
+  current,
   timelineRef,
   lineProgress,
 }: {
   exp: Experience;
+  /** The latest role: anchored, and marked as the current one. */
+  current?: boolean;
   timelineRef: React.RefObject<HTMLDivElement | null>;
   lineProgress: MotionValue<number>;
 }) {
@@ -96,12 +99,18 @@ function ExperienceItem({
   const metaLabel = exp.type === "education" ? "Education" : "Experience";
 
   return (
-    <li ref={ref} className="relative mb-12 flex w-full flex-col gap-1 pl-[50px] sm:mb-16 sm:pl-[90px]">
+    <li ref={ref} id={current ? "current-role" : undefined} className="relative mb-12 flex w-full scroll-mt-28 flex-col gap-1 pl-[50px] sm:mb-16 sm:pl-[90px]">
       <TimelineIcon timelineRef={timelineRef} lineProgress={lineProgress} />
-      <SpotlightCard className="h-full">
+      <SpotlightCard className={current ? "h-full border-primary/30" : "h-full"}>
         <div className="p-6 md:p-8">
           <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
+              {current && (
+                <span className="mb-2 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-primary-text">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" />
+                  Now
+                </span>
+              )}
               <h3 className="heading-md text-foreground">{exp.role}</h3>
               <span className="mt-1 block font-medium text-primary">{exp.company}</span>
             </div>
@@ -265,6 +274,15 @@ const ExperienceSection = () => {
                     I’ve grown from building public-sector software into delivering Applied AI systems, working through stakeholder discovery, agent architecture, governed tool integration, rollout, debugging, and iteration.
                   </p>
 
+                  {/* The story runs oldest first; the role that carries it is last, so point at it. */}
+                  <a
+                    href="#current-role"
+                    className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-primary-text hover:text-primary"
+                  >
+                    Now: {experiences[experiences.length - 1].role}, {experiences[experiences.length - 1].company}
+                    <span aria-hidden="true">↓</span>
+                  </a>
+
                   <div className="hidden lg:block">
                     <p className="mt-6 inline-flex flex-nowrap items-baseline whitespace-nowrap text-base font-semibold text-foreground sm:text-xl lg:mt-8">
                     And a new{" "}
@@ -288,10 +306,11 @@ const ExperienceSection = () => {
             />
 
             <ul className="relative w-full py-4">
-              {experiences.map((experience) => (
+              {experiences.map((experience, index) => (
                 <ExperienceItem
                   key={`${experience.company}-${experience.period}`}
                   exp={experience}
+                  current={index === experiences.length - 1}
                   timelineRef={timelineRef}
                   lineProgress={scrollYProgress}
                 />

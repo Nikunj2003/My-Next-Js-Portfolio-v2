@@ -1,5 +1,6 @@
 "use client";
 import { useEffect } from "react";
+import { NexEvalScorecard } from "@/components/NexEvalScorecard";
 import { Bot, MessageCircle } from "lucide-react";
 import { chatSuggestions } from "@/data/portfolio";
 import { openNex } from "@/lib/ask-nex";
@@ -85,7 +86,7 @@ const NexSection = () => {
                       : "Nex is offline for now. The case studies, contact form and resume all still work."}
                 </p>
                 <p className="text-sm text-foreground/75 mb-8 max-w-lg lg:mx-0 mx-auto">
-                  Ask for a number that isn&apos;t published and Nex says so instead of estimating, the same discipline Nikunj&apos;s evaluation platform enforces.
+                  Ask for a number that isn&apos;t published and Nex says so instead of estimating, the same discipline Nikunj&apos;s evaluation platform enforces. It can only take you to pages on an allow-list, and it is scored against its own golden set.
                 </p>
 
                 <button 
@@ -99,6 +100,8 @@ const NexSection = () => {
                   <MessageCircle className="w-4 h-4" />
                   {primaryButtonLabel}
                 </button>
+
+                <NexEvalScorecard />
               </div>
 
               {/* Right Content - The Prompt Chips */}

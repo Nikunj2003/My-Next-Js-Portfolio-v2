@@ -559,7 +559,7 @@ export default function GuideCompanion() {
           aria-expanded={companion.bubble === "ask"}
           aria-controls="nex-bubble"
           className={
-            "relative flex h-full w-full items-center justify-center rounded-full bg-[#090e1a]/90 ring-1 ring-primary/40 shadow-accent-card transition-shadow duration-300 hover:shadow-[0_16px_36px_hsl(var(--accent)/0.28)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary " +
+            "relative flex h-full w-full items-center justify-center rounded-full guide-disc ring-1 ring-primary/40 shadow-accent-card transition-shadow duration-300 hover:shadow-[0_16px_36px_hsl(var(--accent)/0.28)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary " +
             (visible ? "pointer-events-auto cursor-pointer" : "pointer-events-none")
           }
         >

@@ -3,6 +3,9 @@ import { ArrowRight, AudioLines, Blocks, Boxes, Database, BookOpen, FlaskConical
 import type { CaseStudy } from "@/data/case-studies";
 import { getCaseStudyPath } from "@/data/case-study-path";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
+import { PILLARS } from "@/data/thesis";
+
+const PILLAR_LABELS = Object.fromEntries(PILLARS.map((pillar) => [pillar.id, pillar.label]));
 import AskAboutThis from "@/components/AskAboutThis";
 
 /**
@@ -74,8 +77,17 @@ const CaseStudyCard = ({
             the pill sits identically on every card regardless of how long the
             study title is or where it wraps. */}
         <div className="relative z-10 mt-2 flex min-h-6 items-center">
-          <AskAboutThis question={`Tell me about the ${study.title}.`} className="ml-0" />
+          <AskAboutThis label="Ask Nex" question={`Tell me about the ${study.title}.`} className="ml-0" />
         </div>
+
+        <p className="mt-3 font-mono text-[11px] text-muted-foreground/80">
+          {[study.employer, study.period].filter(Boolean).join(" · ")}
+          {(study.pillars ?? []).map((id) => (
+            <span key={id} className="ml-2 rounded-full border border-primary/25 px-2 py-0.5 text-primary-text">
+              {PILLAR_LABELS[id]}
+            </span>
+          ))}
+        </p>
 
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
           {study.oneLiner}
