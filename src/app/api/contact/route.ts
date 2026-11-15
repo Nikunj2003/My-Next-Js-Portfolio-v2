@@ -7,12 +7,15 @@ import {
   getContactSubmissionIssue,
 } from "@/lib/contact";
 import { checkRateLimit, getClientKey, getRateLimitHeaders } from "@/lib/rate-limit";
+import { readBodyTextCapped } from "@/lib/request-body";
 
 export const runtime = "nodejs";
 
 const RATE_LIMIT = 5;
 const WINDOW_MS = 10 * 60_000;
 const RESEND_TIMEOUT_MS = CONTACT_REQUEST_TIMEOUT_MS;
+/** A contact form submission is a few KB at most; refuse anything bigger before parsing. */
+const MAX_REQUEST_BODY_BYTES = 16 * 1024;
 
 const requestStore = new Map<string, { count: number; resetAt: number }>();
 
@@ -72,7 +75,16 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await request.json();
+    const rawBody = await readBodyTextCapped(request, MAX_REQUEST_BODY_BYTES);
+    if (rawBody === null) {
+      return NextResponse.json({ error: "That message is too large." }, { status: 413, headers: rateLimitHeaders });
+    }
+    let body: unknown;
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return NextResponse.json({ error: "Invalid contact form submission." }, { status: 400, headers: rateLimitHeaders });
+    }
     const parsed = contactRequestSchema.safeParse(body);
 
     if (!parsed.success) {

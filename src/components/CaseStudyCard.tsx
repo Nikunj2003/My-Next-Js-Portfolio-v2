@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, AudioLines, Blocks, Boxes, Database, BookOpen, FlaskConical, Gauge, HeartPulse, Layers, Network, PenLine, ServerCog, ShieldCheck, Trophy } from "lucide-react";
-import { getCaseStudyPath, type CaseStudy } from "@/data/case-studies";
+import type { CaseStudy } from "@/data/case-studies";
+import { getCaseStudyPath } from "@/data/case-study-path";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import AskAboutThis from "@/components/AskAboutThis";
 
@@ -98,7 +99,7 @@ const CaseStudyCard = ({
 
         {/* Tags and stack merged into one meta line: two separate
             rows of pills was the other half of the height problem. */}
-        <p className="mt-5 border-t border-white/10 pt-4 font-mono text-[10.5px] leading-relaxed text-muted-foreground/70">
+        <p className="mt-5 border-t border-foreground/10 pt-4 font-mono text-[10.5px] leading-relaxed text-muted-foreground/70">
           {study.stack.slice(0, 4).join(" · ")}
         </p>
 

@@ -1,15 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useInView } from "react-intersection-observer";
 import { ArrowRight, ExternalLink, Github, Maximize2 } from "lucide-react";
 import { projects, type Project } from "@/data/portfolio";
-import { caseStudies, featuredCaseStudies } from "@/data/case-studies";
-import CaseStudyCard from "@/components/CaseStudyCard";
 import AskAboutThis from "@/components/AskAboutThis";
-import { PROJECT_ANCHOR_PREFIX } from "@/lib/ai-twin";
+import { PROJECT_ANCHOR_PREFIX } from "@/lib/chat/shared";
 import {
   Carousel,
   CarouselContent,
@@ -17,9 +15,11 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import Reveal from "@/components/ui/reveal";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
-import ProjectImageViewer from "@/components/ProjectImageViewer";
+import dynamic from "next/dynamic";
+
+// Only needed once a screenshot is opened, so it isn't in the page's bundle.
+const ProjectImageViewer = dynamic(() => import("@/components/ProjectImageViewer"), { ssr: false });
 
 const featuredProjects = projects.filter((project) => project.featured);
 const otherProjects = projects.filter((project) => !project.featured);
@@ -28,8 +28,10 @@ const PROJECT_IMAGE_SIZES = "(min-width: 1536px) 42rem, (min-width: 1024px) 40vw
 /**
  * Image gallery half of a project card.
  *
- * Mounts the carousel only when it scrolls near, and warms the neighbouring
- * images so paging feels instant. Clicking opens the full-screen viewer.
+ * Mounts the carousel only when it scrolls near. Every slide is a
+ * `next/image`, so neighbours load as optimised, sized images; the old raw
+ * `new Image()` prefetch downloaded the 1-2MB source PNGs on top of that.
+ * Clicking opens the full-screen viewer.
  */
 function ProjectGallery({
   project,
@@ -41,39 +43,6 @@ function ProjectGallery({
   onOpenViewer: (project: Project, index: number) => void;
 }) {
   const [mediaRef, mediaInView] = useInView({ triggerOnce: true, threshold: 0, rootMargin: "600px 0px" });
-  /**
-   * Which image indexes have already been warmed.
-   *
-   * This was a single boolean, latched true by the index-less call the mount
-   * effect makes — so only images 0 and 1 were ever prefetched and every later
-   * targeted call (hover, focus, paging) returned early. Tracking per index
-   * makes neighbour warming actually work while still never re-fetching one.
-   */
-  const prefetchedRef = useRef<Set<number>>(new Set());
-
-  const prefetchProjectImages = useCallback(
-    (targetIndex?: number) => {
-      if (project.images.length === 0 || typeof window === "undefined") return;
-
-      const indexes = typeof targetIndex === "number" ? [targetIndex - 1, targetIndex, targetIndex + 1] : [0, 1];
-      for (const index of indexes) {
-        const src = project.images[index];
-        if (!src || prefetchedRef.current.has(index)) continue;
-        prefetchedRef.current.add(index);
-        const image = new window.Image();
-        image.decoding = "async";
-        image.src = src;
-      }
-    },
-    [project.images]
-  );
-
-  useEffect(() => {
-    if (!mediaInView || project.images.length === 0) return;
-    const timeoutId = window.setTimeout(prefetchProjectImages, 180);
-    return () => window.clearTimeout(timeoutId);
-  }, [mediaInView, prefetchProjectImages, project.images.length]);
-
   if (project.images.length === 0) {
     return (
       <div className="flex items-center justify-center border-t border-white/10 bg-black/30 p-6 font-mono text-sm text-muted-foreground lg:w-[58%] lg:border-l lg:border-t-0">
@@ -96,13 +65,7 @@ function ProjectGallery({
               <CarouselItem key={`${project.title}-${img}`}>
                 <button
                   type="button"
-                  onClick={() => {
-                    prefetchProjectImages(idx);
-                    onOpenViewer(project, idx);
-                  }}
-                  onMouseEnter={() => prefetchProjectImages(idx)}
-                  onFocus={() => prefetchProjectImages(idx)}
-                  onTouchStart={() => prefetchProjectImages(idx)}
+                  onClick={() => onOpenViewer(project, idx)}
                   className="group/viewer relative block w-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                   aria-label={`Open ${project.title} screenshot ${idx + 1} of ${project.images.length} full screen`}
                 >
@@ -184,20 +147,20 @@ function ProjectCard({
         glass; do not "fix" it to use a glass tier.
       */}
       {/*
-        animateOnEnter={false}: the reveal animation fades element opacity from 0
+       : the reveal animation fades element opacity from 0
         to 1, and a half-faded opaque card is translucent — so on refresh the card
         below showed through for the length of the animation. Fading in a member
         of a deliberately opaque stack cannot work; the deck reveals itself
         through the sticky scroll offsets instead.
       */}
-      <SpotlightCard opaque animateOnEnter={false} className="relative w-full border-black/10 dark:border-white/10">
+      <SpotlightCard opaque className="relative w-full border-black/10 dark:border-white/10">
         <div className={`flex min-h-[26rem] flex-col ${isEven ? "lg:flex-row" : "lg:flex-row-reverse"}`}>
           {/* Content */}
           <div className="static z-10 flex flex-1 flex-col justify-center p-6 sm:p-8 lg:w-[42%] lg:p-10">
             <div className="mb-3 flex items-center gap-3">
-              <span className="font-mono text-[11px] uppercase tracking-widest text-primary">{project.category}</span>
+              <span className="font-mono text-[11px] uppercase tracking-widest text-primary-text">{project.category}</span>
               {project.live && (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 font-mono text-[10px] text-primary">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 font-mono text-xs text-primary-text">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                   Live
                 </span>
@@ -225,11 +188,11 @@ function ProjectCard({
             {/* Always visible: the ratio carries it without a hover reveal. */}
             <dl className="mt-5 flex flex-col gap-2 border-l-2 border-primary/30 pl-3 text-xs">
               <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
-                <dt className="shrink-0 font-mono uppercase tracking-wider text-muted-foreground/60 sm:w-14">Role</dt>
+                <dt className="shrink-0 font-mono uppercase tracking-wider text-muted-foreground sm:w-14">Role</dt>
                 <dd className="text-foreground/80">{project.role}</dd>
               </div>
               <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
-                <dt className="shrink-0 font-mono uppercase tracking-wider text-muted-foreground/60 sm:w-14">Impact</dt>
+                <dt className="shrink-0 font-mono uppercase tracking-wider text-muted-foreground sm:w-14">Impact</dt>
                 <dd className="text-muted-foreground">{project.impact}</dd>
               </div>
             </dl>
@@ -238,7 +201,7 @@ function ProjectCard({
               {project.tech.map((tech) => (
                 <li
                   key={tech}
-                  className="rounded-md border border-primary/20 bg-primary/10 px-2 py-1 font-mono text-[10px] text-primary"
+                  className="rounded-md border border-primary/20 bg-primary/10 px-2 py-1 font-mono text-xs text-primary-text"
                 >
                   {tech}
                 </li>
@@ -276,7 +239,11 @@ function ProjectCard({
   );
 }
 
-const ProjectsSection = () => {
+/**
+ * The featured case-study cards are rendered by the server page and passed in,
+ * so this client component never imports the case-study dataset.
+ */
+const ProjectsSection = ({ featured, caseStudyCount }: { featured: ReactNode; caseStudyCount: number }) => {
   const [viewerState, setViewerState] = useState<{ open: boolean; project: Project | null; index: number }>({
     open: false,
     project: null,
@@ -297,8 +264,8 @@ const ProjectsSection = () => {
 
       <div className="container-narrow">
         {/* Centered Header */}
-        <Reveal className="mb-16 flex flex-col items-center text-center">
-          <div className="mb-6 inline-flex items-center rounded-full border border-primary/20 px-3 py-1.5 font-mono text-xs text-primary glass-subtle">
+        <div className="mb-16 flex flex-col items-center text-center">
+          <div className="mb-6 inline-flex items-center rounded-full border border-primary/20 px-3 py-1.5 font-mono text-xs text-primary-text glass-subtle">
             Work
           </div>
           <h2 className="heading-xl mb-6">
@@ -308,48 +275,43 @@ const ProjectsSection = () => {
             Agent systems, retrieval, and platform work I own at ArmorCode, GenAI products shipped at Xansr Media,
             and the products I have built on my own.
           </p>
-        </Reveal>
+        </div>
 
         {/* Tier 1 — the featured case studies, the only cards carrying metrics on
             their face. Labelled by what they are rather than by employer, since the
             row sits above a link to all 13 studies across three contexts. */}
-        <Reveal className="mb-6">
+        <div className="mb-6">
           <div className="flex items-center gap-4">
-            <h3 className="font-mono text-xs uppercase tracking-widest text-primary">Featured case studies</h3>
+            <h3 className="font-mono text-xs uppercase tracking-widest text-primary-text">Featured case studies</h3>
             <span className="h-px flex-1 bg-gradient-to-r from-primary/30 to-transparent" />
           </div>
-        </Reveal>
+        </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          {featuredCaseStudies.map((study, index) => (
-            <Reveal key={study.slug} delay={index * 0.08} className="h-full">
-              {/* h4: the group label above this row is an h3. */}
-              <CaseStudyCard study={study} headingLevel="h4" />
-            </Reveal>
-          ))}
+        <div className="grid gap-6 lg:grid-cols-3" data-guide-target="work-featured">
+          {featured}
         </div>
 
         {/* The row is a fixed three-column grid, so the rest of the studies are
             reached here rather than by growing it into a lopsided second row. */}
-        <Reveal className="mb-24 mt-6">
+        <div className="mb-24 mt-6">
           <Link
             href="/work"
-            className="group/all inline-flex items-center gap-2 text-sm font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="group/all inline-flex items-center gap-2 text-sm font-semibold text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
-            View all {caseStudies.length} case studies
+            View all {caseStudyCount} case studies
             <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover/all:translate-x-1 motion-reduce:transition-none" />
           </Link>
-        </Reveal>
+        </div>
 
         {/* Tier 2 — shipped personal products */}
-        <Reveal className="mb-8">
+        <div className="mb-8">
           <div className="flex items-center gap-4">
-            <h3 className="font-mono text-xs uppercase tracking-widest text-primary">
+            <h3 className="font-mono text-xs uppercase tracking-widest text-primary-text">
               Built and shipped
             </h3>
             <span className="h-px flex-1 bg-gradient-to-r from-primary/30 to-transparent" />
           </div>
-        </Reveal>
+        </div>
 
         {/* Sticky stacked deck — cards overlap into a stack as you scroll. */}
         <div className="relative mb-20 flex flex-col gap-8 pb-20">
@@ -361,10 +323,10 @@ const ProjectsSection = () => {
 
         {/* Also built — kept in the data and in the AI Twin context, just not
             consuming a full card each. */}
-        <Reveal>
+        <div>
           <div>
             <div className="mb-6 flex items-center gap-4">
-              <h3 className="font-mono text-xs uppercase tracking-widest text-primary">Also built</h3>
+              <h3 className="font-mono text-xs uppercase tracking-widest text-primary-text">Also built</h3>
               <span className="h-px flex-1 bg-gradient-to-r from-primary/30 to-transparent" />
             </div>
 
@@ -399,7 +361,7 @@ const ProjectsSection = () => {
                           href={project.live}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-primary transition-colors hover:text-primary/80"
+                          className="inline-flex items-center gap-1.5 text-primary-text transition-colors hover:text-primary-text/80"
                         >
                           <ExternalLink className="h-3.5 w-3.5" />
                           Live
@@ -411,10 +373,10 @@ const ProjectsSection = () => {
               ))}
             </ul>
           </div>
-        </Reveal>
+        </div>
 
         {/* View more on GitHub */}
-        <Reveal delay={0.1} className="mt-12 flex justify-center">
+        <div className="mt-12 flex justify-center">
           <a
             href="https://github.com/Nikunj2003"
             target="_blank"
@@ -424,7 +386,7 @@ const ProjectsSection = () => {
             <Github className="h-5 w-5" />
             Explore more repositories
           </a>
-        </Reveal>
+        </div>
 
         {activeViewerProject && (
           <ProjectImageViewer

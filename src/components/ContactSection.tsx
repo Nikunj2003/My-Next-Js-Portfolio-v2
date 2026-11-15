@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
-import { useState } from "react";
-import { Mail, Linkedin, Github, Send, Download, ArrowUpRight, Briefcase, Users, GitPullRequest, MessageSquare } from "lucide-react";
+import { useRef, useState } from "react";
+import { Send, Download, ArrowUpRight, Briefcase, Users, GitPullRequest, MessageSquare } from "lucide-react";
 import { personalInfo } from "@/data/portfolio";
 import { toast } from "@/components/ui/sonner";
 import {
@@ -13,9 +13,8 @@ import {
 } from "@/lib/contact";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
-import Reveal from "@/components/ui/reveal";
-import Card3D from "./Card3D";
 import cardImage from "@/assets/card.png";
+import { SOCIAL_LINKS } from "@/data/site-links";
 
 /**
  * One icon per contact reason.
@@ -29,27 +28,6 @@ const REASON_ICONS: Record<(typeof CONTACT_REASONS)[number], React.ElementType> 
   "Open Source": GitPullRequest,
   Other: MessageSquare,
 };
-
-const SOCIAL_LINKS = [
-  {
-    icon: Mail,
-    label: "Email",
-    value: personalInfo.email,
-    href: `mailto:${personalInfo.email}`,
-  },
-  {
-    icon: Linkedin,
-    label: "LinkedIn",
-    value: personalInfo.linkedin.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""),
-    href: personalInfo.linkedin,
-  },
-  {
-    icon: Github,
-    label: "GitHub",
-    value: personalInfo.github.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""),
-    href: personalInfo.github,
-  },
-];
 
 const INITIAL_FORM: ContactFormData = {
   name: "",
@@ -67,9 +45,12 @@ const ContactSection = () => {
   const [startedAt, setStartedAt] = useState(() => Date.now());
   const [errors, setErrors] = useState<ContactErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // State updates are async, so a fast second submit could slip past isSubmitting.
+  const inFlightRef = useRef(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (inFlightRef.current) return;
 
     const parsed = contactSchema.safeParse(form);
     if (!parsed.success) {
@@ -93,6 +74,7 @@ const ContactSection = () => {
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), CONTACT_CLIENT_TIMEOUT_MS);
 
+    inFlightRef.current = true;
     try {
       setIsSubmitting(true);
 
@@ -133,6 +115,7 @@ const ContactSection = () => {
       });
     } finally {
       window.clearTimeout(timeoutId);
+      inFlightRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -142,7 +125,7 @@ const ContactSection = () => {
       <div className="container-narrow">
 
         {/* Heading */}
-        <Reveal className="mb-14 text-center">
+        <div className="mb-14 text-center">
           <div className="inline-flex items-center px-3 py-1.5 rounded-full glass-subtle border border-primary/20 text-xs font-mono text-primary mb-6">
             Connect
           </div>
@@ -152,27 +135,25 @@ const ContactSection = () => {
           <p className="text-muted-foreground max-w-xl mx-auto text-base leading-relaxed">
             {personalInfo.focus}
           </p>
-        </Reveal>
+        </div>
 
-        {/* Mobile-only card */}
-        <Reveal delay={0.05} className="mx-auto mb-10 block w-full max-w-xs sm:max-w-sm lg:hidden">
-          <Card3D>
+        {/* Mobile-only card (the pointer tilt it had never ran on touch screens). */}
+        <div className="mx-auto mb-10 block w-full max-w-xs sm:max-w-sm lg:hidden">
             <Image
               src={cardImage}
               alt=""
               aria-hidden="true"
-              className="w-full h-auto rounded-3xl border border-white/10 shadow-accent-strong pointer-events-none select-none"
+              className="w-full h-auto rounded-3xl border border-foreground/10 shadow-accent-strong pointer-events-none select-none"
               draggable={false}
               sizes="(min-width: 640px) 384px, 100vw"
             />
-          </Card3D>
-        </Reveal>
+        </div>
 
         {/* Two equal panels with Spotlight */}
-        <div className="grid items-stretch gap-6 lg:grid-cols-2">
+        <div data-guide-spot="contact" className="grid items-stretch gap-6 lg:grid-cols-2">
 
           {/* Left panel */}
-          <SpotlightCard delay={0.1} className="h-full">
+          <SpotlightCard className="h-full">
             <div className="p-6 sm:p-8 md:p-10 flex flex-col gap-6 h-full">
               {/* Grows to fill */}
               <div className="flex flex-col gap-6 flex-1">
@@ -225,8 +206,8 @@ const ContactSection = () => {
           </SpotlightCard>
 
           {/* Right panel — Form */}
-          <SpotlightCard delay={0.2} className="h-full">
-            <form onSubmit={handleSubmit} className="relative p-6 sm:p-8 md:p-10 flex flex-col gap-6 h-full" aria-busy={isSubmitting} noValidate>
+          <SpotlightCard className="h-full">
+            <form data-guide-target="contact-form" onSubmit={handleSubmit} className="relative p-6 sm:p-8 md:p-10 flex flex-col gap-6 h-full" aria-busy={isSubmitting} noValidate>
               <div className="absolute left-[-10000px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
                 <label htmlFor="contact-website">Website</label>
                 <input

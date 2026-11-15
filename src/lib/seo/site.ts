@@ -8,7 +8,9 @@ export const siteConfig = {
   siteUrl,
   homeUrl: `${siteUrl}/`,
   resumeUrl: `${siteUrl}${personalInfo.resumeUrl}`,
-  updatedAt: "2026-09-06T00:00:00.000Z",
+  // Evaluated when the site is built (or SITE_UPDATED_AT to pin it), so lastmod
+  // follows each deploy instead of a hand-edited date.
+  updatedAt: process.env.SITE_UPDATED_AT || new Date().toISOString(),
   siteName: "Nikunj Khitha Portfolio",
   title: `${personalInfo.name} — Applied AI Engineer`,
   description: personalInfo.tagline,
@@ -19,7 +21,7 @@ export const siteConfig = {
   linkedin: personalInfo.linkedin,
   locale: "en-IN",
   ogLocale,
-  ogImage: "/og-image.svg",
+  ogImage: "/opengraph-image",
   keywords: [
     "LLM Evaluation",
     "LLM-as-a-Judge",

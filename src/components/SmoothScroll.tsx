@@ -3,7 +3,9 @@
 import React, { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import Lenis from 'lenis';
+import { cancelFrame, frame } from 'framer-motion';
 import { scrollToHash, scrollToTop } from '@/lib/scroll';
+import { reapplyScrollLock } from '@/lib/scroll-lock';
 
 type LenisWindow = Window & typeof globalThis & {
   __lenis?: Lenis;
@@ -25,16 +27,17 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
    * offset got clamped to almost nothing, which is why the bug appeared to
    * depend on the entry point rather than on navigation itself.
    */
-  const isFirstRenderRef = useRef(true);
+  const lastPathRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // Skip the very first run. On a hard load or a refresh the browser owns the
-    // scroll position — forcing 0 here would defeat scroll restoration, which is
-    // a separate fix. Only client-side navigations need the reset.
-    if (isFirstRenderRef.current) {
-      isFirstRenderRef.current = false;
-      return;
-    }
+    // Only a real route change resets the scroll. On a hard load or a refresh
+    // the browser owns the position (scroll restoration keeps the visitor's
+    // place). This used to skip "the first run" with a flag, but React runs
+    // effects twice in development, so the second run reset every refresh to
+    // the top. Comparing the path is true however often the effect runs.
+    const previous = lastPathRef.current;
+    lastPathRef.current = pathname;
+    if (previous === null || previous === pathname) return;
 
     // A hash target owns the scroll position; do not fight it.
     if (window.location.hash) return;
@@ -54,12 +57,14 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
     }
 
     const lenis = new Lenis({
-      duration: 1.05,
+      // A slightly slower, softer glide than before (was 1.05 / 0.9): enough to
+      // feel deliberate, still quick to skim a long page. Touch is untouched.
+      duration: 1.25,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       orientation: 'vertical',
       gestureOrientation: 'vertical',
       smoothWheel: true,
-      wheelMultiplier: 0.9,
+      wheelMultiplier: 0.8,
       syncTouch: false,
       touchMultiplier: 1.2,
       /**
@@ -81,6 +86,8 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
 
     const appWindow = window as LenisWindow;
     appWindow.__lenis = lenis;
+    // An overlay may already be open (opened before Lenis existed).
+    reapplyScrollLock();
 
     /**
      * Align Lenis with wherever the browser actually restored the page.
@@ -101,22 +108,27 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
     const syncFrame = window.requestAnimationFrame(syncToRestoredPosition);
     const syncTimer = window.setTimeout(syncToRestoredPosition, 120);
 
-    let rafId: number | null = null;
-
-    function raf(time: number) {
-      lenis.raf(time);
-      rafId = window.requestAnimationFrame(raf);
-    }
+    /**
+     * Lenis runs on Framer Motion's frame loop, in its `read` step, rather than
+     * on a separate requestAnimationFrame. Every scroll-driven thing on the page
+     * (the guide companion, its bubble, the hero hand-off, the progress bar)
+     * then reads the scroll position Lenis has just written and renders in the
+     * same frame. With two separate loops their order could invert (it did
+     * after every tab switch), and the companion trailed the page by a frame.
+     */
+    let running = false;
+    const step = ({ timestamp }: { timestamp: number }) => lenis.raf(timestamp);
 
     const startRaf = () => {
-      if (rafId !== null) return;
-      rafId = window.requestAnimationFrame(raf);
+      if (running) return;
+      running = true;
+      frame.read(step, true);
     };
 
     const stopRaf = () => {
-      if (rafId === null) return;
-      window.cancelAnimationFrame(rafId);
-      rafId = null;
+      if (!running) return;
+      running = false;
+      cancelFrame(step);
     };
 
     const handleVisibilityChange = () => {
@@ -127,6 +139,8 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
       }
 
       lenis.start();
+      // start() resets Lenis, clearing isLocked: re-lock behind open overlays.
+      reapplyScrollLock();
       startRaf();
     };
 

@@ -277,3 +277,67 @@ test("a refused comparison explains how to recover", () => {
   assert.equal(refused.refused, true);
   assert.match(reason, /get_case_study|two or more/i, "the refusal must name a recovery path");
 });
+
+test("navigate_to passes through an allow-listed highlight for on-page targets", () => {
+  const output = call("navigate_to", { target: "#work", highlight: "work-featured" }).output as { href: string; highlight?: string };
+  assert.equal(output.href, "#work");
+  assert.equal(output.highlight, "work-featured");
+});
+
+test("navigate_to drops highlights that are not allow-listed or not on the page", () => {
+  const bogus = call("navigate_to", { target: "#work", highlight: "body" }).output as { highlight?: string };
+  assert.equal(bogus.highlight, undefined);
+  const routed = call("navigate_to", { target: "knowledge-graph-rag", highlight: "work-featured" }).output as { highlight?: string };
+  assert.equal(routed.highlight, undefined);
+});
+
+test("navigate_to to a project card highlights that card", () => {
+  const output = call("navigate_to", { target: "resume-fit-codenex" }).output as { href: string; highlight?: string };
+  assert.equal(output.highlight, `project:${output.href.replace("#project-", "")}`);
+});
+
+test("get_metric does not match bare numbers or substrings of other words", () => {
+  // Regression: substring matching on short aliases ("20", "100", "efs") returned
+  // confident wrong figures. "20 years" must not become "20+ business functions",
+  // "100 users" must not become the empty-query figure, and "chefs" must not hit "efs".
+  for (const name of ["20 years", "100 users", "chefs", "20", "98%"]) {
+    const result = call("get_metric", { name });
+    const output = result.output as { measured: boolean; value?: string };
+    assert.equal(output.measured, false, `"${name}" must not resolve to a metric (got ${output.value})`);
+    assert.equal(result.refused, true);
+  }
+});
+
+test("get_metric still resolves descriptive aliases as whole words", () => {
+  const functions = call("get_metric", { name: "how many business functions are served" }).output as {
+    measured: boolean;
+    value?: string;
+  };
+  assert.equal(functions.measured, true);
+  assert.equal(functions.value, "20+");
+
+  const efs = call("get_metric", { name: "efs storage throughput" }).output as { measured: boolean; value?: string };
+  assert.equal(efs.measured, true);
+  assert.equal(efs.value, "76 KB in 14 minutes");
+});
+
+test("navigate_to does not resolve Object.prototype keys", () => {
+  for (const target of ["constructor", "__proto__", "toString", "hasOwnProperty"]) {
+    const result = call("navigate_to", { target });
+    assert.equal(result.refused, true, `"${target}" must be refused`);
+    assert.equal((result.output as { ok: boolean }).ok, false);
+  }
+});
+
+test("get_case_study ignores prototype keys as section names", () => {
+  const slug = caseStudies[0].slug;
+  for (const section of ["constructor", "__proto__", "toString"]) {
+    const result = call("get_case_study", { slug, section });
+    const output = result.output as { title?: string; problem?: unknown };
+    // Falls back to the full study rather than returning a function/Object.
+    assert.equal(typeof output, "object");
+    assert.equal(output.title, caseStudies[0].title);
+    assert.ok("problem" in output);
+  }
+  assert.equal(call("get_case_study", { slug: "constructor" }).refused, true);
+});

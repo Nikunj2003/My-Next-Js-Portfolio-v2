@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { checkRateLimit, getClientKey, getRateLimitHeaders } from "../src/lib/rate-limit.ts";
+import { checkGlobalBudget, checkRateLimit, getClientKey, getRateLimitHeaders } from "../src/lib/rate-limit.ts";
 
 function createRequest(headers: Record<string, string>) {
   return new Request("https://example.com/api/chat", { headers });
@@ -16,6 +16,66 @@ test("getClientKey hashes forwarded IP values", () => {
 
   assert.match(key, /^ip:[a-f0-9]{32}$/);
   assert.notEqual(key, "ip:203.0.113.10");
+});
+
+test("getClientKey ignores the client-controlled leftmost x-forwarded-for hop", () => {
+  const a = getClientKey(createRequest({ "x-forwarded-for": "1.1.1.1, 198.51.100.7" }));
+  const b = getClientKey(createRequest({ "x-forwarded-for": "2.2.2.2, 198.51.100.7" }));
+  const other = getClientKey(createRequest({ "x-forwarded-for": "1.1.1.1, 198.51.100.8" }));
+
+  assert.equal(a, b, "spoofing the first hop must not change the key");
+  assert.notEqual(a, other, "a different edge-observed address must change the key");
+});
+
+function withEnv(env: Record<string, string | undefined>, run: () => void) {
+  const saved = Object.fromEntries(Object.keys(env).map((key) => [key, process.env[key]]));
+  for (const [key, value] of Object.entries(env)) {
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+  try {
+    run();
+  } finally {
+    for (const [key, value] of Object.entries(saved)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+}
+
+test("getClientKey ignores client-settable IP headers unless the platform sets them", () => {
+  withEnv({ VERCEL: undefined, TRUSTED_PROXY_HEADER: undefined }, () => {
+    const key = (headers: Record<string, string>) => getClientKey(createRequest(headers));
+    const edge = { "x-forwarded-for": "9.9.9.9, 10.0.0.4" };
+    // Off Vercel, a spoofed x-vercel-forwarded-for / cf-connecting-ip / x-real-ip
+    // must not change the bucket.
+    assert.equal(key({ ...edge, "x-vercel-forwarded-for": "1.1.1.1" }), key(edge));
+    assert.equal(key({ ...edge, "cf-connecting-ip": "1.1.1.1" }), key(edge));
+    assert.equal(key({ ...edge, "x-real-ip": "1.1.1.1" }), key(edge));
+  });
+});
+
+test("getClientKey trusts x-vercel-forwarded-for on Vercel", () => {
+  withEnv({ VERCEL: "1", TRUSTED_PROXY_HEADER: undefined }, () => {
+    const key = (headers: Record<string, string>) => getClientKey(createRequest(headers));
+    assert.equal(key({ "x-vercel-forwarded-for": "10.0.0.1", "x-forwarded-for": "9.9.9.9, 10.0.0.4" }), key({ "x-vercel-forwarded-for": "10.0.0.1" }));
+    assert.notEqual(key({ "x-vercel-forwarded-for": "10.0.0.1" }), key({ "x-vercel-forwarded-for": "10.0.0.2" }));
+  });
+});
+
+test("getClientKey trusts the header named in TRUSTED_PROXY_HEADER", () => {
+  withEnv({ VERCEL: undefined, TRUSTED_PROXY_HEADER: "cf-connecting-ip" }, () => {
+    const key = (headers: Record<string, string>) => getClientKey(createRequest(headers));
+    assert.notEqual(key({ "cf-connecting-ip": "10.0.0.1" }), key({ "cf-connecting-ip": "10.0.0.2" }));
+    assert.equal(key({ "cf-connecting-ip": "10.0.0.1", "x-real-ip": "7.7.7.7" }), key({ "cf-connecting-ip": "10.0.0.1" }));
+  });
+});
+
+test("checkGlobalBudget caps every client together", () => {
+  const now = 1_000_000;
+  for (let i = 0; i < 3; i += 1) assert.equal(checkGlobalBudget("t", 3, 60_000, now).exhausted, false);
+  assert.equal(checkGlobalBudget("t", 3, 60_000, now).exhausted, true);
+  assert.equal(checkGlobalBudget("t", 3, 60_000, now + 60_001).exhausted, false, "a new window resets it");
 });
 
 test("getClientKey falls back to a hashed fingerprint when IP headers are missing", () => {

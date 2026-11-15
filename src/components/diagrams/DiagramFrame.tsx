@@ -1,8 +1,4 @@
-"use client";
-
 import type { ReactNode } from "react";
-import { motion } from "framer-motion";
-import { useInView } from "react-intersection-observer";
 
 interface DiagramFrameProps {
   title: string;
@@ -19,13 +15,8 @@ interface DiagramFrameProps {
  * instead of forcing the page to.
  */
 const DiagramFrame = ({ title, description, viewBox, children }: DiagramFrameProps) => {
-  // triggerOnce so the diagram draws itself once, not on every scroll pass.
-  // Reduced motion is handled globally by MotionConfig in providers.tsx, so the
-  // Box/Arrow children need no per-frame gating here.
-  const [ref] = useInView({ triggerOnce: true, threshold: 0.2 });
-
   return (
-  <figure ref={ref} className="my-8">
+  <figure className="my-8">
     <div className="overflow-x-auto rounded-2xl border border-black/10 glass-subtle p-4 shadow-accent-soft dark:border-white/10 sm:p-6">
       <svg
         viewBox={viewBox}
@@ -59,7 +50,6 @@ export const Box = ({
   label,
   sub,
   accent = false,
-  order = 0,
 }: {
   x: number;
   y: number;
@@ -68,15 +58,10 @@ export const Box = ({
   label: string;
   sub?: string;
   accent?: boolean;
-  /** Layer index, so the diagram assembles top-down rather than all at once. */
+  /** Layer index (kept for the diagram definitions; no longer animated). */
   order?: number;
 }) => (
-  <motion.g
-    initial={{ opacity: 0, y: 8 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, amount: 0.2 }}
-    transition={{ duration: 0.45, delay: Math.min(order * 0.07, 0.6), ease: [0.16, 1, 0.3, 1] }}
-  >
+  <g>
     <rect
       x={x}
       y={y}
@@ -102,20 +87,16 @@ export const Box = ({
         {sub}
       </text>
     )}
-  </motion.g>
+  </g>
 );
 
-export const Arrow = ({ d, order = 0 }: { d: string; order?: number }) => (
-  <motion.path
+export const Arrow = ({ d }: { d: string; order?: number }) => (
+  <path
     d={d}
     fill="none"
     stroke="hsl(var(--primary) / 0.6)"
     strokeWidth={1.6}
     markerEnd="url(#diagram-arrow)"
-    initial={{ pathLength: 0, opacity: 0 }}
-    whileInView={{ pathLength: 1, opacity: 1 }}
-    viewport={{ once: true, amount: 0.2 }}
-    transition={{ duration: 0.5, delay: Math.min(order * 0.07 + 0.15, 0.7), ease: "easeOut" }}
   />
 );
 

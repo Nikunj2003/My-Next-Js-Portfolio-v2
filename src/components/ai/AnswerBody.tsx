@@ -1,7 +1,9 @@
 "use client";
 
+import { useMemo } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { scrollToHash } from "@/lib/scroll";
 
@@ -13,11 +15,16 @@ import { scrollToHash } from "@/lib/scroll";
  * and the panel render identically rather than forking the markdown/link
  * styling into two implementations that drift.
  */
-export function buildAnswerComponents(navigateToSection: (href: string) => void): Components {
+export function buildAnswerComponents(
+  navigateToSection: (href: string) => void,
+  /** Client-side navigation for internal paths such as /work/... Without it they load normally. */
+  navigateToPath?: (href: string) => void
+): Components {
   return {
     a: ({ href = "", children, ...props }) => {
       const isHashLink = href.startsWith("#");
-      const isInternalPath = href.startsWith("/");
+      // `//host` and `/\host` are protocol-relative: they leave the site.
+      const isInternalPath = /^\/(?![/\\])/.test(href);
       const isResumeLink = /resume|\.pdf$/i.test(href);
       const isExternalLink = !isHashLink && !isInternalPath && !href.startsWith("mailto:");
 
@@ -30,9 +37,19 @@ export function buildAnswerComponents(navigateToSection: (href: string) => void)
           rel={isExternalLink ? "noopener noreferrer" : undefined}
           onClick={(event) => {
             props.onClick?.(event);
-            if (event.defaultPrevented || !isHashLink) return;
-            event.preventDefault();
-            navigateToSection(href);
+            if (event.defaultPrevented) return;
+            if (isHashLink) {
+              event.preventDefault();
+              navigateToSection(href);
+              return;
+            }
+            // Plain left-clicks on internal pages go through the router; modified
+            // clicks keep the browser's own behaviour (new tab, download, etc.).
+            const plain = event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
+            if (navigateToPath && isInternalPath && !isResumeLink && plain) {
+              event.preventDefault();
+              navigateToPath(href);
+            }
           }}
           className="font-medium text-primary underline decoration-primary/40 underline-offset-4 transition-colors hover:text-primary/80 break-words"
         >
@@ -40,6 +57,13 @@ export function buildAnswerComponents(navigateToSection: (href: string) => void)
         </a>
       );
     },
+    // Images in an answer are never loaded: a model (or a pasted prompt) could
+    // point one anywhere. Show the alt text and the address instead.
+    img: ({ src, alt }) => (
+      <span className="text-muted-foreground">
+        [{alt || "image"}{typeof src === "string" && src ? `: ${src}` : ""}]
+      </span>
+    ),
     p: ({ children }) => <p className="mb-3 last:mb-0 whitespace-pre-wrap">{children}</p>,
     ul: ({ children }) => <ul className="mb-3 list-disc space-y-2 pl-5 marker:text-primary last:mb-0">{children}</ul>,
     ol: ({ children }) => <ol className="mb-3 list-decimal space-y-2 pl-5 marker:text-primary last:mb-0">{children}</ol>,
@@ -103,8 +127,10 @@ export function AnswerBody({
   content: string;
   navigateToSection?: (href: string) => void;
 }) {
+  const router = useRouter();
+  const components = useMemo(() => buildAnswerComponents(navigateToSection, (href) => router.push(href)), [navigateToSection, router]);
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]} components={buildAnswerComponents(navigateToSection)}>
+    <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
       {content}
     </ReactMarkdown>
   );

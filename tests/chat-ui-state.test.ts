@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const CHAT = readFileSync("src/components/AITwinChat.tsx", "utf8");
+// The conversation logic moved into a shared store used by the panel and the ask bubble.
+const STORE = readFileSync("src/lib/chat/twin-chat-store.ts", "utf8");
 const ROUTE = readFileSync("src/app/api/chat/route.ts", "utf8");
 
 /**
@@ -31,7 +33,7 @@ test("the typing indicator does not duplicate a streaming bubble", () => {
 test("a streaming bubble is marked as streaming when placed", () => {
   // The guard above is only correct if the seed actually sets the flag.
   assert.match(
-    CHAT,
+    STORE,
     /role: "assistant", content: "", streaming: true/,
     "the placed bubble must set streaming: true, or the indicator guard never fires"
   );
@@ -62,4 +64,24 @@ test("the heartbeat callback ignores its attempt argument", () => {
     /\(attempt\)\s*=>\s*send/,
     "the heartbeat must not pass the attempt number through to a status label"
   );
+});
+
+test("the chat never chases the bottom while an answer streams", () => {
+  /*
+   * The old panel pinned the scroll to the bottom on every delta and every
+   * reveal tick, so the question scrolled away while its answer was still
+   * being read. A new question is now anchored to the top once per turn, and
+   * a spacer below the answer makes that possible for short answers.
+   */
+  assert.doesNotMatch(CHAT, /isPinnedToBottomRef|keepPinnedToBottom|onReveal/, "bottom-pinning must not come back");
+  assert.doesNotMatch(CHAT, /scrollTop\s*=\s*[^=]*scrollHeight/, "no unconditional scroll-to-bottom");
+  assert.match(CHAT, /useTurnAnchor\(/, "the panel anchors turns with useTurnAnchor");
+  assert.match(CHAT, /ref=\{spacerRef\}/, "the panel renders the anchor spacer");
+});
+
+test("tool calls lead only until the answer starts, then sit under it", () => {
+  const body = readFileSync("src/components/ai/TwinAssistantBody.tsx", "utf8");
+  const answerAt = body.indexOf("<PacedAnswer");
+  assert.ok(body.indexOf("{!answered && toolList}") < answerAt, "running tools show above an empty answer");
+  assert.ok(body.indexOf("{answered && toolList}") > answerAt, "once text arrives the tools move below it");
 });

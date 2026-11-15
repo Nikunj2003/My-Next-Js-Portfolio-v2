@@ -1304,9 +1304,7 @@ export const caseStudiesByTheme = CASE_STUDY_THEMES.map((theme) => ({
  */
 export const featuredCaseStudies = caseStudies.filter((study) => study.featured);
 
-export function getCaseStudyPath(slug: string) {
-  return `/work/${slug}`;
-}
+export { getCaseStudyPath } from "@/data/case-study-path";
 
 export function getAdjacentCaseStudies(slug: string) {
   const index = caseStudies.findIndex((study) => study.slug === slug);

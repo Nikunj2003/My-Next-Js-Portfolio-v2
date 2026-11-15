@@ -7,8 +7,13 @@ export const CONTACT_MAX_AGE_MS = 2 * 60 * 60_000;
 export const CONTACT_REQUEST_TIMEOUT_MS = 15_000;
 export const CONTACT_CLIENT_TIMEOUT_MS = 18_000;
 
+// Header-safe single-line text: CR/LF and other control characters (including
+// tab) become spaces so a name cannot inject lines into the email subject.
+const singleLine = (value: string) =>
+  value.replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]+/g, " ").replace(/ {2,}/g, " ");
+
 export const contactSchema = z.object({
-  name: z.string().trim().min(2, "Please enter your name.").max(80, "Name is too long."),
+  name: z.string().transform(singleLine).pipe(z.string().trim().min(2, "Please enter your name.").max(80, "Name is too long.")),
   email: z.string().trim().email("Please enter a valid email address.").max(120, "Email is too long."),
   reason: z.enum(CONTACT_REASONS),
   message: z

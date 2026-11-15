@@ -1,0 +1,39 @@
+{
+  "name": "Nik",
+  "body": {
+    "primary": { "type": "sphere", "width": 240, "height": 228, "depth": 236, "roundness": 1 },
+    "nodes": [
+      {
+        "color": "#1d7f74",
+        "surface": { "type": "cylinder", "width": 10, "height": 46, "depth": 10, "roundness": 1 },
+        "position": [0, -128, 0],
+        "rotation": [0, 0, 0]
+      },
+      {
+        "color": "#54dec7",
+        "surface": { "type": "sphere", "width": 28, "height": 28, "depth": 28, "roundness": 1 },
+        "position": [0, -156, 0],
+        "rotation": [0, 0, 0]
+      },
+      {
+        "color": "#1d7f74",
+        "surface": { "type": "capsule", "width": 26, "height": 58, "depth": 40, "roundness": 1 },
+        "position": [-118, 6, 0],
+        "rotation": [0, 0, 0]
+      },
+      {
+        "color": "#1d7f74",
+        "surface": { "type": "capsule", "width": 26, "height": 58, "depth": 40, "roundness": 1 },
+        "position": [118, 6, 0],
+        "rotation": [0, 0, 0]
+      }
+    ]
+  },
+  "colors": { "body": "#29d6b9", "eyes": "#090e1a" },
+  "style": { "outline": { "enabled": true, "color": "#090e1a", "width": 6, "opacity": 0.9 } },
+  "face": {
+    "eyes": { "width": 1, "height": 1, "gap": 1, "shiftY": -0.06 },
+    "mouth": { "enabled": true, "shape": "curve", "curve": 45, "width": 22, "height": 6, "x": 0, "y": 36, "angle": 0 },
+    "perspective": 1
+  }
+}

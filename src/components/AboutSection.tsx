@@ -6,7 +6,6 @@ import logo from "@/assets/logo.png";
 
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import AskAboutThis from "@/components/AskAboutThis";
-import Reveal from "@/components/ui/reveal";
 
 /** Latest entry is the current role; the earliest ArmorCode entry sets tenure. */
 const currentRole = experiences[experiences.length - 1];
@@ -33,13 +32,13 @@ const AboutSection = () => {
 
           {/* Left Column: Sticky Header */}
           <div className="w-full shrink-0 lg:sticky lg:top-32 lg:w-1/3">
-            <Reveal axis="x" offset={-24}>
-              <div className="panel-sticky">
+            <div>
+              <div data-guide-panel className="panel-sticky">
                 <div aria-hidden="true" className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
                 <div aria-hidden="true" className="absolute -bottom-20 -left-16 h-40 w-40 rounded-full bg-accent/10 blur-3xl" />
 
                 <div className="relative">
-                  <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 font-mono text-xs text-primary">
+                  <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 font-mono text-xs text-primary-text">
                     <span className="h-2 w-2 rounded-full bg-primary shadow-[0_0_12px_hsl(var(--accent)/0.6)]" />
                     Profile
                   </div>
@@ -55,9 +54,9 @@ const AboutSection = () => {
 
                   {/* Identity facts, matching the weight of the FlipWords line
                       that closes the Experience and Skills sidebars. */}
-                  <dl className="mt-8 flex flex-col gap-3 border-t border-white/10 pt-6 text-sm">
+                  <dl className="mt-8 flex flex-col gap-3 border-t border-foreground/10 pt-6 text-sm">
                     <div className="flex items-start gap-3">
-                      <dt className="w-14 shrink-0 pt-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground/60">
+                      <dt className="w-14 shrink-0 pt-0.5 font-mono text-xs uppercase tracking-wider text-muted-foreground">
                         Role
                       </dt>
                       <dd className="min-w-0 flex-1">
@@ -69,7 +68,7 @@ const AboutSection = () => {
                     </div>
 
                     <div className="flex items-baseline gap-3">
-                      <dt className="w-14 shrink-0 font-mono text-[10px] uppercase tracking-wider text-muted-foreground/60">
+                      <dt className="w-14 shrink-0 font-mono text-xs uppercase tracking-wider text-muted-foreground">
                         Based
                       </dt>
                       <dd className="inline-flex min-w-0 flex-1 items-center gap-1.5 text-muted-foreground">
@@ -79,7 +78,7 @@ const AboutSection = () => {
                     </div>
                   </dl>
 
-                  <div className="mt-6 flex items-center justify-between gap-4 border-t border-white/10 pt-6">
+                  <div className="mt-6 flex items-center justify-between gap-4 border-t border-foreground/10 pt-6">
                     <p className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground">
                       <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-primary motion-reduce:animate-none" />
                       Open to new roles
@@ -95,12 +94,12 @@ const AboutSection = () => {
                   </div>
                 </div>
               </div>
-            </Reveal>
+            </div>
           </div>
 
           {/* Right Column: Content */}
           <div className="flex w-full min-w-0 flex-col gap-6 lg:w-2/3">
-            <Reveal>
+            <div>
               <div className="flex items-start gap-5">
                 <div className="relative hidden h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 sm:flex">
                   <div aria-hidden="true" className="absolute inset-0 rounded-2xl bg-primary/20 blur-xl" />
@@ -116,19 +115,19 @@ const AboutSection = () => {
                   {about.summary}
                 </p>
               </div>
-            </Reveal>
+            </div>
 
             {/* Award first: it is the strongest single third-party signal in the
                 section, so it sits directly under the summary rather than at the
                 bottom where it read as a footnote. */}
-            <Reveal delay={0.05}>
+            <div>
               <SpotlightCard className="overflow-hidden">
                 <div className="flex items-start gap-5 p-6">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10 text-primary glow-accent-sm">
                     <Award className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-mono text-xs uppercase tracking-[0.25em] text-primary/80">Recognition</p>
+                    <p className="font-mono text-xs uppercase tracking-[0.25em] text-primary-text">Recognition</p>
                     <h3 className="heading-md mt-1 text-foreground">{recognition.title}</h3>
                     <p className="mt-2 text-sm leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
                       {recognition.detail}
@@ -136,19 +135,19 @@ const AboutSection = () => {
                   </div>
                 </div>
               </SpotlightCard>
-            </Reveal>
+            </div>
 
             {/* Metric-led proof. Two across inside a 2/3 column keeps each card
                 at a readable measure — three across gave ~23 chars per line. */}
             <div className="grid gap-4 sm:grid-cols-2">
-              {about.highlights.map((highlight, i) => (
-                <SpotlightCard key={highlight.label} delay={i * 0.05} className="h-full">
+              {about.highlights.map((highlight) => (
+                <SpotlightCard key={highlight.label} className="h-full">
                   <div className="flex h-full flex-col gap-3 p-6">
                     <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                       <span className="text-2xl font-bold leading-none tracking-tighter text-foreground tabular-nums">
                         {highlight.metric}
                       </span>
-                      <span className="font-mono text-[11px] uppercase leading-snug tracking-wider text-primary">
+                      <span className="font-mono text-[11px] uppercase leading-snug tracking-wider text-primary-text">
                         {highlight.label}
                       </span>
                     </div>

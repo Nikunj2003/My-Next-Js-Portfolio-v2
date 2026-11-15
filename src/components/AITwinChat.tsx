@@ -1,355 +1,47 @@
 "use client";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { MessageCircle, X, Send, Bot, User, Trash2, Wrench } from "lucide-react";
-import ReactMarkdown, { type Components } from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { X, Send, User, Trash2, ArrowDown } from "lucide-react";
+import { type Components } from "react-markdown";
+import { useRouter } from "next/navigation";
 import { buildAnswerComponents } from "@/components/ai/AnswerBody";
+import { TwinAssistantBody } from "@/components/ai/TwinAssistantBody";
+import { StaticGuideMark } from "@/components/guide/GuideAvatarSlot";
 import { chatSuggestions } from "@/data/portfolio";
-import {
-  CHAT_CLIENT_TIMEOUT_MS,
-  CHAT_STREAM_IDLE_TIMEOUT_MS,
-  CHAT_ENDPOINT,
-  createChatEventParser,
-  type ChatToolCall,
-  type ChatTrace,
-} from "@/lib/chat-contract";
-import {
-  createStoredChatEnvelope,
-  parseStoredChatEnvelope,
-} from "@/lib/chat-storage";
+import type { ChatToolCall } from "@/lib/chat-contract";
+import { clearTwinChat, isTwinChatBusy, partialAnswerNote, retryTwinMessage, sendTwinMessage } from "@/lib/chat/twin-chat-store";
+import type { Message } from "@/lib/chat/types";
+import { useTurnAnchor } from "@/lib/chat/useTurnAnchor";
+import { useTwinChat } from "@/lib/chat/useTwinChat";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useChatAvailability } from "@/hooks/useChatAvailability";
 import { useLenisLock } from "@/hooks/useLenisLock";
 import { scrollToHash } from "@/lib/scroll";
+import { runGuideAction } from "@/lib/guide/actions";
+import { emitGuide } from "@/lib/guide/bus";
+import { closePanel, openPanel, takePendingQuestion, useCompanionState } from "@/lib/guide/companion-store";
 import { cn } from "@/lib/utils";
-import { CHAT_MEMORY_WINDOW, CHAT_STORAGE_KEY, WELCOME_MESSAGE, trimConversationHistory } from "@/lib/ai-twin";
 
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  suggestions?: string[];
-  /** Tools the agent invoked for this answer, in call order. */
-  toolCalls?: ChatToolCall[];
-  /** Closing summary of how the answer was produced. */
-  trace?: ChatTrace;
-  /** True while text is still streaming in. */
-  streaming?: boolean;
-  /** Server-reported progress ("Thinking", "Writing answer") while streaming. */
-  status?: string;
-  error?: {
-    code: string;
-    retryable: boolean;
-    retryText?: string;
-    userMessageId?: string;
-    isRetrying?: boolean;
-  };
+const messageSelector = (id: string) => `[data-message-id="${id}"]`;
+/** Stable module-level setter: the open state lives in the companion store. */
+const setIsOpen = (open: boolean) => (open ? openPanel() : closePanel());
+function isVisible(node: HTMLElement) {
+  if (node.getClientRects().length === 0) return false;
+  const style = getComputedStyle(node);
+  return style.visibility !== "hidden" && style.display !== "none";
 }
-
-type SendRequest =
-  | string
-  | {
-      text?: string;
-      retryMessageId?: string;
-      retryUserMessageId?: string;
-    };
-
-type StreamOutcome = {
-  content: string;
-  suggestions?: string[];
-  toolCalls: ChatToolCall[];
-  trace?: ChatTrace;
-};
-
-type ChatApiError = {
-  error?: string;
-  code?: string;
-  retryable?: boolean;
-};
-
-type ChatRequestError = Error & {
-  code?: string;
-  retryable?: boolean;
-  status?: number;
-};
-
-const WELCOME = WELCOME_MESSAGE;
-const INITIAL_MESSAGES: Message[] = [{ id: "welcome", role: "assistant", content: WELCOME }];
-const FOCUSABLE_SELECTOR = 'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])';
-const OFFLINE_ASSISTANT_MESSAGE = "Nikunj's AI twin is offline right now. You can still browse the projects, review backend and platform work, use the contact section, or download the resume while the service is unavailable.";
-
-function createMessageId() {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-
-function createChatRequestError(message: string, options: Partial<ChatRequestError> = {}): ChatRequestError {
-  const error = new Error(message) as ChatRequestError;
-  error.code = options.code;
-  error.retryable = options.retryable;
-  error.status = options.status;
-  return error;
-}
-
-function sanitizeMessageError(value: unknown): Message["error"] | undefined {
-  if (!value || typeof value !== "object") return undefined;
-
-  const candidate = value as NonNullable<Message["error"]>;
-
-  if (typeof candidate.code !== "string" || typeof candidate.retryable !== "boolean") {
-    return undefined;
-  }
-
-  if (candidate.retryText !== undefined && typeof candidate.retryText !== "string") {
-    return undefined;
-  }
-
-  if (candidate.userMessageId !== undefined && typeof candidate.userMessageId !== "string") {
-    return undefined;
-  }
-
-  return {
-    code: candidate.code,
-    retryable: candidate.retryable,
-    retryText: candidate.retryText,
-    userMessageId: candidate.userMessageId,
-    isRetrying: false,
-  };
-}
-
-async function buildResponseError(response: Response) {
-  const raw = await response.text();
-  let payload: ChatApiError | null = null;
-
-  try {
-    payload = raw ? (JSON.parse(raw) as ChatApiError) : null;
-  } catch {
-    payload = null;
-  }
-
-  const fallbackMessage =
-    response.status === 429
-      ? "You're sending messages too quickly right now. Please wait a moment and retry."
-      : response.status >= 500
-        ? "The chat service hit a server error. Please retry."
-        : "This message could not be sent.";
-
-  return createChatRequestError(payload?.error || fallbackMessage, {
-    code: payload?.code || `http_${response.status}`,
-    retryable: payload?.retryable ?? (response.status >= 500 || response.status === 429),
-    status: response.status,
-  });
-}
-
-function getErrorState(error: unknown, retryText: string, userMessageId?: string) {
-  if (error instanceof DOMException && error.name === "AbortError") {
-    return {
-      content: "This request timed out before the assistant finished replying. Retry to send the same message again.",
-      error: {
-        code: "client_timeout",
-        retryable: true,
-        retryText,
-        userMessageId,
-      },
-    } satisfies Pick<Message, "content" | "error">;
-  }
-
-  if (error instanceof TypeError) {
-    return {
-      content: "I couldn't reach the chat service just now. Check your connection and retry.",
-      error: {
-        code: "network_error",
-        retryable: true,
-        retryText,
-        userMessageId,
-      },
-    } satisfies Pick<Message, "content" | "error">;
-  }
-
-  const requestError = error as ChatRequestError;
-
-  return {
-    content: requestError.message || "Something went wrong while sending that message.",
-    error: {
-      code: requestError.code || "unknown_error",
-      retryable: requestError.retryable ?? true,
-      retryText,
-      userMessageId,
-    },
-  } satisfies Pick<Message, "content" | "error">;
-}
-
-function sanitizeStoredMessages(value: unknown): Message[] {
-  if (!Array.isArray(value)) return INITIAL_MESSAGES;
-
-  const parsed = value
-    .filter((item): item is Message => {
-      if (!item || typeof item !== "object") return false;
-      const candidate = item as Message;
-      return (
-        typeof candidate.id === "string" &&
-        (candidate.role === "user" || candidate.role === "assistant") &&
-        typeof candidate.content === "string" &&
-        (candidate.suggestions === undefined || Array.isArray(candidate.suggestions))
-      );
-    })
-    .map((message) => ({
-      ...message,
-      suggestions: Array.isArray(message.suggestions)
-        ? message.suggestions.filter((suggestion): suggestion is string => typeof suggestion === "string")
-        : undefined,
-      // Any stored tool call is finished by definition; a persisted "running"
-      // state would spin forever, and a persisted `streaming` flag would leave
-      // the caret blinking on a message that is already complete.
-      toolCalls: Array.isArray(message.toolCalls)
-        ? message.toolCalls
-            .filter((call): call is ChatToolCall => Boolean(call) && typeof call.id === "string" && typeof call.label === "string")
-            .map((call) => ({ ...call, status: "done" as const }))
-        : undefined,
-      trace: message.trace && typeof message.trace === "object" ? message.trace : undefined,
-      streaming: false,
-      error: sanitizeMessageError(message.error),
-    }));
-
-  const trimmed = trimConversationHistory(parsed, CHAT_MEMORY_WINDOW);
-  return trimmed.length > 0 ? [...INITIAL_MESSAGES, ...trimmed] : INITIAL_MESSAGES;
-}
+const FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
 
 /**
- * Reads the NDJSON agent stream and writes it into message state as it
- * arrives, so tool calls appear while they run and text paints progressively.
- *
- * Throws a chat request error on an `error` event so the existing retry
- * classification in getErrorState handles it unchanged.
+ * The full AI Twin conversation panel. The conversation itself lives in the
+ * shared twin chat store, so this panel and the inline ask bubble beside the
+ * guide avatar always show the same history. Opened from the bubble's
+ * "Open full conversation" or by `openAiTwin(..., { expand: true })`.
  */
-async function consumeChatStream(
-  response: Response,
-  assistantId: string,
-  setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
-  replaceExisting: boolean,
-  /** Called on every received chunk so the caller can reset its idle timer. */
-  onActivity?: () => void
-): Promise<StreamOutcome> {
-  const reader = response.body?.getReader();
-  if (!reader) {
-    throw createChatRequestError("The chat service returned no response body. Please retry.", {
-      code: "empty_response",
-      retryable: true,
-      status: 502,
-    });
-  }
-
-  const decoder = new TextDecoder();
-  const parser = createChatEventParser();
-
-  let content = "";
-  let suggestions: string[] | undefined;
-  let trace: ChatTrace | undefined;
-  let toolCalls: ChatToolCall[] = [];
-  let placed = false;
-  let streamError: unknown;
-
-  const patch = (updater: (message: Message) => Message) => {
-    setMessages((prev) => {
-      if (!placed) {
-        placed = true;
-        const seed: Message = { id: assistantId, role: "assistant", content: "", streaming: true };
-
-        if (replaceExisting && prev.some((message) => message.id === assistantId)) {
-          return prev.map((message) =>
-            message.id === assistantId
-              ? updater({ ...message, content: "", suggestions: undefined, error: undefined, streaming: true })
-              : message
-          );
-        }
-
-        return [...prev, updater(seed)];
-      }
-
-      return prev.map((message) => (message.id === assistantId ? updater(message) : message));
-    });
-  };
-
-  const handleEvent = (event: ReturnType<typeof parser.push>[number]) => {
-    switch (event.type) {
-      case "tool_call": {
-        toolCalls = [...toolCalls, event.call];
-        patch((message) => ({ ...message, toolCalls }));
-        break;
-      }
-      case "tool_result": {
-        toolCalls = toolCalls.map((call) => (call.id === event.call.id ? event.call : call));
-        patch((message) => ({ ...message, toolCalls }));
-
-        // The agent asked to move the page; honour it via the existing helper
-        // so Lenis and reduced-motion handling stay consistent.
-        if (event.call.name === "navigate_to" && event.call.href && !event.call.refused) {
-          const href = event.call.href;
-          if (href.startsWith("#")) {
-            window.setTimeout(() => scrollToHash(href), 400);
-          }
-        }
-        break;
-      }
-      case "text_delta": {
-        // Text supersedes any progress label.
-        content += event.text;
-        patch((message) => ({ ...message, content, status: undefined }));
-        break;
-      }
-      case "text_replace": {
-        // The server rewrote the answer after streaming it (link
-        // normalisation), so swap the body rather than appending to it.
-        content = event.text;
-        patch((message) => ({ ...message, content, status: undefined }));
-        break;
-      }
-      case "trace": {
-        trace = event.trace;
-        patch((message) => ({ ...message, trace }));
-        break;
-      }
-      case "suggestions": {
-        suggestions = event.suggestions.filter((suggestion): suggestion is string => typeof suggestion === "string");
-        break;
-      }
-      case "status": {
-        patch((message) => ({ ...message, status: event.label }));
-        break;
-      }
-      case "error": {
-        streamError = createChatRequestError(event.error, {
-          code: event.code,
-          retryable: event.retryable,
-          status: 502,
-        });
-        break;
-      }
-      default:
-        break;
-    }
-  };
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    // Progress is proof of life: the caller's idle timer restarts here.
-    onActivity?.();
-    parser.push(decoder.decode(value, { stream: true })).forEach(handleEvent);
-  }
-  parser.flush().forEach(handleEvent);
-
-  if (streamError) throw streamError;
-
-  return { content, suggestions, toolCalls, trace };
-}
-
 const AITwinChat = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const { panelOpen: isOpen } = useCompanionState();
+
   const isMobile = useIsMobile();
 
   /*
@@ -361,77 +53,23 @@ const AITwinChat = () => {
    * the page, so freezing the page behind it was wrong.
    */
   useLenisLock(isOpen && isMobile);
-  const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
+  const { messages, isLoading, announcement, turnAnchorId } = useTwinChat();
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [hasHydratedHistory, setHasHydratedHistory] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const pendingUserMessageIdRef = useRef<string | null>(null);
-  const isSendingRef = useRef(false);
-  /** The in-flight request, so clearing the chat can abort it. */
-  const abortControllerRef = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const launcherButtonRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const wasOpenRef = useRef(false);
-  const handleSendRef = useRef<(request?: SendRequest) => Promise<void>>(async () => {});
   const shouldReduceMotion = useReducedMotion();
   const { status: chatAvailabilityStatus } = useChatAvailability();
-
-  const getConversationHistory = useCallback(
-    (sourceMessages: Message[], beforeMessageId?: string) => {
-      const endIndex = beforeMessageId ? sourceMessages.findIndex((message) => message.id === beforeMessageId) : -1;
-      const scopedMessages = endIndex >= 0 ? sourceMessages.slice(0, endIndex) : sourceMessages;
-
-      return trimConversationHistory(
-        scopedMessages.filter((message) => !message.error),
-        CHAT_MEMORY_WINDOW
-      )
-        .map((message) => ({
-          content: message.content,
-          sender: message.role === "user" ? "user" : "ai",
-        }));
-    },
-    []
-  );
-
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(CHAT_STORAGE_KEY);
-      if (stored) {
-        const parsedEnvelope = parseStoredChatEnvelope<Message>(JSON.parse(stored));
-
-        if (parsedEnvelope) {
-          setMessages(sanitizeStoredMessages(parsedEnvelope.messages));
-        } else {
-          window.localStorage.removeItem(CHAT_STORAGE_KEY);
-        }
-      }
-    } catch (error) {
-      console.warn("Failed to restore AI Twin chat history:", error);
-    } finally {
-      setHasHydratedHistory(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!hasHydratedHistory) return;
-
-    try {
-      const memoryMessages = [
-        ...INITIAL_MESSAGES,
-        ...trimConversationHistory(messages, CHAT_MEMORY_WINDOW),
-      ];
-
-      window.localStorage.setItem(
-        CHAT_STORAGE_KEY,
-        JSON.stringify(createStoredChatEnvelope(memoryMessages)),
-      );
-    } catch (error) {
-      console.warn("Failed to persist AI Twin chat history:", error);
-    }
-  }, [hasHydratedHistory, messages]);
+  const router = useRouter();
+  const { spacerRef, showJump: showJumpToLatest, jumpToLatest, restoreToEnd } = useTurnAnchor(scrollRef, {
+    anchorId: turnAnchorId,
+    selector: messageSelector,
+    reducedMotion: Boolean(shouldReduceMotion),
+    active: isOpen,
+    layoutKey: isMobile ? "mobile" : "desktop",
+  });
 
   const navigateToSection = useCallback(
     (href: string) => {
@@ -448,53 +86,57 @@ const AITwinChat = () => {
     [isMobile, shouldReduceMotion]
   );
 
+  // Internal pages (/work/...) go through the router. On mobile the sheet
+  // closes first so the new page isn't hidden behind it.
+  const navigateToPath = useCallback(
+    (href: string) => {
+      if (isMobile) setIsOpen(false);
+      router.push(href);
+    },
+    [isMobile, router]
+  );
+
   // Shared with every inline answer surface via `buildAnswerComponents`, so
   // the panel and an in-page answer render markdown identically rather than
   // maintaining two copies that quietly drift.
   const markdownComponents = useMemo<Components>(
-    () => buildAnswerComponents(navigateToSection),
-    [navigateToSection]
+    () => buildAnswerComponents(navigateToSection, navigateToPath),
+    [navigateToPath, navigateToSection]
   );
 
-  // Auto-scroll to bottom or anchor to user message top
-  useEffect(() => {
-    if (!scrollRef.current) return;
-    
-    // If we have a pending user message, anchor to it when response arrives
-    if (pendingUserMessageIdRef.current && !isLoading) {
-      const userMsgEl = scrollRef.current.querySelector(`[data-message-id="${pendingUserMessageIdRef.current}"]`) as HTMLElement;
-        if (userMsgEl) {
-          scrollRef.current.scrollTo({
-            top: userMsgEl.offsetTop - 16,
-            behavior: shouldReduceMotion ? "auto" : "smooth"
-          });
-          pendingUserMessageIdRef.current = null;
-          return;
-      }
-    }
-
-    // Default: scroll to bottom
-    scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [isLoading, messages, shouldReduceMotion]);
+  // Opening the panel shows the end of the history once. After that, nothing
+  // scrolls on its own: a new question is anchored to the top by useTurnAnchor.
+  useLayoutEffect(() => {
+    if (isOpen) restoreToEnd();
+  }, [isOpen, restoreToEnd]);
 
   useEffect(() => {
     if (!isOpen) {
       if (wasOpenRef.current) {
-        const focusTarget = restoreFocusRef.current ?? launcherButtonRef.current;
-        if (focusTarget && document.contains(focusTarget)) {
-          focusTarget.focus();
-        }
+        // Back to where the visitor was, if that is still on screen; otherwise
+        // the companion button; otherwise leave focus alone.
+        // The opener may have been inside the ask box, which closed when the
+        // panel opened; the hero avatar stands in for it on the homepage.
+        const candidates = [
+          restoreFocusRef.current,
+          document.querySelector<HTMLElement>("[data-guide-companion-button]"),
+          document.querySelector<HTMLElement>("[data-guide-hero-avatar]"),
+        ];
+        const focusTarget = candidates.find((node): node is HTMLElement => Boolean(node) && document.contains(node) && isVisible(node!) && node!.tabIndex >= 0 && !node!.closest("[aria-hidden='true']"));
+        focusTarget?.focus({ preventScroll: true });
       }
 
+      restoreFocusRef.current = null;
       wasOpenRef.current = false;
       return;
     }
 
-    wasOpenRef.current = true;
-    const activeElement = document.activeElement;
-    if (activeElement instanceof HTMLElement && activeElement !== document.body) {
-      restoreFocusRef.current = activeElement;
+    if (!wasOpenRef.current) {
+      const activeElement = document.activeElement;
+      restoreFocusRef.current =
+        activeElement instanceof HTMLElement && activeElement !== document.body ? activeElement : null;
     }
+    wasOpenRef.current = true;
 
     const focusTimer = window.setTimeout(() => {
       inputRef.current?.focus();
@@ -503,34 +145,46 @@ const AITwinChat = () => {
     return () => window.clearTimeout(focusTimer);
   }, [isMobile, isOpen, shouldReduceMotion]);
 
+  // The input stays enabled while an answer streams, so focus isn't lost when
+  // sending. If focus drifted off it during the wait (the visitor tapped a
+  // chip or the send button), put it back inside the panel when the answer ends.
+  const wasLoadingRef = useRef(false);
   useEffect(() => {
-    if (!isOpen || !isMobile) return;
+    if (wasLoadingRef.current && !isLoading && isOpen) {
+      const dialog = dialogRef.current;
+      const active = document.activeElement;
+      const focusInPanel = !active || active === document.body || Boolean(dialog?.contains(active));
+      if (focusInPanel && active !== inputRef.current) inputRef.current?.focus({ preventScroll: true });
+    }
+    wasLoadingRef.current = isLoading;
+  }, [isLoading, isOpen]);
 
-    const prevBodyOverflow = document.body.style.overflow;
-    const prevDocOverflow = document.documentElement.style.overflow;
-
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = prevBodyOverflow;
-      document.documentElement.style.overflow = prevDocOverflow;
-    };
-  }, [isOpen, isMobile]);
+  const isTyping = input.trim().length > 0;
+  useEffect(() => {
+    if (isOpen) emitGuide({ type: "chat/typing", active: isTyping });
+  }, [isOpen, isTyping]);
 
   useEffect(() => {
-    if (!isOpen || !dialogRef.current) return;
+    if (chatAvailabilityStatus === "unknown") return;
+    emitGuide({ type: "availability", available: chatAvailabilityStatus !== "unavailable" });
+  }, [chatAvailabilityStatus]);
 
-    const dialogNode = dialogRef.current;
+  useEffect(() => {
+    if (!isOpen) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        // Another layer (the palette, the menu, an IME) already handled it.
+        if (event.defaultPrevented || event.isComposing) return;
         event.preventDefault();
         setIsOpen(false);
         return;
       }
 
-      if (event.key !== "Tab") return;
+      // Only the mobile sheet is modal. The desktop panel sits beside the page
+      // (aria-modal="false"), so Tab must be free to leave it.
+      const dialogNode = dialogRef.current;
+      if (event.key !== "Tab" || !isMobile || !dialogNode) return;
 
       const focusable = Array.from(dialogNode.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
       if (focusable.length === 0) return;
@@ -549,278 +203,66 @@ const AITwinChat = () => {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen]);
+  }, [isOpen, isMobile]);
 
-  const handleSend = useCallback(async (request?: SendRequest) => {
-    const normalizedRequest = typeof request === "string" ? { text: request } : request;
-    const msg = normalizedRequest?.text || input.trim();
-    if (!msg || isSendingRef.current) return;
+  /*
+   * Desktop: the panel sits beside the page, so the page moves right away.
+   * Mobile: the sheet covers the page, so scrolling behind it would be
+   * invisible. The call is shown as a "Take me there" button instead, which
+   * closes the sheet and then moves.
+   */
+  const handleAgentNavigate = useCallback(
+    (call: ChatToolCall) => {
+      if (!call.href) return;
+      // The sheet covers the page, so neither a scroll nor a route change would be seen.
+      if (isMobile) return;
+      window.setTimeout(() => runGuideAction({ href: call.href!, highlight: call.highlight }, router), 300);
+    },
+    [isMobile, router]
+  );
 
-    if (chatAvailabilityStatus === "unavailable") {
-      setMessages((prev) => {
-        const lastMessage = prev[prev.length - 1];
-        if (
-          lastMessage?.role === "assistant" &&
-          lastMessage.content === OFFLINE_ASSISTANT_MESSAGE
-        ) {
-          return prev;
-        }
-
-        return [
-          ...prev,
-          {
-            id: createMessageId(),
-            role: "assistant",
-            content: OFFLINE_ASSISTANT_MESSAGE,
-          },
-        ];
-      });
-      return;
-    }
-
-    isSendingRef.current = true;
-    const retryMessageId = normalizedRequest?.retryMessageId;
-    const retryUserMessageId = normalizedRequest?.retryUserMessageId;
-    const isRetry = Boolean(retryMessageId && retryUserMessageId);
-    const userMsgId = retryUserMessageId || createMessageId();
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-    /*
-     * Two timers, not one.
-     *
-     * `timeoutId` is an absolute backstop. `idleTimeoutId` is the one that
-     * actually governs: it restarts on every received chunk, so a long answer
-     * that keeps streaming is never mistaken for a stalled request — which is
-     * precisely what the old single fixed timer got wrong.
-     */
-    const timeoutId = window.setTimeout(() => controller.abort(), CHAT_CLIENT_TIMEOUT_MS);
-    let idleTimeoutId = window.setTimeout(() => controller.abort(), CHAT_STREAM_IDLE_TIMEOUT_MS);
-    const resetIdleTimer = () => {
-      window.clearTimeout(idleTimeoutId);
-      idleTimeoutId = window.setTimeout(() => controller.abort(), CHAT_STREAM_IDLE_TIMEOUT_MS);
-    };
-    setInput("");
-
-    if (isRetry && retryMessageId) {
-      setMessages((prev) =>
-        prev.map((message) =>
-          message.id === retryMessageId
-            ? {
-                ...message,
-                suggestions: undefined,
-                error: message.error
-                  ? {
-                      ...message.error,
-                      isRetrying: true,
-                    }
-                  : undefined,
-              }
-            : message
-        )
+  const takeMeThere = useCallback(
+    (call: ChatToolCall) => {
+      if (!call.href) return;
+      setIsOpen(false);
+      window.setTimeout(
+        () => runGuideAction({ href: call.href!, highlight: call.highlight }, router),
+        shouldReduceMotion ? 0 : 260
       );
-    } else {
-      setMessages((prev) => [...prev, { id: userMsgId, role: "user", content: msg }]);
-    }
+    },
+    [router, shouldReduceMotion]
+  );
 
-    pendingUserMessageIdRef.current = userMsgId;
-    setIsLoading(true);
+  const handleSend = useCallback(
+    (text?: string) => {
+      const message = (text ?? input).trim();
+      if (!message || isTwinChatBusy()) return;
+      // The busy check above is synchronous, so the store will take this one.
+      if (text === undefined) setInput("");
+      void sendTwinMessage(message, { unavailable: chatAvailabilityStatus === "unavailable", onNavigate: handleAgentNavigate });
+    },
+    [chatAvailabilityStatus, handleAgentNavigate, input]
+  );
 
-    // Declared out here so the catch block can clear `streaming` on the exact
-    // message that was mid-stream, rather than appending a second bubble and
-    // leaving the first one blinking.
-    const assistantId = isRetry && retryMessageId ? retryMessageId : createMessageId();
-
-    try {
-      const response = await fetch(CHAT_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: msg,
-          conversationHistory: getConversationHistory(messages, isRetry ? retryUserMessageId : undefined)
-        }),
-        redirect: "error",
-        signal: controller.signal,
-      });
-
-      if (!response.ok) throw await buildResponseError(response);
-
-      const outcome = await consumeChatStream(
-        response,
-        assistantId,
-        setMessages,
-        isRetry && Boolean(retryMessageId),
-        resetIdleTimer
-      );
-
-      const suggestions = outcome.suggestions;
-
-      if (outcome.content.trim().length === 0) {
-        throw createChatRequestError("The chat service returned an empty response. Please retry.", {
-          code: "empty_response",
-          retryable: true,
-          status: 502,
-        });
-      }
-
-      const assistantContent = outcome.content;
-
-      setMessages((prev) => {
-        let replaced = false;
-        const next = prev.map((message) => {
-          if (message.id !== assistantId) return message;
-
-          replaced = true;
-          return {
-            ...message,
-            content: assistantContent,
-            suggestions,
-            toolCalls: outcome.toolCalls.length > 0 ? outcome.toolCalls : undefined,
-            trace: outcome.trace,
-            streaming: false,
-            error: undefined,
-          };
-        });
-
-        return replaced
-          ? next
-          : [
-              ...next,
-              {
-                id: assistantId,
-                role: "assistant" as const,
-                content: assistantContent,
-                suggestions,
-                toolCalls: outcome.toolCalls.length > 0 ? outcome.toolCalls : undefined,
-                trace: outcome.trace,
-              },
-            ];
-      });
-    } catch (error) {
-      console.error("AI Chat Error:", error);
-      const nextErrorState = getErrorState(error, msg, userMsgId);
-
-      // Both paths must clear `streaming`, and both must patch the message that
-      // was already streaming rather than appending beside it. Previously the
-      // retry path omitted `streaming: false` and the non-retry path appended a
-      // brand-new message — so a failure after the first text_delta left the
-      // partial reply blinking its cursor forever, with an unrelated error
-      // bubble underneath it.
-      const targetId = assistantId;
-
-      setMessages((prev) => {
-        let replaced = false;
-        const next = prev.map((message) => {
-          if (message.id !== targetId) return message;
-
-          replaced = true;
-          return {
-            ...message,
-            content: nextErrorState.content,
-            suggestions: undefined,
-            streaming: false,
-            error: {
-              ...nextErrorState.error,
-              isRetrying: false,
-            },
-          };
-        });
-
-        return replaced
-          ? next
-          : [
-              ...next,
-              {
-                id: createMessageId(),
-                role: "assistant",
-                content: nextErrorState.content,
-                streaming: false,
-                error: nextErrorState.error,
-              },
-            ];
-      });
-    } finally {
-      window.clearTimeout(timeoutId);
-      // Must be cleared too, or it aborts the NEXT request after this one
-      // completes, since the controller stays referenced by the closure.
-      window.clearTimeout(idleTimeoutId);
-      if (abortControllerRef.current === controller) {
-        abortControllerRef.current = null;
-      }
-      isSendingRef.current = false;
-      setIsLoading(false);
-    }
-  }, [chatAvailabilityStatus, getConversationHistory, input, messages]);
-
-  handleSendRef.current = handleSend;
-
+  // A question asked elsewhere while the panel is open ("Ask about this", the
+  // palette) is queued in the companion store; send it once the chat is free.
+  const { pendingQuestion } = useCompanionState();
   useEffect(() => {
-    const handleOpenTwin = (e: Event) => {
-      const customEvent = e as CustomEvent<{ question: string; answer?: string }>;
-      const { question, answer } = customEvent.detail ?? { question: "" };
-      setIsOpen(true);
+    if (!isOpen || !pendingQuestion || isLoading) return;
+    const timer = window.setTimeout(() => {
+      if (isTwinChatBusy()) return;
+      const question = takePendingQuestion();
+      if (question) handleSend(question);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [handleSend, isLoading, isOpen, pendingQuestion]);
 
-      if (!question) return;
+  const handleSuggestionClick = (text: string) => handleSend(text);
 
-      /*
-       * A "Continue in AI Twin" handoff from an inline answer already has the
-       * answer — resending the question would burn a request and a wait the
-       * visitor already sat through. Appending both turns directly reaches the
-       * same place `handleSend` would have (this component hydrates from
-       * localStorage on mount and re-persists on every `messages` change, so
-       * writing the envelope directly from the dispatching component would
-       * just be overwritten the next time this effect ran).
-       */
-      if (answer) {
-        setMessages((prev) => [
-          ...prev,
-          { id: createMessageId(), role: "user", content: question },
-          { id: createMessageId(), role: "assistant", content: answer },
-        ]);
-        return;
-      }
+  const handleRetry = (message: Message) =>
+    retryTwinMessage(message, { unavailable: chatAvailabilityStatus === "unavailable", onNavigate: handleAgentNavigate });
 
-      window.setTimeout(() => {
-        void handleSendRef.current(question);
-      }, 100);
-    };
-
-    window.addEventListener("open-ai-twin", handleOpenTwin);
-    return () => window.removeEventListener("open-ai-twin", handleOpenTwin);
-  }, []);
-
-  const handleSuggestionClick = (text: string) => {
-    setInput(text);
-    Promise.resolve().then(() => handleSend(text));
-  };
-
-  const handleRetry = (message: Message) => {
-    if (!message.error?.retryable || !message.error.retryText || !message.error.userMessageId) return;
-
-    void handleSend({
-      text: message.error.retryText,
-      retryMessageId: message.id,
-      retryUserMessageId: message.error.userMessageId,
-    });
-  };
-
-  const clearChat = () => {
-    // Abort any in-flight stream first. Without this the request kept running
-    // against a message id that no longer existed, and the success handler then
-    // appended a finished answer with no user question above it.
-    abortControllerRef.current?.abort();
-    abortControllerRef.current = null;
-    isSendingRef.current = false;
-    setIsLoading(false);
-
-    setMessages(INITIAL_MESSAGES);
-    pendingUserMessageIdRef.current = null;
-
-    try {
-      window.localStorage.removeItem(CHAT_STORAGE_KEY);
-    } catch (error) {
-      console.warn("Failed to clear AI Twin chat history:", error);
-    }
-  };
+  const clearChat = () => clearTwinChat();
 
   const chatStatusLabel =
     chatAvailabilityStatus === "available"
@@ -849,8 +291,8 @@ const AITwinChat = () => {
         isMobile ? "px-4 py-3 bg-background" : "px-5 py-4 bg-accent/5"
       )}>
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-            <Bot className="w-4 h-4 text-primary" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#090e1a] ring-1 ring-primary/30">
+            <StaticGuideMark size={30} />
           </div>
           <div>
             <p id="ai-twin-title" className="text-sm font-semibold">Nikunj&apos;s AI Twin</p>
@@ -881,13 +323,17 @@ const AITwinChat = () => {
         </div>
       </div>
 
+      <p className="sr-only" role="status" aria-live="polite">{announcement}</p>
+
       {/* Messages */}
+      <div className="relative flex min-h-0 flex-1 flex-col">
       <div
         ref={scrollRef}
         data-lenis-prevent
         role="log"
-        aria-live="polite"
-        aria-relevant="additions text"
+        aria-live="off"
+        // Keyboard users can scroll the conversation.
+        tabIndex={0}
         className={cn(
           "scroll-panel flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain space-y-6 scrollbar-thin scrollbar-thumb-primary/10 hover:scrollbar-thumb-primary/20",
           isMobile ? "px-3 py-4" : "px-4 py-6"
@@ -905,7 +351,7 @@ const AITwinChat = () => {
               <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 ${
                 msg.role === "assistant" ? "bg-primary/10" : "bg-muted"
               }`}>
-                {msg.role === "assistant" ? <Bot className="w-4 h-4 text-primary" /> : <User className="w-4 h-4" />}
+                {msg.role === "assistant" ? <StaticGuideMark size={22} /> : <User className="w-4 h-4" />}
               </div>
               <div
                 className={`px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-accent-soft ${
@@ -918,89 +364,22 @@ const AITwinChat = () => {
               >
                 {msg.role === "assistant" ? (
                   <>
-                    {/* Tool calls appear as they execute — this is the part
-                        that reads as an agent rather than a text box. */}
-                    {msg.toolCalls && msg.toolCalls.length > 0 && (
-                      <ul className="mb-3 flex flex-col gap-1.5 border-l-2 border-primary/25 pl-3">
-                        {msg.toolCalls.map((call) => (
-                          <li key={call.id} className="flex items-baseline gap-2 font-mono text-[11px] leading-relaxed">
-                            <Wrench
-                              className={cn(
-                                "mt-0.5 h-3 w-3 shrink-0",
-                                call.status === "running" ? "animate-spin motion-reduce:animate-none text-primary" : "text-primary/70"
-                              )}
-                            />
-                            <span className="min-w-0 break-all text-foreground/75">{call.label}</span>
-                            {call.status === "done" && (
-                              <span className={cn("shrink-0", call.refused ? "text-amber-500/90" : "text-muted-foreground/70")}>
-                                {call.refused ? "· none" : `· ${call.summary}`}
-                              </span>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                      {msg.content}
-                    </ReactMarkdown>
-
-                    {msg.streaming && msg.content.length > 0 && (
-                      <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse rounded-sm bg-primary/70 align-middle motion-reduce:animate-none" />
-                    )}
-
-                    {/* Progress label from the server while a tool round runs and
-                        no answer text has arrived yet. The server has always sent
-                        these; the client used to drop them on the floor. */}
-                    {msg.streaming && msg.status && msg.content.length === 0 && (
-                      <p className="font-mono text-[11px] text-muted-foreground/70">
-                        {msg.status}
-                        <span className="ml-1 animate-pulse motion-reduce:animate-none">…</span>
+                    <TwinAssistantBody
+                      message={msg}
+                      components={markdownComponents}
+                      reducedMotion={Boolean(shouldReduceMotion)}
+                      showTakeMeThere={isMobile}
+                      onTakeMeThere={takeMeThere}
+                    />
+                    {/* A kept partial answer: the text above, why it stopped here. */}
+                    {partialAnswerNote(msg) && (
+                      <p role="alert" className="mt-3 border-t border-amber-500/30 pt-2 text-xs font-medium text-amber-600 dark:text-amber-400">
+                        {partialAnswerNote(msg)}
                       </p>
-                    )}
-
-                    {/* Collapsed by default: a recruiter never has to open it,
-                        an engineer can. */}
-                    {msg.trace && !msg.error && (
-                      <details className="group mt-3 border-t border-border/30 pt-2">
-                        <summary className="cursor-pointer list-none font-mono text-[11px] text-muted-foreground/70 transition-colors hover:text-primary">
-                          <span className="group-open:hidden">
-                            trace · {msg.trace.toolCount} tool{msg.trace.toolCount === 1 ? "" : "s"} ·{" "}
-                            {(msg.trace.elapsedMs / 1000).toFixed(1)}s
-                          </span>
-                          <span className="hidden group-open:inline">hide trace</span>
-                        </summary>
-                        <dl className="mt-2 flex flex-col gap-1 font-mono text-[10.5px] text-muted-foreground/70">
-                          <div className="flex gap-2">
-                            <dt className="w-16 shrink-0">rounds</dt>
-                            <dd>{msg.trace.rounds}</dd>
-                          </div>
-                          <div className="flex gap-2">
-                            <dt className="w-16 shrink-0">latency</dt>
-                            <dd>{(msg.trace.elapsedMs / 1000).toFixed(2)}s</dd>
-                          </div>
-                          <div className="flex gap-2">
-                            <dt className="w-16 shrink-0">model</dt>
-                            <dd className="break-all">{msg.trace.model}</dd>
-                          </div>
-                          {msg.trace.sources.length > 0 && (
-                            <div className="flex gap-2">
-                              <dt className="w-16 shrink-0">grounded</dt>
-                              <dd className="break-words">{msg.trace.sources.join(", ")}</dd>
-                            </div>
-                          )}
-                          {msg.trace.refusals.length > 0 && (
-                            <div className="flex gap-2 text-amber-500/90">
-                              <dt className="w-16 shrink-0">declined</dt>
-                              <dd className="break-words">{msg.trace.refusals.join("; ")}</dd>
-                            </div>
-                          )}
-                        </dl>
-                      </details>
                     )}
                   </>
                 ) : (
-                  msg.content
+                  <span className="line-clamp-6">{msg.content}</span>
                 )}
               </div>
             </motion.div>
@@ -1081,7 +460,7 @@ const AITwinChat = () => {
         {isLoading && !messages.some((message) => message.streaming) && (
           <div className="flex gap-3">
             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-1">
-              <Bot className="w-4 h-4 text-primary" />
+              <StaticGuideMark size={22} />
             </div>
             <div className="bg-muted/50 dark:bg-muted/20 border border-border/20 px-4 py-3 rounded-2xl rounded-tl-none flex gap-1.5 items-center shadow-accent-soft">
               <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce motion-reduce:animate-none [animation-delay:-0.3s]" />
@@ -1090,6 +469,20 @@ const AITwinChat = () => {
             </div>
           </div>
         )}
+        {/* Room below a new question, so it can sit at the top while its
+            answer streams in. Shrinks to nothing as the answer grows. */}
+        <div ref={spacerRef} aria-hidden="true" className="pointer-events-none !mt-0 shrink-0" />
+      </div>
+      {showJumpToLatest && (
+        <button
+          type="button"
+          onClick={jumpToLatest}
+          className="absolute bottom-3 left-1/2 flex min-h-9 -translate-x-1/2 items-center gap-1.5 rounded-full border border-border/50 glass-strong px-3 py-1.5 text-xs font-medium text-foreground shadow-accent-soft transition-colors hover:text-primary"
+        >
+          <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />
+          Jump to latest
+        </button>
+      )}
       </div>
 
       {/* Action Area */}
@@ -1151,8 +544,8 @@ const AITwinChat = () => {
             placeholder={canSendMessages ? "Type a message..." : "AI chat is currently unavailable."}
             aria-label="Message Nikunj's AI twin"
             autoComplete="off"
-            disabled={!canSendMessages || isLoading}
-            className="flex-1 bg-background/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all placeholder:text-muted-foreground/50 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={!canSendMessages}
+            className="flex-1 bg-background/50 border border-border/40 rounded-xl px-4 py-2.5 text-base sm:text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all placeholder:text-muted-foreground/50 disabled:cursor-not-allowed disabled:opacity-60"
           />
           <button
             type="button"
@@ -1173,51 +566,6 @@ const AITwinChat = () => {
 
   return (
     <>
-      {/* Floating Button */}
-      <motion.button
-        ref={launcherButtonRef}
-        type="button"
-        initial={shouldReduceMotion ? { opacity: 0 } : { scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={shouldReduceMotion ? { duration: 0.2 } : { type: "spring", stiffness: 260, damping: 20 }}
-        onClick={() => setIsOpen(!isOpen)}
-        className={cn(
-          "fixed z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-accent-card hover:shadow-[0_16px_36px_hsl(var(--accent)/0.22)] flex items-center justify-center transition-all duration-300 ease-in-out border-2 border-primary/20 group cursor-pointer",
-          isMobile ? "bottom-4 right-4" : "bottom-6 right-6"
-        )}
-        whileHover={shouldReduceMotion ? undefined : { scale: 1.1 }}
-        whileTap={shouldReduceMotion ? undefined : { scale: 0.95 }}
-        aria-label="Toggle AI chat"
-        aria-expanded={isOpen}
-        aria-controls="ai-twin-dialog"
-        title={chatStatusLabel}
-      >
-        <motion.div
-          className="relative"
-          animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={shouldReduceMotion ? { duration: 0.2 } : { type: "spring", stiffness: 260, damping: 20 }}
-        >
-          <AnimatePresence mode="popLayout" initial={false}>
-            <motion.div
-              key={isOpen ? "close" : "chat"}
-              initial={shouldReduceMotion ? { opacity: 0 } : { rotate: -90, opacity: 0, scale: 0.4 }}
-              animate={{ rotate: 0, opacity: 1, scale: 1 }}
-              exit={shouldReduceMotion ? { opacity: 0 } : { rotate: 90, opacity: 0, scale: 0.4 }}
-              transition={shouldReduceMotion ? { duration: 0.2 } : { type: "spring", stiffness: 340, damping: 24 }}
-              className="flex items-center justify-center"
-            >
-              {isOpen ? (
-                <X size={24} />
-              ) : (
-                <motion.span whileHover={shouldReduceMotion ? undefined : { y: -2 }}>
-                  <MessageCircle size={24} />
-                </motion.span>
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </motion.div>
-      </motion.button>
-
       {/* Conditional Rendering Based on Viewport */}
       {isMobile ? (
         // Mobile: Fullscreen overlay (using Dialog pattern instead of Drawer)
@@ -1250,7 +598,7 @@ const AITwinChat = () => {
                 onClick={(e) => e.stopPropagation()}
                 role="dialog"
                 aria-modal="true"
-                aria-labelledby="ai-twin-title"
+                aria-label="Nikunj's AI Twin conversation"
                 aria-describedby="ai-twin-status"
               >
                 {renderChatContent()}
@@ -1285,7 +633,7 @@ const AITwinChat = () => {
                 height: "32rem",
                 maxHeight: "calc(100vh - 8rem)",
               }}
-              aria-labelledby="ai-twin-title"
+              aria-label="Nikunj's AI Twin conversation"
               aria-describedby="ai-twin-status"
               role="dialog"
               aria-modal="false"

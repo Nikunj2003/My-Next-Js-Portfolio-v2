@@ -18,9 +18,10 @@ import {
   Search,
   Sparkles,
 } from "lucide-react";
-import { caseStudies, getCaseStudyPath } from "@/data/case-studies";
+import { caseStudyIndex } from "@/data/case-study-index";
+import { getCaseStudyPath } from "@/data/case-study-path";
 import { personalInfo, projects } from "@/data/portfolio";
-import { getProjectAnchor } from "@/lib/ai-twin";
+import { getProjectAnchor } from "@/lib/chat/shared";
 import { useLenisLock } from "@/hooks/useLenisLock";
 import { scrollToHash } from "@/lib/scroll";
 import { cn } from "@/lib/utils";
@@ -35,7 +36,7 @@ const SECTIONS = [
 ];
 
 const groupClass =
-  "mb-1 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted-foreground/60";
+  "mb-1 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted-foreground";
 
 /** Matches the item chrome used across the site: subtle glass, primary on hover. */
 const itemClass =
@@ -126,7 +127,7 @@ const CommandPalette = () => {
         <DialogPrimitive.Content
           className={cn(
             "fixed left-1/2 top-[12vh] z-[120] w-[calc(100vw-2rem)] max-w-xl -translate-x-1/2",
-            "flex max-h-[min(30rem,72vh)] flex-col overflow-hidden rounded-2xl border border-white/10 glass-strong glass-overlay shadow-accent-card",
+            "flex max-h-[min(30rem,72vh)] flex-col overflow-hidden rounded-2xl border border-foreground/10 glass-strong glass-overlay shadow-accent-card",
             "data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
           )}
         >
@@ -138,15 +139,15 @@ const CommandPalette = () => {
           </DialogPrimitive.Description>
 
           <Command loop className="flex min-h-0 flex-1 flex-col">
-            <div className="flex shrink-0 items-center gap-3 border-b border-white/10 px-4">
+            <div className="flex shrink-0 items-center gap-3 border-b border-foreground/10 px-4">
               <Search className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
               <Command.Input
                 value={query}
                 onValueChange={setQuery}
                 placeholder="Search, or ask a question..."
-                className="h-14 w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/60"
+                className="h-14 w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
               />
-              <kbd className="hidden shrink-0 rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground sm:block">
+              <kbd className="hidden shrink-0 rounded-md border border-foreground/10 bg-foreground/5 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground sm:block">
                 ESC
               </kbd>
             </div>
@@ -174,7 +175,7 @@ const CommandPalette = () => {
                 heading="Case studies"
                 className={groupClass}
               >
-                {caseStudies.map((study) => (
+                {caseStudyIndex.map((study) => (
                   <Command.Item
                     key={study.slug}
                     value={`${study.title} ${study.tags.join(" ")} ${study.stack.join(" ")} ${study.aliases.join(" ")}`}
@@ -286,13 +287,13 @@ const CommandPalette = () => {
             </Command.List>
 
             {/* Footer hints, matching the mono micro-copy used site-wide. */}
-            <div className="flex shrink-0 items-center gap-4 border-t border-white/10 px-4 py-2.5 font-mono text-[10px] text-muted-foreground/60">
+            <div className="flex shrink-0 items-center gap-4 border-t border-foreground/10 px-4 py-2.5 font-mono text-[10px] text-muted-foreground">
               <span className="inline-flex items-center gap-1.5">
-                <kbd className="rounded border border-white/10 bg-white/5 px-1 py-0.5">↑↓</kbd>
+                <kbd className="rounded border border-foreground/10 bg-foreground/5 px-1 py-0.5">↑↓</kbd>
                 navigate
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <kbd className="rounded border border-white/10 bg-white/5 px-1 py-0.5">↵</kbd>
+                <kbd className="rounded border border-foreground/10 bg-foreground/5 px-1 py-0.5">↵</kbd>
                 select
               </span>
               <span className="ml-auto inline-flex items-center gap-1.5">

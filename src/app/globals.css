@@ -3,9 +3,11 @@
 
 
 @layer base {
-  /* Applied before JS to prevent white flash — matches .dark --background value */
+  /* The page colour for each theme, from the first paint (the theme class is
+     set by an inline script before anything renders). It was a fixed navy, so
+     light mode showed navy on overscroll and behind the page. */
   html {
-    background-color: hsl(224, 47%, 7%);
+    background-color: hsl(var(--background));
   }
 
   :root {
@@ -15,8 +17,11 @@
     --card-foreground: 220 25% 10%;
     --popover: 40 15% 95%;
     --popover-foreground: 220 25% 10%;
-    --primary: 175 84% 32%;
+    /* 28% lightness gives white button text 4.6:1 (32% was 3.65:1). Light theme only. */
+    --primary: 175 84% 28%;
     --primary-foreground: 0 0% 100%;
+    /* Teal for small text: #0D968B fills fail AA (~3.4:1) at body sizes on paper. */
+    --primary-text: 175 84% 26%;
     --secondary: 170 20% 92%;
     --secondary-foreground: 175 84% 22%;
     --muted: 170 15% 92%;
@@ -74,6 +79,7 @@
     --popover-foreground: 170 20% 92%;
     --primary: 170 68% 50%;
     --primary-foreground: 224 47% 7%;
+    --primary-text: 170 68% 50%;
     --secondary: 221 30% 15%;
     --secondary-foreground: 170 40% 80%;
     --muted: 221 30% 15%;
@@ -298,10 +304,6 @@ textarea,
     background-color: hsl(var(--primary) / 0.1);
   }
 
-  :is(.dark *).btn-cta-secondary:hover {
-    background-color: hsl(var(--primary) / 0.1);
-  }
-
   .shadow-accent-soft {
     box-shadow: 0 10px 24px hsl(var(--accent) / 0.12);
   }
@@ -367,7 +369,7 @@ textarea,
     position: relative;
     overflow: hidden;
     border-radius: 2rem;
-    border: 1px solid rgb(255 255 255 / 0.1);
+    border: 1px solid hsl(var(--foreground) / 0.1);
     padding: 1.5rem;
     background-color: color-mix(in oklab, hsl(var(--background)) 68%, transparent);
     box-shadow: 0 0 40px hsl(var(--accent) / 0.08);
@@ -417,4 +419,69 @@ textarea,
 ::selection {
   background: hsl(var(--accent) / 0.3);
   color: hsl(var(--foreground));
+}
+
+/* Guide highlight: an element the AI Twin or the tour is pointing at. CSS only,
+   so ringing costs no JS per frame; reduced motion gets a static ring. */
+[data-guide-active="true"] {
+  position: relative;
+  border-radius: 1.5rem;
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 6px;
+  box-shadow: 0 0 0 10px hsl(var(--primary) / 0.12), 0 22px 68px hsl(var(--accent) / 0.2);
+  animation: guide-ring 2.6s ease-out forwards;
+}
+
+@keyframes guide-ring {
+  0% { outline-color: hsl(var(--primary) / 0); outline-offset: 16px; }
+  15% { outline-color: hsl(var(--primary)); outline-offset: 6px; }
+  80% { outline-color: hsl(var(--primary)); }
+  100% { outline-color: hsl(var(--primary) / 0); box-shadow: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-guide-active="true"] {
+    animation: none;
+  }
+}
+
+/* ------------------------------------------------------------------------ */
+/* Hero intro (played by components/HeroIntro.tsx)                           */
+/* ------------------------------------------------------------------------ */
+/*
+ * The starting frame, from the first paint, while `html[data-hero-intro=play]`
+ * (set before paint by the theme script): the copy, chips, the avatar's
+ * caption and buttons, and the backdrop are hidden; the avatar's stage is
+ * invisible until HeroIntro brings it up in the middle of the screen. Only
+ * opacity and clip here (never transform), so HeroIntro measures the stage's
+ * real place. The failsafe reveals everything after 4s if JavaScript never
+ * runs the intro, so the page can never be stuck hidden.
+ */
+html[data-hero-intro="play"] #hero [data-hero-part="copy"]:not([data-hero-glass]),
+html[data-hero-intro="play"] #hero [data-hero-part="avatar-ui"],
+html[data-hero-intro="play"] #hero [data-hero-part="backdrop"],
+html[data-hero-intro="play"] #hero [data-hero-part="stage"] {
+  opacity: 0;
+  animation: hero-failsafe-show 0s 4s forwards;
+}
+html[data-hero-intro="play"] #hero [data-hero-part="copy"][data-hero-glass],
+html[data-hero-intro="play"] #hero [data-hero-chip] {
+  clip-path: inset(0 0 100% 0);
+  animation: hero-failsafe-clip 0s 4s forwards;
+}
+html[data-hero-intro="play"] #hero [data-hero-part="avatar-glow"] { opacity: 0; }
+/* While the intro waits for the live avatar, the still drawing never shows. */
+html[data-hero-intro="play"] #hero [data-hero-still] { visibility: hidden; }
+@keyframes hero-failsafe-show { to { opacity: 1; } }
+@keyframes hero-failsafe-clip { to { clip-path: none; } }
+
+/* The sleeping z's drift up and fade, one after another. */
+.hero-z { opacity: 0; animation: hero-z 1800ms ease-out infinite; }
+@keyframes hero-z {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.6); }
+  25% { opacity: 0.9; }
+  100% { opacity: 0; transform: translate(16px, -30px) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-z { animation: none; }
 }

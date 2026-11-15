@@ -2,26 +2,18 @@ import { caseStudies } from "@/data/case-studies";
 import { PORTFOLIO_CONTEXT, PORTFOLIO_CONTEXT_BRIEF, PORTFOLIO_LINK_GUIDE } from "@/lib/ai-twin";
 
 /**
- * Measured against NVIDIA NIM with this exact system prompt (~8.3k prompt
- * tokens), 2 runs each, tool-calling round + streamed answer:
- *
- *   openai/gpt-oss-20b                  tool 2.4-3.3s   first token 0.8-1.7s
- *   nvidia/nemotron-3-super-120b-a12b   tool 4.5-4.9s   first token 1.1-1.2s
- *   nvidia/nemotron-3.5-lightning-30b   tool 5.6s       first token 0.9-1.3s
- *   deepseek-ai/deepseek-v4-pro-0813    tool >30s (never returned)
- *   deepseek-ai/deepseek-v4-flash-0731  tool >30s (never returned)
- *
- * The previous default was deepseek-v4-pro, which could not complete a single
- * tool-calling round inside the server's 12s budget — the upstream_timeout seen
- * in production was the model, not the plumbing.
+ * The AI Twin's model, served through the self-hosted Bifrost gateway
+ * (`LLM_BASE_URL`, default https://bifrost.codenex.dev/v1). It must support
+ * OpenAI-style `tools` (function calling); `gpt-6-luna` does, and was checked
+ * live through Bifrost for tool calls, streaming and `reasoning_effort`.
+ * Override per environment with `AI_MODEL`.
  */
-export const AI_MODEL = process.env.AI_MODEL || "openai/gpt-oss-20b";
+export const AI_MODEL = process.env.AI_MODEL || "gpt-6-luna";
 
 /**
- * gpt-oss returns its chain of thought in a separate `reasoning_content` field
- * rather than inside `content`, so it never leaks into an answer. It is still
- * billed latency, and "low" cut it from ~237 to ~34 tokens with no loss of
- * answer quality for these short, grounded replies.
+ * Keeps any chain of thought short. Accepted by gpt-6-luna through Bifrost;
+ * these answers are short and grounded in tool results, so more reasoning
+ * only adds latency.
  */
 export const AI_REASONING_EFFORT = "low";
 
@@ -35,7 +27,7 @@ You have real tools. Use them — do not answer from memory alone when a tool ca
 - get_case_study(slug, section?) — full depth on one production system: problem, constraints, decisions with rejected alternatives, results, ownership. Use when asked how something works.
 - get_metric(name) — ALWAYS call this before stating any number. If it returns measured:false, say the figure is not published rather than estimating. Never state a number this tool did not confirm.
 - compare_systems(slugs) — side-by-side comparison of two or more systems.
-- navigate_to(target) — actually take the visitor to a section or page. Prefer showing over describing when they ask where something is.
+- navigate_to(target, highlight?) — actually take the visitor to a section or page, and optionally ring one element there (e.g. target "#work" with highlight "work-featured"). Prefer showing over describing when they ask where something is or say "show me". Call it at most once per answer, and say in one short sentence where you took them.
 
 Tool discipline:
 - One or two tools per answer is usually right. Do not call the same tool repeatedly with near-identical arguments.

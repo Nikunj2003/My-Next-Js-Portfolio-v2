@@ -6,14 +6,16 @@ import { Providers } from './providers'
 import { SmoothScroll } from '@/components/SmoothScroll'
 import ScrollProgress from '@/components/ScrollProgress'
 import { siteConfig, ogLocale } from '@/lib/seo/site'
+import { PLAY_SCRIPT } from '@/lib/hero-intro'
+import { GuideCompanionMount } from '@/components/guide/GuideCompanionMount'
+// The full conversation panel, on every route; it loads on first open.
+import AITwinChatMount from '@/components/AITwinChatMount'
+import { QuietBoundary } from '@/components/QuietBoundary'
 
 // Mounted at the layout so every route gets the background layer, including
 // /work/*. Self-gates on pointer:fine, >=1280px, and reduced motion.
 const FluidCursor = dynamic(() => import('@/components/FluidCursor'))
 const CommandPalette = dynamic(() => import('@/components/CommandPalette'))
-// Mounted here so the twin — and the "ask about this" affordances that dispatch
-// into it — work on case study routes, not just the homepage.
-const AITwinChat = dynamic(() => import('@/components/AITwinChat'))
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.siteUrl),
@@ -29,18 +31,11 @@ export const metadata: Metadata = {
     title: siteConfig.title,
     description: siteConfig.description,
     siteName: siteConfig.siteName,
-    images: [
-      {
-        url: siteConfig.ogImage,
-        alt: siteConfig.title,
-      },
-    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: siteConfig.title,
     description: siteConfig.description,
-    images: [siteConfig.ogImage],
   },
   alternates: {
     canonical: siteConfig.homeUrl,
@@ -77,6 +72,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="color-scheme" content="dark light" />
+        {/* The hero intro's decision, blocking and before the first paint, so the
+            page is drawn at the intro's starting frame. (next/script's
+            beforeInteractive is queued until Next boots, which is after paint.) */}
+        <script id="hero-intro" dangerouslySetInnerHTML={{ __html: PLAY_SCRIPT }} />
       </head>
       <body className="font-sans" suppressHydrationWarning>
         <a
@@ -117,8 +116,15 @@ export default function RootLayout({
                   and above {children} so every route gets the reading bar. */}
               <ScrollProgress />
               {children}
-              <AITwinChat />
-              <CommandPalette />
+              <QuietBoundary name="AI Twin panel">
+                <AITwinChatMount />
+              </QuietBoundary>
+              <QuietBoundary name="Guide">
+                <GuideCompanionMount />
+              </QuietBoundary>
+              <QuietBoundary name="Command palette">
+                <CommandPalette />
+              </QuietBoundary>
             </Providers>
           </SmoothScroll>
         </div>

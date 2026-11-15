@@ -5,17 +5,15 @@ import {
   motion,
   useMotionValue,
   useReducedMotion,
-  useSpring,
   useTransform,
   type MotionValue,
 } from "framer-motion";
 import { Briefcase, CalendarDays, GraduationCap } from "lucide-react";
 import { bulletStudySlug, bulletText, experiences, type Experience } from "@/data/portfolio";
-import { getCaseStudyPath } from "@/data/case-studies";
+import { getCaseStudyPath } from "@/data/case-study-path";
 import AskAboutThis, { ReadCaseStudyLink } from "@/components/AskAboutThis";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import FlipWords from "@/components/ui/flip-words";
-import Reveal from "@/components/ui/reveal";
 
 function TimelineIcon({
   timelineRef,
@@ -25,7 +23,6 @@ function TimelineIcon({
   lineProgress: MotionValue<number>;
 }) {
   const figureRef = useRef<HTMLElement>(null);
-  const shouldReduceMotion = useReducedMotion();
   const [fillWindow, setFillWindow] = useState({ start: 0, end: 1 });
 
   useEffect(() => {
@@ -48,18 +45,15 @@ function TimelineIcon({
     const resizeObserver = new ResizeObserver(measure);
     resizeObserver.observe(timeline);
     resizeObserver.observe(figure);
-    window.addEventListener("resize", measure);
 
-    return () => {
-      resizeObserver.disconnect();
-      window.removeEventListener("resize", measure);
-    };
+    return () => resizeObserver.disconnect();
   }, [timelineRef]);
 
-  const rawPathLength = useTransform(lineProgress, [fillWindow.start, fillWindow.end], [0, 1], {
+  // Straight from the scroll progress (Lenis already smooths the scroll);
+  // a spring per icon was five extra animations running on every scroll.
+  const pathLength = useTransform(lineProgress, [fillWindow.start, fillWindow.end], [0, 1], {
     clamp: true,
   });
-  const pathLength = useSpring(rawPathLength, { stiffness: 180, damping: 24, mass: 0.25 });
   const fillOpacity = useTransform(pathLength, [0.82, 1], [0, 1], { clamp: true });
 
   return (
@@ -70,7 +64,7 @@ function TimelineIcon({
       <svg viewBox="0 0 100 100" className="h-full w-full rotate-[-90deg]">
         <circle cx="50" cy="50" r="20" className="fill-background stroke-primary/20 stroke-1" />
         <motion.circle
-          style={{ pathLength: shouldReduceMotion ? 1 : pathLength }}
+          style={{ pathLength }}
           cx="50"
           cy="50"
           r="20"
@@ -80,7 +74,7 @@ function TimelineIcon({
           cx="50"
           cy="50"
           r="10"
-          style={{ opacity: shouldReduceMotion ? 1 : fillOpacity }}
+          style={{ opacity: fillOpacity }}
           className="fill-primary stroke-1"
         />
       </svg>
@@ -90,12 +84,10 @@ function TimelineIcon({
 
 function ExperienceItem({
   exp,
-  index,
   timelineRef,
   lineProgress,
 }: {
   exp: Experience;
-  index: number;
   timelineRef: React.RefObject<HTMLDivElement | null>;
   lineProgress: MotionValue<number>;
 }) {
@@ -106,7 +98,7 @@ function ExperienceItem({
   return (
     <li ref={ref} className="relative mb-12 flex w-full flex-col gap-1 pl-[50px] sm:mb-16 sm:pl-[90px]">
       <TimelineIcon timelineRef={timelineRef} lineProgress={lineProgress} />
-      <SpotlightCard delay={index * 0.08} className="h-full">
+      <SpotlightCard className="h-full">
         <div className="p-6 md:p-8">
           <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
@@ -115,11 +107,11 @@ function ExperienceItem({
             </div>
 
             <div className="flex w-full flex-col items-end gap-2 md:w-auto md:flex-none">
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 glass-subtle px-3 py-1.5 text-[11px] font-mono font-medium uppercase tracking-wide text-muted-foreground">
+              <span className="inline-flex items-center gap-2 rounded-full border border-foreground/10 glass-subtle px-3 py-1.5 text-[11px] font-mono font-medium uppercase tracking-wide text-muted-foreground">
                 <MetaIcon className="h-3.5 w-3.5" />
                 {metaLabel}
               </span>
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 glass-subtle px-3 py-1.5 text-xs font-mono font-medium text-muted-foreground">
+              <span className="inline-flex items-center gap-2 rounded-full border border-foreground/10 glass-subtle px-3 py-1.5 text-xs font-mono font-medium text-muted-foreground">
                 <CalendarDays className="h-3.5 w-3.5" />
                 {exp.period}
               </span>
@@ -256,13 +248,13 @@ const ExperienceSection = () => {
       <div className="container-narrow">
         <div className="flex flex-col items-start gap-12 lg:flex-row lg:gap-20">
           <div className="w-full shrink-0 lg:sticky lg:top-32 lg:w-1/3">
-            <Reveal axis="x" offset={-24}>
-              <div className="panel-sticky">
+            <div>
+              <div data-guide-panel className="panel-sticky" data-guide-target="experience-intro">
                 <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
                 <div className="absolute -bottom-20 -left-16 h-40 w-40 rounded-full bg-accent/10 blur-3xl" />
 
                 <div className="relative">
-                  <div className="mb-6 inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-mono text-primary">
+                  <div className="mb-6 inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-mono text-primary-text">
                     Journey
                   </div>
                   <h2 className="heading-xl mb-6">
@@ -282,23 +274,24 @@ const ExperienceSection = () => {
                   </div>
                 </div>
               </div>
-            </Reveal>
+            </div>
           </div>
 
           <div className="relative w-full lg:w-2/3" ref={timelineRef}>
-            <div className="absolute bottom-0 left-[24px] top-0 w-[2px] rounded-full bg-white/10 sm:left-[44px]" />
+            <div className="absolute bottom-0 left-[24px] top-0 w-[2px] rounded-full bg-foreground/10 sm:left-[44px]" />
 
             <motion.div
-              style={{ scaleY: shouldReduceMotion ? 1 : scrollYProgress }}
+              // Always the motion value (set to 1 under reduced motion): a
+              // client-only branch here rendered different HTML than the server.
+              style={{ scaleY: scrollYProgress }}
               className="absolute bottom-0 left-[24px] top-0 w-[2px] origin-top rounded-full bg-primary glow-accent-xs sm:left-[44px]"
             />
 
             <ul className="relative w-full py-4">
-              {experiences.map((experience, index) => (
+              {experiences.map((experience) => (
                 <ExperienceItem
                   key={`${experience.company}-${experience.period}`}
                   exp={experience}
-                  index={index}
                   timelineRef={timelineRef}
                   lineProgress={scrollYProgress}
                 />

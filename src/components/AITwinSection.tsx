@@ -3,7 +3,6 @@ import { Bot, MessageCircle } from "lucide-react";
 import { chatSuggestions } from "@/data/portfolio";
 import { useChatAvailability } from "@/hooks/useChatAvailability";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
-import Reveal from "@/components/ui/reveal";
 
 const AITwinSection = () => {
   const { isAvailable, status, canAttemptChat } = useChatAvailability();
@@ -33,7 +32,7 @@ const AITwinSection = () => {
   return (
     <section id="ai-twin" className="section-padding relative z-10">
       <div className="container-narrow">
-        <Reveal>
+        <div data-guide-spot="ai-twin">
           <SpotlightCard className="w-full relative">
             <div className="relative p-6 sm:p-8 md:p-12 lg:p-16 flex flex-col lg:flex-row items-center gap-12 lg:gap-16 text-center lg:text-left">
               {/* Background Glow */}
@@ -87,7 +86,7 @@ const AITwinSection = () => {
 
               {/* Right Content - The Prompt Chips */}
               <div className="w-full lg:w-1/2 relative z-10 flex flex-col gap-3">
-                <p className="text-xs font-mono text-foreground/50 mb-2 uppercase tracking-widest hidden lg:block ml-2">Suggested prompts</p>
+                <p className="text-xs font-mono text-muted-foreground mb-2 uppercase tracking-widest hidden lg:block ml-2">Suggested prompts</p>
                 {chatSuggestions.map((s) => (
                   <button
                     key={s}
@@ -110,7 +109,7 @@ const AITwinSection = () => {
               </div>
             </div>
           </SpotlightCard>
-        </Reveal>
+        </div>
       </div>
     </section>
   );

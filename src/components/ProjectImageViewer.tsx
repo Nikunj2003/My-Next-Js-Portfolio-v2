@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { Drawer as DrawerPrimitive } from "vaul";
 import { ChevronLeft, ChevronRight, RotateCcw, X, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -931,13 +932,14 @@ export default function ProjectImageViewer({
                       aria-label={`Open screenshot ${index + 1}`}
                       aria-pressed={isActive}
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
+                      {/* Thumbnails go through the image optimiser: a 128px slot was
+                          downloading each 1-2MB source PNG. */}
+                      <Image
                         src={image}
                         alt={`${projectTitle} thumbnail ${index + 1}`}
                         draggable={false}
-                        loading="lazy"
-                        decoding="async"
+                        fill
+                        sizes="128px"
                         className={cn(
                           "h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]",
                           isActive ? "opacity-100" : "opacity-75 group-hover:opacity-95",

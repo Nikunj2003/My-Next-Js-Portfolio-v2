@@ -9,7 +9,6 @@ import { siteConfig } from "@/lib/seo/site";
 import CaseStudyDiagram from "@/components/diagrams";
 import CaseStudyToc, { type TocItem } from "@/components/CaseStudyToc";
 import AskAboutThis from "@/components/AskAboutThis";
-import Reveal from "@/components/ui/reveal";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -42,13 +41,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title,
       description: study.oneLiner,
       siteName: siteConfig.siteName,
-      images: [{ url: siteConfig.ogImage, alt: title }],
+      // Setting openGraph here replaces the root one, images included: without
+      // this, case studies shared with no preview image.
+      images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: title }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description: study.oneLiner,
-      images: [siteConfig.ogImage],
+      images: ["/twitter-image"],
     },
   };
 }
@@ -88,19 +89,19 @@ const CaseStudyPage = async ({ params }: PageProps) => {
       <main id="main-content" tabIndex={-1} className="relative z-10 scroll-mt-0 focus:outline-none">
         <article id="case-study-article" className="section-padding">
           <div className="container-narrow">
-            <Reveal className="mb-8">
+            <div className="mb-8">
               <Link
                 href="/work"
-                className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                className="-my-3 inline-flex min-h-11 items-center gap-2 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
               >
                 <ArrowLeft className="h-4 w-4" />
                 All work
               </Link>
-            </Reveal>
+            </div>
 
             {/* Header: identity and headline metrics sit above the narrative,
                 because that is the order these pages actually get read in. */}
-            <Reveal delay={0.05}>
+            <div>
               <div className="mt-8 flex flex-wrap items-center gap-3 font-mono text-xs">
                 {study.employer && (
                   <span className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-primary">
@@ -109,7 +110,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                 )}
                 <span className="text-muted-foreground">{study.period}</span>
                 {study.tags.map((tag) => (
-                  <span key={tag} className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-muted-foreground">
+                  <span key={tag} className="rounded-full border border-foreground/10 bg-foreground/5 px-3 py-1.5 text-muted-foreground">
                     {tag}
                   </span>
                 ))}
@@ -121,10 +122,10 @@ const CaseStudyPage = async ({ params }: PageProps) => {
               <p className="mt-5 max-w-3xl text-lg leading-relaxed text-foreground/85" style={{ textWrap: "pretty" }}>
                 {study.oneLiner}
               </p>
-            </Reveal>
+            </div>
 
-            <Reveal delay={0.1}>
-              <dl className="mt-10 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/10 glass-subtle glow-accent-panel sm:grid-cols-4">
+            <div>
+              <dl className="mt-10 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-foreground/10 glass-subtle glow-accent-panel sm:grid-cols-4">
                 {study.results.map((result) => (
                   <div key={result.label} className="bg-background/20 p-5">
                     <dt className="sr-only">{result.label}</dt>
@@ -137,23 +138,23 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                   </div>
                 ))}
               </dl>
-            </Reveal>
+            </div>
 
-            <Reveal delay={0.15}>
+            <div>
               <p className="mt-10 max-w-3xl text-lg leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
                 {study.summary}
               </p>
-            </Reveal>
+            </div>
 
             {/* Two columns from here: sticky TOC beside the prose. */}
             <div className="mt-16 flex flex-col gap-10 lg:flex-row lg:gap-14">
-              <aside className="w-full shrink-0 lg:w-56">
+              <div className="w-full shrink-0 lg:w-56">
                 <CaseStudyToc items={tocItems} />
-              </aside>
+              </div>
 
               <div className="min-w-0 flex-1">
 
-                <Reveal>
+                <div>
                   <h2 id="problem" className="heading-md scroll-mt-28">The problem</h2>
                   <div className="mt-2 flex min-h-6 items-center">
                     <AskAboutThis
@@ -161,14 +162,14 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                       className="ml-0"
                     />
                   </div>
-                  <div className="mt-4 rounded-2xl border border-white/10 glass-subtle p-6">
+                  <div className="mt-4 rounded-2xl border border-foreground/10 glass-subtle p-6">
                     <p className="text-base leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
                       {study.problem}
                     </p>
                   </div>
-                </Reveal>
+                </div>
 
-                <Reveal>
+                <div>
                   <h2 id="constraints" className="heading-md mt-14 scroll-mt-28">Constraints</h2>
                   <div className="mt-2 flex min-h-6 items-center">
                     <AskAboutThis
@@ -176,7 +177,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                       className="ml-0"
                     />
                   </div>
-                  <ul className="mt-4 flex flex-col divide-y divide-white/10 overflow-hidden rounded-2xl glass-subtle">
+                  <ul className="mt-4 flex flex-col divide-y divide-foreground/10 overflow-hidden rounded-2xl glass-subtle">
                     {study.constraints.map((constraint) => (
                       <li key={constraint} className="flex gap-3 p-5 text-base leading-relaxed text-muted-foreground">
                         <span aria-hidden="true" className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/60" />
@@ -184,10 +185,10 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                       </li>
                     ))}
                   </ul>
-                </Reveal>
+                </div>
 
                 {study.diagram && (
-                  <Reveal>
+                  <div>
                     <h2 id="architecture" className="heading-md mt-14 scroll-mt-28">Architecture</h2>
                     <div className="mt-2 flex min-h-6 items-center">
                       <AskAboutThis
@@ -196,10 +197,10 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                       />
                     </div>
                     <CaseStudyDiagram diagram={study.diagram} description={study.diagramCaption} />
-                  </Reveal>
+                  </div>
                 )}
 
-                <Reveal>
+                <div>
                   <h2 id="decisions" className="heading-md mt-14 scroll-mt-28">Decisions</h2>
                   <div className="mt-2 flex min-h-6 items-center">
                     <AskAboutThis
@@ -211,8 +212,8 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                 What I chose, why, and what I turned down to get there.
               </p>
               <div className="mt-6 flex flex-col gap-4">
-                {study.decisions.map((decision, index) => (
-                  <SpotlightCard key={decision.choice} delay={index * 0.06}>
+                {study.decisions.map((decision) => (
+                  <SpotlightCard key={decision.choice}>
                     <div className="p-6 sm:p-7">
                       {/* Sibling below the heading: decision titles vary a lot
                           in length, so inline the pill never sat in the same
@@ -228,7 +229,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                         {decision.why}
                       </p>
                       {decision.rejected && decision.rejected.length > 0 && (
-                        <div className="mt-5 border-t border-white/10 pt-4">
+                        <div className="mt-5 border-t border-foreground/10 pt-4">
                           <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground/70">
                             Considered and rejected
                           </p>
@@ -246,10 +247,10 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                   </SpotlightCard>
                 ))}
               </div>
-            </Reveal>
+            </div>
 
                 {study.sections.map((section) => (
-                  <Reveal key={section.heading}>
+                  <div key={section.heading}>
                     {/* Section headings come from data and vary in length, so
                         the pill anchors below rather than trailing the text —
                         inline, a permanently visible pill would leave every
@@ -278,10 +279,10 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                     ))}
                   </ul>
                 )}
-              </Reveal>
+              </div>
             ))}
 
-                <Reveal>
+                <div>
                   <h2 id="stack" className="heading-md mt-14 scroll-mt-28">Stack</h2>
               <ul className="mt-5 flex flex-wrap gap-2.5">
                 {study.stack.map((item) => (
@@ -293,11 +294,11 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                   </li>
                 ))}
               </ul>
-            </Reveal>
+            </div>
 
             {/* Stated plainly and on purpose: shared work described as sole
                 ownership is the fastest way to lose a technical interview. */}
-                <Reveal>
+                <div>
                   <h2 id="ownership" className="heading-md mt-14 scroll-mt-28">What was mine</h2>
                   <div className="mt-2 flex min-h-6 items-center">
                     <AskAboutThis question={`Who owned what on the ${study.title}?`} className="ml-0" />
@@ -307,13 +308,13 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                       {study.ownership}
                     </p>
                   </div>
-                </Reveal>
+                </div>
 
                 {/* Close the prose column and the two-column grid. */}
               </div>
             </div>
 
-            <nav aria-label="More case studies" className="mt-16 grid gap-4 border-t border-white/10 pt-8 sm:grid-cols-2">
+            <nav aria-label="More case studies" className="mt-16 grid gap-4 border-t border-foreground/10 pt-8 sm:grid-cols-2">
               {previous ? (
                 <Link
                   href={getCaseStudyPath(previous.slug)}
@@ -342,7 +343,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
               )}
             </nav>
 
-            <Reveal>
+            <div>
               <div className="mt-12 flex flex-wrap gap-4">
                 <Link
                   href="/#contact"
@@ -360,7 +361,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                   Download resume
                 </a>
               </div>
-            </Reveal>
+            </div>
           </div>
         </article>
       </main>

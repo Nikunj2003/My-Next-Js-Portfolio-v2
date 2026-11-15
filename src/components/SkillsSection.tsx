@@ -1,7 +1,6 @@
 import { Brain, Layers, Database, Server, Wrench } from "lucide-react";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import FlipWords from "@/components/ui/flip-words";
-import Reveal from "@/components/ui/reveal";
 import { skillCategories } from "@/data/portfolio";
 import AskAboutThis from "@/components/AskAboutThis";
 
@@ -22,12 +21,12 @@ const SkillsSection = () => {
 
           {/* Left Column: Sticky Header */}
           <div className="w-full shrink-0 lg:sticky lg:top-32 lg:w-1/3">
-            <div className="panel-sticky">
+            <div data-guide-panel className="panel-sticky">
               <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
               <div className="absolute -bottom-20 -left-16 h-40 w-40 rounded-full bg-accent/10 blur-3xl" />
 
               <div className="relative">
-                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 font-mono text-xs text-primary">
+                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 font-mono text-xs text-primary-text">
                   Expertise
                 </div>
                 <h2 className="heading-xl mb-6">
@@ -51,11 +50,11 @@ const SkillsSection = () => {
 
           {/* Right Column: Spotlight Cards */}
           <div className="flex w-full flex-col gap-6 lg:w-2/3">
-            {skillCategories.map((cat, index) => {
+            {skillCategories.map((cat) => {
               const Icon = CATEGORY_ICONS[cat.title] ?? Wrench;
               return (
-                <Reveal key={cat.title} delay={index * 0.08}>
-                  <SpotlightCard animateOnEnter={false} className="w-full">
+                <div key={cat.title}>
+                  <SpotlightCard className="w-full">
                     <div className="p-8 sm:p-10">
                       {/*
                         The pill sits OUTSIDE this row, not in the text column.
@@ -65,7 +64,7 @@ const SkillsSection = () => {
                         gap under the icon varied between categories.
                       */}
                       <div className="flex items-center gap-4">
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/5 glass-subtle transition-transform duration-500 group-hover:scale-110 group-hover:border-primary/30">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-foreground/5 glass-subtle transition-transform duration-500 group-hover:scale-110 group-hover:border-primary/30">
                           <Icon className="h-5 w-5 text-primary" />
                         </div>
                         <div>
@@ -88,7 +87,7 @@ const SkillsSection = () => {
                         {cat.skills.map((skill) => (
                           <li
                             key={skill}
-                            className="select-none rounded-xl border border-white/5 px-4 py-2 text-sm font-medium glass-subtle text-foreground/80 transition-all duration-300 hover:border-primary/40 hover:bg-white/10 hover:text-primary"
+                            className="select-none rounded-xl border border-foreground/5 px-4 py-2 text-sm font-medium glass-subtle text-foreground/80 transition-all duration-300 hover:border-primary/40 hover:bg-foreground/10 hover:text-primary"
                           >
                             {skill}
                           </li>
@@ -96,7 +95,7 @@ const SkillsSection = () => {
                       </ul>
                     </div>
                   </SpotlightCard>
-                </Reveal>
+                </div>
               );
             })}
           </div>
