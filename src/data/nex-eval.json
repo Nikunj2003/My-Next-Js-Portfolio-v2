@@ -1,1 +1,35 @@
-{ "measured": false }
+{
+  "measured": true,
+  "date": "2026-11-15",
+  "model": "gpt-6-luna",
+  "goldenHash": "ef9991ac",
+  "total": 30,
+  "passed": 30,
+  "byCategory": {
+    "answerable": {
+      "total": 9,
+      "passed": 9
+    },
+    "not-measured": {
+      "total": 4,
+      "passed": 4
+    },
+    "off-topic": {
+      "total": 3,
+      "passed": 3
+    },
+    "identity": {
+      "total": 4,
+      "passed": 4
+    },
+    "adversarial": {
+      "total": 5,
+      "passed": 5
+    },
+    "navigation": {
+      "total": 5,
+      "passed": 5
+    }
+  },
+  "failures": []
+}
