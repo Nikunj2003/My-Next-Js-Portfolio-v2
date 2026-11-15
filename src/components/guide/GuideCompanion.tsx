@@ -181,6 +181,10 @@ export default function GuideCompanion() {
   // the corner instead.
   const cornerOnly = touring || companion.panelOpen || isMobile;
   const route = routeKind(pathname);
+  const routeRef = useRef(route);
+  useLayoutEffect(() => {
+    routeRef.current = route;
+  }, [route]);
   const rule = useMemo<SpotRule>(() => {
     if (cornerOnly) return CORNER;
     // Other pages have spots of their own (the case study's table of
@@ -261,6 +265,7 @@ export default function GuideCompanion() {
     glideRef.current = null;
     clearLayoutCache();
     watchLayoutCache();
+    underContents = false;
     const footer = () => cachedNode("footer", () => document.querySelector("footer"));
     /** A page header's socket (/work, a case study), when Nex may rest in it now. */
     const routeSocketBox = () =>
@@ -390,7 +395,8 @@ export default function GuideCompanion() {
       const travel = travelRef.current;
       if (travel && travel.start >= 0) {
         // Into the hero, or a page header's socket when the page opens at its top.
-        const socketTarget = !isHome && routeSocketProgress(window.scrollY, viewport.height, HANDOFF_SPAN) === 0 ? routeSocketBox() : null;
+        const arriving = !isHome ? routeSocketBox() : null;
+        const socketTarget = arriving && routeSocketProgress(arriving.top, arriving.top + window.scrollY, viewport.insetTop) === 0 ? arriving : null;
         const heroTarget = travel.toHero && hero && heroBox ? heroBox : socketTarget;
         const landing = heroTarget ? null : footerLanding(viewport);
         const docked = landing && landing.progress >= 1 ? landing : null;
@@ -447,7 +453,7 @@ export default function GuideCompanion() {
       // at its size, and leaves for its reading spot over the same span of
       // scrolling as the hero, along the same path. Desktop only.
       const routeSocket = routeSocketBox();
-      const socketProgress = routeSocketProgress(window.scrollY, viewport.height, HANDOFF_SPAN);
+      const socketProgress = routeSocket ? routeSocketProgress(routeSocket.top, routeSocket.top + window.scrollY, viewport.insetTop) : 1;
       const routeMorph = routeSocket ? (reduceMotionRef.current ? (socketProgress < 0.5 ? 0 : 1) : socketProgress) : 1;
       const leavingSocket = Boolean(routeSocket) && routeMorph < 1;
       // Resting in the socket (its own Ask lives in the page): petting, like the hero.
@@ -468,7 +474,10 @@ export default function GuideCompanion() {
       if (glide) {
         const t = (now - glide.start) / GLIDE_MS;
         if (t >= 1) glideRef.current = null;
-        else point = blendPoint(glide.from, target, easeInOutCubic(t));
+        // Off the homepage the jumps are across the page (the right strip to
+        // under the contents): a hop up over the content, the same arc as a
+        // page change, rather than a slide through the text.
+        else point = routeRef.current !== "home" ? routeTravelFrame({ t, from: glide.from, to: target }).position : blendPoint(glide.from, target, easeInOutCubic(t));
       }
       const last = lastPointRef.current;
       if (leavingHero && heroBox) {
@@ -479,14 +488,17 @@ export default function GuideCompanion() {
         chrome.set(frame.chrome);
         opacity.set(1);
       } else if (leavingSocket && routeSocket) {
-        const frame = heroDockFrame({ t: routeMorph, heroCentre: { x: routeSocket.left + routeSocket.width / 2, y: routeSocket.top + routeSocket.height / 2 }, heroDiameter: routeSocket.width, size, spot: target, startScale: routeSocket.width / size });
-        // Never under the navbar: the socket scrolls up behind it while Nex
-        // is still large, so its drawn top is held below the navbar's band.
-        const drawn = size * frame.scale;
-        const top = frame.position.y + size / 2 - drawn / 2;
-        point = { x: frame.position.x, y: frame.position.y + Math.max(0, viewport.insetTop + 8 - top) };
-        glideRef.current = null;
-        scale.set(frame.scale);
+        // Straight from the slot toward its spot (one eased blend, shrinking
+        // as it goes): unlike the hero's curve it doesn't drop to the spot's
+        // height first, which swept it across the content under the header.
+        const u = easeInOutCubic(routeMorph);
+        const from = { x: routeSocket.left + routeSocket.width / 2 - size / 2, y: routeSocket.top + routeSocket.height / 2 - size / 2 };
+        // Toward where the spot's glide has it this frame (not the spot
+        // itself): a fast scroll up while it was gliding across the page used
+        // to cancel the glide and snap it to the right first.
+        point = blendPoint(from, point, u);
+        const startScale = routeSocket.width / size;
+        scale.set(startScale + (1 - startScale) * u);
         chrome.set(1);
         opacity.set(fade.get());
       } else if (!last) {
@@ -926,37 +938,61 @@ const visibleBox = (node: HTMLElement | null) => {
   return box.width > 0 && box.height > 0 ? box : null;
 };
 
+/** Whether Nex is under a case study's contents (see CASE_STUDY_RULE). Reset per page. */
+let underContents = false;
+/** How far the contents must move off their pin before Nex goes back to the right. */
+const CONTENTS_RELEASE = 160;
+
 /**
- * A case study. At the top it waits beside the intro paragraph, in the empty
- * space right of the measure. Once the two-column body arrives it rides
- * under the sticky "On this page" contents (which pins at the top), in the
- * empty column below the list, and leaves with it at the end of the article.
- * One continuous path, the same both ways: it is the under-panel spot with
- * the intro's right side as its waiting place.
+ * The free strip right of the page's content, just under the navbar: where
+ * Nex waits on /work and a case study once it has left the header's slot.
+ * Null when the strip is too narrow for it (then the left margin or the corner).
+ */
+function rightRailPoint(size: number, viewport: Viewport): Point | null {
+  const column = cachedNode<HTMLElement>("route:rail-column", () => document.querySelector<HTMLElement>("main .container-narrow"));
+  if (!column) return null;
+  let padding = styleCache.get("rail-padding") as number | undefined;
+  if (padding === undefined) {
+    padding = parseFloat(getComputedStyle(column).paddingRight) || 0;
+    styleCache.set("rail-padding", padding);
+  }
+  const contentRight = column.getBoundingClientRect().right - padding;
+  const strip = viewport.width - contentRight;
+  if (strip < size + 24) return null;
+  return { x: contentRight + strip / 2 - size / 2, y: viewport.insetTop + 32 };
+}
+
+/**
+ * A case study. Nex rests in the header's slot, then waits in the free strip
+ * on the right (it never crosses the results or the prose). Once the "On this
+ * page" contents have pinned, it makes one jump to the empty column under
+ * them, rides there, and leaves with them at the end of the article.
+ * Scrolling back up past the pin, it jumps back to the right.
  */
 const CASE_STUDY_RULE: SpotRule = {
   key: "route:case-study",
-  prefer: ["right", "bottom", "top"],
+  prefer: ["bottom", "left", "right", "top"],
   point: (size, viewport) => {
-    const introNode = routeNode("intro");
     const tocNode = routeNode("toc");
-    const intro = visibleBox(introNode);
-    const column = cachedNode<HTMLElement>("route:column", () => document.querySelector<HTMLElement>("#case-study-article .container-narrow"));
-    const columnBox = column?.getBoundingClientRect();
-    // Waiting place: the free strip right of the intro paragraph, riding with it.
-    const beside = intro && columnBox && columnBox.right - intro.right > size * 2
-      ? { x: intro.right + (columnBox.right - intro.right) / 2 - size / 2, y: Math.max(intro.top + intro.height / 2 - size / 2, viewport.insetTop + 40) }
-      : gutterPoint(contentLeft(), size, viewport);
     const sticky = tocNode ? stickyTop(tocNode) : null;
     const toc = visibleBox(tocNode);
-    // Without the sticky two-column layout (narrower screens), just wait there.
-    if (!toc || sticky === null) return beside;
-    // Its resting place: under the list once it has pinned, in the empty column.
+    const rail = rightRailPoint(size, viewport) ?? gutterPoint(contentLeft(), size, viewport);
+    // Without the sticky two-column layout (narrower screens), the rail.
+    if (!toc || sticky === null) {
+      underContents = false;
+      return rail;
+    }
     const rest = { x: toc.left + 20, y: Math.min(toc.bottom, sticky + toc.height) + 24 };
-    if (!beside) return rest;
-    // Slide from the waiting place to the rest over the contents' last 360px of approach.
-    const k = Math.min(1, Math.max(0, 1 - (toc.top - sticky) / 360));
-    return blendPoint(beside, rest, easeInOutCubic(k));
+    const roomUnder = rest.y + size + 16 <= viewport.height;
+    // Which side, with hysteresis: it moves under the list once the list has
+    // pinned, and back to the right only once the list has clearly moved off
+    // its pin (scrolled well back down the page). A fast scroll up across the
+    // pin used to flip it between the two sides several times, so it bounced
+    // left and right; now each crossing is one jump.
+    if (!underContents && toc.top <= sticky + 1 && roomUnder) underContents = true;
+    else if (underContents && (toc.top > sticky + CONTENTS_RELEASE || !roomUnder)) underContents = false;
+    if (underContents) return rest;
+    return rail ?? rest;
   },
 };
 
@@ -972,36 +1008,14 @@ function stickyTop(node: HTMLElement) {
 }
 
 /**
- * The case-study index. Beside the header's intro paragraph (its right side is
- * empty), then at the start of the group heading nearest the top of the
- * screen, in the margin, riding with it, so it walks down the groups as you
- * scroll.
+ * The case-study index. Nex rests in the header's slot, then waits in the free
+ * strip on the right, beside the cards rather than over them; the left margin
+ * when that strip is too narrow.
  */
 const WORK_INDEX_RULE: SpotRule = {
   key: "route:work-index",
-  prefer: ["right", "bottom", "top"],
-  point: (size, viewport) => {
-    const header = visibleBox(routeNode("header"));
-    const column = cachedNode<HTMLElement>("route:index-column", () => document.querySelector<HTMLElement>("main .container-narrow"));
-    const columnBox = column?.getBoundingClientRect();
-    if (header && columnBox && header.bottom > viewport.height * 0.35 && columnBox.right - header.right > size * 2) {
-      return { x: header.right + (columnBox.right - header.right) / 2 - size / 2, y: header.top + header.height / 2 - size / 2 };
-    }
-    const left = contentLeft();
-    const gutter = gutterPoint(left, size, viewport);
-    // The group heading that owns the upper part of the screen.
-    const groups = [...document.querySelectorAll<HTMLElement>('[data-guide-route-spot="group"]')];
-    const line = viewport.height * 0.45;
-    let owner: DOMRect | null = null;
-    for (const group of groups) {
-      const box = group.getBoundingClientRect();
-      if (box.top <= line) owner = box;
-    }
-    if (!owner) owner = groups[0]?.getBoundingClientRect() ?? null;
-    if (!owner) return gutter;
-    const x = gutter ? gutter.x : owner.left;
-    return { x, y: owner.top - size / 2 + owner.height / 2 };
-  },
+  prefer: ["bottom", "left", "right", "top"],
+  point: (size, viewport) => rightRailPoint(size, viewport) ?? gutterPoint(contentLeft(), size, viewport),
 };
 
 const ROUTE_RULES: Partial<Record<RouteKind, SpotRule>> = {

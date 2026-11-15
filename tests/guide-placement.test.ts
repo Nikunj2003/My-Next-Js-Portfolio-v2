@@ -241,11 +241,11 @@ test("a tip only takes a side that covers no reading text", () => {
   assert.equal(freeBubbleSide({ x: 116, y: 640 }, 68, bubble, viewport, ["bottom", "right", "top"], everywhere), null);
 });
 
-test("leaving a page header's socket is paced like the hero and reverses exactly", () => {
-  assert.equal(routeSocketProgress(0, 900), 0);
-  assert.equal(routeSocketProgress(40, 900), 0);
-  assert.equal(routeSocketProgress(40 + 1000, 900), 1);
-  assert.ok(Math.abs(routeSocketProgress(40 + 495, 900) - 0.5) < 1e-9);
-  assert.equal(routeSocketProgress(535, 900), routeSocketProgress(535, 900));
-  assert.ok(routeSocketProgress(300, 900) < routeSocketProgress(301, 900));
+test("leaving a page header's socket is done by the time it reaches the navbar, and reverses exactly", () => {
+  // Socket rests with its top at 250; the navbar ends at 88.
+  assert.equal(routeSocketProgress(250, 250, 88), 0);
+  assert.equal(routeSocketProgress(88, 250, 88), 1);
+  assert.equal(routeSocketProgress(-300, 250, 88), 1);
+  assert.ok(Math.abs(routeSocketProgress(169, 250, 88) - 0.5) < 1e-9);
+  assert.ok(routeSocketProgress(200, 250, 88) < routeSocketProgress(199, 250, 88));
 });

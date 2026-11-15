@@ -235,14 +235,18 @@ export function heroDockFrame(input: {
 }
 
 /**
- * How far Nex has left a page header's socket, from the page's scroll:
- * 0 at the top of the page, 1 once the visitor has scrolled `span` of the
- * screen height (after a 40px lead), the same pacing as leaving the hero.
+ * How far Nex has left a page header's socket, from where the socket is on
+ * screen: 0 while it is at its resting place (`restTop`, its top with the
+ * page at the top), 1 by the time its top reaches the navbar's edge. So Nex
+ * is back to its own size before the slot would slide under the navbar, and
+ * never sits large over what follows the header (a case study's results).
  * A plain function of the scroll, so it reverses exactly.
  */
-export function routeSocketProgress(scrollY: number, viewportHeight: number, span = 1.1, lead = 40) {
-  return clamp((scrollY - lead) / Math.max(1, viewportHeight * span), 0, 1);
+export function routeSocketProgress(socketTop: number, restTop: number, navBottom: number) {
+  const distance = Math.max(1, restTop - navBottom);
+  return clamp((restTop - socketTop) / distance, 0, 1);
 }
+
 
 /**
  * How far the hand-off has got, from the hero avatar's position on screen: 0
