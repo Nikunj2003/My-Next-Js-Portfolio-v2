@@ -6,7 +6,7 @@ import ProjectsSection from "@/components/ProjectsSection";
 import CaseStudyCard from "@/components/CaseStudyCard";
 import { caseStudies, featuredCaseStudies } from "@/data/case-studies";
 import SkillsSection from "@/components/SkillsSection";
-import AITwinSection from "@/components/AITwinSection";
+import NexSection from "@/components/NexSection";
 import ContactSection from "@/components/ContactSection";
 import Footer from "@/components/Footer";
 import { getPortfolioGraph, toJsonLd } from "@/lib/seo/jsonld";
@@ -40,7 +40,7 @@ export default function Home() {
           ))}
         />
         <SkillsSection />
-        <AITwinSection />
+        <NexSection />
         <ContactSection />
       </main>
       <Footer />

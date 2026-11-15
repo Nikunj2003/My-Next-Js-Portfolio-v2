@@ -1,12 +1,14 @@
 /**
- * The client-safe part of the AI Twin: constants and helpers the chat UI,
+ * The client-safe part of Nex: constants and helpers the chat UI,
  * store and links need. Kept free of the portfolio and case-study data, which
- * only the server's prompt context (`lib/ai-twin.ts`) needs.
+ * only the server's prompt context (`lib/nex-knowledge.ts`) needs.
  */
 export const CHAT_MEMORY_WINDOW = 10;
-export const CHAT_STORAGE_KEY = "nikunj-ai-twin-chat";
+export const CHAT_STORAGE_KEY = "nikunj-nex-chat";
+/** Where history was saved before the assistant was named Nex; read once, moved, then deleted. */
+export const LEGACY_CHAT_STORAGE_KEY = "nikunj-ai-twin-chat";
 export const PROJECT_ANCHOR_PREFIX = "project-";
-export const WELCOME_MESSAGE = "Hi — I’m Nikunj’s AI twin. I can give you a quick recruiter summary, walk through a project, or explain how he approaches agent systems, governed MCP tool use, agent memory, evaluation, and AI product delivery. You can also read the [LLM evaluation platform case study](/work/llm-evaluation-platform), [browse the work](#work), or [download the resume](/Nikunj_Resume.pdf).";
+export const WELCOME_MESSAGE = "Hi, I’m Nex, the AI guide to Nikunj’s work. I can give you a quick recruiter summary, walk through a system, or explain how he approaches agents, governed MCP tools, memory and evaluation. I answer from his case studies and show every call I make. Start with the [evaluation platform case study](/work/llm-evaluation-platform), [browse the work](#work), or [download the resume](/Nikunj_Resume.pdf).";
 
 type ConversationWindowMessage = {
   content: string;

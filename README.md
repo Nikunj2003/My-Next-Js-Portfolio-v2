@@ -3,8 +3,8 @@
 # Nikunj Khitha — Applied AI Engineer Portfolio
 
 A production Next.js portfolio built around real proof, not slideware: 13 in-depth engineering case
-studies, an AI Twin that answers questions by calling real tools over the site's own data, and a
-data-driven content model that keeps the résumé, LinkedIn, case studies, and the AI Twin's answers
+studies, Nex, an AI guide that answers questions by calling real tools over the site's own data, and a
+data-driven content model that keeps the résumé, LinkedIn, case studies, and Nex's answers
 from drifting apart.
 
 <!-- ![Homepage Screenshot](public/static/home.png) -->
@@ -19,10 +19,10 @@ from drifting apart.
 13 case studies under `/work` and `/work/[slug]`, each with a problem statement, the constraints it
 ran under, decisions with their **rejected alternatives**, measured results, and an explicit
 statement of what was individually owned versus shared. Grouped by theme with a "what should I read
-for X" box that answers through the same AI Twin backend. Source of truth: `src/data/case-studies.ts`.
+for X" box that answers through the same Nex backend. Source of truth: `src/data/case-studies.ts`.
 
-### 2. AI Twin — a tool-calling agent, not a chat widget
-`src/components/AITwinChat.tsx` and `src/app/api/chat/route.ts` implement a real agent loop against
+### 2. Nex — a tool-calling AI guide, not a chat widget
+`src/components/NexChat.tsx` and `src/app/api/chat/route.ts` implement a real agent loop against
 an OpenAI-compatible LLM (`gpt-6-luna` through a self-hosted Bifrost gateway by default):
 - **Real tools** (`src/lib/ai-tools.ts`): `search_work`, `get_case_study`, `get_metric`,
   `compare_systems`, `navigate_to` — all pure, in-process lookups over the site's own data, so the
@@ -36,12 +36,12 @@ an OpenAI-compatible LLM (`gpt-6-luna` through a self-hosted Bifrost gateway by 
   the agent says so instead of estimating — the whole site's pitch is measurement, so a fabricated
   number would undercut it.
 - **Inline answers** expand under experience bullets in place; every other "Ask about this"
-  affordance opens the AI Twin panel, since an answer of unpredictable length inside a narrow card
+  affordance opens Nex panel, since an answer of unpredictable length inside a narrow card
   breaks the layout around it.
 
 ### 3. One content model, many surfaces
 `src/data/portfolio.ts` and `src/data/case-studies.ts` are the source of truth for experience,
-projects, skills, stats, and case-study depth. The homepage, `/work`, the AI Twin's tool responses,
+projects, skills, stats, and case-study depth. The homepage, `/work`, Nex's tool responses,
 and the JSON-LD SEO graph all derive from the same data — a number or a claim only has to be correct
 in one place. Experience bullets can carry an optional case-study slug (compile-time checked against
 the real slug list), surfacing a "Read case study" link and an inline follow-up right where the claim
@@ -57,7 +57,7 @@ length of the animation.
 ### 5. Smooth scroll that behaves like the browser
 Lenis-backed smooth scrolling (`src/components/SmoothScroll.tsx`) that still respects native scroll
 restoration on refresh, resets correctly on client-side navigation, and — critically — only locks
-page scroll behind an overlay that is actually modal. The AI Twin's mobile layout is a full-screen
+page scroll behind an overlay that is actually modal. Nex's mobile layout is a full-screen
 modal and locks the page; its desktop layout is a non-modal corner panel and does not.
 
 ### 6. Cross-device animation and interaction polish
@@ -76,7 +76,7 @@ modal and locks the page; its desktop layout is a non-modal corner panel and doe
 - **Radix UI / shadcn-style primitives** (`src/components/ui/`)
 - **Zod** — request validation for the chat and contact API routes
 - **Resend** — contact form delivery
-- **Bifrost (self-hosted, OpenAI-compatible gateway)** — serves the AI Twin's model, `gpt-6-luna`
+- **Bifrost (self-hosted, OpenAI-compatible gateway)** — serves Nex's model, `gpt-6-luna`
 
 ---
 
@@ -85,7 +85,7 @@ modal and locks the page; its desktop layout is a non-modal corner panel and doe
 Create a `.env.local`:
 
 ```bash
-# LLM / AI Twin — used in src/app/api/chat/route.ts
+# LLM / Nex — used in src/app/api/chat/route.ts
 LLM_API_KEY=your-api-key
 LLM_BASE_URL=https://bifrost.codenex.dev/v1
 AI_MODEL=gpt-6-luna
@@ -100,7 +100,7 @@ Notes:
 - `CONTACT_EMAIL_TO` accepts a comma-separated list to deliver to multiple inboxes.
 - To send from a custom address, verify that domain in Resend and add the SPF/DKIM records it
   provides.
-- `AI_MODEL` must support OpenAI-style `tools`/function calling — the AI Twin depends on it for
+- `AI_MODEL` must support OpenAI-style `tools`/function calling — Nex depends on it for
   every one of its five tools.
 - Never commit real credentials; set them in your hosting provider's dashboard for production.
 
@@ -123,7 +123,7 @@ npm run build        # Production build
 
 Tests run via Node's built-in test runner against the TypeScript source directly (see
 `tests/alias-hook-register.mjs` for the `@/` path-alias resolver), covering the case-study data
-model, the AI Twin's tools and streaming route, contact/rate-limit logic, and UI consistency rules
+model, Nex's tools and streaming route, contact/rate-limit logic, and UI consistency rules
 for the "Ask about this" affordance and the glass design tokens.
 
 ---
@@ -154,18 +154,18 @@ Detailed instructions live in `.codex/job-hunt/INSTRUCTIONS.md`.
 ```
 src/
   app/                    # App Router: layout, homepage, /work, /work/[slug], API routes
-    api/chat/             # AI Twin backend: streaming, tool loop, retry
+    api/chat/             # Nex backend: streaming, tool loop, retry
     work/                 # Case-study index and detail pages
   components/
     ai/                   # AnswerBody, InlineAnswer, useAssistantAnswer — the shared answer UI
     ui/                   # Radix/shadcn-style primitives
-    AITwinChat.tsx         # The AI Twin panel
+    NexChat.tsx         # The Nex panel
     AskAboutThis.tsx       # The single "ask about this" affordance used everywhere
   data/
     portfolio.ts           # Experience, projects, skills, stats — the content source of truth
     case-studies.ts        # All 13 case studies
   lib/
-    ai-tools.ts             # The AI Twin's real tools (search_work, get_case_study, ...)
+    ai-tools.ts             # Nex's real tools (search_work, get_case_study, ...)
     ai-config.ts            # System prompt, model selection, guardrails
     chat-contract.ts        # Shared client/server streaming contract and timeout tuning
 tests/                     # node:test suites (data model, AI tools, chat route, UI rules)

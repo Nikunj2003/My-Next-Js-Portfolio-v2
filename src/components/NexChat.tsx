@@ -5,14 +5,14 @@ import { X, Send, User, Trash2, ArrowDown } from "lucide-react";
 import { type Components } from "react-markdown";
 import { useRouter } from "next/navigation";
 import { buildAnswerComponents } from "@/components/ai/AnswerBody";
-import { TwinAssistantBody } from "@/components/ai/TwinAssistantBody";
+import { NexAnswerBody } from "@/components/ai/NexAnswerBody";
 import { StaticGuideMark } from "@/components/guide/GuideAvatarSlot";
 import { chatSuggestions } from "@/data/portfolio";
 import type { ChatToolCall } from "@/lib/chat-contract";
-import { clearTwinChat, isTwinChatBusy, partialAnswerNote, retryTwinMessage, sendTwinMessage } from "@/lib/chat/twin-chat-store";
+import { clearNexChat, isNexChatBusy, partialAnswerNote, retryNexMessage, sendNexMessage } from "@/lib/chat/nex-chat-store";
 import type { Message } from "@/lib/chat/types";
 import { useTurnAnchor } from "@/lib/chat/useTurnAnchor";
-import { useTwinChat } from "@/lib/chat/useTwinChat";
+import { useNexChat } from "@/lib/chat/useNexChat";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useChatAvailability } from "@/hooks/useChatAvailability";
 import { useLenisLock } from "@/hooks/useLenisLock";
@@ -34,12 +34,12 @@ const FOCUSABLE_SELECTOR =
   'button:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
 
 /**
- * The full AI Twin conversation panel. The conversation itself lives in the
- * shared twin chat store, so this panel and the inline ask bubble beside the
+ * The full conversation panel with Nex. The conversation itself lives in the
+ * shared Nex chat store, so this panel and the inline ask bubble beside the
  * guide avatar always show the same history. Opened from the bubble's
- * "Open full conversation" or by `openAiTwin(..., { expand: true })`.
+ * "Open full conversation" or by `openNex(..., { expand: true })`.
  */
-const AITwinChat = () => {
+const NexChat = () => {
   const { panelOpen: isOpen } = useCompanionState();
 
   const isMobile = useIsMobile();
@@ -53,7 +53,7 @@ const AITwinChat = () => {
    * the page, so freezing the page behind it was wrong.
    */
   useLenisLock(isOpen && isMobile);
-  const { messages, isLoading, announcement, turnAnchorId } = useTwinChat();
+  const { messages, isLoading, announcement, turnAnchorId } = useNexChat();
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -236,10 +236,10 @@ const AITwinChat = () => {
   const handleSend = useCallback(
     (text?: string) => {
       const message = (text ?? input).trim();
-      if (!message || isTwinChatBusy()) return;
+      if (!message || isNexChatBusy()) return;
       // The busy check above is synchronous, so the store will take this one.
       if (text === undefined) setInput("");
-      void sendTwinMessage(message, { unavailable: chatAvailabilityStatus === "unavailable", onNavigate: handleAgentNavigate });
+      void sendNexMessage(message, { unavailable: chatAvailabilityStatus === "unavailable", onNavigate: handleAgentNavigate });
     },
     [chatAvailabilityStatus, handleAgentNavigate, input]
   );
@@ -250,7 +250,7 @@ const AITwinChat = () => {
   useEffect(() => {
     if (!isOpen || !pendingQuestion || isLoading) return;
     const timer = window.setTimeout(() => {
-      if (isTwinChatBusy()) return;
+      if (isNexChatBusy()) return;
       const question = takePendingQuestion();
       if (question) handleSend(question);
     }, 0);
@@ -260,18 +260,18 @@ const AITwinChat = () => {
   const handleSuggestionClick = (text: string) => handleSend(text);
 
   const handleRetry = (message: Message) =>
-    retryTwinMessage(message, { unavailable: chatAvailabilityStatus === "unavailable", onNavigate: handleAgentNavigate });
+    retryNexMessage(message, { unavailable: chatAvailabilityStatus === "unavailable", onNavigate: handleAgentNavigate });
 
-  const clearChat = () => clearTwinChat();
+  const clearChat = () => clearNexChat();
 
   const chatStatusLabel =
     chatAvailabilityStatus === "available"
-      ? "Assistant Online"
+      ? "Nex is online"
       : chatAvailabilityStatus === "checking"
-        ? "Checking service"
+        ? "Checking Nex…"
         : chatAvailabilityStatus === "unknown"
           ? "Status unknown"
-        : "Assistant Offline";
+        : "Nex is offline";
   const chatStatusDotClass =
     chatAvailabilityStatus === "available"
       ? "bg-emerald-500 animate-pulse"
@@ -295,10 +295,10 @@ const AITwinChat = () => {
             <StaticGuideMark size={30} />
           </div>
           <div>
-            <p id="ai-twin-title" className="text-sm font-semibold">Nikunj&apos;s AI Twin</p>
+            <p id="nex-title" className="text-sm font-semibold">Nex <span className="font-normal text-muted-foreground">· AI guide to Nikunj&apos;s work</span></p>
             <div className="flex items-center gap-1.5">
               <span className={`w-1.5 h-1.5 rounded-full motion-reduce:animate-none ${chatStatusDotClass}`} />
-              <p id="ai-twin-status" className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">{chatStatusLabel}</p>
+              <p id="nex-status" className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">{chatStatusLabel}</p>
             </div>
           </div>
         </div>
@@ -316,7 +316,7 @@ const AITwinChat = () => {
             type="button"
             onClick={() => setIsOpen(false)}
             className="p-2 transition-colors hover:bg-muted rounded-full"
-            aria-label="Close AI chat"
+            aria-label="Close Nex"
           >
             <X className="w-4 h-4 text-muted-foreground" />
           </button>
@@ -364,7 +364,7 @@ const AITwinChat = () => {
               >
                 {msg.role === "assistant" ? (
                   <>
-                    <TwinAssistantBody
+                    <NexAnswerBody
                       message={msg}
                       components={markdownComponents}
                       reducedMotion={Boolean(shouldReduceMotion)}
@@ -541,8 +541,8 @@ const AITwinChat = () => {
               e.preventDefault();
               void handleSend();
             }}
-            placeholder={canSendMessages ? "Type a message..." : "AI chat is currently unavailable."}
-            aria-label="Message Nikunj's AI twin"
+            placeholder={canSendMessages ? "Ask Nex about Nikunj's work…" : "Nex is offline right now."}
+            aria-label="Message Nex"
             autoComplete="off"
             disabled={!canSendMessages}
             className="flex-1 bg-background/50 border border-border/40 rounded-xl px-4 py-2.5 text-base sm:text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all placeholder:text-muted-foreground/50 disabled:cursor-not-allowed disabled:opacity-60"
@@ -586,7 +586,7 @@ const AITwinChat = () => {
 
               {/* Chat Content */}
               <motion.div
-                id="ai-twin-dialog"
+                id="nex-dialog"
                 ref={dialogRef}
                 key="chat-content"
                 initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: "100%" }}
@@ -598,8 +598,8 @@ const AITwinChat = () => {
                 onClick={(e) => e.stopPropagation()}
                 role="dialog"
                 aria-modal="true"
-                aria-label="Nikunj's AI Twin conversation"
-                aria-describedby="ai-twin-status"
+                aria-label="Conversation with Nex"
+                aria-describedby="nex-status"
               >
                 {renderChatContent()}
               </motion.div>
@@ -611,7 +611,7 @@ const AITwinChat = () => {
         <AnimatePresence>
           {isOpen && (
             <motion.div
-              id="ai-twin-dialog"
+              id="nex-dialog"
               layout
               layoutId="chat-window"
               initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.8, y: 20, rotateX: -15 }}
@@ -633,8 +633,8 @@ const AITwinChat = () => {
                 height: "32rem",
                 maxHeight: "calc(100vh - 8rem)",
               }}
-              aria-label="Nikunj's AI Twin conversation"
-              aria-describedby="ai-twin-status"
+              aria-label="Conversation with Nex"
+              aria-describedby="nex-status"
               role="dialog"
               aria-modal="false"
             >
@@ -647,4 +647,4 @@ const AITwinChat = () => {
   );
 };
 
-export default AITwinChat;
+export default NexChat;

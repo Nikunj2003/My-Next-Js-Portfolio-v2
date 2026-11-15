@@ -1,6 +1,6 @@
 /**
  * Types for the portfolio guide: the animated avatar that mirrors what the AI
- * Twin is doing, reacts to the visitor, and walks them through the site.
+ * Nex is doing, reacts to the visitor, and walks them through the site.
  *
  * Erasable TypeScript only (no enums), so `node --test --experimental-strip-types`
  * can run the reducer tests directly.

@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { whenIdle } from "@/components/guide/GuideAvatarSlot";
-import { appendTwinExchange } from "@/lib/chat/twin-chat-store";
+import { appendNexExchange } from "@/lib/chat/nex-chat-store";
 import { openAsk, openPanel } from "@/lib/guide/companion-store";
 import { START_TOUR_EVENT } from "@/lib/guide/tour-control";
 
@@ -11,11 +11,11 @@ const GuideCompanion = dynamic(() => import("@/components/guide/GuideCompanion")
 
 /**
  * Mounts the scroll companion once the browser is idle, so it costs nothing on
- * first load. It also owns the `open-ai-twin` listener, which has to work from
+ * first load. It also owns the `open-nex` listener, which has to work from
  * the first click even before the avatar itself has loaded:
  *
- * - `openAiTwin(question)` opens the inline ask bubble and sends the question.
- * - `openAiTwin(question, answer)` hands an inline answer off: the exchange is
+ * - `openNex(question)` opens the inline ask bubble and sends the question.
+ * - `openNex(question, answer)` hands an inline answer off: the exchange is
  *   appended without re-sending, and the full conversation opens.
  * - `{ expand: true }` opens the full conversation panel.
  */
@@ -64,7 +64,7 @@ export function GuideCompanionMount() {
       const question = detail.question?.trim() ?? "";
       setReady(true);
       if (question && detail.answer) {
-        appendTwinExchange(question, detail.answer);
+        appendNexExchange(question, detail.answer);
         openPanel();
         return;
       }
@@ -74,8 +74,8 @@ export function GuideCompanionMount() {
       }
       openAsk(question || undefined);
     };
-    window.addEventListener("open-ai-twin", onOpen);
-    return () => window.removeEventListener("open-ai-twin", onOpen);
+    window.addEventListener("open-nex", onOpen);
+    return () => window.removeEventListener("open-nex", onOpen);
   }, []);
 
   return ready ? <GuideCompanion /> : null;

@@ -258,7 +258,7 @@ const ProjectsSection = ({ featured, caseStudyCount }: { featured: ReactNode; ca
 
   return (
     <section id="work" className="section-padding relative z-10">
-      {/* Retained so existing deep links, llms.txt entries, and AI Twin
+      {/* Retained so existing deep links, llms.txt entries, and Nex
           anchors that point at #projects still resolve after the rename. */}
       <span id="projects" aria-hidden="true" className="block scroll-mt-28" />
 
@@ -321,7 +321,7 @@ const ProjectsSection = ({ featured, caseStudyCount }: { featured: ReactNode; ca
         </div>
 
 
-        {/* Also built — kept in the data and in the AI Twin context, just not
+        {/* Also built — kept in the data and in Nex's context, just not
             consuming a full card each. */}
         <div>
           <div>
@@ -333,7 +333,7 @@ const ProjectsSection = ({ featured, caseStudyCount }: { featured: ReactNode; ca
             <ul className="grid gap-3 sm:grid-cols-3">
               {otherProjects.map((project) => (
                 /* Anchor retained even though these no longer get a full card,
-                   so the AI Twin's #project-<slug> links still resolve. */
+                   so Nex's #project-<slug> links still resolve. */
                 <li
                   key={project.slug}
                   id={`${PROJECT_ANCHOR_PREFIX}${project.slug}`}

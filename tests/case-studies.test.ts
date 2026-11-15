@@ -33,7 +33,7 @@ test("every case study is complete enough to render", () => {
     assert.ok(study.results.length >= 3, `${where} needs at least three results`);
     assert.ok(study.stack.length >= 4, `${where} needs a stack`);
     assert.ok(study.tags.length >= 2, `${where} needs tags`);
-    assert.ok(study.aliases.length >= 5, `${where} needs aliases for AI Twin matching`);
+    assert.ok(study.aliases.length >= 5, `${where} needs aliases for Nex matching`);
 
     for (const decision of study.decisions) {
       assert.ok(decision.choice.length > 0, `${where} has a decision with no choice`);

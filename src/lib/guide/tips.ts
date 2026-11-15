@@ -1,11 +1,11 @@
-/** One-line, section-aware remarks from the companion, shown in its bubble. Rationed by `bubble-policy`. */
+/** One-line, section-aware remarks from Nex, shown in its bubble. Rationed by `bubble-policy`. */
 export const SECTION_TIPS: Record<string, string> = {
-  about: "Click me any time to ask how he measures AI quality, or what he owns end to end.",
-  work: "Each card has the measured result on its face. Ask me how any of them was built.",
-  "ai-twin": "That's me. Ask anything about his work and watch which tools I call.",
-  experience: "Ask what he owned end to end in any role; I'll answer from the case studies.",
-  skills: "Want to know where a skill was used in production? Ask me.",
-  contact: "Not sure what to write? I can summarise his fit for a role you describe.",
+  about: "Click me any time to ask how Nikunj measures AI quality, or what he owns end to end.",
+  work: "Each card leads with its measured result. Ask me how any of them was built.",
+  nex: "That's me. Ask anything and watch which tools I call.",
+  experience: "Ask what Nikunj owned end to end in any role. I answer from the case studies.",
+  skills: "Want to know where a skill ran in production, not just a side project? Ask me.",
+  contact: "Not sure what to write? Describe the role and I'll summarise Nikunj's fit.",
 };
 
 export const TIP_RULES = {

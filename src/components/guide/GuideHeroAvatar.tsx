@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Compass, MessageCircle } from "lucide-react";
 import { GuideAvatarSlot } from "@/components/guide/GuideAvatarSlot";
-import { openAiTwin } from "@/lib/ask-twin";
+import { openNex } from "@/lib/ask-nex";
 import { emitGuide } from "@/lib/guide/bus";
 import { ASLEEP_LINE, BORED_LINE, DIZZY_LINE, HOVER_LINE, PET_LINES, WAKE_LINE, greetingFor } from "@/lib/guide/hero-lines";
 import { startGuideTour } from "@/lib/guide/tour-control";
@@ -182,7 +182,7 @@ export function GuideHeroAvatar() {
           onPointerLeave={() => emitGuide({ type: "page/hover", active: false })}
           onFocus={() => emitGuide({ type: "page/hover", active: true })}
           onBlur={() => emitGuide({ type: "page/hover", active: false })}
-          aria-label="Nikunj's AI Twin avatar. Activate for a reaction."
+          aria-label="Nex, Nikunj's AI guide. Activate for a reaction."
           className="group relative flex cursor-pointer items-center justify-center rounded-full p-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           {/* Glow and a slow ring, static under reduced motion */}
@@ -257,11 +257,11 @@ export function GuideHeroAvatar() {
         <div className="flex flex-wrap items-center justify-center gap-2">
           <button
             type="button"
-            onClick={() => openAiTwin("")}
+            onClick={() => openNex("")}
             className="inline-flex min-h-11 items-center gap-2 rounded-full border border-primary/30 glass-subtle px-5 text-sm font-semibold text-foreground shadow-accent-soft transition-colors hover:border-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary motion-reduce:transition-none"
           >
             <MessageCircle className="h-4 w-4 text-primary" aria-hidden="true" />
-            Ask me about Nikunj
+            Ask Nex
           </button>
           <button
             type="button"
@@ -279,9 +279,9 @@ export function GuideHeroAvatar() {
         {askOpen && (
           <motion.div
             key="ask"
-            id="twin-bubble-hero"
+            id="nex-bubble-hero"
             role="dialog"
-            aria-label="Nikunj's AI Twin"
+            aria-label="Nex, AI guide"
             initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 12, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8, scale: 0.98 }}

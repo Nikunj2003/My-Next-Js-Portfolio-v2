@@ -1,10 +1,10 @@
 /**
- * The AI Twin conversation, shared by every surface that shows it: the inline
+ * The conversation with Nex, shared by every surface that shows it: the inline
  * ask bubble next to the guide avatar and the full chat panel.
  *
- * Module-level store read with `useSyncExternalStore` (see `useTwinChat`), so
+ * Module-level store read with `useSyncExternalStore` (see `useNexChat`), so
  * the two surfaces live in separate parts of the tree and still show one
- * conversation. Everything that used to live inside `AITwinChat` (sending,
+ * conversation. Everything that used to live inside `NexChat` (sending,
  * streaming, retry, abort, persistence) is here; the components only render.
  */
 import {
@@ -16,12 +16,12 @@ import {
   type ChatTrace,
 } from "@/lib/chat-contract";
 import { createStoredChatEnvelope, parseStoredChatEnvelope } from "@/lib/chat-storage";
-import { CHAT_MEMORY_WINDOW, CHAT_STORAGE_KEY, WELCOME_MESSAGE, trimConversationHistory } from "@/lib/chat/shared";
+import { CHAT_MEMORY_WINDOW, CHAT_STORAGE_KEY, LEGACY_CHAT_STORAGE_KEY, WELCOME_MESSAGE, trimConversationHistory } from "@/lib/chat/shared";
 import { emitGuide } from "@/lib/guide/bus";
 import type { ChatApiError, ChatRequestError, Message, SendRequest, StreamOutcome } from "@/lib/chat/types";
 
 export const INITIAL_MESSAGES: Message[] = [{ id: "welcome", role: "assistant", content: WELCOME_MESSAGE }];
-export const OFFLINE_ASSISTANT_MESSAGE = "Nikunj's AI twin is offline right now. You can still browse the projects, review backend and platform work, use the contact section, or download the resume while the service is unavailable.";
+export const OFFLINE_ASSISTANT_MESSAGE = "Nex is offline right now. The case studies, contact form and resume all still work.";
 
 export function createMessageId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -79,7 +79,7 @@ async function buildResponseError(response: Response) {
     response.status === 429
       ? "You're sending messages too quickly right now. Please wait a moment and retry."
       : response.status >= 500
-        ? "The chat service hit a server error. Please retry."
+        ? "Nex hit a server error. Please retry."
         : "This message could not be sent.";
 
   return createChatRequestError(payload?.error || fallbackMessage, {
@@ -106,7 +106,7 @@ export function partialAnswerNote(message: Pick<Message, "content" | "error">): 
   return PARTIAL_ANSWER_NOTES[code] ?? null;
 }
 
-const NETWORK_ERROR_MESSAGE = "I couldn't reach the chat service just now. Check your connection and retry.";
+const NETWORK_ERROR_MESSAGE = "Couldn't reach Nex just now. Check your connection and retry.";
 
 /** Wraps a failure of `fetch` or of reading the body. Only these count as network errors. */
 function networkError(partial: boolean) {
@@ -126,7 +126,7 @@ function getErrorState(error: unknown, retryText: string, userMessageId: string 
     return {
       content: hasPartial
         ? PARTIAL_ANSWER_NOTES.answer_timed_out
-        : "This request timed out before the assistant finished replying. Retry to send the same message again.",
+        : "Nex timed out before finishing the answer. Retry to send the same message again.",
       error: { code, retryable: true, retryText, userMessageId },
     } satisfies Pick<Message, "content" | "error">;
   }
@@ -200,6 +200,8 @@ export function sanitizeStoredMessages(value: unknown): Message[] {
         typeof candidate.id === "string" &&
         (candidate.role === "user" || candidate.role === "assistant") &&
         typeof candidate.content === "string" &&
+        // An empty message (an answer that failed before any text) can't be sent back as history.
+        candidate.content.trim().length > 0 &&
         (candidate.suggestions === undefined || Array.isArray(candidate.suggestions))
       );
     })
@@ -248,7 +250,7 @@ export async function consumeChatStream(
 ): Promise<StreamOutcome> {
   const reader = response.body?.getReader();
   if (!reader) {
-    throw createChatRequestError("The chat service returned no response body. Please retry.", {
+    throw createChatRequestError("Nex returned no response. Please retry.", {
       code: "empty_response",
       retryable: true,
       status: 502,
@@ -323,6 +325,11 @@ export async function consumeChatStream(
       }
       case "trace": {
         trace = event.trace;
+        // The server also sends a trace after a failure (it reports timing and
+        // refusals). Only a trace after real text, with no error, marks a
+        // finished answer; otherwise the error would be swallowed and an empty
+        // answer saved, which the server then rejects as history on every send.
+        if (streamError || content.trim().length === 0) break;
         patch((message) => ({ ...message, trace, streaming: false, status: undefined }));
         emitGuide({ type: "chat/answer_end", grounded: (event.trace?.sources?.length ?? 0) > 0 });
         onAnswerComplete?.();
@@ -392,7 +399,7 @@ export async function consumeChatStream(
 }
 
 
-export type TwinChatSnapshot = {
+export type NexChatSnapshot = {
   messages: Message[];
   isLoading: boolean;
   hydrated: boolean;
@@ -421,7 +428,7 @@ function safeStorage() {
 }
 
 let deps: Deps | null = null;
-let snapshot: TwinChatSnapshot = {
+let snapshot: NexChatSnapshot = {
   messages: INITIAL_MESSAGES,
   isLoading: false,
   hydrated: false,
@@ -433,7 +440,7 @@ let abortController: AbortController | null = null;
 let sending = false;
 
 /** For tests: swap fetch and storage, and reset state. */
-export function configureTwinChat(overrides: Partial<Deps>) {
+export function configureNexChat(overrides: Partial<Deps>) {
   deps = { ...defaultDeps(), ...overrides };
   abortController?.abort();
   abortController = null;
@@ -447,7 +454,7 @@ function getDeps() {
   return deps;
 }
 
-function update(changes: Partial<TwinChatSnapshot>) {
+function update(changes: Partial<NexChatSnapshot>) {
   snapshot = { ...snapshot, ...changes };
   if (changes.messages) persist(snapshot.messages);
   listeners.forEach((listener) => listener());
@@ -465,28 +472,28 @@ function persist(messages: Message[]) {
     const memory = [...INITIAL_MESSAGES, ...trimConversationHistory(messages, CHAT_MEMORY_WINDOW)];
     getDeps().storage?.setItem(CHAT_STORAGE_KEY, JSON.stringify(createStoredChatEnvelope(memory)));
   } catch (error) {
-    console.warn("Failed to persist AI Twin chat history:", error);
+    console.warn("Failed to persist chat history:", error);
   }
 }
 
 /** True while a request is in flight, including the stream tail. A send is rejected while this is true. */
-export function isTwinChatBusy() {
+export function isNexChatBusy() {
   return sending;
 }
 
-export function subscribeTwinChat(listener: () => void) {
+export function subscribeNexChat(listener: () => void) {
   listeners.add(listener);
   return () => {
     listeners.delete(listener);
   };
 }
 
-export function getTwinChatSnapshot() {
+export function getNexChatSnapshot() {
   return snapshot;
 }
 
 const serverSnapshot = snapshot;
-export function getServerTwinChatSnapshot() {
+export function getServerNexChatSnapshot() {
   return serverSnapshot;
 }
 
@@ -495,20 +502,31 @@ export function getServerTwinChatSnapshot() {
  * Messages appended before hydration (an exchange handed off from the bubble,
  * a question already sent) are kept after the stored history, not overwritten.
  */
-export function hydrateTwinChat() {
+export function hydrateNexChat() {
   if (snapshot.hydrated) return;
   let stored = INITIAL_MESSAGES;
   const storage = getDeps().storage;
+  let migrated = false;
   try {
-    const raw = storage?.getItem(CHAT_STORAGE_KEY);
+    let raw = storage?.getItem(CHAT_STORAGE_KEY);
+    // History saved before the rename to Nex: move it across once.
+    const legacy = storage?.getItem(LEGACY_CHAT_STORAGE_KEY);
+    if (legacy != null) {
+      storage?.removeItem(LEGACY_CHAT_STORAGE_KEY);
+      if (!raw) {
+        raw = legacy;
+        migrated = true;
+      }
+    }
     if (raw) {
       const envelope = parseStoredChatEnvelope<Message>(JSON.parse(raw));
-      if (envelope) stored = sanitizeStoredMessages(envelope.messages);
+      // The stored welcome is whatever it said when saved; always show today's.
+      if (envelope) stored = sanitizeStoredMessages(envelope.messages).map((message) => (message.id === WELCOME_ID ? INITIAL_MESSAGES[0]! : message));
       else storage?.removeItem(CHAT_STORAGE_KEY);
     }
   } catch (error) {
     // Unreadable: drop it, or it fails again on every load.
-    console.warn("Failed to restore AI Twin chat history:", error);
+    console.warn("Failed to restore chat history:", error);
     try {
       storage?.removeItem(CHAT_STORAGE_KEY);
     } catch {
@@ -519,7 +537,7 @@ export function hydrateTwinChat() {
   const added = snapshot.messages.filter((message) => message.id !== WELCOME_ID && !known.has(message.id));
   const messages = added.length > 0 ? [...stored, ...added] : stored;
   snapshot = { ...snapshot, messages, hydrated: true };
-  if (added.length > 0) persist(messages);
+  if (added.length > 0 || migrated) persist(messages);
   listeners.forEach((listener) => listener());
 }
 
@@ -540,7 +558,7 @@ function conversationHistory(source: Message[], beforeMessageId?: string) {
     if (askedBy) dropped.add(askedBy);
   });
   return trimConversationHistory(
-    scoped.filter((message) => !dropped.has(message.id)),
+    scoped.filter((message) => !dropped.has(message.id) && message.content.trim().length > 0),
     CHAT_MEMORY_WINDOW
   ).map((message) => ({ content: message.content.slice(0, HISTORY_ITEM_MAX_CHARS), sender: message.role === "user" ? "user" : "ai" }));
 }
@@ -557,7 +575,7 @@ export type SendOptions = {
  * the request then failed; the failure is shown on the answer) and `false`
  * when it was rejected: empty, or another request is still in flight.
  */
-export async function sendTwinMessage(request: SendRequest, options: SendOptions = {}): Promise<boolean> {
+export async function sendNexMessage(request: SendRequest, options: SendOptions = {}): Promise<boolean> {
   const normalized = typeof request === "string" ? { text: request } : request;
   const msg = normalized.text?.trim();
   if (!msg || sending) return false;
@@ -648,7 +666,7 @@ export async function sendTwinMessage(request: SendRequest, options: SendOptions
     );
 
     if (outcome.content.trim().length === 0) {
-      throw createChatRequestError("The chat service returned an empty response. Please retry.", {
+      throw createChatRequestError("Nex returned an empty response. Please retry.", {
         code: "empty_response",
         retryable: true,
         status: 502,
@@ -731,9 +749,9 @@ export async function sendTwinMessage(request: SendRequest, options: SendOptions
   return true;
 }
 
-export function retryTwinMessage(message: Message, options: SendOptions = {}): Promise<boolean> {
+export function retryNexMessage(message: Message, options: SendOptions = {}): Promise<boolean> {
   if (!message.error?.retryable || !message.error.retryText || !message.error.userMessageId) return Promise.resolve(false);
-  return sendTwinMessage(
+  return sendNexMessage(
     { text: message.error.retryText, retryMessageId: message.id, retryUserMessageId: message.error.userMessageId },
     options
   );
@@ -741,9 +759,9 @@ export function retryTwinMessage(message: Message, options: SendOptions = {}): P
 
 /**
  * Appends an exchange that was already answered elsewhere (an inline answer
- * handed off with "Continue in AI Twin"), so the question isn't re-sent.
+ * handed off with "Continue with Nex"), so the question isn't re-sent.
  */
-export function appendTwinExchange(question: string, answer: string) {
+export function appendNexExchange(question: string, answer: string) {
   const userId = createMessageId();
   setMessages((prev) => [
     ...prev,
@@ -753,7 +771,7 @@ export function appendTwinExchange(question: string, answer: string) {
   update({ turnAnchorId: userId });
 }
 
-export function clearTwinChat() {
+export function clearNexChat() {
   // Abort first: otherwise the request keeps running against a message id that
   // no longer exists and appends an answer with no question above it.
   const controller = abortController;
@@ -764,6 +782,6 @@ export function clearTwinChat() {
   try {
     getDeps().storage?.removeItem(CHAT_STORAGE_KEY);
   } catch (error) {
-    console.warn("Failed to clear AI Twin chat history:", error);
+    console.warn("Failed to clear chat history:", error);
   }
 }

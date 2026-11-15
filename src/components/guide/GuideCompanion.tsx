@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { animate, cancelFrame, frame as frameLoop, motion, useMotionValue, useReducedMotion } from "framer-motion";
 import GuideAvatar from "@/components/guide/GuideAvatar";
 import { StaticGuideMark, prefersStatic } from "@/components/guide/GuideAvatarSlot";
-import { TwinBubble } from "@/components/guide/TwinBubble";
+import { NexBubble } from "@/components/guide/NexBubble";
 import { useGuideTour } from "@/components/guide/GuideTourNarrator";
 import { SECTION_IDS } from "@/lib/guide/anchors";
 import { emitGuide } from "@/lib/guide/bus";
@@ -76,7 +76,7 @@ type SpotRule = {
  * avatar once the hero scrolls away and travels down the page with the
  * visitor, sitting in the free space of each section: under the sticky intro
  * panels of About, Experience and Skills (so it rides with the panel), at the
- * top corner of the Work, AI Twin and Contact blocks, or in the left margin.
+ * top corner of the Work, Nex and Contact blocks, or in the left margin.
  * When the section changes it glides to the new spot, eased, in about half a
  * second. Its bubble (ask box, tip or tour) is placed in the same frame as the
  * avatar, so it moves with it exactly.
@@ -416,7 +416,7 @@ export default function GuideCompanion() {
   useEffect(() => {
     if (companion.bubble !== "none" && lastBubble.current === "none") {
       const active = document.activeElement;
-      openerRef.current = active instanceof HTMLElement && active !== document.body && !active.closest("#twin-bubble") ? active : null;
+      openerRef.current = active instanceof HTMLElement && active !== document.body && !active.closest("#nex-bubble") ? active : null;
     }
     lastBubble.current = companion.bubble;
   }, [companion.bubble]);
@@ -471,9 +471,9 @@ export default function GuideCompanion() {
           onPointerLeave={() => emitGuide({ type: "page/hover", active: false })}
           onFocus={() => emitGuide({ type: "page/hover", active: true })}
           onBlur={() => emitGuide({ type: "page/hover", active: false })}
-          aria-label={companion.bubble === "ask" ? "Close the AI Twin" : "Ask Nikunj's AI Twin a question"}
+          aria-label={companion.bubble === "ask" ? "Close Nex" : "Ask Nex a question"}
           aria-expanded={companion.bubble === "ask"}
-          aria-controls="twin-bubble"
+          aria-controls="nex-bubble"
           className={
             "relative flex h-full w-full items-center justify-center rounded-full bg-[#090e1a]/90 ring-1 ring-primary/40 shadow-accent-card transition-shadow duration-300 hover:shadow-[0_16px_36px_hsl(var(--accent)/0.28)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary " +
             (visible ? "pointer-events-auto cursor-pointer" : "pointer-events-none")
@@ -500,7 +500,7 @@ export default function GuideCompanion() {
         </button>
       </motion.div>
 
-      <TwinBubble
+      <NexBubble
         anchorX={posX}
         anchorY={posY}
         anchorSize={size}
@@ -680,7 +680,7 @@ function underPanelRule(section: string): SpotRule {
 }
 
 /**
- * At the top-left corner of a section's block (Work header, AI Twin card,
+ * At the top-left corner of a section's block (Work header, Nex card,
  * Contact grid): rides with it as it scrolls, held on screen by the clamp
  * once the block's top has scrolled past.
  */
@@ -711,6 +711,6 @@ const SECTION_RULES: Record<string, SpotRule> = {
   experience: underPanelRule("experience"),
   skills: underPanelRule("skills"),
   work: blockCornerRule("work", '[data-guide-target="work-featured"]', { x: 0, y: -12 }),
-  "ai-twin": blockCornerRule("ai-twin", '[data-guide-spot="ai-twin"]', { x: 0, y: 24 }),
+  nex: blockCornerRule("nex", '[data-guide-spot="nex"]', { x: 0, y: 24 }),
   contact: blockCornerRule("contact", '[data-guide-spot="contact"]', { x: 0, y: 24 }),
 };

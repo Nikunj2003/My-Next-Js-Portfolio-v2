@@ -3,7 +3,7 @@ import type { GuideEvent } from "@/lib/guide/types";
 /**
  * A single window event that anything on the page can use to drive the guide.
  *
- * Kept as a DOM event (the same pattern as `open-ai-twin`) so the chat panel,
+ * Kept as a DOM event (the same pattern as `open-nex`) so the chat panel,
  * the tour and section observers stay decoupled from the avatar and from each
  * other. Safe to call during SSR; it does nothing there.
  */

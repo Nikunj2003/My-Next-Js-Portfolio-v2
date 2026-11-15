@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { caseStudies } from "../src/data/case-studies.ts";
-import { PORTFOLIO_CONTEXT, PORTFOLIO_CONTEXT_BRIEF } from "../src/lib/ai-twin.ts";
+import { PORTFOLIO_CONTEXT, PORTFOLIO_CONTEXT_BRIEF } from "../src/lib/nex-knowledge.ts";
 import { SYSTEM_PROMPT } from "../src/lib/ai-config.ts";
 
 /**

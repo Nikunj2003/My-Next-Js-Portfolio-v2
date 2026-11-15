@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const bubble = readFileSync(new URL("../src/components/guide/TwinBubble.tsx", import.meta.url), "utf8");
+const bubble = readFileSync(new URL("../src/components/guide/NexBubble.tsx", import.meta.url), "utf8");
 const companion = readFileSync(new URL("../src/components/guide/GuideCompanion.tsx", import.meta.url), "utf8");
 
 test("one frame loop places the avatar; the bubble is derived from the same values in the same frame", () => {

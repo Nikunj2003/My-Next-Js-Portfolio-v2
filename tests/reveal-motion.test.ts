@@ -17,7 +17,7 @@ function files(dir: string): string[] {
 }
 
 test("no scroll-triggered entrance animations outside the hero", () => {
-  const skip = /HeroSection\.tsx$|FluidCursor|\/guide\/|AITwinChat\.tsx$|\/ai\//;
+  const skip = /HeroSection\.tsx$|FluidCursor|\/guide\/|NexChat\.tsx$|\/ai\//;
   for (const file of [...files("src/components"), ...files("src/app")]) {
     if (skip.test(file)) continue;
     const source = readFileSync(file, "utf8");

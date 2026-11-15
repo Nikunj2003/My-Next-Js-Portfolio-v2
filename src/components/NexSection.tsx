@@ -1,38 +1,55 @@
 "use client";
+import { useEffect } from "react";
 import { Bot, MessageCircle } from "lucide-react";
 import { chatSuggestions } from "@/data/portfolio";
+import { openNex } from "@/lib/ask-nex";
 import { useChatAvailability } from "@/hooks/useChatAvailability";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 
-const AITwinSection = () => {
+/** The section's id before the assistant was named Nex; links to it still land here. */
+export const LEGACY_SECTION_ID = "ai-twin";
+
+const NexSection = () => {
   const { isAvailable, status, canAttemptChat } = useChatAvailability();
 
+  // An old `#ai-twin` link lands on the anchor below; show the current address.
+  useEffect(() => {
+    const rewrite = () => {
+      if (window.location.hash !== `#${LEGACY_SECTION_ID}`) return;
+      window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}#nex`);
+    };
+    rewrite();
+    window.addEventListener("hashchange", rewrite);
+    return () => window.removeEventListener("hashchange", rewrite);
+  }, []);
+
   const handlePromptClick = (question: string) => {
-    window.dispatchEvent(new CustomEvent("open-ai-twin", { detail: { question } }));
+    openNex(question);
   };
 
   const statusLabel =
     status === "available"
-      ? "Live Assistant"
+      ? "Nex · online"
       : status === "checking"
-        ? "Checking availability"
+        ? "Nex · checking"
         : status === "unknown"
-          ? "Status unknown"
-        : "Assistant offline";
+          ? "Nex · status unknown"
+        : "Nex · offline";
 
   const primaryButtonLabel =
     status === "available"
-      ? "Open AI Chat"
+      ? "Ask Nex"
       : status === "checking"
-        ? "Checking AI Chat..."
+        ? "Checking Nex…"
         : status === "unknown"
-          ? "Try AI Chat"
-        : "View Chat Status";
+          ? "Try Nex"
+        : "View Nex's status";
 
   return (
-    <section id="ai-twin" className="section-padding relative z-10">
+    <section id="nex" className="section-padding relative z-10">
+      <span id={LEGACY_SECTION_ID} aria-hidden="true" className="absolute top-0 block h-0 w-0" />
       <div className="container-narrow">
-        <div data-guide-spot="ai-twin">
+        <div data-guide-spot="nex">
           <SpotlightCard className="w-full relative">
             <div className="relative p-6 sm:p-8 md:p-12 lg:p-16 flex flex-col lg:flex-row items-center gap-12 lg:gap-16 text-center lg:text-left">
               {/* Background Glow */}
@@ -54,21 +71,21 @@ const AITwinSection = () => {
                   />
                   {statusLabel}
                 </div>
-                <h2 className="heading-xl mb-6">
-                  Talk to my <br className="hidden lg:block"/>
-                  <span className="text-gradient">AI Twin</span>
+                <h2 className="heading-xl mb-2">
+                  Meet <span className="text-gradient">Nex</span>
                 </h2>
+                <p className="text-xl sm:text-2xl font-semibold tracking-tight text-muted-foreground mb-6">The AI guide to Nikunj&apos;s work</p>
                 <p className="text-muted-foreground text-lg leading-relaxed mb-4 max-w-xl text-pretty lg:mx-0 mx-auto">
                   {isAvailable
-                    ? "Not a chat widget \u2014 a tool-calling agent over my actual work. It searches the case studies, looks up measured figures, compares systems, and navigates you to what it cites. Every tool call and its grounding is shown to you."
+                    ? "Not a chat widget. Nex is a tool-calling agent over Nikunj\u2019s case studies: it searches them, looks up measured figures, compares systems, and takes you to what it cites. Every tool call is shown to you."
                     : status === "checking"
-                      ? "Checking whether the live assistant is available right now. You can still open the chat panel while the status loads."
+                      ? "Checking whether Nex is online. You can still open the chat while the status loads."
                       : status === "unknown"
-                        ? "This browser could not verify the live assistant ahead of time. You can still open the chat and try sending a message."
-                      : "The live assistant is temporarily unavailable. You can still browse the portfolio and open the chat panel for status details."}
+                        ? "This browser couldn\u2019t check Nex\u2019s status ahead of time. You can still open the chat and try a question."
+                      : "Nex is offline for now. The case studies, contact form and resume all still work."}
                 </p>
                 <p className="text-sm text-foreground/75 mb-8 max-w-lg lg:mx-0 mx-auto">
-                  It will also tell you when something is not measured rather than estimating a number \u2014 which is the same discipline the evaluation platform enforces.
+                  Ask for a number that isn&apos;t published and Nex says so instead of estimating, the same discipline Nikunj&apos;s evaluation platform enforces.
                 </p>
 
                 <button 
@@ -115,4 +132,4 @@ const AITwinSection = () => {
   );
 };
 
-export default AITwinSection;
+export default NexSection;

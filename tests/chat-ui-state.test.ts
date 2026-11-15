@@ -2,9 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const CHAT = readFileSync("src/components/AITwinChat.tsx", "utf8");
+const CHAT = readFileSync("src/components/NexChat.tsx", "utf8");
 // The conversation logic moved into a shared store used by the panel and the ask bubble.
-const STORE = readFileSync("src/lib/chat/twin-chat-store.ts", "utf8");
+const STORE = readFileSync("src/lib/chat/nex-chat-store.ts", "utf8");
 const ROUTE = readFileSync("src/app/api/chat/route.ts", "utf8");
 
 /**
@@ -80,7 +80,7 @@ test("the chat never chases the bottom while an answer streams", () => {
 });
 
 test("tool calls lead only until the answer starts, then sit under it", () => {
-  const body = readFileSync("src/components/ai/TwinAssistantBody.tsx", "utf8");
+  const body = readFileSync("src/components/ai/NexAnswerBody.tsx", "utf8");
   const answerAt = body.indexOf("<PacedAnswer");
   assert.ok(body.indexOf("{!answered && toolList}") < answerAt, "running tools show above an empty answer");
   assert.ok(body.indexOf("{answered && toolList}") > answerAt, "once text arrives the tools move below it");

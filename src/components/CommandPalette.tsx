@@ -108,10 +108,10 @@ const CommandPalette = () => {
     [router, run]
   );
 
-  const askTwin = useCallback(
+  const askNex = useCallback(
     (question: string) => {
       run(() => {
-        window.dispatchEvent(new CustomEvent("open-ai-twin", { detail: { question } }));
+        window.dispatchEvent(new CustomEvent("open-nex", { detail: { question } }));
       });
     },
     [run]
@@ -135,7 +135,7 @@ const CommandPalette = () => {
               because the input's placeholder already labels the surface. */}
           <DialogPrimitive.Title className="sr-only">Command palette</DialogPrimitive.Title>
           <DialogPrimitive.Description className="sr-only">
-            Search sections and case studies, or ask the AI Twin a question.
+            Search sections and case studies, or ask Nex.
           </DialogPrimitive.Description>
 
           <Command loop className="flex min-h-0 flex-1 flex-col">
@@ -160,11 +160,11 @@ const CommandPalette = () => {
                 {trimmedQuery.length > 0 ? (
                   <button
                     type="button"
-                    onClick={() => askTwin(trimmedQuery)}
+                    onClick={() => askNex(trimmedQuery)}
                     className="inline-flex items-center gap-2 rounded-xl px-3 py-2 font-medium text-primary transition-colors hover:bg-primary/10"
                   >
                     <Sparkles className="h-4 w-4" />
-                    Ask the AI Twin instead
+                    Ask Nex instead
                   </button>
                 ) : (
                   "No results."
@@ -226,9 +226,9 @@ const CommandPalette = () => {
                     {section.label}
                   </Command.Item>
                 ))}
-                <Command.Item value="ai twin chat assistant agent ask question" onSelect={() => askTwin("")} className={itemClass}>
+                <Command.Item value="nex ai guide twin chat assistant agent ask question" onSelect={() => askNex("")} className={itemClass}>
                   <MessageCircle className="h-4 w-4 shrink-0 text-primary" />
-                  Open the AI Twin
+                  Open Nex
                 </Command.Item>
               </Command.Group>
 
@@ -271,13 +271,13 @@ const CommandPalette = () => {
               </Command.Group>
               {trimmedQuery.length > 2 && (
                 <Command.Group
-                  heading="Ask the AI Twin"
+                  heading="Ask Nex"
                   className={groupClass}
                 >
-                  <Command.Item value={`ask ${trimmedQuery}`} onSelect={() => askTwin(trimmedQuery)} className={itemClass}>
+                  <Command.Item value={`ask ${trimmedQuery}`} onSelect={() => askNex(trimmedQuery)} className={itemClass}>
                     <Sparkles className="h-4 w-4 shrink-0 text-primary" />
                     <span className="truncate">
-                      Ask the AI Twin: <span className="text-foreground">&ldquo;{trimmedQuery}&rdquo;</span>
+                      Ask Nex: <span className="text-foreground">&ldquo;{trimmedQuery}&rdquo;</span>
                     </span>
                     <CornerDownLeft className="ml-auto h-3 w-3 shrink-0 opacity-40" />
                   </Command.Item>
@@ -298,7 +298,7 @@ const CommandPalette = () => {
               </span>
               <span className="ml-auto inline-flex items-center gap-1.5">
                 <Sparkles className="h-2.5 w-2.5 text-primary/70" aria-hidden="true" />
-                type to ask the twin
+                type to ask Nex
               </span>
             </div>
           </Command>

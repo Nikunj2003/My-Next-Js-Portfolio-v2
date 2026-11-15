@@ -107,16 +107,16 @@ const HeroSection = () => {
                 Resume
               </a>
               <a
-                href="#ai-twin"
+                href="#nex"
                 className="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-6 py-3.5 rounded-full hover:bg-foreground/5 transition-all duration-300 font-semibold text-sm text-muted-foreground hover:text-foreground active:scale-95"
               >
                 <MessageCircle className="w-4 h-4 text-primary" />
-                Talk to AI Twin
+                Ask Nex
               </a>
             </div>
           </div>
 
-          {/* Right - the live AI Twin avatar */}
+          {/* Right - Nex, the live AI guide */}
           <div data-guide-hero-column className="hidden lg:flex items-center justify-end lg:col-span-5 relative">
             <div data-hero-part="avatar-glow" className="absolute inset-0 bg-[radial-gradient(circle,hsl(var(--primary)/0.15)_0%,transparent_70%)] rounded-full scale-150" />
             {/* Sized to about the left column's height and centred on it, so

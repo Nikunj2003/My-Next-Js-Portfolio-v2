@@ -421,7 +421,7 @@ textarea,
   color: hsl(var(--foreground));
 }
 
-/* Guide highlight: an element the AI Twin or the tour is pointing at. CSS only,
+/* Guide highlight: an element Nex or the tour is pointing at. CSS only,
    so ringing costs no JS per frame; reduced motion gets a static ring. */
 [data-guide-active="true"] {
   position: relative;

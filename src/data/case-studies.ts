@@ -69,7 +69,7 @@ export interface CaseStudy {
   stack: string[];
   ownership: string;
   tags: string[];
-  /** Extra phrases the AI Twin matches on, beyond title/slug/tags. */
+  /** Extra phrases Nex matches on, beyond title/slug/tags. */
   aliases: string[];
 }
 

@@ -5,11 +5,11 @@ import { useRouter } from "next/navigation";
 import { type Components } from "react-markdown";
 import { Compass, Maximize2, Send, X } from "lucide-react";
 import { buildAnswerComponents } from "@/components/ai/AnswerBody";
-import { TwinAssistantBody } from "@/components/ai/TwinAssistantBody";
+import { NexAnswerBody } from "@/components/ai/NexAnswerBody";
 import type { ChatToolCall } from "@/lib/chat-contract";
 import { selectLatestExchange } from "@/lib/chat/latest-exchange";
-import { isTwinChatBusy, partialAnswerNote, retryTwinMessage, sendTwinMessage } from "@/lib/chat/twin-chat-store";
-import { useTwinChat } from "@/lib/chat/useTwinChat";
+import { isNexChatBusy, partialAnswerNote, retryNexMessage, sendNexMessage } from "@/lib/chat/nex-chat-store";
+import { useNexChat } from "@/lib/chat/useNexChat";
 import { runGuideAction } from "@/lib/guide/actions";
 import { SECTION_CHIPS } from "@/lib/guide/anchors";
 import { emitGuide } from "@/lib/guide/bus";
@@ -33,7 +33,7 @@ type AskContentProps = {
 
 /** The ask box: latest question and answer, chips, composer. Hosted by the companion's bubble or inline by the hero avatar. */
 export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceMotion, inline = false }: AskContentProps) {
-  const { messages, isLoading, announcement, turnAnchorId } = useTwinChat();
+  const { messages, isLoading, announcement, turnAnchorId } = useNexChat();
   const { status } = useChatAvailability();
   const router = useRouter();
   const [input, setInputState] = useState(getAskDraft);
@@ -62,10 +62,10 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
   const send = useCallback(
     (text: string, fromComposer = true) => {
       const message = text.trim();
-      if (!message || isTwinChatBusy()) return false;
+      if (!message || isNexChatBusy()) return false;
       // A queued question ("Ask about this") leaves what the visitor is typing alone.
       if (fromComposer) setInput("");
-      void sendTwinMessage(message, { unavailable, onNavigate }).then((accepted) => {
+      void sendNexMessage(message, { unavailable, onNavigate }).then((accepted) => {
         // Put the text back if the store turned it down, so nothing is lost.
         if (!accepted) setInput((current) => current || message);
       });
@@ -109,7 +109,7 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
     if (!pendingQuestion || isLoading) return;
     // Deferred a tick: sending updates the chat store and this input.
     const timer = window.setTimeout(() => {
-      if (isTwinChatBusy()) return;
+      if (isNexChatBusy()) return;
       const question = takePendingQuestion();
       if (question) send(question, false);
     }, 0);
@@ -157,10 +157,10 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
       <div className="flex items-start gap-2 border-b border-border/40 px-4 py-3">
         <div className="min-w-0 flex-1">
           <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            {exchange ? "You asked" : "Nikunj's AI Twin"}
+            {exchange ? "You asked" : "Nex · AI guide"}
           </p>
           <p className="mt-0.5 line-clamp-2 text-sm font-semibold text-foreground">
-            {exchange ? exchange.question.content : "Ask me anything about his work."}
+            {exchange ? exchange.question.content : "Ask me anything about Nikunj's work."}
           </p>
           {exchange && exchange.question.content.length > 90 && (
             <button type="button" onClick={onExpand} className="mt-0.5 text-[11px] font-medium text-primary-text hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
@@ -201,7 +201,7 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
         >
           {answer ? (
             <>
-              <TwinAssistantBody message={answer} components={components} reducedMotion={reduceMotion} showTakeMeThere={isMobile} onTakeMeThere={takeMeThere} />
+              <NexAnswerBody message={answer} components={components} reducedMotion={reduceMotion} showTakeMeThere={isMobile} onTakeMeThere={takeMeThere} />
               {partialAnswerNote(answer) && (
                 <p role="alert" className="mt-2 text-[11px] text-amber-600 dark:text-amber-300">{partialAnswerNote(answer)}</p>
               )}
@@ -214,7 +214,7 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
           {answer?.error?.retryable && (
             <button
               type="button"
-              onClick={() => retryTwinMessage(answer, { unavailable, onNavigate })}
+              onClick={() => retryNexMessage(answer, { unavailable, onNavigate })}
               disabled={isLoading}
               className="mt-3 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[11px] font-medium text-foreground hover:bg-amber-500/15 disabled:opacity-60"
             >
@@ -264,8 +264,8 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
             ref={inputRef}
             value={input}
             onChange={(event) => setInput(event.target.value)}
-            placeholder={unavailable ? "The assistant is offline right now." : "Ask about his work…"}
-            aria-label="Ask Nikunj's AI Twin"
+            placeholder={unavailable ? "Nex is offline right now." : "Ask Nex…"}
+            aria-label="Ask Nex"
             autoComplete="off"
             maxLength={MAX_QUESTION_LENGTH}
             disabled={unavailable}

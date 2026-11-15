@@ -8,7 +8,7 @@
  */
 export const GUIDE_HIGHLIGHTS = {
   "hero-proof": "Proof stats in the hero",
-  "hero-guide": "The AI Twin in the hero",
+  "hero-guide": "The Nex in the hero",
   "work-featured": "Featured case studies",
   "experience-intro": "Experience overview",
   "contact-form": "Contact form",

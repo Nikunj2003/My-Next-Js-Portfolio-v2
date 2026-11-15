@@ -3,17 +3,17 @@ import assert from "node:assert/strict";
 
 import {
   INITIAL_MESSAGES,
-  appendTwinExchange,
-  clearTwinChat,
-  configureTwinChat,
-  getTwinChatSnapshot,
-  hydrateTwinChat,
-  isTwinChatBusy,
+  appendNexExchange,
+  clearNexChat,
+  configureNexChat,
+  getNexChatSnapshot,
+  hydrateNexChat,
+  isNexChatBusy,
   partialAnswerNote,
-  sendTwinMessage,
-  subscribeTwinChat,
-} from "../src/lib/chat/twin-chat-store.ts";
-import { CHAT_STORAGE_KEY } from "../src/lib/ai-twin.ts";
+  sendNexMessage,
+  subscribeNexChat,
+} from "../src/lib/chat/nex-chat-store.ts";
+import { CHAT_STORAGE_KEY } from "../src/lib/nex-knowledge.ts";
 
 function memoryStorage(seed: Record<string, string> = {}) {
   const data = new Map(Object.entries(seed));
@@ -40,18 +40,18 @@ const answerEvents = [
 ];
 
 function lastMessage() {
-  const { messages } = getTwinChatSnapshot();
+  const { messages } = getNexChatSnapshot();
   return messages[messages.length - 1];
 }
 
 test("a sent message streams into one shared conversation and anchors the turn", async () => {
-  configureTwinChat({ fetch: async () => ndjsonResponse(answerEvents), storage: memoryStorage() });
-  hydrateTwinChat();
+  configureNexChat({ fetch: async () => ndjsonResponse(answerEvents), storage: memoryStorage() });
+  hydrateNexChat();
   let notified = 0;
-  const unsubscribe = subscribeTwinChat(() => (notified += 1));
-  await sendTwinMessage("hi");
+  const unsubscribe = subscribeNexChat(() => (notified += 1));
+  await sendNexMessage("hi");
   unsubscribe();
-  const { messages, isLoading, turnAnchorId, announcement } = getTwinChatSnapshot();
+  const { messages, isLoading, turnAnchorId, announcement } = getNexChatSnapshot();
   assert.equal(isLoading, false);
   assert.equal(messages.length, 3);
   assert.equal(messages[1].role, "user");
@@ -65,54 +65,54 @@ test("a sent message streams into one shared conversation and anchors the turn",
 
 test("a failed send can be retried and replaces the failed answer instead of duplicating it", async () => {
   let call = 0;
-  configureTwinChat({
+  configureNexChat({
     fetch: async () => {
       call += 1;
       return call === 1 ? new Response(JSON.stringify({ error: "busy", code: "rate_limited", retryable: true }), { status: 429 }) : ndjsonResponse(answerEvents);
     },
     storage: memoryStorage(),
   });
-  hydrateTwinChat();
-  await sendTwinMessage("hi");
-  const failed = getTwinChatSnapshot().messages[getTwinChatSnapshot().messages.length - 1]!;
+  hydrateNexChat();
+  await sendNexMessage("hi");
+  const failed = getNexChatSnapshot().messages[getNexChatSnapshot().messages.length - 1]!;
   assert.equal(failed.error?.code, "rate_limited");
-  await sendTwinMessage({ text: failed.error!.retryText, retryMessageId: failed.id, retryUserMessageId: failed.error!.userMessageId });
-  const { messages } = getTwinChatSnapshot();
+  await sendNexMessage({ text: failed.error!.retryText, retryMessageId: failed.id, retryUserMessageId: failed.error!.userMessageId });
+  const { messages } = getNexChatSnapshot();
   assert.equal(messages.filter((message) => message.role === "user").length, 1);
   assert.equal(messages[messages.length - 1]!.content, "Hello there.");
   assert.equal(messages[messages.length - 1]!.error, undefined);
 });
 
 test("clearing aborts an in-flight request and resets history", async () => {
-  configureTwinChat({
+  configureNexChat({
     fetch: (_url, init) =>
       new Promise((_resolve, reject) => {
         init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
       }),
     storage: memoryStorage(),
   });
-  hydrateTwinChat();
-  const pending = sendTwinMessage("hi");
-  assert.equal(getTwinChatSnapshot().isLoading, true);
-  clearTwinChat();
+  hydrateNexChat();
+  const pending = sendNexMessage("hi");
+  assert.equal(getNexChatSnapshot().isLoading, true);
+  clearNexChat();
   await pending;
-  assert.deepEqual(getTwinChatSnapshot().messages, INITIAL_MESSAGES);
-  assert.equal(getTwinChatSnapshot().isLoading, false);
+  assert.deepEqual(getNexChatSnapshot().messages, INITIAL_MESSAGES);
+  assert.equal(getNexChatSnapshot().isLoading, false);
 });
 
 test("a handed-off exchange is appended without a request, and history persists", () => {
   const storage = memoryStorage();
-  configureTwinChat({ fetch: async () => assert.fail("must not fetch"), storage });
-  hydrateTwinChat();
-  appendTwinExchange("What is RAG?", "Retrieval-augmented generation.");
-  const { messages, turnAnchorId } = getTwinChatSnapshot();
+  configureNexChat({ fetch: async () => assert.fail("must not fetch"), storage });
+  hydrateNexChat();
+  appendNexExchange("What is RAG?", "Retrieval-augmented generation.");
+  const { messages, turnAnchorId } = getNexChatSnapshot();
   assert.equal(messages[messages.length - 1]!.content, "Retrieval-augmented generation.");
   assert.equal(turnAnchorId, messages[messages.length - 2]!.id);
   assert.ok(storage.data.get(CHAT_STORAGE_KEY)?.includes("What is RAG?"));
 
-  configureTwinChat({ fetch: async () => assert.fail("must not fetch"), storage });
-  hydrateTwinChat();
-  assert.equal(getTwinChatSnapshot().messages[getTwinChatSnapshot().messages.length - 1]!.content, "Retrieval-augmented generation.");
+  configureNexChat({ fetch: async () => assert.fail("must not fetch"), storage });
+  hydrateNexChat();
+  assert.equal(getNexChatSnapshot().messages[getNexChatSnapshot().messages.length - 1]!.content, "Retrieval-augmented generation.");
 });
 
 /** A response whose body yields the given lines, then either closes or errors. */
@@ -136,7 +136,7 @@ test("the chat stays busy until the stream closes, and a second send is rejected
   let release!: () => void;
   const gate = new Promise<void>((resolve) => (release = resolve));
   const encoder = new TextEncoder();
-  configureTwinChat({
+  configureNexChat({
     fetch: async () =>
       new Response(
         new ReadableStream<Uint8Array>({
@@ -151,26 +151,26 @@ test("the chat stays busy until the stream closes, and a second send is rejected
       ),
     storage: memoryStorage(),
   });
-  hydrateTwinChat();
-  assert.equal(isTwinChatBusy(), false);
-  const first = sendTwinMessage("one");
+  hydrateNexChat();
+  assert.equal(isNexChatBusy(), false);
+  const first = sendNexMessage("one");
   // Wait until the answer is complete (trace seen), with the stream still open.
-  while (getTwinChatSnapshot().announcement !== "Answer ready") await new Promise((resolve) => setTimeout(resolve, 5));
-  assert.equal(getTwinChatSnapshot().isLoading, true, "still loading after the trace");
-  assert.equal(isTwinChatBusy(), true);
-  assert.equal(await sendTwinMessage("two"), false, "rejected while the first is in flight");
-  assert.equal(getTwinChatSnapshot().messages.filter((message) => message.role === "user").length, 1);
+  while (getNexChatSnapshot().announcement !== "Answer ready") await new Promise((resolve) => setTimeout(resolve, 5));
+  assert.equal(getNexChatSnapshot().isLoading, true, "still loading after the trace");
+  assert.equal(isNexChatBusy(), true);
+  assert.equal(await sendNexMessage("two"), false, "rejected while the first is in flight");
+  assert.equal(getNexChatSnapshot().messages.filter((message) => message.role === "user").length, 1);
   release();
   assert.equal(await first, true);
-  assert.equal(getTwinChatSnapshot().isLoading, false);
-  assert.equal(isTwinChatBusy(), false);
-  assert.equal(await sendTwinMessage("   "), false, "empty messages are rejected");
+  assert.equal(getNexChatSnapshot().isLoading, false);
+  assert.equal(isNexChatBusy(), false);
+  assert.equal(await sendNexMessage("   "), false, "empty messages are rejected");
 });
 
 test("a stream that ends without done keeps the partial text and marks it cut off", async () => {
-  configureTwinChat({ fetch: async () => scriptedResponse([{ type: "text_delta", text: "Half an ans" }]), storage: memoryStorage() });
-  hydrateTwinChat();
-  await sendTwinMessage("hi");
+  configureNexChat({ fetch: async () => scriptedResponse([{ type: "text_delta", text: "Half an ans" }]), storage: memoryStorage() });
+  hydrateNexChat();
+  await sendNexMessage("hi");
   const answer = lastMessage()!;
   assert.equal(answer.content, "Half an ans");
   assert.equal(answer.streaming, false);
@@ -180,9 +180,9 @@ test("a stream that ends without done keeps the partial text and marks it cut of
 });
 
 test("a mid-stream network drop keeps the partial text next to a retryable error", async () => {
-  configureTwinChat({ fetch: async () => scriptedResponse([{ type: "text_delta", text: "Partway" }], "error"), storage: memoryStorage() });
-  hydrateTwinChat();
-  await sendTwinMessage("hi");
+  configureNexChat({ fetch: async () => scriptedResponse([{ type: "text_delta", text: "Partway" }], "error"), storage: memoryStorage() });
+  hydrateNexChat();
+  await sendNexMessage("hi");
   const answer = lastMessage()!;
   assert.equal(answer.content, "Partway");
   assert.equal(answer.error?.code, "answer_connection_lost");
@@ -190,41 +190,41 @@ test("a mid-stream network drop keeps the partial text next to a retryable error
 });
 
 test("a failure before any text still replaces the content with the error message", async () => {
-  configureTwinChat({
+  configureNexChat({
     fetch: async () => {
       throw new TypeError("Failed to fetch");
     },
     storage: memoryStorage(),
   });
-  hydrateTwinChat();
-  await sendTwinMessage("hi");
+  hydrateNexChat();
+  await sendNexMessage("hi");
   const answer = lastMessage()!;
   assert.equal(answer.error?.code, "network_error");
-  assert.match(answer.content, /couldn't reach/);
+  assert.match(answer.content, /couldn't reach/i);
 });
 
 test("a TypeError from our own code is not reported as a network failure", async () => {
-  configureTwinChat({
+  configureNexChat({
     fetch: async () => ({ ok: true, body: { getReader: () => null } }) as unknown as Response,
     storage: memoryStorage(),
   });
-  hydrateTwinChat();
-  await sendTwinMessage("hi");
+  hydrateNexChat();
+  await sendNexMessage("hi");
   assert.equal(lastMessage()!.error?.code, "empty_response");
 });
 
 test("a failure after the answer completed does not overwrite it", async () => {
-  configureTwinChat({
+  configureNexChat({
     fetch: async () => scriptedResponse([{ type: "text_delta", text: "All done." }, trace], "error"),
     storage: memoryStorage(),
   });
-  hydrateTwinChat();
-  assert.equal(await sendTwinMessage("hi"), true);
+  hydrateNexChat();
+  assert.equal(await sendNexMessage("hi"), true);
   const answer = lastMessage()!;
   assert.equal(answer.content, "All done.");
   assert.equal(answer.error, undefined);
   assert.equal(answer.streaming, false);
-  assert.equal(getTwinChatSnapshot().isLoading, false);
+  assert.equal(getNexChatSnapshot().isLoading, false);
 });
 
 test("streaming messages are not persisted until the answer finishes", async () => {
@@ -232,7 +232,7 @@ test("streaming messages are not persisted until the answer finishes", async () 
   let release!: () => void;
   const gate = new Promise<void>((resolve) => (release = resolve));
   const encoder = new TextEncoder();
-  configureTwinChat({
+  configureNexChat({
     fetch: async () =>
       new Response(
         new ReadableStream<Uint8Array>({
@@ -247,9 +247,9 @@ test("streaming messages are not persisted until the answer finishes", async () 
       ),
     storage,
   });
-  hydrateTwinChat();
-  const pending = sendTwinMessage("persist me");
-  while (!getTwinChatSnapshot().messages.some((message) => message.streaming && message.content)) await new Promise((resolve) => setTimeout(resolve, 5));
+  hydrateNexChat();
+  const pending = sendNexMessage("persist me");
+  while (!getNexChatSnapshot().messages.some((message) => message.streaming && message.content)) await new Promise((resolve) => setTimeout(resolve, 5));
   assert.ok(!storage.data.get(CHAT_STORAGE_KEY)?.includes("Partial"), "a half-written answer is never stored");
   release();
   await pending;
@@ -259,7 +259,7 @@ test("streaming messages are not persisted until the answer finishes", async () 
 test("history drops the question whose answer failed and truncates long messages", async () => {
   const bodies: { conversationHistory: { content: string; sender: string }[] }[] = [];
   let call = 0;
-  configureTwinChat({
+  configureNexChat({
     fetch: async (_url, init) => {
       bodies.push(JSON.parse(String(init?.body)));
       call += 1;
@@ -268,10 +268,10 @@ test("history drops the question whose answer failed and truncates long messages
     },
     storage: memoryStorage(),
   });
-  hydrateTwinChat();
-  await sendTwinMessage("this question failed");
-  await sendTwinMessage("x".repeat(9000));
-  await sendTwinMessage("third");
+  hydrateNexChat();
+  await sendNexMessage("this question failed");
+  await sendNexMessage("x".repeat(9000));
+  await sendNexMessage("third");
   const history = bodies[2]!.conversationHistory;
   assert.ok(!history.some((item) => item.content === "this question failed"), "the failed question is not sent back");
   assert.ok(history.every((item) => item.content.length <= 4000), "each history item is capped at 4000 characters");
@@ -280,14 +280,14 @@ test("history drops the question whose answer failed and truncates long messages
 
 test("hydration keeps messages appended before it ran", () => {
   const storage = memoryStorage();
-  configureTwinChat({ fetch: async () => assert.fail("must not fetch"), storage });
-  hydrateTwinChat();
-  appendTwinExchange("Old question", "Old answer");
+  configureNexChat({ fetch: async () => assert.fail("must not fetch"), storage });
+  hydrateNexChat();
+  appendNexExchange("Old question", "Old answer");
 
-  configureTwinChat({ fetch: async () => assert.fail("must not fetch"), storage });
-  appendTwinExchange("New question", "New answer"); // before hydration
-  hydrateTwinChat();
-  const contents = getTwinChatSnapshot().messages.map((message) => message.content);
+  configureNexChat({ fetch: async () => assert.fail("must not fetch"), storage });
+  appendNexExchange("New question", "New answer"); // before hydration
+  hydrateNexChat();
+  const contents = getNexChatSnapshot().messages.map((message) => message.content);
   assert.ok(contents.includes("Old answer"), "stored history is restored");
   assert.ok(contents.includes("New answer"), "the early exchange survives hydration");
   assert.ok(contents.indexOf("Old answer") < contents.indexOf("New question"), "stored history comes first");
@@ -306,19 +306,56 @@ test("an aborted request tells the guide to reset", async () => {
   };
   (globalThis as unknown as { window: EventTarget }).window.addEventListener("guide:event", listener);
   try {
-    configureTwinChat({
+    configureNexChat({
       fetch: (_url, init) =>
         new Promise((_resolve, reject) => {
           init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
         }),
       storage: memoryStorage(),
     });
-    hydrateTwinChat();
-    const pending = sendTwinMessage("hi");
-    clearTwinChat();
+    hydrateNexChat();
+    const pending = sendNexMessage("hi");
+    clearNexChat();
     await pending;
     assert.ok(seen.includes("chat/reset"), `expected chat/reset, saw ${seen.join(", ")}`);
   } finally {
     delete (globalThis as { window?: unknown }).window;
   }
+});
+
+test("an upstream failure (error, then trace, then done) is shown as an error, and the next send still works", async () => {
+  const bodies: { conversationHistory: { content: string }[] }[] = [];
+  let call = 0;
+  configureNexChat({
+    storage: memoryStorage(),
+    fetch: async (_url, init) => {
+      bodies.push(JSON.parse(String(init?.body)));
+      call += 1;
+      return call === 1
+        ? ndjsonResponse([
+            { type: "status", label: "Thinking" },
+            { type: "error", error: "Nex can't answer right now. Please contact Nikunj directly.", code: "upstream_auth_error", retryable: false },
+            { type: "trace", trace: { rounds: 0, toolCount: 0, elapsedMs: 5, sources: [], refusals: [], model: "m" } },
+            { type: "done" },
+          ])
+        : ndjsonResponse(answerEvents);
+    },
+  });
+  hydrateNexChat();
+  await sendNexMessage("first");
+  const failed = lastMessage()!;
+  assert.ok(failed.error, "the failure is shown, not swallowed as a finished empty answer");
+  assert.match(failed.content, /can't answer right now/);
+  assert.equal(await sendNexMessage("second"), true);
+  for (const item of bodies[1]!.conversationHistory) assert.ok(item.content.trim().length > 0, "no empty history item");
+  assert.equal(lastMessage()!.content, "Hello there.");
+});
+
+test("stored empty messages from an old failure are dropped on load", () => {
+  const storage = memoryStorage({
+    [CHAT_STORAGE_KEY]: JSON.stringify({ version: 2, savedAt: Date.now(), messages: [{ id: "u1", role: "user", content: "first" }, { id: "a1", role: "assistant", content: "" }] }),
+  });
+  configureNexChat({ fetch: async () => assert.fail("must not fetch"), storage });
+  hydrateNexChat();
+  assert.ok(getNexChatSnapshot().messages.every((message) => message.content.trim().length > 0));
 });
