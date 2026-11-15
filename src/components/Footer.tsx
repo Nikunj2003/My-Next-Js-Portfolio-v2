@@ -65,14 +65,14 @@ const Footer = () => {
               </div>
 
               {/* Nex's landing slot */}
-              <div className="order-1 flex flex-col items-center gap-3 md:order-2">
+              <div className="order-1 flex flex-col items-center md:order-2">
                 <FooterNexLine />
-                <span data-guide-footer-socket aria-hidden="true" className="relative block h-[150px] w-[150px]">
+                <span data-guide-footer-socket aria-hidden="true" className="relative mt-4 block h-[150px] w-[150px]">
                   <span className="pointer-events-none absolute inset-[-18%] rounded-full bg-[radial-gradient(circle,hsl(var(--primary)/0.12)_0%,transparent_68%)]" />
                   <span className="nex-ring" />
                   <span className="absolute inset-[9px] rounded-full border border-dashed border-primary/25" />
                 </span>
-                <button type="button" onClick={() => openNex("", undefined, { host: "footer" })} className="btn-cta-primary">
+                <button type="button" onClick={() => openNex("", undefined, { host: "footer" })} className="btn-cta-primary mt-7">
                   <MessageCircle aria-hidden="true" />
                   Ask Nex
                 </button>

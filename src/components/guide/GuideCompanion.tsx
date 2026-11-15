@@ -541,6 +541,8 @@ export default function GuideCompanion() {
       if (landed !== landedRef.current) {
         landedRef.current = landed;
         setFooterDocked(landed);
+        // Whatever it was saying up the page isn't for the footer.
+        if (landed) hush();
         // A floating ask box can't stay beside a disc that has grown into the
         // footer: its conversation moves into the footer's own host, in the
         // page. (An in-page host the visitor chose keeps it.)

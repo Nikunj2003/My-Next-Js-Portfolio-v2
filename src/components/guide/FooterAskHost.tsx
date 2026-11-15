@@ -101,16 +101,28 @@ export function FooterNexLine() {
   const companion = useCompanionState();
   const line = useSpoken();
   const landed = companion.footerDocked;
-  const text = landed ? line ?? "End of the page. Ask me what you didn't find." : "";
+  const text = landed ? line ?? "Didn't find something? Ask me." : "";
   return (
-    <p aria-live="off" className="flex min-h-11 max-w-[15rem] items-end justify-center text-center text-[0.8125rem] leading-snug text-muted-foreground" style={{ textWrap: "balance" }}>
-      <AnimatePresence mode="wait" initial={false}>
+    // A reserved band: the pill grows upward from its bottom edge, so the
+    // slot below never moves when Nex says something longer.
+    <div aria-live="off" className="relative h-14 w-full">
+      <AnimatePresence initial={false}>
         {text && (
-          <motion.span key={text} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+          <motion.p
+            key={text}
+            initial={{ opacity: 0, y: 6, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 4, scale: 0.98 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute bottom-0 left-1/2 w-max max-w-[18rem] -translate-x-1/2 rounded-[1.25rem] border border-foreground/10 glass-subtle px-4 py-2 text-center text-[0.8125rem] leading-snug text-muted-foreground shadow-accent-soft"
+            style={{ textWrap: "balance", transformOrigin: "50% 100%" }}
+          >
             {text}
-          </motion.span>
+            {/* The tail, pointing down at Nex. */}
+            <span aria-hidden="true" className="absolute -bottom-[5px] left-1/2 h-2.5 w-2.5 -translate-x-1/2 rotate-45 border-b border-r border-foreground/10 glass-subtle" />
+          </motion.p>
         )}
       </AnimatePresence>
-    </p>
+    </div>
   );
 }
