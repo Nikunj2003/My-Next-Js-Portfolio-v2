@@ -143,17 +143,25 @@ export function GuideHeroAvatar() {
           {ORBIT.map((chip) => {
             const radians = (chip.angle * Math.PI) / 180;
             return (
-              <a
+              // The wrapper holds the chip's place on the orbit (its transform);
+              // the intro animates the chip inside it. Animating the chip's own
+              // transform replaced that position, so every chip sat on the
+              // avatar's face until the intro ended, then jumped out.
+              <span
                 key={chip.label}
-                data-hero-chip
-                href={chip.href}
-                tabIndex={askOpen ? -1 : undefined}
-                // Hidden while the ask box is open: not clickable either.
-                className={`${askOpen ? "pointer-events-none" : "pointer-events-auto"} absolute left-1/2 top-1/2 rounded-full border border-primary/25 glass-subtle px-3 py-1 font-mono text-[11px] uppercase tracking-wider text-primary-text shadow-accent-soft transition-colors hover:border-primary/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
+                className="absolute left-1/2 top-1/2"
                 style={{ transform: `translate(-50%, -50%) translate(${Math.cos(radians) * 214}px, ${Math.sin(radians) * 186}px)` }}
               >
-                {chip.label}
-              </a>
+                <a
+                  data-hero-chip
+                  href={chip.href}
+                  tabIndex={askOpen ? -1 : undefined}
+                  // Hidden while the ask box is open: not clickable either.
+                  className={`${askOpen ? "pointer-events-none" : "pointer-events-auto"} block rounded-full border border-primary/25 glass-subtle px-3 py-1 font-mono text-[11px] uppercase tracking-wider text-primary-text shadow-accent-soft transition-colors hover:border-primary/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
+                >
+                  {chip.label}
+                </a>
+              </span>
             );
           })}
         </div>

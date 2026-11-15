@@ -27,16 +27,17 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
    * offset got clamped to almost nothing, which is why the bug appeared to
    * depend on the entry point rather than on navigation itself.
    */
-  const isFirstRenderRef = useRef(true);
+  const lastPathRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // Skip the very first run. On a hard load or a refresh the browser owns the
-    // scroll position — forcing 0 here would defeat scroll restoration, which is
-    // a separate fix. Only client-side navigations need the reset.
-    if (isFirstRenderRef.current) {
-      isFirstRenderRef.current = false;
-      return;
-    }
+    // Only a real route change resets the scroll. On a hard load or a refresh
+    // the browser owns the position (scroll restoration keeps the visitor's
+    // place). This used to skip "the first run" with a flag, but React runs
+    // effects twice in development, so the second run reset every refresh to
+    // the top. Comparing the path is true however often the effect runs.
+    const previous = lastPathRef.current;
+    lastPathRef.current = pathname;
+    if (previous === null || previous === pathname) return;
 
     // A hash target owns the scroll position; do not fight it.
     if (window.location.hash) return;

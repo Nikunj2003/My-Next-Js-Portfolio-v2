@@ -50,3 +50,18 @@ test("the avatar sleeps, then wakes, through the guide's own states", () => {
   assert.ok(intro.indexOf('type: "intro/sleep"') < intro.indexOf('type: "intro/wake"'));
   assert.match(intro, /whenAvatarDrawn\(INTRO\.avatarTimeoutMs\)/, "waits for the live avatar");
 });
+
+test("chips keep their orbit position while the intro animates them", () => {
+  // The intro animates the chip's own transform; its place on the orbit must be
+  // on a wrapper, or every chip sits on the avatar's face until the intro ends.
+  const avatar = readFileSync("src/components/guide/GuideHeroAvatar.tsx", "utf8");
+  const chip = avatar.slice(avatar.indexOf("{ORBIT.map"), avatar.indexOf("</span>\n            );"));
+  assert.match(chip, /<span[\s\S]*?style=\{\{ transform: `translate\(-50%, -50%\) translate\(/, "the wrapper holds the position");
+  assert.match(chip, /<a\s+data-hero-chip[^>]*?className=\{`[^`]*\bblock\b/, "the chip itself has no positioning transform");
+});
+
+test("a refresh keeps the visitor's place: the route-change scroll reset ignores reloads", () => {
+  const smooth = readFileSync("src/components/SmoothScroll.tsx", "utf8");
+  assert.match(smooth, /if \(previous === null \|\| previous === pathname\) return;/);
+  assert.doesNotMatch(smooth, /isFirstRenderRef/, "a first-run flag breaks under React's double effects");
+});
