@@ -1,18 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { AskContent } from "@/components/guide/AskContent";
 import { dispatchCompanion, openPanel, takeAskOpener, useCompanionState } from "@/lib/guide/companion-store";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useSpoken } from "@/lib/guide/spoken";
 
 /**
- * The footer's conversation, in the page below the landing band: it opens on
- * "Ask Nex" in the footer (or any ask once Nex has landed there) and pushes
- * the copyright line down, never covering the sign-off or the links. Same
- * ask box as the hero's; one is mounted at a time (`askHost`).
+ * The footer's right-hand column: its links, or, once the visitor asks here,
+ * the conversation in their place, beside the landed Nex. The links come back
+ * when it closes. Same ask box as the hero's; one is mounted at a time
+ * (`askHost`). Phones use the sheet, so the links stay.
  */
-export function FooterAskHost() {
+export function FooterAskHost({ children }: { children: ReactNode }) {
   const companion = useCompanionState();
   const isMobile = useIsMobile();
   const reduceMotion = Boolean(useReducedMotion());
@@ -55,9 +56,9 @@ export function FooterAskHost() {
   }, [open, close]);
 
   return (
-    <div ref={hostRef} className="flex justify-center">
-      <AnimatePresence initial={false}>
-        {open && (
+    <div ref={hostRef} className="order-3 min-w-0 md:justify-self-stretch">
+      <AnimatePresence initial={false} mode="wait">
+        {open ? (
           <motion.div
             key="ask"
             id="nex-host-footer"
@@ -67,12 +68,47 @@ export function FooterAskHost() {
             animate={{ opacity: 1, y: 0 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6 }}
             transition={{ duration: reduceMotion ? 0.1 : 0.22 }}
-            className="mt-10 flex w-full max-w-[40rem] flex-col overflow-hidden rounded-2xl border border-primary/20 text-left glass-strong shadow-accent-soft"
+            className="flex w-full flex-col overflow-hidden rounded-2xl border border-primary/20 text-left glass-strong shadow-accent-soft"
           >
             <AskContent inline activeSection="contact" onExpand={openPanel} onClose={close} isMobile={false} reduceMotion={reduceMotion} />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="links"
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 8 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 8 }}
+            transition={{ duration: reduceMotion ? 0.1 : 0.2 }}
+            className="flex md:justify-end"
+          >
+            {children}
           </motion.div>
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+/**
+ * What Nex says, above its slot in the footer: the line it is saying right
+ * now (a reaction to a click or hover), or a short prompt once it has landed.
+ * Nothing before it arrives, so the slot never claims "Nex is here" when it
+ * isn't. A reserved band, so nothing moves when it talks.
+ */
+export function FooterNexLine() {
+  const companion = useCompanionState();
+  const line = useSpoken();
+  const landed = companion.footerDocked;
+  const text = landed ? line ?? "End of the page. Ask me what you didn't find." : "";
+  return (
+    <p aria-live="off" className="flex min-h-11 max-w-[15rem] items-end justify-center text-center text-[0.8125rem] leading-snug text-muted-foreground" style={{ textWrap: "balance" }}>
+      <AnimatePresence mode="wait" initial={false}>
+        {text && (
+          <motion.span key={text} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+            {text}
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </p>
   );
 }

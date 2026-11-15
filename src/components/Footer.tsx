@@ -7,7 +7,7 @@ import { scrollToHash, scrollToTop } from "@/lib/scroll";
 import { SECTION_LINKS, SOCIAL_LINKS } from "@/data/site-links";
 import { openNex } from "@/lib/ask-nex";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
-import { FooterAskHost } from "@/components/guide/FooterAskHost";
+import { FooterAskHost, FooterNexLine } from "@/components/guide/FooterAskHost";
 
 /**
  * The end of every page (homepage, /work and every case study): one glass
@@ -17,8 +17,9 @@ import { FooterAskHost } from "@/components/guide/FooterAskHost";
  * As the landing band (`data-guide-footer-band`) rises into view the scroll
  * companion curves into the slot (`data-guide-footer-socket`) and grows to
  * its size; scrolling back reverses it. The slot is an empty ring until Nex
- * arrives, never a second face. Asking here opens the conversation in the
- * same panel, under the band, so it never covers the links.
+ * arrives, never a second face; once landed, clicking Nex gets a reaction and
+ * its line shows above the slot. Asking here opens the conversation in the
+ * links' column, beside Nex; the links come back when it closes.
  */
 const Footer = () => {
   const pathname = usePathname();
@@ -36,7 +37,7 @@ const Footer = () => {
       <div className="container-narrow">
         <SpotlightCard className="w-full">
           <div className="px-6 pb-6 pt-10 sm:px-10 sm:pt-12">
-            <div data-guide-footer-band className="grid items-center gap-10 text-center md:grid-cols-[minmax(0,1fr)_12rem_minmax(0,1fr)] md:gap-10 md:text-left">
+            <div data-guide-footer-band className="grid items-center gap-10 text-center md:grid-cols-[minmax(0,1fr)_15rem_minmax(0,1fr)] md:gap-10 md:text-left">
               {/* Sign-off */}
               <div className="order-2 md:order-1">
                 <p className="font-[family-name:var(--font-display)] text-[1.625rem] font-semibold leading-[1.15] tracking-[-0.025em] text-foreground sm:text-[1.875rem]" style={{ textWrap: "balance" }}>
@@ -64,7 +65,8 @@ const Footer = () => {
               </div>
 
               {/* Nex's landing slot */}
-              <div className="order-1 flex flex-col items-center gap-4 md:order-2">
+              <div className="order-1 flex flex-col items-center gap-3 md:order-2">
+                <FooterNexLine />
                 <span data-guide-footer-socket aria-hidden="true" className="relative block h-[150px] w-[150px]">
                   <span className="pointer-events-none absolute inset-[-18%] rounded-full bg-[radial-gradient(circle,hsl(var(--primary)/0.12)_0%,transparent_68%)]" />
                   <span className="nex-ring" />
@@ -76,33 +78,33 @@ const Footer = () => {
                 </button>
               </div>
 
-              {/* Links */}
-              <nav aria-label="Footer" className="order-3 md:justify-self-end">
-                <p className="mb-3 text-xs font-semibold text-muted-foreground/80">Explore</p>
-                <ul className="mx-auto grid w-fit grid-cols-2 gap-x-10 gap-y-1 text-left text-sm md:mx-0">
-                  {SECTION_LINKS.map((link) => (
-                    <li key={link.label}>
-                      <Link href={sectionHref(link.href)} onClick={(event) => onSection(event, link.href)} className="inline-flex min-h-9 items-center text-foreground/75 transition-colors hover:text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-                        {link.label}
+              {/* Links, or the conversation in their place */}
+              <FooterAskHost>
+                <nav aria-label="Footer">
+                  <p className="mb-3 text-xs font-semibold text-muted-foreground/80">Explore</p>
+                  <ul className="mx-auto grid w-fit grid-cols-2 gap-x-10 gap-y-1 text-left text-sm md:mx-0">
+                    {SECTION_LINKS.map((link) => (
+                      <li key={link.label}>
+                        <Link href={sectionHref(link.href)} onClick={(event) => onSection(event, link.href)} className="inline-flex min-h-9 items-center text-foreground/75 transition-colors hover:text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                          {link.label}
+                        </Link>
+                      </li>
+                    ))}
+                    <li>
+                      <Link href="/work" className="inline-flex min-h-9 items-center text-foreground/75 transition-colors hover:text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                        All case studies
                       </Link>
                     </li>
-                  ))}
-                  <li>
-                    <Link href="/work" className="inline-flex min-h-9 items-center text-foreground/75 transition-colors hover:text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-                      All case studies
-                    </Link>
-                  </li>
-                  <li>
-                    <a href={personalInfo.resumeUrl} download className="inline-flex min-h-9 items-center gap-1.5 text-foreground/75 transition-colors hover:text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-                      <Download className="h-3.5 w-3.5" aria-hidden="true" />
-                      Resume
-                    </a>
-                  </li>
-                </ul>
-              </nav>
+                    <li>
+                      <a href={personalInfo.resumeUrl} download className="inline-flex min-h-9 items-center gap-1.5 text-foreground/75 transition-colors hover:text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                        <Download className="h-3.5 w-3.5" aria-hidden="true" />
+                        Resume
+                      </a>
+                    </li>
+                  </ul>
+                </nav>
+              </FooterAskHost>
             </div>
-
-            <FooterAskHost />
 
             <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-foreground/10 pt-5 text-xs text-muted-foreground">
               <p>© {new Date().getFullYear()} Nikunj Khitha</p>
