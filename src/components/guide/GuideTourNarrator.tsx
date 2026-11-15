@@ -309,7 +309,6 @@ type NarrationProps = {
 };
 
 function TourNarration({ index, drifted, onBack, onNext, onResume, onSkip, onAsk }: NarrationProps) {
-  const step = TOUR_STEPS[index];
   const isLast = index === TOUR_STEPS.length - 1;
   const nextRef = useRef<HTMLButtonElement>(null);
   // The tour has just started: put the keyboard on "Next" without moving the page.
@@ -331,8 +330,17 @@ function TourNarration({ index, drifted, onBack, onNext, onResume, onSkip, onAsk
           <X className="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
-      <h2 className="text-base font-semibold text-foreground">{step.title}</h2>
-      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{step.line}</p>
+      {/* Every step's text is laid out in the same grid cell, hidden but for
+          the current one, so the card is as tall as the longest step on every
+          step: it never grows or shrinks (and moves up and down) between steps. */}
+      <div className="grid">
+        {TOUR_STEPS.map((each, i) => (
+          <div key={each.title} aria-hidden={i !== index} className={"col-start-1 row-start-1 " + (i === index ? "" : "invisible")}>
+            <h2 className="text-base font-semibold text-foreground">{each.title}</h2>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{each.line}</p>
+          </div>
+        ))}
+      </div>
       {drifted && (
         <button
           type="button"

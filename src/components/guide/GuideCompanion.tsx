@@ -233,14 +233,18 @@ export default function GuideCompanion() {
    */
   const poseFlightRef = useRef<{ from: Point; fromScale: number; fromChrome: number; start: number } | null>(null);
   const drawnPoseRef = useRef<{ point: Point; scale: number; chrome: number } | null>(null);
+  // The tour moves Nex to the corner the same way (it narrates from there).
+  const cornerModeRef = useRef(false);
+  const cornerMode = companion.panelOpen || touring;
   useLayoutEffect(() => {
-    if (panelOpenRef.current === companion.panelOpen) return;
     panelOpenRef.current = companion.panelOpen;
+    if (cornerModeRef.current === cornerMode) return;
+    cornerModeRef.current = cornerMode;
     const pose = drawnPoseRef.current;
     poseFlightRef.current = pose && !reduceMotion ? { from: pose.point, fromScale: pose.scale, fromChrome: pose.chrome, start: performance.now() } : null;
     // The glide between spots would run on top of the flight: the flight owns it.
     glideRef.current = null;
-  }, [companion.panelOpen, reduceMotion]);
+  }, [companion.panelOpen, cornerMode, reduceMotion]);
   const visibleRef = useRef(visible);
   const touringRef = useRef(touring);
   useLayoutEffect(() => {

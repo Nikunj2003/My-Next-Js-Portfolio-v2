@@ -127,14 +127,42 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
   // companion moves to a new spot, and when the current side stops fitting
   // (checked each frame, cheaply); otherwise held, so it never flips while
   // scrolling. Reading text on screen is avoided where a side allows it.
-  const preferKey = (corner ? ["left", "top"] : prefer).join(",");
+  // The tour narrates from the corner, always above it: one side for every
+  // step, so the card never moves between left and top as steps change length.
+  const preferKey = (showing === "tour" ? ["top"] : corner ? ["left", "top"] : prefer).join(",");
   const [openSide, setOpenSide] = useState<BubbleSide>("right");
   // Hidden until it has been measured and its side chosen from that. It was
   // drawn first on a guessed side and height (right, 220px), then moved once
   // measured: in the corner that showed as a flash on the right, then a jump
   // to the left.
   const [readyNode, setReadyNode] = useState<HTMLDivElement | null>(null);
-  const ready = node !== null && readyNode === node;
+  // The tour card waits for Nex to reach the corner (it flies there when the
+  // tour starts), then appears once, beside it: it used to ride along the
+  // flight and switch sides on the way, the flicker before it settled.
+  // Once shown it stays: later steps scroll the page, never Nex.
+  const [restedNode, setRestedNode] = useState<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (showing !== "tour" || !node) return;
+    let timer = 0;
+    const done = () => {
+      offX();
+      offY();
+      setRestedNode(node);
+    };
+    const unsettle = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(done, 140);
+    };
+    const offX = anchorX.on("change", unsettle);
+    const offY = anchorY.on("change", unsettle);
+    timer = window.setTimeout(done, 140);
+    return () => {
+      offX();
+      offY();
+      window.clearTimeout(timer);
+    };
+  }, [anchorX, anchorY, node, showing]);
+  const ready = node !== null && readyNode === node && (showing !== "tour" || restedNode === node);
   const sideRef = useRef<BubbleSide | null>(null);
   /** The size a side is chosen for: the ask box at its reserved height. */
   const sizingHeight = useCallback(
