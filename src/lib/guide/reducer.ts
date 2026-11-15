@@ -46,6 +46,7 @@ export const initialGuideModel: GuideModel = {
   ambient: null,
   transient: null,
   reaction: null,
+  introAsleep: false,
   clicks: [],
   streak: { count: 0, at: 0 },
   clickCooldownUntil: 0,
@@ -85,8 +86,9 @@ export function reduceGuide(model: GuideModel, event: GuideEvent): GuideModel {
     }
     case "chat/open": {
       // Opening mid-answer keeps the busy expression; only the surface changed.
+      // Opening the chat also wakes the hero avatar if it is still asleep.
       const phase = isBusy(model) ? model.phase : "open";
-      return wake(withPoke({ ...model, chatOpen: true, phase }, "nod"));
+      return wake(withPoke({ ...model, introAsleep: false, chatOpen: true, phase }, "nod"));
     }
     case "chat/close": {
       // Closing mid-answer leaves the request running, so the avatar keeps showing it.
@@ -129,13 +131,17 @@ export function reduceGuide(model: GuideModel, event: GuideEvent): GuideModel {
         event.retryable ? RETRYABLE_ERROR : FAILED,
         TRANSIENT_MS.error,
       );
-    case "intro/wake":
-      // Opens its eyes, happy, then a small nod as it settles. Only from rest:
-      // never over a chat or the tour.
-      if (isBusy(model) || model.transient) return model;
-      return withPoke(withTransient({ ...model, now: event.now }, WAKING, TRANSIENT_MS.waking), "nod");
+    case "intro/sleep":
+      return model.introAsleep ? model : { ...model, introAsleep: true };
+    case "intro/wake": {
+      // Opens its eyes (the library's waking clip), then a nod as it settles.
+      // Only from rest: never over a chat or the tour.
+      const awake = { ...model, introAsleep: false, now: event.now };
+      if (isBusy(model) || model.transient) return awake;
+      return withPoke(withTransient(awake, WAKING, TRANSIENT_MS.waking), "nod");
+    }
     case "pet/click":
-      return pet(model, event.now);
+      return pet({ ...model, introAsleep: false }, event.now);
     case "page/hover":
       return event.active === model.hovering ? model : wake({ ...model, hovering: event.active });
     case "page/section": {
@@ -260,6 +266,7 @@ export function selectGuideView(model: GuideModel): GuideView {
       break;
   }
 
+  if (model.introAsleep) return view(SLEEPING, "Waking up");
   if (model.reaction) return view(model.reaction, "Having fun");
   if (model.tour) return view(model.tour, "Guided tour");
   if (model.phase === "open" || model.hovering) return view(LISTENING, "Ready to help");

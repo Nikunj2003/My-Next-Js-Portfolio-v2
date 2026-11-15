@@ -6,6 +6,7 @@ import { Providers } from './providers'
 import { SmoothScroll } from '@/components/SmoothScroll'
 import ScrollProgress from '@/components/ScrollProgress'
 import { siteConfig, ogLocale } from '@/lib/seo/site'
+import { PLAY_SCRIPT } from '@/lib/hero-intro'
 import { GuideCompanionMount } from '@/components/guide/GuideCompanionMount'
 // The full conversation panel, on every route; it loads on first open.
 import AITwinChatMount from '@/components/AITwinChatMount'
@@ -71,6 +72,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="color-scheme" content="dark light" />
+        {/* The hero intro's decision, blocking and before the first paint, so the
+            page is drawn at the intro's starting frame. (next/script's
+            beforeInteractive is queued until Next boots, which is after paint.) */}
+        <script id="hero-intro" dangerouslySetInnerHTML={{ __html: PLAY_SCRIPT }} />
       </head>
       <body className="font-sans" suppressHydrationWarning>
         <a
@@ -93,15 +98,7 @@ export default function RootLayout({
                   var shouldUseDark = storedTheme ? storedTheme === 'dark' : prefersDark;
 
                   root.classList.toggle('dark', shouldUseDark);
-                  root.classList.add('js');
-                  // The hero entrance plays once per tab, on a fresh visit at
-                  // the top: not on a reload, a deep link, or a return visit.
-                  var nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
-                  var seen = sessionStorage.getItem('hero-intro-seen');
-                  if (location.hash || (nav && nav.type === 'reload') || seen) root.dataset.heroIntro = 'skip';
-                  sessionStorage.setItem('hero-intro-seen', '1');
                 } catch(e) {
-                  document.documentElement.classList.add('js');
                   document.documentElement.classList.toggle(
                     'dark',
                     window.matchMedia('(prefers-color-scheme: dark)').matches

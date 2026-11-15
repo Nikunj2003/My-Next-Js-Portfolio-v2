@@ -49,7 +49,9 @@ export type GuideEvent =
   | { type: "tour/end"; completed: boolean }
   | { type: "guide/point"; pointAt: ViewportPoint | null }
   | { type: "availability"; available: boolean }
-  /** The hero avatar has just appeared on a fresh visit: it wakes up. `now` makes timing testable. */
+  /** The hero's entrance: the avatar starts asleep... */
+  | { type: "intro/sleep" }
+  /** ...and wakes up. `now` makes timing testable. */
   | { type: "intro/wake"; now: number }
   | { type: "tick"; now: number };
 
@@ -74,6 +76,8 @@ export type GuideModel = {
   transient: Transient | null;
   /** A playful reaction to being clicked. Below chat activity, above everything else. */
   reaction: Transient | null;
+  /** Asleep before the hero's entrance wakes it (`intro/sleep` until `intro/wake`). */
+  introAsleep: boolean;
   /** Recent click times, for dizzy detection. */
   clicks: number[];
   streak: { count: number; at: number };

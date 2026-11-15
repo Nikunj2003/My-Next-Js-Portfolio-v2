@@ -446,166 +446,42 @@ textarea,
 }
 
 /* ------------------------------------------------------------------------ */
-/* Hero entrance                                                             */
+/* Hero intro (played by components/HeroIntro.tsx)                           */
 /* ------------------------------------------------------------------------ */
 /*
- * The only entrance on the site, plain CSS so it plays from the first paint.
- * Each element sets its start with `--hero-d` (one list in HeroSection.tsx).
- *
- * Rules:
- * - Glass surfaces (backdrop blur) are revealed by clip, never faded: an
- *   element or ancestor below full opacity flattens the blur until it ends.
- * - Solid buttons are revealed by clip and scale, never shown translucent
- *   (a 10%-opaque primary button reads as a broken dark pill).
- * - Text is in the HTML from the first byte; masks only move it.
- * - The avatar waits for `[data-awake]` (set once the live drawing exists),
- *   so its first appearance is already alive. Its chips, caption and buttons
- *   follow it.
- * - Skipped on a reload or a deep link (`html[data-hero-intro="skip"]`), and
- *   under reduced motion.
+ * The starting frame, from the first paint, while `html[data-hero-intro=play]`
+ * (set before paint by the theme script): the copy, chips, the avatar's
+ * caption and buttons, and the backdrop are hidden; the avatar's stage is
+ * invisible until HeroIntro brings it up in the middle of the screen. Only
+ * opacity and clip here (never transform), so HeroIntro measures the stage's
+ * real place. The failsafe reveals everything after 4s if JavaScript never
+ * runs the intro, so the page can never be stuck hidden.
  */
-@layer components {
-  .hero-mask {
-    display: inline-block;
-    overflow: hidden;
-    vertical-align: bottom;
-    /* Room for descenders (the j), taken back so layout is unchanged. */
-    padding-bottom: 0.14em;
-    margin-bottom: -0.14em;
-  }
-  .hero-anim {
-    animation-duration: var(--hero-t, 700ms);
-    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
-    animation-fill-mode: both;
-    animation-delay: var(--hero-d, 0ms);
-  }
-  .hero-rise { display: inline-block; animation-name: hero-rise; --hero-t: 1000ms; transform-origin: 0 100%; }
-  .hero-unmask { animation-name: hero-unmask; --hero-t: 900ms; animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); }
-  .hero-wipe { animation-name: hero-wipe; --hero-t: 700ms; }
-  .hero-wipe-up { animation-name: hero-wipe-up; --hero-t: 650ms; }
-  .hero-pop { animation-name: hero-pop; --hero-t: 700ms; }
-  .hero-fade { animation-name: hero-fade; --hero-t: 600ms; }
-  .hero-glow-in { animation-name: hero-glow-in; --hero-t: 1600ms; }
-  .hero-backdrop-in { animation-name: hero-fade; --hero-t: 1600ms; animation-timing-function: ease-out; }
-
-  /* A gradient word that catches the light once as it lands. */
-  .hero-sheen {
-    background-size: 200% 100%;
-    animation: hero-sheen 1400ms cubic-bezier(0.33, 1, 0.68, 1) var(--hero-d, 0ms) both;
-  }
-  /* The availability dot sends out one ring. */
-  .hero-ping { position: relative; }
-  .hero-ping::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: 9999px;
-    background: currentColor;
-    animation: hero-ping 1100ms cubic-bezier(0.16, 1, 0.3, 1) var(--hero-d, 0ms) both;
-    pointer-events: none;
-  }
-  /* Stat tiles: the accent hairline grows down first, then the figure rises. */
-  .hero-stat { position: relative; }
-  .hero-stat::before {
-    content: "";
-    position: absolute;
-    left: -2px;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: hsl(var(--primary));
-    transform-origin: 50% 0;
-    animation: hero-bar 800ms cubic-bezier(0.16, 1, 0.3, 1) var(--hero-d, 0ms) both;
-    pointer-events: none;
-  }
-
-  /* The avatar: nothing until it is alive, then it rises in out of a blur. */
-  .hero-avatar-wake { opacity: 0; }
-  [data-awake] .hero-avatar-wake,
-  [data-awake].hero-avatar-wake {
-    animation: hero-wake 1100ms cubic-bezier(0.34, 1.32, 0.64, 1) var(--hero-wake-d, 0ms) both;
-  }
-  /* Chips burst out from the avatar's centre along their own angle. The
-     outer span holds the resting position; this one travels to it. */
-  .hero-chip { opacity: 0; }
-  [data-awake] .hero-chip {
-    animation: hero-chip 700ms cubic-bezier(0.34, 1.4, 0.64, 1) calc(var(--hero-wake-d, 0ms) + var(--hero-chip-d, 0ms)) both;
-  }
-  .hero-after-wake { opacity: 0; }
-  [data-awake] .hero-after-wake {
-    animation: var(--hero-after, hero-fade) 650ms cubic-bezier(0.16, 1, 0.3, 1) calc(var(--hero-wake-d, 0ms) + var(--hero-after-d, 0ms)) both;
-  }
+html[data-hero-intro="play"] #hero [data-hero-part="copy"]:not([data-hero-glass]),
+html[data-hero-intro="play"] #hero [data-hero-part="avatar-ui"],
+html[data-hero-intro="play"] #hero [data-hero-part="backdrop"],
+html[data-hero-intro="play"] #hero [data-hero-part="stage"] {
+  opacity: 0;
+  animation: hero-failsafe-show 0s 4s forwards;
 }
+html[data-hero-intro="play"] #hero [data-hero-part="copy"][data-hero-glass],
+html[data-hero-intro="play"] #hero [data-hero-chip] {
+  clip-path: inset(0 0 100% 0);
+  animation: hero-failsafe-clip 0s 4s forwards;
+}
+html[data-hero-intro="play"] #hero [data-hero-part="avatar-glow"] { opacity: 0; }
+/* While the intro waits for the live avatar, the still drawing never shows. */
+html[data-hero-intro="play"] #hero [data-hero-still] { visibility: hidden; }
+@keyframes hero-failsafe-show { to { opacity: 1; } }
+@keyframes hero-failsafe-clip { to { clip-path: none; } }
 
-/* The hero's still drawing is the picture only without JavaScript, and under
-   reduced motion or on a skipped intro, where the avatar should simply be
-   there from the first paint rather than appear once it has loaded. */
-html.js:not([data-hero-intro="skip"]) .hero-still-nojs { visibility: hidden; }
+/* The sleeping z's drift up and fade, one after another. */
+.hero-z { opacity: 0; animation: hero-z 1800ms ease-out infinite; }
+@keyframes hero-z {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.6); }
+  25% { opacity: 0.9; }
+  100% { opacity: 0; transform: translate(16px, -30px) scale(1); }
+}
 @media (prefers-reduced-motion: reduce) {
-  html.js .hero-still-nojs { visibility: visible; }
+  .hero-z { animation: none; }
 }
-
-@keyframes hero-rise {
-  from { transform: translateY(110%) skewY(5deg); }
-  to { transform: none; }
-}
-@keyframes hero-unmask {
-  from { -webkit-mask-image: linear-gradient(to top, transparent 0%, transparent 100%); mask-image: linear-gradient(to top, transparent 0%, transparent 100%); transform: translateY(10px); }
-  60% { -webkit-mask-image: linear-gradient(to top, #000 60%, transparent 100%); mask-image: linear-gradient(to top, #000 60%, transparent 100%); }
-  to { -webkit-mask-image: linear-gradient(to top, #000 100%, #000 100%); mask-image: linear-gradient(to top, #000 100%, #000 100%); transform: none; }
-}
-@keyframes hero-wipe {
-  from { clip-path: inset(0 100% 0 0 round 9999px); }
-  to { clip-path: inset(0 0 0 0 round 9999px); }
-}
-@keyframes hero-wipe-up {
-  from { clip-path: inset(100% 0 0 0 round 9999px); transform: translateY(8px); }
-  to { clip-path: inset(0 0 0 0 round 9999px); transform: none; }
-}
-@keyframes hero-pop {
-  from { clip-path: inset(0 50% 0 50% round 9999px); transform: scale(0.94); }
-  to { clip-path: inset(0 0 0 0 round 9999px); transform: none; }
-}
-@keyframes hero-fade {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: none; }
-}
-@keyframes hero-glow-in {
-  from { opacity: 0; transform: scale(0.7); }
-  to { opacity: 1; transform: none; }
-}
-@keyframes hero-sheen {
-  from { background-position: 100% 0; }
-  to { background-position: 0% 0; }
-}
-@keyframes hero-ping {
-  0% { transform: scale(1); opacity: 0.7; }
-  100% { transform: scale(3.2); opacity: 0; }
-}
-@keyframes hero-bar {
-  from { transform: scaleY(0); }
-  to { transform: scaleY(1); }
-}
-@keyframes hero-wake {
-  0% { opacity: 0; transform: translateY(26px) scale(0.84); filter: blur(12px); }
-  55% { opacity: 1; filter: blur(0); }
-  100% { opacity: 1; transform: none; filter: none; }
-}
-@keyframes hero-chip {
-  from { transform: translate(var(--hero-cx, 0px), var(--hero-cy, 0px)) scale(0.4); clip-path: circle(0% at 50% 50%); }
-  to { transform: none; clip-path: circle(75% at 50% 50%); }
-}
-
-/* Reduced motion, a reload, or a deep link: the hero is simply there. */
-@media (prefers-reduced-motion: reduce) {
-  .hero-anim, .hero-sheen, .hero-ping::after, .hero-stat::before,
-  [data-awake] .hero-avatar-wake, [data-awake].hero-avatar-wake, [data-awake] .hero-chip, [data-awake] .hero-after-wake { animation: none; }
-  .hero-avatar-wake, .hero-chip, .hero-after-wake { opacity: 1; }
-  .hero-ping::after { content: none; }
-}
-html[data-hero-intro="skip"] :is(.hero-anim, .hero-sheen, .hero-avatar-wake, .hero-chip, .hero-after-wake),
-html[data-hero-intro="skip"] .hero-stat::before {
-  animation: none !important;
-}
-html[data-hero-intro="skip"] :is(.hero-avatar-wake, .hero-chip, .hero-after-wake) { opacity: 1; }
-html[data-hero-intro="skip"] .hero-ping::after { content: none; }

@@ -214,5 +214,18 @@ test("the hero avatar wakes up on arrival, but never over a chat", () => {
   let busy = reduceGuide(initialGuideModel, { type: "chat/open" } as GuideEvent);
   busy = reduceGuide(busy, { type: "chat/send" } as GuideEvent);
   const after = reduceGuide(busy, { type: "intro/wake", now: 2000 } as GuideEvent);
-  assert.equal(after, busy);
+  assert.equal(after.transient, busy.transient, "no waking cue over a chat");
+  assert.equal(after.phase, busy.phase);
+});
+
+test("the hero avatar sleeps until the entrance wakes it; the visitor can wake it early", () => {
+  const asleep = reduceGuide(initialGuideModel, { type: "intro/sleep" } as GuideEvent);
+  assert.equal(selectGuideView(asleep).state, "sleeping");
+  const woke = reduceGuide(asleep, { type: "intro/wake", now: 1000 } as GuideEvent);
+  assert.equal(woke.introAsleep, false);
+  assert.equal(selectGuideView(woke).state, "waking");
+  const clicked = reduceGuide(asleep, { type: "pet/click", now: 500 } as GuideEvent);
+  assert.equal(clicked.introAsleep, false);
+  const opened = reduceGuide(asleep, { type: "chat/open" } as GuideEvent);
+  assert.notEqual(selectGuideView(opened).state, "sleeping");
 });

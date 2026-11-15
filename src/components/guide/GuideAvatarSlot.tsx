@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { GuideAvatarProps } from "@/components/guide/GuideAvatar";
+import { introPending } from "@/lib/hero-intro";
 
 const GuideAvatar = dynamic(() => import("@/components/guide/GuideAvatar"), {
   ssr: false,
@@ -51,19 +52,11 @@ export function whenIdle(callback: () => void) {
 export function GuideAvatarSlot({
   size,
   className,
-  intro = false,
-  onAwake,
+  onDrawn,
   ...props
 }: GuideAvatarProps & {
-  /** Called once the avatar is ready to be seen (live drawn, or the still fallback). */
-  onAwake?: () => void;
-  /**
-   * The hero's entrance: the still drawing is never shown while the live
-   * avatar is on its way (it is the picture only without JavaScript, on
-   * low-power devices and under reduced motion). The slot gets `data-awake`
-   * once the live drawing exists, which starts the CSS wake-up animation.
-   */
-  intro?: boolean;
+  /** Called once the live avatar has drawn (the hero's intro waits for it). */
+  onDrawn?: () => void;
 }) {
   const [live, setLive] = useState(false);
   // The still drawing stays on screen until the live avatar has actually
@@ -72,20 +65,16 @@ export function GuideAvatarSlot({
   const [drawn, setDrawn] = useState(false);
   const liveRef = useRef<HTMLSpanElement>(null);
 
-  // With the intro the live avatar loads at once (it is the hero's main
-  // picture); otherwise it waits for idle time.
-  const [stillOnly, setStillOnly] = useState(false);
   useEffect(() => {
-    if (prefersStatic()) {
-      if (intro) queueMicrotask(() => setStillOnly(true));
-      return;
-    }
-    if (intro) {
+    if (prefersStatic()) return;
+    // The hero's intro is waiting for this avatar: load it now, not on idle.
+    if (onDrawn && introPending()) {
       queueMicrotask(() => setLive(true));
       return;
     }
     return whenIdle(() => setLive(true));
-  }, [intro]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const node = liveRef.current;
@@ -93,6 +82,7 @@ export function GuideAvatarSlot({
     const check = () => {
       if (node.querySelector("svg")) {
         setDrawn(true);
+        onDrawn?.();
         return true;
       }
       return false;
@@ -103,37 +93,20 @@ export function GuideAvatarSlot({
     });
     observer.observe(node, { childList: true, subtree: true });
     return () => observer.disconnect();
-  }, [live]);
+  }, [live, onDrawn]);
 
-  // Intro: the still drawing shows only with no JavaScript (server HTML,
-  // hidden by the `js` class the theme script sets) or when the live avatar
-  // won't load here. Never as a placeholder that then swaps to the live one.
-  const awake = intro && (drawn || stillOnly);
-  useEffect(() => {
-    if (awake) onAwake?.();
-  }, [awake, onAwake]);
   return (
-    <span
-      className={cn("relative inline-flex shrink-0 items-center justify-center", className)}
-      style={{ width: size, height: size }}
-      data-awake={awake || undefined}
-    >
+    <span className={cn("relative inline-flex shrink-0 items-center justify-center", className)} style={{ width: size, height: size }}>
       <span
         aria-hidden="true"
-        className={cn(
-          "absolute inset-0 flex items-center justify-center transition-opacity duration-300 motion-reduce:transition-none",
-          intro && !stillOnly && "hero-still-nojs"
-        )}
+        data-hero-still
+        className="absolute inset-0 flex items-center justify-center transition-opacity duration-300 motion-reduce:transition-none"
         style={{ opacity: drawn ? 0 : 1 }}
       >
         <StaticGuideMark size={size} />
       </span>
       {live && (
-        <span
-          ref={liveRef}
-          className={cn("relative inline-flex", !intro && "transition-opacity duration-300 motion-reduce:transition-none")}
-          style={{ opacity: drawn ? 1 : 0 }}
-        >
+        <span ref={liveRef} className="relative inline-flex transition-opacity duration-300 motion-reduce:transition-none" style={{ opacity: drawn ? 1 : 0 }}>
           <GuideAvatar size={size} {...props} />
         </span>
       )}
