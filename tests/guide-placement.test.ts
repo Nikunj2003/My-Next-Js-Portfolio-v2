@@ -13,7 +13,7 @@ import {
   underPanelPoint,
   heroDockFrame,
   heroHandoffProgress,
-  COMPANION_FACE_SHARE, HERO_FACE_SHARE } from "../src/lib/guide/placement.ts";
+  COMPANION_FACE_SHARE, HERO_FACE_SHARE, freeBubbleSide } from "../src/lib/guide/placement.ts";
 import { lookToward } from "../src/lib/guide/gaze.ts";
 
 const viewport = { width: 1440, height: 900, insetTop: 85, insetBottom: 0 };
@@ -227,4 +227,16 @@ test("footer landing: starts at the spot, ends centred on the slot at its size, 
     assert.ok(frame.opacity > 0.4 && frame.opacity <= 1);
     previous = frame;
   }
+});
+
+test("a tip only takes a side that covers no reading text", () => {
+  const viewport = { width: 1280, height: 720, insetTop: 88, insetBottom: 0 };
+  const bubble = { width: 360, height: 112 };
+  // Text to the right of Nex: the right side is taken, so it opens elsewhere free.
+  const right = [{ left: 200, top: 560, width: 600, height: 160 }];
+  const side = freeBubbleSide({ x: 116, y: 640 }, 68, bubble, viewport, ["bottom", "right", "top"], right);
+  assert.notEqual(side, "right");
+  // Text all around: no free side, so no tip.
+  const everywhere = [{ left: 0, top: 88, width: 1280, height: 632 }];
+  assert.equal(freeBubbleSide({ x: 116, y: 640 }, 68, bubble, viewport, ["bottom", "right", "top"], everywhere), null);
 });

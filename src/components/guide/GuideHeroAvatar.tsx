@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { StaticGuideMark } from "@/components/guide/GuideAvatarSlot";
@@ -174,6 +174,20 @@ export function HeroAskHost() {
   const open = companion.bubble === "ask" && companion.askHost === "hero" && !isMobile;
   const openerRef = useRef<HTMLElement | null>(null);
   const hostRef = useRef<HTMLDivElement>(null);
+  // The host's height follows its content with an eased transition, so the
+  // role, line, actions and figures slide down when the conversation opens
+  // and back up when it closes, instead of jumping. Measured, not guessed.
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState<number | "auto">("auto");
+  useLayoutEffect(() => {
+    const inner = innerRef.current;
+    if (!inner) return;
+    const measure = () => setHeight(Math.ceil(inner.getBoundingClientRect().height));
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(inner);
+    return () => observer.disconnect();
+  }, []);
 
   // When it opens: remember what opened it (focus goes back there on close),
   // and bring the whole conversation into view if it isn't. One scroll,
@@ -215,18 +229,28 @@ export function HeroAskHost() {
   }, [open, close]);
 
   return (
-    <div ref={hostRef} data-hero-part="ask-host" className="mt-5 flex w-full flex-col items-center">
-      <AnimatePresence initial={false} mode="wait">
+    <motion.div
+      ref={hostRef}
+      data-hero-part="ask-host"
+      className="mt-5 w-full"
+      initial={false}
+      animate={{ height }}
+      transition={{ duration: reduceMotion ? 0 : 0.42, ease: [0.22, 1, 0.36, 1] }}
+      // Only the conversation's own box clips, never the caption's focus rings.
+      style={{ overflow: open ? "hidden" : "visible" }}
+    >
+      <div ref={innerRef} className="flex w-full flex-col items-center pb-1">
+      <AnimatePresence initial={false} mode="popLayout">
         {open ? (
           <motion.div
             key="ask"
             id="nex-host-hero"
             role="region"
             aria-label="Conversation with Nex"
-            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6 }}
-            transition={{ duration: reduceMotion ? 0.1 : 0.22 }}
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -10, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.98 }}
+            transition={{ duration: reduceMotion ? 0.1 : 0.32, ease: [0.22, 1, 0.36, 1] }}
             className="nex-host flex w-full max-w-[40rem] flex-col overflow-hidden rounded-2xl border border-primary/20 text-left glass-strong shadow-accent-soft"
           >
             <AskContent inline activeSection="hero" onExpand={openPanel} onClose={close} isMobile={false} reduceMotion={reduceMotion} />
@@ -235,15 +259,15 @@ export function HeroAskHost() {
           <motion.div
             key="caption"
             data-hero-part="avatar-ui"
-            initial={false}
-            animate={{ opacity: 1 }}
+            initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.12 }}
+            transition={{ duration: reduceMotion ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] }}
             className="flex w-full flex-col items-center"
           >
             {/* A reserved two-line band: greetings, reactions and the status
                 line all use it, so nothing below moves when Nex talks. */}
-            <p aria-live="off" className="flex min-h-11 max-w-[28rem] items-center justify-center text-sm leading-[1.375rem] text-muted-foreground" style={{ textWrap: "balance" }}>
+            <p aria-live="off" className="flex min-h-11 max-w-[30rem] items-center justify-center rounded-2xl border border-foreground/10 glass-subtle px-4 py-1.5 text-sm leading-[1.375rem] text-muted-foreground shadow-accent-soft" style={{ textWrap: "balance" }}>
               {line ?? (
                 <span className="inline-flex items-center gap-2">
                   <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-emerald-500 motion-safe:animate-pulse" />
@@ -266,6 +290,7 @@ export function HeroAskHost() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+      </div>
+    </motion.div>
   );
 }

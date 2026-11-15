@@ -5,7 +5,8 @@ import { AnimatePresence, cancelFrame, frame, motion, useMotionValue, useReduced
 import { ArrowRight, X } from "lucide-react";
 import { AskContent } from "@/components/guide/AskContent";
 import { dispatchCompanion, useCompanionState } from "@/lib/guide/companion-store";
-import { bubbleMaxHeight, chooseBubbleSide, easeInOutCubic, placeBubbleBeside, type BubbleSide, type Rect, type Viewport } from "@/lib/guide/placement";
+import { bubbleMaxHeight, chooseBubbleSide,
+  freeBubbleSide, easeInOutCubic, placeBubbleBeside, type BubbleSide, type Rect, type Viewport } from "@/lib/guide/placement";
 import { useLenisLock } from "@/hooks/useLenisLock";
 import { TIP_RULES } from "@/lib/guide/tips";
 import { NAVBAR_CLEARANCE as NAVBAR } from "@/lib/scroll";
@@ -131,7 +132,18 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
   const choose = useCallback(
     (fresh: boolean) => {
       const sides = preferKey.split(",") as BubbleSide[];
-      const next = chooseBubbleSide(
+      // A tip takes a side that covers no text when one exists (it was only
+      // offered because one did); the ask box takes the least-covering side.
+      const free = fresh && showing === "tip"
+        ? freeBubbleSide({ x: anchorX.get(), y: anchorY.get() }, anchorSize, { width: BUBBLE_WIDTH, height: heightRef.current }, viewport, sides, readingRects())
+        : null;
+      // A tip with no free side left (the page moved under it): it goes,
+      // rather than sit over what is being read.
+      if (fresh && showing === "tip" && !free && sideRef.current !== null) {
+        dispatchCompanion({ type: "tip/expire" });
+        return;
+      }
+      const next = free ?? chooseBubbleSide(
         { x: anchorX.get(), y: anchorY.get() },
         anchorSize,
         { width: BUBBLE_WIDTH, height: heightRef.current },
@@ -145,7 +157,7 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
         setOpenSide(next);
       }
     },
-    [anchorSize, anchorX, anchorY, preferKey, viewport]
+    [anchorSize, anchorX, anchorY, preferKey, showing, viewport]
   );
   useLayoutEffect(() => {
     if (!open) {
@@ -390,7 +402,7 @@ const ORIGIN: Record<BubbleSide, string> = { right: "0% 100%", left: "100% 100%"
  * Reading text on screen the bubble should not cover when it has a choice:
  * headings, paragraphs and list items in the page, not cards' own controls.
  */
-function readingRects(): Rect[] {
+export function readingRects(): Rect[] {
   const rects: Rect[] = [];
   document.querySelectorAll("main h1, main h2, main h3, main p, main li").forEach((node) => {
     if (node.closest("#nex-bubble, #nex-host-hero, #nex-host-footer, nav")) return;

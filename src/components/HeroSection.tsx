@@ -78,7 +78,7 @@ const HeroSection = () => {
         <HeroActions />
 
         {/* The figures: each links to the work that backs it. */}
-        <div data-hero-part="copy" data-guide-target="hero-proof" className="mt-8 grid w-full max-w-3xl grid-cols-2 gap-x-6 gap-y-4 text-left sm:grid-cols-4">
+        <div data-hero-part="copy" data-hero-glass data-guide-target="hero-proof" className="mt-8 grid w-full max-w-3xl grid-cols-2 gap-x-6 gap-y-4 rounded-2xl border border-foreground/10 glass-subtle px-5 py-4 text-left shadow-accent-soft sm:grid-cols-4 sm:px-6">
           {stats.map((stat) => (
             <Link
               key={stat.label}

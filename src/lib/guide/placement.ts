@@ -86,6 +86,22 @@ export function bubbleOverflow(anchor: Point, size: number, side: BubbleSide, bu
  * the one that covers the least reading text (`avoid`), preferring earlier
  * sides; if none fits, the one that overflows least.
  */
+/**
+ * A side where the bubble fits on screen and covers none of the reading text
+ * (`avoid`), in preference order, or null when every fitting side covers some.
+ * Tips use it: an unasked-for line only shows in free space, never over text.
+ */
+export function freeBubbleSide(anchor: Point, size: number, bubble: { width: number; height: number }, viewport: Viewport, prefer: BubbleSide[], avoid: Rect[], gap = 12): BubbleSide | null {
+  const sides = [...prefer, ...(["right", "bottom", "top", "left"] as const).filter((side) => !prefer.includes(side))];
+  for (const side of sides) {
+    if (bubbleOverflow(anchor, size, side, bubble, viewport, gap) !== 0) continue;
+    const placed = placeBubbleBeside(anchor, size, side, bubble, viewport, gap);
+    const rect = { left: placed.left, top: placed.top, width: bubble.width, height: Math.min(bubble.height, placed.maxHeight) };
+    if (avoid.every((other) => overlapArea(rect, other) === 0)) return side;
+  }
+  return null;
+}
+
 export function chooseBubbleSide(
   anchor: Point,
   size: number,

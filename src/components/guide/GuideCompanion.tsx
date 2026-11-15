@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { animate, cancelFrame, frame as frameLoop, motion, useMotionValue, useReducedMotion } from "framer-motion";
 import GuideAvatar from "@/components/guide/GuideAvatar";
 import { StaticGuideMark, prefersStatic } from "@/components/guide/GuideAvatarSlot";
-import { NexBubble } from "@/components/guide/NexBubble";
+import { NexBubble, readingRects } from "@/components/guide/NexBubble";
 import { useGuideTour } from "@/components/guide/GuideTourNarrator";
 import { SECTION_IDS } from "@/lib/guide/anchors";
 import { emitGuide } from "@/lib/guide/bus";
@@ -20,6 +20,7 @@ import {
   heroDockFrame,
   footerDockFrame,
   footerDockProgress,
+  freeBubbleSide,
   heroFaceScale,
   heroHandoffProgress,
   routeTravelFrame,
@@ -66,6 +67,8 @@ const MAX_RIDE_STEP = 90;
 const FOOTER_SLOT = 150;
 /** While a tip is waiting its turn (cooldown, another bubble), ask again this often. */
 const TIP_RETRY_MS = 5000;
+/** A tip's bubble, for finding free space before offering one (one to three lines). */
+const TIP_BOX = { width: 360, height: 112 };
 
 /**
  * A spot is a rule for where the avatar sits, evaluated every frame: either
@@ -536,6 +539,10 @@ export default function GuideCompanion() {
       if (document.visibilityState !== "visible") return;
       // Never at the footer: a tip beside the landed disc would cover its links.
       if (getCompanionState().footerDocked) return;
+      // Only into free space: when every side of Nex would cover reading text
+      // (short screens), wait; the next retry may find room as the page moves.
+      const viewport: Viewport = { width: document.documentElement.clientWidth, height: window.innerHeight, insetTop: NAVBAR, insetBottom: 0 };
+      if (!freeBubbleSide({ x: posX.get(), y: posY.get() }, size, TIP_BOX, viewport, ruleRef.current.prefer, readingRects())) return;
       dispatchCompanion({ type: "tip/offer", section: activeSection, text: SECTION_TIPS[activeSection], now: Date.now() });
     };
     let interval = 0;
@@ -547,7 +554,7 @@ export default function GuideCompanion() {
       window.clearTimeout(timer);
       window.clearInterval(interval);
     };
-  }, [activeSection, isHome]);
+  }, [activeSection, isHome, posX, posY, size]);
 
   // Face the content. Memoised so the avatar's frame loop isn't woken by a new array each render.
   // In the hero it follows the pointer instead.
