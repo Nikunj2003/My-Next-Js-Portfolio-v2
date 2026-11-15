@@ -35,7 +35,7 @@ export const metadata: Metadata = {
 /** Section label plus hairline rule, matching the homepage work section. */
 const GroupHeading = ({ label, count, blurb }: { label: string; count: number; blurb: string }) => (
   <div className="mb-6">
-    <div className="flex items-center gap-4">
+    <div data-guide-route-spot="group" className="flex items-center gap-4">
       <h2 className="font-mono text-xs uppercase tracking-widest text-primary-text">{label}</h2>
       <span className="font-mono text-[10.5px] text-muted-foreground/70 tabular-nums">{count}</span>
       <span className="h-px flex-1 bg-gradient-to-r from-primary/30 to-transparent" />
@@ -75,7 +75,7 @@ const WorkIndexPage = () => (
             <h1 className="heading-xl mb-6">
               Engineering <span className="text-gradient">Case Studies</span>
             </h1>
-            <p className="mb-10 max-w-2xl text-lg leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
+            <p data-guide-route-spot="header" className="mb-10 max-w-2xl text-lg leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
               Each write-up covers the problem, the constraints it ran under, the decisions taken with the
               alternatives rejected, measured results, and an explicit statement of what was mine versus shared.
             </p>

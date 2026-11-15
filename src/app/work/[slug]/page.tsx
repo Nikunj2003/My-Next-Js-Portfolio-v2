@@ -119,7 +119,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
               <h1 className="heading-xl mt-6 max-w-3xl">
                 <span className="text-gradient">{study.title}</span>
               </h1>
-              <p className="mt-5 max-w-3xl text-lg leading-relaxed text-foreground/85" style={{ textWrap: "pretty" }}>
+              <p data-guide-route-spot="intro" className="mt-5 max-w-3xl text-lg leading-relaxed text-foreground/85" style={{ textWrap: "pretty" }}>
                 {study.oneLiner}
               </p>
             </div>

@@ -240,6 +240,31 @@ export function heroHandoffProgress(heroTop: number, start: number, distance: nu
   return clamp((start - heroTop) / Math.max(1, distance), 0, 1);
 }
 
+/**
+ * The trip between pages, as a pure function of `t` (0 = where the avatar was
+ * on the page it left, 1 = its spot on the new page). One hop: it eases along
+ * the straight line while lifting on an arc above it (higher for longer
+ * trips), and squashes a little at the top of the hop. `fromScale` and
+ * `toScale` let it start as the big hero avatar or end as it.
+ */
+export function routeTravelFrame(input: { t: number; from: Point; to: Point; fromScale?: number; toScale?: number }) {
+  const { from, to, fromScale = 1, toScale = 1 } = input;
+  const u = easeInOutCubic(input.t);
+  const distance = Math.hypot(to.x - from.x, to.y - from.y);
+  const hop = distance < 24 ? 0 : Math.min(140, 36 + distance * 0.18);
+  const lift = hop * 4 * u * (1 - u);
+  const squash = 1 + 0.06 * Math.sin(Math.PI * u);
+  return {
+    position: { x: from.x + (to.x - from.x) * u, y: from.y + (to.y - from.y) * u - lift },
+    scale: (fromScale + (toScale - fromScale) * u) * squash,
+  };
+}
+
+/** How long the trip between pages takes: longer for longer trips, within limits. */
+export function routeTravelMs(from: Point, to: Point) {
+  return Math.round(620 + Math.min(320, Math.hypot(to.x - from.x, to.y - from.y) * 0.3));
+}
+
 /** Fixed spots that don't ride on content: the left margin, and the bottom-right corner. */
 export function gutterPoint(contentLeft: number, size: number, viewport: Viewport, yRatio = 0.5): Point | null {
   if (contentLeft < size + MARGIN * 2) return null;

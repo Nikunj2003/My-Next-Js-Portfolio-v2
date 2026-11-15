@@ -48,7 +48,7 @@ const CaseStudyToc = ({ items }: { items: TocItem[] }) => {
     <>
       {/* The reading-progress bar now lives in ScrollProgress, mounted globally
           in the root layout so every route has it — not just case studies. */}
-      <nav aria-label="On this page" className="lg:sticky lg:top-28">
+      <nav aria-label="On this page" data-guide-route-spot="toc" className="lg:sticky lg:top-28">
         {/* Mobile: a disclosure, so it never eats the first screen. */}
         <button
           type="button"

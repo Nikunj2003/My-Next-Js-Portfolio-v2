@@ -41,7 +41,7 @@ test("the hand-off has no timer or rate cap: it is drawn from the scroll positio
 });
 
 test("nothing is drawn until the page has settled after a load or refresh", () => {
-  assert.match(companion, /\(!isHome \|\| settled\) &&/);
+  assert.match(companion, /const visible = settled &&/);
   const slot = readFileSync(new URL("../src/components/guide/GuideAvatarSlot.tsx", import.meta.url), "utf8");
   // The still drawing stays until the live avatar has drawn, then they cross-fade.
   assert.match(slot, /opacity: drawn \? 0 : 1/);
@@ -64,7 +64,29 @@ test("the faded hero never catches clicks", () => {
 });
 
 test("phones keep the companion in the corner (touch scroll is native; riding it trails)", () => {
-  assert.match(companion, /const cornerOnly = touring \|\| companion\.panelOpen \|\| !isHome \|\| isMobile;/);
+  assert.match(companion, /const cornerOnly = touring \|\| companion\.panelOpen \|\| isMobile;/);
+});
+
+test("other pages have their own spots; only an unknown page uses the corner", () => {
+  // It was cornered on every page but the homepage (a regression of 18003a6).
+  assert.doesNotMatch(companion, /cornerOnly = [^;]*!isHome/);
+  assert.match(companion, /if \(route !== "home"\) return ROUTE_RULES\[route\] \?\? CORNER;/);
+  assert.match(companion, /"case-study": CASE_STUDY_RULE,/);
+  assert.match(companion, /"work-index": WORK_INDEX_RULE,/);
+  const toc = readFileSync(new URL("../src/components/CaseStudyToc.tsx", import.meta.url), "utf8");
+  assert.match(toc, /data-guide-route-spot="toc"/);
+});
+
+test("changing page is one hop from where it was to its new spot (links, the agent, back)", () => {
+  assert.match(companion, /let lastDrawn: /);
+  assert.match(companion, /departed\.path !== pathname/);
+  assert.match(companion, /routeTravelFrame\(/);
+  // Into the homepage with the hero on screen it lands on the hero avatar.
+  assert.match(companion, /travel\.toHero = heroGuides;/);
+});
+
+test("the bubble is never shown before it has been measured and placed on its real side", () => {
+  assert.match(bubble, /visibility: ready \? "visible" : "hidden"/);
 });
 
 test("the companion and the hero avatar pause when they can't be seen", () => {

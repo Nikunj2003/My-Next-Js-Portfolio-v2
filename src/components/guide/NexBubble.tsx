@@ -119,6 +119,12 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
   // scrolling. Reading text on screen is avoided where a side allows it.
   const preferKey = (corner ? ["left", "top"] : prefer).join(",");
   const [openSide, setOpenSide] = useState<BubbleSide>("right");
+  // Hidden until it has been measured and its side chosen from that. It was
+  // drawn first on a guessed side and height (right, 220px), then moved once
+  // measured: in the corner that showed as a flash on the right, then a jump
+  // to the left.
+  const [readyNode, setReadyNode] = useState<HTMLDivElement | null>(null);
+  const ready = node !== null && readyNode === node;
   const sideRef = useRef<BubbleSide | null>(null);
   const choose = useCallback(
     (fresh: boolean) => {
@@ -272,10 +278,12 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
         const first = !measuredRef.current;
         measuredRef.current = true;
         heightRef.current = height;
-        placeRef.current(performance.now());
-        // The first real measurement may show the guessed side doesn't fit.
+        // The first real measurement may show the guessed side doesn't fit:
+        // choose, then place, then show, all before the next paint.
         if (first) chooseRef.current(true);
         else chooseRef.current(false);
+        placeRef.current(performance.now());
+        if (first) setReadyNode(node);
       }
     });
     observer.observe(node);
@@ -305,7 +313,7 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
           animate={{ opacity: 1, scale: 1 }}
           exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.94 }}
           transition={{ duration: reduceMotion ? 0.12 : 0.18 }}
-          style={{ left, top, width: BUBBLE_WIDTH, maxHeight, transformOrigin: ORIGIN[openSide] }}
+          style={{ left, top, width: BUBBLE_WIDTH, maxHeight, transformOrigin: ORIGIN[openSide], visibility: ready ? "visible" : "hidden" }}
           className="fixed z-50 flex flex-col overflow-hidden rounded-2xl border border-border/60 glass-strong glass-overlay shadow-accent-card"
         >
           {content}
