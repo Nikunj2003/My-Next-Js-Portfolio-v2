@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { type Components } from "react-markdown";
-import { Compass, Maximize2, Send, X } from "lucide-react";
+import { Compass, CornerDownRight, Maximize2, MessageCircle, Send, X } from "lucide-react";
 import { buildAnswerComponents } from "@/components/ai/AnswerBody";
 import { NexAnswerBody } from "@/components/ai/NexAnswerBody";
 import type { ChatToolCall } from "@/lib/chat-contract";
@@ -154,13 +154,14 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <p className="sr-only" role="status" aria-live="polite">{announcement}</p>
-      <div className="flex items-start gap-2 border-b border-border/40 px-4 py-3">
+      <div className="flex items-start gap-3 border-b border-foreground/[0.07] px-4 py-3.5">
+        <span aria-hidden="true" className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary-text">
+          <MessageCircle className="h-3.5 w-3.5" />
+        </span>
         <div className="min-w-0 flex-1">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            {exchange ? "You asked" : "Nex · AI guide"}
-          </p>
-          <p className="mt-0.5 line-clamp-2 text-sm font-semibold text-foreground">
-            {exchange ? exchange.question.content : "Ask me anything about Nikunj's work."}
+          <p className="text-xs text-muted-foreground">{exchange ? "You asked" : "Nex, AI guide"}</p>
+          <p className="mt-0.5 line-clamp-2 text-[0.9375rem] font-semibold leading-snug text-foreground">
+            {exchange ? exchange.question.content : "Ask about Nikunj's work. I answer from his case studies."}
           </p>
           {exchange && exchange.question.content.length > 90 && (
             <button type="button" onClick={onExpand} className="mt-0.5 text-[11px] font-medium text-primary-text hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
@@ -196,7 +197,7 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
           role="log"
           aria-live="off"
           aria-busy={Boolean(answer?.streaming) || (isLoading && !answer)}
-          className="scroll-panel min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 text-sm leading-relaxed text-foreground"
+          className="scroll-panel min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 text-[0.9375rem] leading-relaxed text-foreground"
           style={inline ? { height: "clamp(12rem, 34svh, 20rem)" } : undefined}
         >
           {answer ? (
@@ -224,20 +225,24 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
         </div>
       )}
 
-      <div className="flex flex-col gap-2 border-t border-border/40 px-3 py-3">
+      <div className="flex flex-col gap-3 border-t border-foreground/[0.07] px-4 py-3.5">
         {chips.length > 0 && !isLoading && (
-          <div className="flex flex-wrap gap-1.5">
-            {chips.map((chip) => (
-              <button
-                key={chip}
-                type="button"
-                onClick={() => send(chip, false)}
-                disabled={unavailable}
-                className="min-h-11 max-w-full truncate rounded-full bg-primary/10 md:min-h-8 px-3 text-xs text-foreground transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-60"
-              >
-                {chip}
-              </button>
-            ))}
+          <div>
+            <p className="mb-2 text-xs text-muted-foreground">{exchange ? "Ask next" : "Try one"}</p>
+            <div className="flex flex-wrap gap-2">
+              {chips.map((chip) => (
+                <button
+                  key={chip}
+                  type="button"
+                  onClick={() => send(chip, false)}
+                  disabled={unavailable}
+                  className="inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-full border border-primary/20 bg-primary/[0.06] px-3.5 py-1.5 text-left text-[0.8125rem] leading-snug text-foreground/90 transition-colors hover:border-primary/45 hover:bg-primary/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-60"
+                >
+                  <CornerDownRight className="h-3.5 w-3.5 shrink-0 text-primary-text" aria-hidden="true" />
+                  <span className="min-w-0">{chip}</span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
         {!exchange && (
@@ -254,7 +259,7 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
           </button>
         )}
         <form
-          className="flex items-center gap-2"
+          className="flex items-center gap-1.5 rounded-full border border-foreground/10 bg-background/55 py-1 pl-4 pr-1 transition-colors focus-within:border-primary/45 focus-within:ring-2 focus-within:ring-primary/15"
           onSubmit={(event) => {
             event.preventDefault();
             send(input);
@@ -264,17 +269,17 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
             ref={inputRef}
             value={input}
             onChange={(event) => setInput(event.target.value)}
-            placeholder={unavailable ? "Nex is offline right now." : "Ask Nex…"}
+            placeholder={unavailable ? "Nex is offline right now." : "Ask about his work…"}
             aria-label="Ask Nex"
             autoComplete="off"
             maxLength={MAX_QUESTION_LENGTH}
             disabled={unavailable}
-            className="min-h-10 flex-1 rounded-xl border border-border/40 bg-background/60 px-3 text-base sm:text-sm outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary/40 focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+            className="min-h-10 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground/70 disabled:opacity-60 sm:text-sm"
           />
           <button
             type="submit"
             disabled={!input.trim() || isLoading || unavailable}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-transform active:scale-95 disabled:opacity-50"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-[opacity,transform] active:scale-95 disabled:opacity-40"
             aria-label="Send"
           >
             <Send className="h-4 w-4" aria-hidden="true" />

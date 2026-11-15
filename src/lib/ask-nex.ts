@@ -11,7 +11,9 @@
  * @param answer When supplied, the exchange is appended as an already
  *   answered turn instead of re-sending the question, and the full panel opens.
  * @param options.expand Open the full conversation panel instead of the bubble.
+ * @param options.host Open it in a particular in-page host ("hero", "footer")
+ *   rather than wherever it would open by default.
  */
-export function openNex(question: string, answer?: string, options: { expand?: boolean } = {}) {
-  window.dispatchEvent(new CustomEvent("open-nex", { detail: { question, answer, expand: options.expand } }));
+export function openNex(question: string, answer?: string, options: { expand?: boolean; host?: "hero" | "footer" | "float" } = {}) {
+  window.dispatchEvent(new CustomEvent("open-nex", { detail: { question, answer, expand: options.expand, host: options.host } }));
 }

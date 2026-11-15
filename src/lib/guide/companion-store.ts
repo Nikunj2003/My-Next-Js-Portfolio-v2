@@ -67,8 +67,23 @@ function defaultHost(): AskHost {
   return "float";
 }
 
+/**
+ * What had focus when the ask box was opened, so an in-page host can hand
+ * focus back on close. Read before the composer mounts and takes focus.
+ */
+let opener: HTMLElement | null = null;
+export function takeAskOpener() {
+  const element = opener;
+  opener = null;
+  return element?.isConnected ? element : null;
+}
+
 /** Opens the ask box, optionally sending a question once it is up. */
 export function openAsk(question?: string, host?: AskHost) {
+  if (typeof document !== "undefined" && state.bubble !== "ask") {
+    const active = document.activeElement;
+    opener = active instanceof HTMLElement && active !== document.body && !active.closest("#nex-host-hero, #nex-host-footer, #nex-bubble") ? active : null;
+  }
   // The full panel is already showing the conversation: queue it there. The
   // panel sends it with its own options (offline state, navigation) once the
   // chat is free, so a question asked mid-answer isn't dropped.

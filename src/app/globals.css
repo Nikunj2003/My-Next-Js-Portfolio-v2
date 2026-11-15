@@ -596,6 +596,7 @@ textarea,
  */
 html[data-hero-intro="play"] #hero [data-hero-part="copy"]:not([data-hero-glass]),
 html[data-hero-intro="play"] #hero [data-hero-part="avatar-ui"],
+html[data-hero-intro="play"] #hero [data-hero-part="ask-host"],
 html[data-hero-intro="play"] #hero [data-hero-part="backdrop"],
 html[data-hero-intro="play"] #hero [data-hero-part="stage"] {
   opacity: 0;

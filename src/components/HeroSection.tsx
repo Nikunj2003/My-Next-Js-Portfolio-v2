@@ -34,7 +34,7 @@ const HeroSection = () => {
     <section
       ref={heroRef}
       id="hero"
-      className="relative overflow-hidden pb-14 pt-[calc(var(--nav-top)+var(--nav-height)+1.5rem)] lg:pt-[calc(var(--nav-top)+var(--nav-height)+3rem)]"
+      className="relative overflow-hidden pb-16 pt-[calc(var(--nav-top)+var(--nav-height)+1.5rem)] sm:pb-20 lg:pb-24 lg:pt-[calc(var(--nav-top)+var(--nav-height)+3rem)]"
     >
       <HeroIntro />
 

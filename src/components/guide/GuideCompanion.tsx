@@ -9,7 +9,7 @@ import { NexBubble } from "@/components/guide/NexBubble";
 import { useGuideTour } from "@/components/guide/GuideTourNarrator";
 import { SECTION_IDS } from "@/lib/guide/anchors";
 import { emitGuide } from "@/lib/guide/bus";
-import { dispatchCompanion, getCompanionState, openAsk, openPanel, setHeroVisible, useCompanionState } from "@/lib/guide/companion-store";
+import { dispatchCompanion, getCompanionState, openAsk, openPanel, setFooterDocked, setHeroVisible, useCompanionState } from "@/lib/guide/companion-store";
 import {
   activeSectionAt,
   blendPoint,
@@ -19,6 +19,8 @@ import {
   FADE_SHARE,
   gutterPoint,
   heroHandoffFrame,
+  footerDockFrame,
+  footerDockProgress,
   heroFaceScale,
   heroHandoffProgress,
   routeTravelFrame,
@@ -58,6 +60,8 @@ function handoffProgress(heroBox: { top: number }, viewport: Viewport) {
 const SETTLE_MS = 300;
 /** Per-frame movement above this while riding is a discontinuity, smoothed into a glide. */
 const MAX_RIDE_STEP = 90;
+/** The footer slot's size: Nex lands there drawn at this diameter. */
+const FOOTER_SLOT = 150;
 /** While a tip is waiting its turn (cooldown, another bubble), ask again this often. */
 const TIP_RETRY_MS = 5000;
 
@@ -199,6 +203,11 @@ export default function GuideCompanion() {
   }, [isMobile, reduceMotion]);
 
   const sectionRef = useRef<string | null>(null);
+  const landedRef = useRef(false);
+  const panelOpenRef = useRef(companion.panelOpen);
+  useLayoutEffect(() => {
+    panelOpenRef.current = companion.panelOpen;
+  }, [companion.panelOpen]);
   const visibleRef = useRef(visible);
   const touringRef = useRef(touring);
   useLayoutEffect(() => {
@@ -222,6 +231,29 @@ export default function GuideCompanion() {
     clearLayoutCache();
     watchLayoutCache();
     const footer = () => cachedNode("footer", () => document.querySelector("footer"));
+    const footerSocket = () => cachedNode<HTMLElement>("footer-socket", () => document.querySelector<HTMLElement>("[data-guide-footer-socket]"));
+    /**
+     * The footer landing, from the live layout: how far along it is, and the
+     * slot's centre. Desktop with motion only; the tour, the panel and phones
+     * keep the corner. Reduced motion snaps: landed once the band is in view.
+     */
+    const footerLanding = (viewport: Viewport) => {
+      if (isMobileRef.current || touringRef.current || panelOpenRef.current) return null;
+      const socket = footerSocket()?.getBoundingClientRect();
+      if (!socket || !socket.width) return null;
+      // Paced like the hero hand-off (same span of scrolling). The scroll left
+      // before the page ends ignores the footer's own conversation, so opening
+      // it never pulls Nex back out of the slot.
+      const host = document.getElementById("nex-host-footer")?.getBoundingClientRect().height ?? 0;
+      const remaining = document.documentElement.scrollHeight - host - window.innerHeight - window.scrollY;
+      let progress = footerDockProgress({ remaining, span: viewport.height * HANDOFF_SPAN, scrolled: window.scrollY });
+      // While its conversation is open in the footer, Nex stays in the slot.
+      const state = getCompanionState();
+      if (state.bubble === "ask" && state.askHost === "footer") progress = 1;
+      if (reduceMotionRef.current) progress = progress > 0.5 ? 1 : 0;
+      if (progress <= 0) return null;
+      return { progress, centre: { x: socket.left + socket.width / 2, y: socket.top + socket.height / 2 } };
+    };
     // Runs on Framer Motion's frame loop, in its update step: after Lenis has
     // scrolled (SmoothScroll drives Lenis from the read step) and before the
     // render step, so the avatar, the hero and the bubble are all drawn in the
@@ -312,13 +344,17 @@ export default function GuideCompanion() {
       const travel = travelRef.current;
       if (travel && travel.start >= 0) {
         const heroTarget = travel.toHero && hero && heroBox ? heroBox : null;
-        const to = heroTarget
+        const landing = heroTarget ? null : footerLanding(viewport);
+        const docked = landing && landing.progress >= 1 ? landing : null;
+        const to = docked
+          ? { x: docked.centre.x - size / 2, y: docked.centre.y - size / 2 }
+          : heroTarget
           ? { x: heroTarget.left + heroTarget.width / 2 - size / 2, y: heroTarget.top + heroTarget.height / 2 - size / 2 }
           : clampToViewport(ruleRef.current.point(size, viewport) ?? marginRule("").point(size, viewport) ?? CORNER.point(size, viewport)!, size, viewport, footer()?.getBoundingClientRect().top ?? null);
         if (!travel.ms) travel.ms = routeTravelMs(travel.from, to);
         const t = Math.min(1, (now - travel.start) / travel.ms);
         // Landing on the hero: grow to its face size, then hand over.
-        const heroScale = heroTarget ? heroFaceScale(heroTarget.width, size) : 1;
+        const heroScale = heroTarget ? heroFaceScale(heroTarget.width, size) : docked ? FOOTER_SLOT / size : 1;
         const hop = routeTravelFrame({ t, from: travel.from, to, fromScale: travel.fromScale, toScale: heroScale });
         posX.set(Math.round(hop.position.x * 2) / 2);
         posY.set(Math.round(hop.position.y * 2) / 2);
@@ -333,6 +369,7 @@ export default function GuideCompanion() {
         if (t >= 1) {
           travelRef.current = null;
           lastPointRef.current = heroTarget ? null : to;
+          if (docked) landedRef.current = true;
           if (hero) hero.style.opacity = "";
           if (heroTarget) opacity.set(0);
         }
@@ -396,7 +433,9 @@ export default function GuideCompanion() {
       const ruled = current.point(size, viewport) ?? marginRule("").point(size, viewport);
       const usedFallback = ruled === null;
       let target = ruled ?? fallback;
-      const footerTop = footer()?.getBoundingClientRect().top ?? null;
+      const landing = heroHere && morph < 1 ? null : footerLanding(viewport);
+      // The footer is an obstacle for every spot but its own slot.
+      const footerTop = landing ? null : footer()?.getBoundingClientRect().top ?? null;
       target = clampToViewport(target, size, viewport, footerTop);
 
       let point = target;
@@ -447,7 +486,32 @@ export default function GuideCompanion() {
         opacity.set(visibleRef.current ? (heroHere ? 1 : fade.get()) : 0);
       }
 
-      lastPointRef.current = point;
+      // The footer landing, last: from wherever the spot rule (and its glide)
+      // put it this frame, curve into the slot and grow to its size. A pure
+      // function of the band's position, so scrolling back plays it in reverse.
+      // The ride's own position is kept unblended in `lastPointRef`, so the
+      // landing never trips the ride's jump-smoothing.
+      const ridePoint = point;
+      if (landing) {
+        const frame = footerDockFrame({ t: landing.progress, from: ridePoint, slotCentre: landing.centre, size, slotSize: FOOTER_SLOT });
+        point = frame.position;
+        scale.set(frame.scale);
+        opacity.set(opacity.get() * frame.opacity);
+      }
+      const landed = Boolean(landing && landing.progress >= 1);
+      if (landed !== landedRef.current) {
+        landedRef.current = landed;
+        setFooterDocked(landed);
+        // A floating ask box can't stay beside a disc that has grown into the
+        // footer: its conversation moves into the footer's own host, in the
+        // page. (An in-page host the visitor chose keeps it.)
+        const state = getCompanionState();
+        if (landed && state.bubble === "ask" && state.askHost === "float") dispatchCompanion({ type: "ask/open", host: "footer" });
+        // A tip would open beside a 150px disc, over the footer's links.
+        if (landed && state.bubble === "tip") dispatchCompanion({ type: "tip/expire" });
+      }
+
+      lastPointRef.current = ridePoint;
       posX.set(Math.round(point.x * 2) / 2);
       posY.set(Math.round(point.y * 2) / 2);
       if (opacity.get() > 0.5) lastDrawn = { point, scale: scale.get(), at: performance.now(), path: pathname };
@@ -461,6 +525,8 @@ export default function GuideCompanion() {
     frameLoop.update(tick, true);
     return () => {
       cancelFrame(tick);
+      landedRef.current = false;
+      setFooterDocked(false);
       const hero = document.querySelector<HTMLElement>("[data-guide-hero-avatar]");
       if (hero) {
         hero.style.opacity = "";
@@ -478,6 +544,8 @@ export default function GuideCompanion() {
     // Not in a background tab: the session's few tips would be spent unseen.
     const offer = () => {
       if (document.visibilityState !== "visible") return;
+      // Never at the footer: a tip beside the landed disc would cover its links.
+      if (getCompanionState().footerDocked) return;
       dispatchCompanion({ type: "tip/offer", section: activeSection, text: SECTION_TIPS[activeSection], now: Date.now() });
     };
     let interval = 0;

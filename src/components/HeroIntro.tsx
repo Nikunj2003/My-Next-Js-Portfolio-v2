@@ -48,7 +48,7 @@ export function HeroIntro() {
     const pulse = q("[data-hero-part=pulse]");
     const backdrop = q("[data-hero-part=backdrop]");
     const names = [...(hero?.querySelectorAll<HTMLElement>("[data-hero-name]") ?? [])];
-    const caption = q("[data-hero-part=avatar-ui]");
+    const caption = q("[data-hero-part=ask-host]");
     const copy = [...(hero?.querySelectorAll<HTMLElement>("[data-hero-part=copy]") ?? [])];
     if (!hero || !stage) {
       finish();

@@ -39,9 +39,9 @@ export function NexAnswerBody({ message, components, reducedMotion, showTakeMeTh
   }
   const toolList =
     calls.length > 0 ? (
-        <ul className={cn("flex flex-col gap-1.5 border-l-2 border-primary/25 pl-3", answered ? "mt-3" : "mb-1")}>
+        <ul aria-label="Tools Nex used" className={cn("flex flex-col gap-1 rounded-xl border border-foreground/[0.07] bg-foreground/[0.025] px-3 py-2", answered ? "mt-3" : "mb-2")}>
           {calls.map((call) => (
-            <li key={call.id} className="flex items-start gap-2 font-mono text-[11px] leading-relaxed">
+            <li key={call.id} className="flex items-center gap-2 py-0.5 font-mono text-[11px] leading-relaxed">
               <Wrench
                 className={cn(
                   "mt-[0.3em] h-3 w-3 shrink-0",
@@ -63,7 +63,7 @@ export function NexAnswerBody({ message, components, reducedMotion, showTakeMeTh
                 <button
                   type="button"
                   onClick={() => onTakeMeThere?.(call)}
-                  className="ml-auto inline-flex min-h-8 shrink-0 items-center rounded-full bg-primary/10 px-3 font-sans text-[11px] font-semibold text-primary-text transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  className="ml-auto inline-flex min-h-8 shrink-0 items-center rounded-full border border-primary/30 px-3 font-sans text-xs font-semibold text-primary-text transition-colors hover:border-primary/60 hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   Take me there
                 </button>
@@ -105,7 +105,7 @@ export function NexAnswerBody({ message, components, reducedMotion, showTakeMeTh
       {/* Collapsed by default: a recruiter never has to open it,
           an engineer can. */}
       {message.trace && !message.error && (
-        <details className="group mt-3 border-t border-border/30 pt-2">
+        <details className="group mt-3 pt-1">
           <summary className="cursor-pointer list-none font-mono text-[11px] text-muted-foreground/70 transition-colors hover:text-primary">
             <span className="group-open:hidden">
               trace · {message.trace.toolCount} tool{message.trace.toolCount === 1 ? "" : "s"} ·{" "}

@@ -7,7 +7,7 @@ import { GuideAvatarSlot } from "@/components/guide/GuideAvatarSlot";
 import { emitGuide } from "@/lib/guide/bus";
 import { ASLEEP_LINE, BORED_LINE, DIZZY_LINE, HOVER_LINE, PET_LINES, WAKE_LINE, greetingFor } from "@/lib/guide/hero-lines";
 import { useGuideView } from "@/lib/guide/useGuideView";
-import { dispatchCompanion, openPanel, setHeroVisible, useCompanionState } from "@/lib/guide/companion-store";
+import { dispatchCompanion, openPanel, takeAskOpener, setHeroVisible, useCompanionState } from "@/lib/guide/companion-store";
 import { AskContent } from "@/components/guide/AskContent";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { introPending, markAvatarDrawn } from "@/lib/hero-intro";
@@ -209,8 +209,7 @@ export function HeroAskHost() {
   // after layout; never per token.
   useEffect(() => {
     if (!open) return;
-    const active = document.activeElement;
-    openerRef.current = active instanceof HTMLElement && active !== document.body ? active : null;
+    openerRef.current = takeAskOpener();
     const timer = window.setTimeout(() => {
       const host = hostRef.current;
       if (!host) return;
@@ -245,7 +244,7 @@ export function HeroAskHost() {
   }, [open, close]);
 
   return (
-    <div ref={hostRef} className="mt-4 flex w-full flex-col items-center">
+    <div ref={hostRef} data-hero-part="ask-host" className="mt-5 flex w-full flex-col items-center">
       <AnimatePresence initial={false} mode="wait">
         {open ? (
           <motion.div

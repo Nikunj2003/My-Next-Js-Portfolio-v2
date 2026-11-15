@@ -6,6 +6,7 @@ import { whenIdle } from "@/components/guide/GuideAvatarSlot";
 import { appendNexExchange } from "@/lib/chat/nex-chat-store";
 import { openAsk, openPanel } from "@/lib/guide/companion-store";
 import { START_TOUR_EVENT } from "@/lib/guide/tour-control";
+import type { AskHost } from "@/lib/guide/bubble-policy";
 
 const GuideCompanion = dynamic(() => import("@/components/guide/GuideCompanion"), { ssr: false, loading: () => null });
 
@@ -60,7 +61,7 @@ export function GuideCompanionMount() {
 
   useEffect(() => {
     const onOpen = (event: Event) => {
-      const detail = (event as CustomEvent<{ question?: string; answer?: string; expand?: boolean }>).detail ?? {};
+      const detail = (event as CustomEvent<{ question?: string; answer?: string; expand?: boolean; host?: AskHost }>).detail ?? {};
       const question = detail.question?.trim() ?? "";
       setReady(true);
       if (question && detail.answer) {
@@ -72,7 +73,7 @@ export function GuideCompanionMount() {
         openPanel();
         return;
       }
-      openAsk(question || undefined);
+      openAsk(question || undefined, detail.host);
     };
     window.addEventListener("open-nex", onOpen);
     return () => window.removeEventListener("open-nex", onOpen);

@@ -201,3 +201,38 @@ test("page trip: starts where it was, ends on the new spot, arcs above the line,
   assert.equal(routeTravelFrame({ t: 1, from, to, fromScale: 5, toScale: 1 }).scale, 1);
   assert.ok(routeTravelMs(from, to) >= 620 && routeTravelMs(from, to) <= 940);
 });
+
+test("footer landing: paced like the hero hand-off, both ways, landed at the end of the page", async () => {
+  const { footerDockProgress } = await import("../src/lib/guide/placement.ts");
+  const span = 990;
+  const at = (remaining: number, scrolled = 10000) => footerDockProgress({ remaining, span, scrolled });
+  assert.equal(at(span), 0, "starts a full span before the end");
+  assert.equal(at(span + 400), 0);
+  assert.ok(Math.abs(at(span / 2) - 0.5) < 1e-9, "half way after half the span");
+  assert.equal(at(0), 1, "landed at the last scroll position");
+  // A short page: it runs over the scroll there is.
+  assert.equal(footerDockProgress({ remaining: 300, span, scrolled: 300 }), 0.5);
+  assert.equal(at(420), at(420), "same position, same frame");
+});
+
+test("footer landing: starts at the spot, ends centred on the slot at its size, fully shown", async () => {
+  const { footerDockFrame } = await import("../src/lib/guide/placement.ts");
+  const from = { x: 80, y: 420 };
+  const slotCentre = { x: 720, y: 640 };
+  const start = footerDockFrame({ t: 0, from, slotCentre, size: 68, slotSize: 150 });
+  assert.deepEqual(start.position, from);
+  assert.equal(start.scale, 1);
+  const end = footerDockFrame({ t: 1, from, slotCentre, size: 68, slotSize: 150 });
+  assert.ok(Math.abs(end.position.x + 34 - 720) < 1e-9 && Math.abs(end.position.y + 34 - 640) < 1e-9, "centred on the slot");
+  assert.ok(Math.abs(68 * end.scale - 150) < 1e-9, "drawn at the slot's size");
+  assert.equal(end.opacity, 1);
+  assert.equal(start.opacity, 1);
+  let previous = start;
+  for (let t = 0.05; t <= 1.0001; t += 0.05) {
+    const frame = footerDockFrame({ t, from, slotCentre, size: 68, slotSize: 150 });
+    assert.ok(frame.position.x >= previous.position.x - 1e-9, `turns back at t=${t}`);
+    assert.ok(frame.scale >= previous.scale - 1e-9, "never shrinks on the way in");
+    assert.ok(frame.opacity > 0.4 && frame.opacity <= 1);
+    previous = frame;
+  }
+});

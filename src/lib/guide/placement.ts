@@ -322,3 +322,42 @@ export function activeSectionAt(
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), Math.max(min, max));
 }
+
+/**
+ * The footer landing's progress, paced like the hero hand-off: it runs over
+ * `span` px of scrolling (the hand-off's span), ending exactly when the page
+ * can scroll no further, so leaving the hero and arriving at the footer feel
+ * the same. `remaining` is the scroll left before the page ends. On a page
+ * too short for the full span it runs over what there is. A pure function of
+ * position: scrolling back plays it in reverse.
+ */
+export function footerDockProgress(input: { remaining: number; span: number; scrolled: number }) {
+  const { remaining, span, scrolled } = input;
+  const run = Math.max(1, Math.min(span, scrolled + remaining));
+  return clamp(1 - Math.max(0, remaining) / run, 0, 1);
+}
+
+/**
+ * One frame of the landing, in top-left coordinates of the unscaled `size`
+ * box (scale is applied around the centre, so the visible disc is centred on
+ * `slotCentre` at the end). A hop, like the trips between pages: it rises
+ * away from its spot, travels above the page content on an arc, and comes
+ * down into the slot, growing as it lands. `opacity` dips mid-flight so the
+ * disc reads as passing over the page rather than sitting on its text, and
+ * is full again before it lands.
+ */
+export function footerDockFrame(input: { t: number; from: Point; slotCentre: Point; size: number; slotSize: number; fromScale?: number }) {
+  const { from, slotCentre, size, slotSize, fromScale = 1 } = input;
+  const t = clamp(input.t, 0, 1);
+  const u = easeInOutCubic(t);
+  const to = { x: slotCentre.x - size / 2, y: slotCentre.y - size / 2 };
+  const distance = Math.hypot(to.x - from.x, to.y - from.y);
+  const lift = Math.min(160, 40 + distance * 0.2) * 4 * u * (1 - u);
+  const position = { x: from.x + (to.x - from.x) * u, y: from.y + (to.y - from.y) * u - lift };
+  // Growth waits for the second half, so it is still small while it crosses.
+  const grow = easeInOutCubic(clamp((t - 0.4) / 0.6, 0, 1));
+  const toScale = slotSize / size;
+  const dip = t <= 0 || t >= 0.85 ? 0 : Math.sin((Math.PI * t) / 0.85);
+  const opacity = 1 - 0.55 * dip;
+  return { position, scale: fromScale + (toScale - fromScale) * grow, opacity };
+}
