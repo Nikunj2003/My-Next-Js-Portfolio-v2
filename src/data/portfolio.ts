@@ -359,3 +359,35 @@ export const chatSuggestions = [
   "What broke in production, and how did he fix it?",
   "Show me his strongest proof of ownership",
 ];
+
+/**
+ * Where each skill is proven: the case study (or section) a skill tag links to.
+ * Only skills with real evidence on the site appear; the rest stay plain text.
+ * `tests/thesis.test.ts` checks every skill named here exists and every link resolves.
+ */
+const study = (slug: CaseStudySlug, label: string) => ({ href: `/work/${slug}`, label });
+export const skillEvidence: Record<string, { href: string; label: string }> = {
+  "AI Agents": study("documentation-automation", "Documentation automation agents"),
+  "Agentic AI": study("sentinel-test-agent", "Sentinel test agent"),
+  "Multi-Agent Systems": { href: "#experience", label: "Agentic Office OS" },
+  "Model Context Protocol (MCP)": study("governed-mcp-registry", "Governed MCP registry"),
+  "Tool Calling": study("governed-mcp-registry", "Governed MCP registry"),
+  "LLM Evaluation": study("llm-evaluation-platform", "LLM evaluation platform"),
+  "LLM-as-a-Judge": study("llm-evaluation-platform", "Judges gated at kappa ≥ 0.7"),
+  "Golden Datasets": study("llm-evaluation-platform", "LLM evaluation platform"),
+  Langfuse: study("llm-evaluation-platform", "LLM evaluation platform"),
+  Ragas: study("llm-evaluation-platform", "LLM evaluation platform"),
+  OpenTelemetry: study("llm-evaluation-platform", "LLM evaluation platform"),
+  RAG: study("knowledge-graph-rag", "Knowledge graph RAG"),
+  "Knowledge Graph RAG": study("knowledge-graph-rag", "Knowledge graph RAG"),
+  "Model Routing": study("codenex-ai-proxy", "CodeNex AI API proxy"),
+  Go: study("governed-mcp-registry", "Go MCP servers"),
+  OAuth2: study("governed-mcp-registry", "Governed MCP registry"),
+  RBAC: study("governed-mcp-registry", "RBAC permission tiers on MCP tools"),
+  LiteLLM: study("llm-evaluation-platform", "Instrumented at the LiteLLM gateway"),
+  Neo4j: study("knowledge-graph-rag", "Knowledge graph RAG"),
+  pgvector: study("serenify", "Serenify"),
+  "Apache Superset": study("bi-platform", "Business data layer"),
+  Kubernetes: study("codenex", "CodeNex"),
+  Jenkins: study("llm-evaluation-platform", "CI evaluation gates"),
+};

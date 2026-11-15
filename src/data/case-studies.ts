@@ -1,3 +1,6 @@
+import type { MetricId } from "@/data/metric-ids";
+import type { PillarId } from "@/data/thesis";
+
 export interface CaseStudyDecision {
   choice: string;
   why: string;
@@ -7,6 +10,8 @@ export interface CaseStudyDecision {
 export interface CaseStudyResult {
   metric: string;
   label: string;
+  /** The `METRICS` entry that records how this was measured, when one exists. */
+  metricId?: MetricId;
 }
 
 export interface CaseStudySection {
@@ -68,6 +73,10 @@ export interface CaseStudy {
   results: CaseStudyResult[];
   stack: string[];
   ownership: string;
+  /** One sentence (≤160 chars) of `ownership`, shown near the top of the study. */
+  ownershipSummary: string;
+  /** Which of the thesis pillars this study is evidence for, if any. */
+  pillars?: PillarId[];
   tags: string[];
   /** Extra phrases Nex matches on, beyond title/slug/tags. */
   aliases: string[];
@@ -210,10 +219,10 @@ export const caseStudies: CaseStudy[] = [
       },
     ],
     results: [
-      { metric: "9", label: "AI surfaces scored against golden datasets" },
-      { metric: "≥ 0.7", label: "Cohen's kappa required before a judge may gate a release" },
+      { metric: "9", label: "AI surfaces scored against golden datasets", metricId: "ai-surfaces" },
+      { metric: "≥ 0.7", label: "Cohen's kappa required before a judge may gate a release", metricId: "judge-kappa" },
       { metric: "4", label: "scorer tiers, escalating only when the cheaper one cannot catch the failure" },
-      { metric: "5–10%", label: "of live traffic scored continuously for drift" },
+      { metric: "5–10%", label: "of live traffic scored continuously for drift", metricId: "online-sampling" },
     ],
     stack: [
       "OpenTelemetry",
@@ -231,6 +240,9 @@ export const caseStudies: CaseStudy[] = [
     ],
     ownership:
       "The evaluation framework, metric catalog, scorer harness, and CI gates are mine. The self-hosted Langfuse deployment underneath it is owned by platform DevOps — a deliberate split between infrastructure ownership and application ownership.",
+    ownershipSummary:
+      "Nikunj owns the evaluation framework, metric catalog, scorer harness and CI gates; platform DevOps owns the Langfuse deployment under it.",
+    pillars: ["quality"],
     tags: ["LLM Evaluation", "Observability", "CI Gates"],
     aliases: ["evaluation", "eval", "evals", "measure", "measurement", "langfuse", "ragas", "judge", "kappa", "golden dataset", "ci gate", "opentelemetry", "observability", "drift"],
   },
@@ -309,9 +321,9 @@ export const caseStudies: CaseStudy[] = [
       },
     ],
     results: [
-      { metric: "10+", label: "production MCP servers delivered into the shared registry" },
-      { metric: "20 / 20", label: "authorization checks passing across three permission tiers" },
-      { metric: "100+ → 0", label: "failing queries traced to two independent root causes and fixed" },
+      { metric: "10+", label: "production MCP servers delivered into the shared registry", metricId: "mcp-servers" },
+      { metric: "20 / 20", label: "authorization checks passing across three permission tiers", metricId: "auth-checks" },
+      { metric: "100+ → 0", label: "failing queries traced to two independent root causes and fixed", metricId: "empty-queries" },
       { metric: "14", label: "connectors flagged for the same latent misconfiguration" },
     ],
     stack: [
@@ -328,6 +340,9 @@ export const caseStudies: CaseStudy[] = [
     ],
     ownership:
       "Ten-plus of the registry's production servers are mine, along with the canonical registry, the distribution mechanism, and the reliability work. The remaining servers were built by teammates against the same registry policy. Which models are approved is a senior engineering decision; I own the configuration and enforcement.",
+    ownershipSummary:
+      "Nikunj built 10+ of the registry's production servers, the registry itself, its distribution and its reliability work.",
+    pillars: ["tools"],
     tags: ["MCP", "Tool Authorization", "Reliability"],
     aliases: ["mcp", "model context protocol", "tool", "tools", "tool use", "authorization", "permission", "rbac", "oauth", "registry", "rca", "root cause", "debug", "outage", "timeout", "reliability", "governance"],
   },
@@ -402,8 +417,8 @@ export const caseStudies: CaseStudy[] = [
       },
     ],
     results: [
-      { metric: "8", label: "product repositories searchable by agents through one gateway" },
-      { metric: "76 KB / 14 min", label: "copy time that identified storage throttling as the root cause" },
+      { metric: "8", label: "product repositories searchable by agents through one gateway", metricId: "searchable-repos" },
+      { metric: "76 KB / 14 min", label: "copy time that identified storage throttling as the root cause", metricId: "efs-throttling" },
       { metric: "0", label: "shared-volume reads left on the query hot path after the fix" },
       { metric: "1 of 2", label: "independent failure classes on this service; the protocol defect is the other" },
     ],
@@ -419,6 +434,9 @@ export const caseStudies: CaseStudy[] = [
     ],
     ownership:
       "The service design, the deployment specification, and the root-cause analysis are mine. The infrastructure-as-code and cluster provisioning were executed by platform DevOps against that specification.",
+    ownershipSummary:
+      "Nikunj owns the service design, deployment specification and root-cause analysis; DevOps ran the provisioning.",
+    pillars: ["tools"],
     tags: ["Agent Infrastructure", "Reliability", "Root Cause Analysis"],
     aliases: ["opencode", "codebase search", "code search", "code intelligence", "fargate", "ecs", "efs", "throughput", "burst credits", "storage", "crash loop", "health check", "infrastructure", "capacity", "index", "warmup", "goroutine", "gateway"],
   },
@@ -494,8 +512,8 @@ export const caseStudies: CaseStudy[] = [
       },
     ],
     results: [
-      { metric: "1M+", label: "entities in production across four content sources" },
-      { metric: "5", label: "retrieval modes benchmarked into a documented mode-per-tool policy" },
+      { metric: "1M+", label: "entities in production across four content sources", metricId: "kg-entities" },
+      { metric: "5", label: "retrieval modes benchmarked into a documented mode-per-tool policy", metricId: "retrieval-modes" },
       { metric: "5", label: "independently measured failure layers, from ingestion to operations" },
       { metric: "75–100", label: "golden questions drawn from real production traces, not invented" },
     ],
@@ -513,6 +531,9 @@ export const caseStudies: CaseStudy[] = [
     ],
     ownership:
       "The retrieval architecture, the four ETL pipelines, the evaluation design, and the mode policy are mine. Server provisioning and deployment for the retrieval service were handled with platform DevOps.",
+    ownershipSummary:
+      "Nikunj owns the retrieval architecture, the four ETL pipelines, the evaluation design and the mode policy.",
+    pillars: ["retrieval"],
     tags: ["RAG", "Knowledge Graphs", "Retrieval Evaluation"],
     aliases: ["rag", "retrieval", "knowledge graph", "graphrag", "neo4j", "pgvector", "vector", "embedding", "context", "grounding", "ingestion", "etl"],
   },
@@ -597,7 +618,7 @@ export const caseStudies: CaseStudy[] = [
       },
     ],
     results: [
-      { metric: "4", label: "sequential context steps required before any drafting begins" },
+      { metric: "4", label: "sequential context steps required before any drafting begins", metricId: "context-steps" },
       { metric: "2+", label: "codebase searches mandated per article to confirm exact product terminology" },
       { metric: "6", label: "repositories scanned for changes feeding the refresh queue" },
       { metric: "1", label: "queue item processed at a time, trading throughput for correctness" },
@@ -619,6 +640,9 @@ export const caseStudies: CaseStudy[] = [
     ],
     ownership:
       "Built the documentation automation, including the Jira-triggered agent workflow, context enrichment, refresh queue, GitHub PR delivery, Quill review app and synchronization of merged documentation to Zendesk. The work grew from an epic opened by engineering leadership. The documentation team owns editorial decisions and approval before publication.",
+    ownershipSummary:
+      "Nikunj built the whole pipeline, from the Jira trigger to Zendesk sync; the documentation team owns editorial approval.",
+    pillars: ["quality"],
     tags: ["Multi-Agent Systems", "Agent Context", "Workflow Automation"],
     aliases: ["documentation", "docs", "doc automation", "release notes", "clarification", "context enrichment", "confluence", "zendesk", "technical writing", "agent workflow", "n8n", "queue", "quill", "jira done", "documentation pr", "documentation sync"],
   },
@@ -702,6 +726,9 @@ export const caseStudies: CaseStudy[] = [
     ],
     ownership:
       "The agent, its tools, the grounding design, and the integration contract are mine. Test cases are reviewed and owned by the QA engineers who use them, and the validation run was done jointly with a QA engineer.",
+    ownershipSummary:
+      "Nikunj owns the agent, its tools, the grounding design and the integration contract; QA engineers own the test cases.",
+    pillars: ["tools"],
     tags: ["AI Agents", "Tool Calling", "Test Automation"],
     aliases: ["sentinel", "test case", "test generation", "qa", "qmetry", "test automation", "code graph", "codegraphcontext", "traceability", "coverage", "parallel tools", "agent"],
   },
@@ -774,8 +801,8 @@ export const caseStudies: CaseStudy[] = [
       },
     ],
     results: [
-      { metric: "19", label: "dashboards migrated to parity with the tool being replaced" },
-      { metric: "32 → 12", label: "serving tables after pruning to what is actually consumed" },
+      { metric: "19", label: "dashboards migrated to parity with the tool being replaced", metricId: "bi-dashboards" },
+      { metric: "32 → 12", label: "serving tables after pruning to what is actually consumed", metricId: "serving-tables" },
       { metric: "4", label: "production environments consolidated into one governed lake" },
       { metric: "10+", label: "external sources unified behind a single queryable layer" },
     ],
@@ -791,6 +818,9 @@ export const caseStudies: CaseStudy[] = [
     ],
     ownership:
       "The architecture, schema design, ETL, access-control model, and the tool interface are mine, delivered end to end. The dashboards it replaced were originally built by an external contractor.",
+    ownershipSummary:
+      "Nikunj delivered the architecture, schema, ETL, access-control model and tool interface end to end.",
+    pillars: ["retrieval"],
     tags: ["Agent Context", "Data Platform", "Access Control"],
     aliases: ["bi", "business intelligence", "superset", "quicksight", "dashboards", "etl", "warehouse", "star schema", "tenant key", "row level security", "analytics", "data platform", "business data"],
   },
@@ -860,7 +890,7 @@ export const caseStudies: CaseStudy[] = [
       },
     ],
     results: [
-      { metric: "3", label: "permission tiers enforced, all resolved from the source-control platform" },
+      { metric: "3", label: "permission tiers enforced, all resolved from the source-control platform", metricId: "quill-tiers" },
       { metric: "1 per branch", label: "isolated working trees, so concurrent reviews never collide" },
       { metric: "0", label: "application-managed access lists to keep in sync" },
     ],
@@ -876,6 +906,8 @@ export const caseStudies: CaseStudy[] = [
     ],
     ownership:
       "Designed and built Quill, the review application within the documentation automation platform, from the first proposal through release automation. Its scope is inspecting, editing and approving GitHub documentation PRs; the surrounding pipeline handles the Jira trigger, agent authoring and Zendesk synchronization after merge. The documentation team owns the review decisions.",
+    ownershipSummary:
+      "Nikunj designed and built Quill from proposal to release; the documentation team owns the review decisions.",
     tags: ["Documentation Automation", "Human in the Loop", "Developer Tooling"],
     aliases: ["quill", "documentation review", "electron", "desktop app", "wysiwyg", "worktree", "git worktrees", "pull request review", "human in the loop", "review tool", "pty", "terminal", "documentation automation", "jira", "zendesk"],
   },
@@ -936,7 +968,7 @@ export const caseStudies: CaseStudy[] = [
       },
     ],
     results: [
-      { metric: "6", label: "provider backends reachable through one compatible API surface" },
+      { metric: "6", label: "provider backends reachable through one compatible API surface", metricId: "proxy-backends" },
       { metric: "2", label: "independent implementations, one process-supervised and one single-binary" },
       { metric: "Public", label: "source, so the routing and failover logic can be read directly" },
     ],
@@ -951,6 +983,9 @@ export const caseStudies: CaseStudy[] = [
     ],
     ownership:
       "Designed and built solo as an open-source project, published under my own account.",
+    ownershipSummary:
+      "Designed and built solo by Nikunj as an open-source project.",
+    pillars: ["cost"],
     tags: ["AI Gateway", "Provider Abstraction", "Reliability"],
     aliases: ["proxy", "api proxy", "gateway", "codenex proxy", "openai compatible", "provider abstraction", "failover", "fallback", "load balancing", "streaming", "model routing", "open source"],
   },
@@ -1044,6 +1079,8 @@ export const caseStudies: CaseStudy[] = [
     ],
     ownership:
       "Designed and built solo — backend services, streaming architecture, preview infrastructure, storage, authentication, quotas, and billing foundations.",
+    ownershipSummary:
+      "Designed and built solo by Nikunj: backend services, streaming, previews, storage, auth, quotas and billing.",
     tags: ["AI Product", "Distributed Systems", "Platform Engineering"],
     aliases: ["codenex", "code nex", "ai builder", "codegen", "code generation", "spring", "spring ai", "spring cloud", "kubernetes", "preview", "previews", "sse", "streaming", "minio", "kafka", "saas", "prompt to app"],
   },
@@ -1106,7 +1143,7 @@ export const caseStudies: CaseStudy[] = [
       },
     ],
     results: [
-      { metric: "98%", label: "of complex sports queries resolved end to end" },
+      { metric: "98%", label: "of complex sports queries resolved end to end", metricId: "fantasy-resolution" },
       { metric: "< 30s", label: "answers against live match data while a match is in progress" },
       { metric: "Multi-step", label: "reasoning chains, so questions need not map to a single query" },
     ],
@@ -1122,6 +1159,9 @@ export const caseStudies: CaseStudy[] = [
     ],
     ownership:
       "Built the retrieval and reasoning system, the backend APIs, the ETL pipelines feeding it, and the quality checks over its answers, as a GenAI intern on the product team.",
+    ownershipSummary:
+      "Nikunj built the retrieval and reasoning system, its APIs, ETL and quality checks as a GenAI intern.",
+    pillars: ["retrieval"],
     tags: ["SQL RAG", "Multi-Step Reasoning", "Model Fine-Tuning"],
     aliases: ["fantasy gpt", "fantasygpt", "sql rag", "text to sql", "cricket", "sports", "fine tuning", "finetuned", "llama", "langgraph", "deepeval", "etl", "live data", "xansr", "multi step reasoning"],
   },
@@ -1184,7 +1224,7 @@ export const caseStudies: CaseStudy[] = [
       },
     ],
     results: [
-      { metric: "20+", label: "languages supported for live commentary and conversation" },
+      { metric: "20+", label: "languages supported for live commentary and conversation", metricId: "aiko-languages" },
       { metric: "IBC 2024", label: "presented at the broadcast industry event in Amsterdam" },
       { metric: "Per listener", label: "persona driving highlight selection and commentary, not a shared feed" },
     ],
@@ -1199,6 +1239,8 @@ export const caseStudies: CaseStudy[] = [
     ],
     ownership:
       "Contributed to the voice workflows, the personalization layer, and profile-driven highlight generation as a GenAI intern; AIKO is a Xansr Media product built by a team.",
+    ownershipSummary:
+      "Nikunj contributed voice workflows, personalization and highlight generation as a GenAI intern on a team product.",
     tags: ["Voice AI", "Personalization", "Real-Time Systems"],
     aliases: ["aiko", "voice assistant", "voice ai", "sports assistant", "commentary", "highlights", "highlight reel", "text to speech", "speech to text", "tts", "stt", "azure speech", "multilingual", "persona", "ibc", "xansr"],
   },
@@ -1281,6 +1323,8 @@ export const caseStudies: CaseStudy[] = [
     ],
     ownership:
       "Designed and built solo as an open-source product — data model, privacy and isolation design, AI workflows, retrieval, and the full interface.",
+    ownershipSummary:
+      "Designed and built solo by Nikunj: data model, privacy and isolation, AI workflows, retrieval and the interface.",
     tags: ["AI Product", "Privacy by Design", "Safety"],
     aliases: ["serenify", "wellness", "mental health", "journaling", "mood tracking", "supabase", "pgvector", "row level security", "rls", "privacy", "crisis", "safety", "gemini", "consumer product"],
   },
@@ -1305,6 +1349,37 @@ export const caseStudiesByTheme = CASE_STUDY_THEMES.map((theme) => ({
 export const featuredCaseStudies = caseStudies.filter((study) => study.featured);
 
 export { getCaseStudyPath } from "@/data/case-study-path";
+
+/**
+ * Previous and next in the order `/work` shows them (by theme), so reading on
+ * from a study stays inside its group before moving to the next one.
+ */
+export function getThemeAdjacent(slug: string) {
+  const ordered = caseStudiesByTheme.flatMap((group) => group.studies);
+  const index = ordered.findIndex((study) => study.slug === slug);
+  if (index === -1) return { previous: null, next: null };
+  return {
+    previous: index > 0 ? ordered[index - 1] : null,
+    next: index < ordered.length - 1 ? ordered[index + 1] : null,
+  };
+}
+
+/** Up to `limit` other studies sharing a pillar or the theme, pillar matches first. */
+export function getRelatedCaseStudies(slug: string, limit = 3) {
+  const study = caseStudyBySlug.get(slug);
+  if (!study) return [];
+  const pillars = new Set(study.pillars ?? []);
+  return caseStudies
+    .filter((other) => other.slug !== slug)
+    .map((other) => ({
+      other,
+      score: (other.pillars ?? []).filter((id) => pillars.has(id)).length * 2 + (other.theme === study.theme ? 1 : 0),
+    }))
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((entry) => entry.other);
+}
 
 export function getAdjacentCaseStudies(slug: string) {
   const index = caseStudies.findIndex((study) => study.slug === slug);
