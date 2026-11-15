@@ -223,6 +223,8 @@ export default function GuideCompanion() {
 
   const sectionRef = useRef<string | null>(null);
   const landedRef = useRef(false);
+  /** Nex is on its way into the footer's slot (any progress at all): no tips. */
+  const landingRef = useRef(false);
   const panelOpenRef = useRef(companion.panelOpen);
   /**
    * The full conversation opening or closing moves Nex between its place in
@@ -538,6 +540,13 @@ export default function GuideCompanion() {
         opacity.set(opacity.get() * frame.opacity);
       }
       const landed = Boolean(landing && landing.progress >= 1);
+      // From the first frame of the landing a tip would open beside a disc
+      // growing into the footer, over its links: the one showing goes.
+      const nowLanding = Boolean(landing);
+      if (nowLanding !== landingRef.current) {
+        landingRef.current = nowLanding;
+        if (nowLanding && getCompanionState().bubble === "tip") dispatchCompanion({ type: "tip/expire" });
+      }
       if (landed !== landedRef.current) {
         landedRef.current = landed;
         setFooterDocked(landed);
@@ -633,7 +642,7 @@ export default function GuideCompanion() {
     const offer = () => {
       if (document.visibilityState !== "visible") return;
       // Never at the footer: a tip beside the landed disc would cover its links.
-      if (getCompanionState().footerDocked) return;
+      if (getCompanionState().footerDocked || landingRef.current) return;
       // Only into free space: when every side of Nex would cover reading text
       // (short screens), wait; the next retry may find room as the page moves.
       const viewport: Viewport = { width: document.documentElement.clientWidth, height: window.innerHeight, insetTop: NAVBAR, insetBottom: 0 };
@@ -747,7 +756,7 @@ export default function GuideCompanion() {
             <StaticGuideMark size={size - 16} />
           ) : (
             <span className="relative inline-flex">
-              <GuideAvatar size={size - 16} lookAt={lookAt} followPointer={inHero} settleAfterMs={10_000} paused={!visible && !inHero} />
+              <GuideAvatar size={size - 16} lookAt={lookAt} followPointer={inHero} paused={!visible && !inHero} />
             </span>
           )}
         </button>

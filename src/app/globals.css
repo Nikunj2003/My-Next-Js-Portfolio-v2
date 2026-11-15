@@ -624,6 +624,10 @@ html[data-hero-intro="play"] #hero [data-hero-still] { visibility: hidden; }
 /* The one live Nex is sitting in the hero's socket: its still stand-in steps aside. */
 html[data-nex-in-hero] .nex-socket-still { visibility: hidden; }
 @keyframes hero-failsafe-show { to { opacity: 1; } }
+/* A reload partway down the page: hidden until the browser has restored the
+   scroll (see PLAY_SCRIPT), with the same kind of CSS failsafe. */
+html[data-restoring] body { visibility: hidden; animation: restore-failsafe 0s 0.9s forwards; }
+@keyframes restore-failsafe { to { visibility: visible; } }
 @keyframes hero-failsafe-clip { to { clip-path: none; } }
 
 /* The sleeping z's drift up and fade, one after another. */

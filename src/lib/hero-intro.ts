@@ -92,11 +92,26 @@ export function shouldPlayIntro(env: IntroEnv) {
 export const PLAY_SCRIPT = `
   try {
     var r = document.documentElement;
+    var key = 'scroll:' + location.pathname;
     var nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
-    var restoring = nav && nav.type === 'reload' && history.scrollRestoration !== 'manual' && sessionStorage.getItem('hero-scroll') > 0;
+    var saved = Number(sessionStorage.getItem(key)) || 0;
+    var restoring = nav && (nav.type === 'reload' || nav.type === 'back_forward') && history.scrollRestoration !== 'manual' && saved > 0;
     if (location.pathname === '/' && !location.hash && window.scrollY <= 0 && !restoring && window.innerWidth >= 1024 &&
         !window.matchMedia('(prefers-reduced-motion: reduce)').matches) r.dataset.heroIntro = 'play';
-    addEventListener('pagehide', function () { sessionStorage.setItem('hero-scroll', String(window.scrollY)); });
+    // A reload partway down: the browser paints the top of the page, then
+    // restores the scroll a moment later, which flashed the hero. Hold the
+    // page hidden until the restore has landed (or 700ms, whichever is first).
+    if (restoring) {
+      r.dataset.restoring = '';
+      var t0 = performance.now();
+      var reveal = function () { delete r.dataset.restoring; };
+      var check = function () {
+        if (Math.abs(window.scrollY - saved) < 4 || performance.now() - t0 > 700) reveal();
+        else requestAnimationFrame(check);
+      };
+      requestAnimationFrame(check);
+    }
+    addEventListener('pagehide', function () { sessionStorage.setItem(key, String(window.scrollY)); });
   } catch (e) {}
 `;
 
