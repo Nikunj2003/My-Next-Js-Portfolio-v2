@@ -60,9 +60,11 @@ export function NexBubble(props: NexBubbleProps) {
 
 function useShowing(visible: boolean, isMobile: boolean) {
   const companion = useCompanionState();
-  // While the hero avatar is on screen it hosts the ask box itself.
-  const heroHosts = companion.bubble === "ask" && companion.heroVisible && !isMobile;
-  const showing = heroHosts ? "none" : visible || isMobile ? companion.bubble : "none";
+  // An in-page host (the hero, the footer) shows the ask box itself; the
+  // bubble only carries it when it was opened beside the companion. Phones
+  // always use the sheet.
+  const pageHosts = companion.bubble === "ask" && companion.askHost !== "float" && !isMobile;
+  const showing = pageHosts ? "none" : visible || isMobile ? companion.bubble : "none";
   return { showing, tip: companion.tip };
 }
 
@@ -391,7 +393,7 @@ const ORIGIN: Record<BubbleSide, string> = { right: "0% 100%", left: "100% 100%"
 function readingRects(): Rect[] {
   const rects: Rect[] = [];
   document.querySelectorAll("main h1, main h2, main h3, main p, main li").forEach((node) => {
-    if (node.closest("#nex-bubble, #nex-bubble-hero, nav")) return;
+    if (node.closest("#nex-bubble, #nex-host-hero, #nex-host-footer, nav")) return;
     const box = node.getBoundingClientRect();
     if (box.width === 0 || box.bottom < 0 || box.top > window.innerHeight) return;
     rects.push({ left: box.left, top: box.top, width: box.width, height: box.height });

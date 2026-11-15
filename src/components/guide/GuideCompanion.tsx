@@ -19,6 +19,7 @@ import {
   FADE_SHARE,
   gutterPoint,
   heroHandoffFrame,
+  heroFaceScale,
   heroHandoffProgress,
   routeTravelFrame,
   routeTravelMs,
@@ -317,7 +318,7 @@ export default function GuideCompanion() {
         if (!travel.ms) travel.ms = routeTravelMs(travel.from, to);
         const t = Math.min(1, (now - travel.start) / travel.ms);
         // Landing on the hero: grow to its face size, then hand over.
-        const heroScale = heroTarget ? (heroTarget.width * 0.82) / (size * 0.76) : 1;
+        const heroScale = heroTarget ? heroFaceScale(heroTarget.width, size) : 1;
         const hop = routeTravelFrame({ t, from: travel.from, to, fromScale: travel.fromScale, toScale: heroScale });
         posX.set(Math.round(hop.position.x * 2) / 2);
         posY.set(Math.round(hop.position.y * 2) / 2);
@@ -378,7 +379,7 @@ export default function GuideCompanion() {
         // (Recorded here because by the time this effect cleans up after a route
         // change, the hero has already left the DOM.)
         if (heroHere && heroBox && getCompanionState().heroVisible && heroBox.bottom > 0 && heroBox.top < viewport.height) {
-          lastDrawn = { point: { x: heroBox.left + heroBox.width / 2 - size / 2, y: heroBox.top + heroBox.height / 2 - size / 2 }, scale: (heroBox.width * 0.82) / (size * 0.76), at: performance.now(), path: pathname };
+          lastDrawn = { point: { x: heroBox.left + heroBox.width / 2 - size / 2, y: heroBox.top + heroBox.height / 2 - size / 2 }, scale: heroFaceScale(heroBox.width, size), at: performance.now(), path: pathname };
         }
         lastPointRef.current = null;
         glideRef.current = null;
@@ -527,15 +528,15 @@ export default function GuideCompanion() {
       if (companion.bubble === "none") return; // the panel handles its own Escape
       // The tour narrator ends the tour itself (announcement, one tour/end).
       if (companion.bubble === "tour") return;
-      // The hero hosts the ask box while it is the guide; its own handler closes it.
-      if (companion.bubble === "ask" && heroVisible) return;
+      // An in-page host (hero, footer) closes itself on Escape.
+      if (companion.bubble === "ask" && companion.askHost !== "float") return;
       event.preventDefault();
       dispatchCompanion({ type: "escape" });
       returnFocus();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [companion.bubble, companion.panelOpen, heroVisible, returnFocus]);
+  }, [companion.askHost, companion.bubble, companion.panelOpen, returnFocus]);
 
   return (
     <>

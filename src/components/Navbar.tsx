@@ -200,10 +200,10 @@ const Navbar = () => {
 
   return (
     <>
-      <div className="fixed top-0 inset-x-0 z-50 flex justify-center px-4 pt-[max(1rem,env(safe-area-inset-top))] sm:pt-[max(1.5rem,env(safe-area-inset-top))] pointer-events-none">
+      <div className="fixed top-0 inset-x-0 z-50 flex justify-center px-4 pt-[var(--nav-top)] pointer-events-none">
         <nav
           aria-label="Main"
-          className={`pointer-events-auto transition-all duration-500 rounded-2xl sm:rounded-full container-width flex items-center justify-between px-4 sm:px-6 h-14 sm:h-16 border ${
+          className={`pointer-events-auto transition-all duration-500 rounded-2xl sm:rounded-full container-width flex items-center justify-between px-4 sm:px-6 h-[var(--nav-height)] border ${
             scrolled ? "glass-nav shadow-accent-card border-foreground/10" : "bg-transparent border-transparent"
           }`}
         >

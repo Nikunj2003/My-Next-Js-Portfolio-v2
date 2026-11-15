@@ -1,125 +1,99 @@
 "use client";
 import { useInView } from "react-intersection-observer";
-import { ArrowDown, Download } from "lucide-react";
 import Link from "next/link";
 import { personalInfo, stats } from "@/data/portfolio";
-import { GuideHeroAvatar } from "@/components/guide/GuideHeroAvatar";
+import { GuideHeroAvatar, HeroAskHost } from "@/components/guide/GuideHeroAvatar";
 import { HeroIntro } from "@/components/HeroIntro";
-import { HeroAskButton } from "@/components/HeroAskButton";
+import { HeroActions } from "@/components/HeroAskButton";
 
 /**
- * The hero. Its markup is static and final: the entrance is played over it by
- * `HeroIntro` (the avatar wakes up in the middle of the screen, takes its place
- * on the right, then the left side appears). The `data-hero-part` attributes
- * are what the intro moves; nothing here animates on its own.
+ * The hero: Nikunj · Nex · Khitha, one identity row built around the live
+ * guide, then the role, the line, one row of actions and the proof figures.
+ *
+ * Height budget (desktop, Sora name at its measured width):
+ *   nav bottom + 48 · availability 24 · 28 · identity 240 (200 when short)
+ *   · 16 · caption 44 · links 32 · 24 · role 36 · 12 · tagline 54 · 28
+ *   · actions 48 · 32 · proof 56
+ * which is ~838px from the top at 1440x900, so identity to actions sit above
+ * the fold and the figures at its edge; on shorter screens the stage drops to
+ * 200px and the figures continue below the fold rather than anything being
+ * hidden or squeezed.
+ *
+ * Its markup is static; `HeroIntro` plays the entrance over it. The
+ * `data-hero-part` / `data-hero-name` attributes are what the intro moves.
  */
 const HeroSection = () => {
   // The two large glow orbs pulse forever; pause them once the hero is off screen.
   const [heroRef, heroInView] = useInView({ threshold: 0 });
   const orbPlayState = heroInView ? "running" : "paused";
 
-  const roleWords = personalInfo.role.split(" ");
+  const [firstName, ...rest] = personalInfo.name.split(" ");
+  const lastName = rest.join(" ");
 
   return (
     <section
       ref={heroRef}
       id="hero"
-      className="relative flex min-h-[100svh] items-start overflow-hidden pt-[calc(5rem+env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))] sm:pt-[calc(5.5rem+env(safe-area-inset-top))] sm:pb-[max(2.5rem,env(safe-area-inset-bottom))] lg:min-h-screen lg:items-center lg:pt-20 lg:pb-12"
+      className="relative overflow-hidden pb-14 pt-[calc(var(--nav-top)+var(--nav-height)+1.5rem)] lg:pt-[calc(var(--nav-top)+var(--nav-height)+3rem)]"
     >
       <HeroIntro />
 
-      {/* Subtle background grid & glow orbs */}
-      <div data-hero-part="backdrop" aria-hidden="true" className="absolute inset-0 pointer-events-none">
-        <div className="absolute inset-0 opacity-[0.03]" style={{
-          backgroundImage: "radial-gradient(hsl(var(--accent)) 1px, transparent 1px)",
-          backgroundSize: "32px 32px",
-        }} />
-        <div className="absolute top-1/4 -right-1/4 w-[800px] h-[800px] rounded-full animate-[pulse_8s_ease-in-out_infinite] motion-reduce:animate-none opacity-50 bg-[radial-gradient(circle,hsl(var(--primary)/0.2)_0%,transparent_70%)]" style={{ animationPlayState: orbPlayState }} />
-        <div className="absolute bottom-0 -left-1/4 w-[600px] h-[600px] rounded-full animate-[pulse_10s_ease-in-out_infinite_reverse] motion-reduce:animate-none opacity-40 bg-[radial-gradient(circle,hsl(var(--accent)/0.2)_0%,transparent_70%)]" style={{ animationPlayState: orbPlayState }} />
+      {/* Background: a faint dot grid and two slow glows, behind everything. */}
+      <div data-hero-part="backdrop" aria-hidden="true" className="pointer-events-none absolute inset-0">
+        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(hsl(var(--accent)) 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
+        <div className="absolute -right-1/4 top-1/4 h-[800px] w-[800px] rounded-full bg-[radial-gradient(circle,hsl(var(--primary)/0.16)_0%,transparent_70%)] opacity-50 motion-safe:animate-[pulse_8s_ease-in-out_infinite]" style={{ animationPlayState: orbPlayState }} />
+        <div className="absolute -left-1/4 bottom-0 h-[600px] w-[600px] rounded-full bg-[radial-gradient(circle,hsl(var(--accent)/0.16)_0%,transparent_70%)] opacity-40 motion-safe:animate-[pulse_10s_ease-in-out_infinite_reverse]" style={{ animationPlayState: orbPlayState }} />
       </div>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-32 bg-gradient-to-t from-background to-transparent" />
 
-      {/* Smooth fade into the next section */}
-      <div className="absolute bottom-0 inset-x-0 h-32 sm:h-64 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none z-0" />
+      <div className="container-narrow relative z-10 flex w-full flex-col items-center text-center">
+        <p data-hero-part="copy" className="inline-flex items-center gap-2 text-sm leading-6 text-muted-foreground">
+          <span aria-hidden="true" className="h-2 w-2 rounded-full bg-primary" />
+          Available for new opportunities
+        </p>
 
-      <div className="container-narrow relative z-10 w-full">
-        <div className="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-          {/* Left - Content */}
-          <div className="flex flex-col gap-6 sm:gap-8 lg:col-span-7">
-            <div data-hero-part="copy" data-hero-glass>
-              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono font-bold glass-subtle border border-primary/20 text-primary tracking-wide glow-accent-xs">
-                <span className="w-2 h-2 rounded-full bg-primary animate-pulse motion-reduce:animate-none" />
-                Available for New Opportunities
+        {/* The name, split around Nex. The visible words are the h1 itself
+            (selectable, readable by voice control); the avatar between them
+            is its own labelled control. */}
+        <div className="hero-identity mt-7 w-full">
+          <h1 className="hero-identity-row">
+            <span data-hero-name="left" className="hero-name">{firstName}</span>
+            <span className="sr-only"> </span>
+            <GuideHeroAvatar />
+            <span data-hero-name="right" className="hero-name">{lastName}</span>
+          </h1>
+        </div>
+
+        {/* The conversation opens here, in the page: what follows moves down
+            instead of being covered. */}
+        <HeroAskHost />
+
+        <p data-hero-part="copy" className="mt-6 text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem]">
+          {personalInfo.role}
+        </p>
+        <p data-hero-part="copy" className="mt-3 max-w-[38rem] text-base leading-relaxed text-muted-foreground sm:text-[1.0625rem]" style={{ textWrap: "pretty" }}>
+          {personalInfo.tagline}
+        </p>
+
+        <HeroActions />
+
+        {/* The figures: each links to the work that backs it. */}
+        <div data-hero-part="copy" data-guide-target="hero-proof" className="mt-8 grid w-full max-w-3xl grid-cols-2 gap-x-6 gap-y-4 text-left sm:grid-cols-4">
+          {stats.map((stat) => (
+            <Link
+              key={stat.label}
+              href={stat.href}
+              className="group border-l-2 border-primary/25 py-1 pl-3.5 transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <span className="block text-2xl font-bold tracking-tight text-foreground tabular-nums">
+                {stat.value}
+                {stat.suffix}
               </span>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <h1 data-hero-part="copy" className="text-4xl sm:text-7xl lg:text-[5.5rem] font-bold tracking-tighter leading-[1.1] sm:leading-[1.05]">
-                {personalInfo.name}
-              </h1>
-              {/* A tagline, not a heading: the section headings below are the h2s. */}
-              <p data-hero-part="copy" className="text-xl sm:text-4xl font-semibold tracking-tight text-muted-foreground mt-2">
-                {roleWords.slice(0, -1).join(" ")} <span className="text-gradient">{roleWords[roleWords.length - 1]}</span>
-              </p>
-            </div>
-
-            <p data-hero-part="copy" className="text-muted-foreground text-base sm:text-lg leading-relaxed max-w-xl font-medium" style={{ textWrap: "pretty" }}>
-              {personalInfo.tagline}
-            </p>
-
-            {/* Stats — placed above the CTAs because these numbers are the
-                fastest proof in the first viewport, and each one links to the
-                surface that backs it up. */}
-            <div data-hero-part="copy" data-guide-target="hero-proof" className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              {/* Deliberately no ask affordance here. Each stat already links to
-                  the surface that proves it, and the hero's job in the first
-                  viewport is a fast read — a second interactive element per tile
-                  competed with that link for the same click. */}
-              {stats.map((stat) => (
-                <Link
-                  key={stat.label}
-                  href={stat.href}
-                  className="group border-l-2 border-primary/30 py-1 pl-4 transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                >
-                  <div className="text-2xl font-bold tracking-tighter text-foreground tabular-nums">
-                    {stat.value}{stat.suffix}
-                  </div>
-                  <div className="mt-1 text-xs font-medium uppercase tracking-wider text-muted-foreground transition-colors group-hover:text-primary">
-                    {stat.label}
-                  </div>
-                </Link>
-              ))}
-            </div>
-
-            {/* Holds a solid button and a glass one: moved in, never faded. */}
-            <div data-hero-part="copy" data-hero-glass className="mt-1 flex flex-col flex-wrap gap-3 sm:mt-2 sm:flex-row sm:gap-4">
-              <a
-                href="#work"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-8 py-3.5 text-sm font-bold tracking-wide text-primary-foreground transition-all duration-300 glow-accent-sm hover:glow-accent-md active:scale-95 sm:w-auto"
-              >
-                Read the case studies
-                <ArrowDown className="ml-1 h-4 w-4" />
-              </a>
-              <a
-                href={personalInfo.resumeUrl}
-                download
-                className="btn-cta-secondary w-full sm:w-auto"
-              >
-                <Download className="w-4 h-4 mr-1 text-primary" />
-                Resume
-              </a>
-              <HeroAskButton />
-            </div>
-          </div>
-
-          {/* Right - Nex, the live AI guide */}
-          <div data-guide-hero-column className="hidden lg:flex items-center justify-end lg:col-span-5 relative">
-            <div data-hero-part="avatar-glow" className="absolute inset-0 bg-[radial-gradient(circle,hsl(var(--primary)/0.15)_0%,transparent_70%)] rounded-full scale-150" />
-            {/* Sized to about the left column's height and centred on it, so
-                the group reads as one block beside the copy. */}
-            <div className="relative z-10 flex w-full max-w-[500px] justify-center xl:max-w-[600px]">
-              <GuideHeroAvatar />
-            </div>
-          </div>
+              <span className="mt-0.5 block text-[0.8125rem] leading-snug text-muted-foreground transition-colors group-hover:text-foreground">
+                {stat.label.charAt(0) + stat.label.slice(1).toLowerCase()}
+              </span>
+            </Link>
+          ))}
         </div>
       </div>
     </section>

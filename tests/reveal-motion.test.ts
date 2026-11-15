@@ -33,10 +33,13 @@ test("the hero's markup is static; its intro lives in HeroIntro", () => {
   assert.match(source, /<HeroIntro \/>/);
 });
 
-test("the hero's own Ask Nex is hidden by a wrapper on desktop, where the avatar carries one", () => {
-  // A class that sets `display` (btn-cta-secondary is inline-flex) overrides
-  // `lg:hidden` on the same element, which showed two "Ask Nex" side by side.
-  const source = readFileSync("src/components/HeroAskButton.tsx", "utf8");
-  assert.match(source, /<span className="contents lg:hidden">\s*<button/);
-  assert.doesNotMatch(source, /className="[^"]*btn-cta-secondary[^"]*lg:hidden/);
+test("the hero has exactly one Ask Nex: in its action row, not on the avatar", () => {
+  const avatar = readFileSync("src/components/guide/GuideHeroAvatar.tsx", "utf8");
+  const actions = readFileSync("src/components/HeroAskButton.tsx", "utf8");
+  assert.doesNotMatch(avatar, />\s*Ask Nex\s*</, "the avatar carries no Ask Nex button of its own");
+  assert.equal((actions.match(/>\s*Ask Nex\s*</g) ?? []).length, 1);
+  // One action family: every hero action uses the shared button classes, and
+  // responsive hiding never sits on the same element as a display-setting class.
+  assert.doesNotMatch(actions, /className="[^"]*btn-cta-[^"]*(lg|max-lg|sm|md):hidden/);
+  assert.equal((actions.match(/className="btn-cta-(primary|secondary)"/g) ?? []).length, 4);
 });

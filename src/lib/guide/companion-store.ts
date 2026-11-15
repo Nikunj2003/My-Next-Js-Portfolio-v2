@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { initialBubbleState, reduceBubble, type BubbleAction, type BubbleState } from "@/lib/guide/bubble-policy";
+import { initialBubbleState, reduceBubble, type AskHost, type BubbleAction, type BubbleState } from "@/lib/guide/bubble-policy";
 import { emitGuide } from "@/lib/guide/bus";
 // Loads the mood store with this module, so it hears events (chat/open) sent
 // before the lazily mounted companion has loaded.
@@ -22,9 +22,11 @@ type CompanionState = BubbleState & {
    * stays hidden. Reported by the hero avatar itself.
    */
   heroVisible: boolean;
+  /** Nex has landed in the footer's slot (desktop), reported by the companion. */
+  footerDocked: boolean;
 };
 
-let state: CompanionState = { ...initialBubbleState, pendingQuestion: null, heroVisible: false };
+let state: CompanionState = { ...initialBubbleState, pendingQuestion: null, heroVisible: false, footerDocked: false };
 let prefsLoaded = false;
 const listeners = new Set<() => void>();
 
@@ -53,8 +55,20 @@ function loadPrefs() {
   if (readGuidePrefs().tipsMuted) state = { ...state, tipBudget: { ...state.tipBudget, muted: true } };
 }
 
-/** Opens the ask bubble, optionally sending a question once it is up. */
-export function openAsk(question?: string) {
+/**
+ * Where a new ask box should open: in the hero while the hero avatar is the
+ * guide, in the footer once Nex has landed there, otherwise beside the
+ * companion. Phones always use the sheet.
+ */
+function defaultHost(): AskHost {
+  if (typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches) return "float";
+  if (state.heroVisible) return "hero";
+  if (state.footerDocked) return "footer";
+  return "float";
+}
+
+/** Opens the ask box, optionally sending a question once it is up. */
+export function openAsk(question?: string, host?: AskHost) {
   // The full panel is already showing the conversation: queue it there. The
   // panel sends it with its own options (offline state, navigation) once the
   // chat is free, so a question asked mid-answer isn't dropped.
@@ -62,7 +76,7 @@ export function openAsk(question?: string) {
     if (question) set({ ...state, pendingQuestion: question });
     return;
   }
-  dispatchCompanion({ type: "ask/open" });
+  dispatchCompanion({ type: "ask/open", host: host ?? defaultHost() });
   if (question) set({ ...state, pendingQuestion: question });
 }
 
@@ -74,6 +88,10 @@ export function takePendingQuestion() {
 
 export function setHeroVisible(visible: boolean) {
   if (state.heroVisible !== visible) set({ ...state, heroVisible: visible });
+}
+
+export function setFooterDocked(docked: boolean) {
+  if (state.footerDocked !== docked) set({ ...state, footerDocked: docked });
 }
 
 /**

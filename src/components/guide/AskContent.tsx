@@ -197,7 +197,7 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
           aria-live="off"
           aria-busy={Boolean(answer?.streaming) || (isLoading && !answer)}
           className="scroll-panel min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 text-sm leading-relaxed text-foreground"
-          style={{ maxHeight: inline ? "min(36vh, 300px)" : undefined }}
+          style={inline ? { height: "clamp(12rem, 34svh, 20rem)" } : undefined}
         >
           {answer ? (
             <>

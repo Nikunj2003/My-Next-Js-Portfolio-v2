@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import dynamic from 'next/dynamic'
 import Script from 'next/script'
+import localFont from 'next/font/local'
 import './globals.css'
 import { Providers } from './providers'
 import { SmoothScroll } from '@/components/SmoothScroll'
@@ -11,6 +12,17 @@ import { GuideCompanionMount } from '@/components/guide/GuideCompanionMount'
 // The full conversation panel, on every route; it loads on first open.
 import NexChatMount from '@/components/NexChatMount'
 import { QuietBoundary } from '@/components/QuietBoundary'
+
+// The display face for the hero's name and the footer's sign-off only; body
+// text stays on the system stack. Self-hosted (SIL OFL, fonts/OFL-Sora.txt).
+const display = localFont({
+  src: './fonts/Sora-Variable-latin.woff2',
+  weight: '100 800',
+  display: 'swap',
+  variable: '--font-display',
+  adjustFontFallback: 'Arial',
+  fallback: ['Avenir Next', 'Segoe UI', 'system-ui', 'sans-serif'],
+})
 
 // Mounted at the layout so every route gets the background layer, including
 // /work/*. Self-gates on pointer:fine, >=1280px, and reduced motion.
@@ -69,7 +81,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={display.variable} suppressHydrationWarning>
       <head>
         <meta name="color-scheme" content="dark light" />
         {/* The hero intro's decision, blocking and before the first paint, so the

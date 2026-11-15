@@ -13,7 +13,7 @@ import {
   underPanelPoint,
   heroHandoffFrame,
   heroHandoffProgress,
-} from "../src/lib/guide/placement.ts";
+  COMPANION_FACE_SHARE, HERO_FACE_SHARE } from "../src/lib/guide/placement.ts";
 import { lookToward } from "../src/lib/guide/gaze.ts";
 
 const viewport = { width: 1440, height: 900, insetTop: 85, insetBottom: 0 };
@@ -139,8 +139,8 @@ test("hand-off: the two avatars are one disc (same centre, same face size) at ev
     const companionCentre = { x: f.position.x + 34, y: f.position.y + 34 };
     const heroCentre = { x: 1047 + f.heroOffset.x, y: 300 + f.heroOffset.y };
     assert.ok(Math.abs(companionCentre.x - heroCentre.x) < 1e-6 && Math.abs(companionCentre.y - heroCentre.y) < 1e-6, `centres apart at t=${t}`);
-    const heroFace = 364 * f.heroScale * 0.82;
-    const companionFace = 68 * f.companionScale * 0.76;
+    const heroFace = 364 * f.heroScale * HERO_FACE_SHARE;
+    const companionFace = 68 * f.companionScale * COMPANION_FACE_SHARE;
     assert.ok(Math.abs(heroFace - companionFace) < 1e-6, `faces differ at t=${t}`);
   }
 });

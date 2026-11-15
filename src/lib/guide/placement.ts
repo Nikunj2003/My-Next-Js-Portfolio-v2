@@ -179,6 +179,19 @@ export function underPanelPoint(input: {
  * moving, not one fading out and another appearing. Every output is
  * monotonic in `t`, so the motion never reverses.
  */
+/**
+ * The drawn face's share of each avatar's box. The hero's face is 84% of its
+ * stage (GuideHeroAvatar); the companion draws its face at `size - 16` inside
+ * its disc. Every size match (hand-off, page hops, the footer) uses these.
+ */
+export const HERO_FACE_SHARE = 0.84;
+export const COMPANION_FACE_SHARE = 0.76;
+
+/** Scale that draws the companion's face at the hero's face size. */
+export function heroFaceScale(heroDiameter: number, size: number) {
+  return (heroDiameter * HERO_FACE_SHARE) / (size * COMPANION_FACE_SHARE);
+}
+
 /** The share of the hand-off spent cross-fading the two avatars. */
 export const FADE_SHARE = 0.45;
 
@@ -194,7 +207,7 @@ export function heroHandoffFrame(input: {
   heroFace?: number;
   companionFace?: number;
 }) {
-  const { heroCentre, heroDiameter, size, spot, heroFace = 0.82, companionFace = 0.76 } = input;
+  const { heroCentre, heroDiameter, size, spot, heroFace = HERO_FACE_SHARE, companionFace = COMPANION_FACE_SHARE } = input;
   const t = clamp(input.t, 0, 1);
 
   // Path and size share one eased progress, so the small one shrinks as it
