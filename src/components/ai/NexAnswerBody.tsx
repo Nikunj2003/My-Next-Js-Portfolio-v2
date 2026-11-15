@@ -6,6 +6,11 @@ import { PacedAnswer } from "@/components/ai/PacedAnswer";
 import type { ChatToolCall } from "@/lib/chat-contract";
 import type { Message } from "@/lib/chat/types";
 import { cn } from "@/lib/utils";
+import dynamic from "next/dynamic";
+import { MAX_CARDS_PER_ANSWER, parseCard, type AnswerCard } from "@/lib/chat/cards";
+
+// The cards carry the full case-study and metric data, so they load on first use.
+const AnswerCards = dynamic(() => import("@/components/ai/answer-cards/AnswerCards"), { ssr: false });
 
 type NexAnswerBodyProps = {
   message: Message;
@@ -27,6 +32,11 @@ export function NexAnswerBody({ message, components, reducedMotion, showTakeMeTh
   // Once the answer starts they move under it: the answer is what people read,
   // the tools are how it was produced.
   const answered = message.content.length > 0;
+  const cards: AnswerCard[] = [];
+  for (const call of calls) {
+    const card = call.status === "done" && !call.refused ? parseCard(call.card) : null;
+    if (card && cards.length < MAX_CARDS_PER_ANSWER && !cards.some((seen) => JSON.stringify(seen) === JSON.stringify(card))) cards.push(card);
+  }
   const toolList =
     calls.length > 0 ? (
         <ul className={cn("flex flex-col gap-1.5 border-l-2 border-primary/25 pl-3", answered ? "mt-3" : "mb-1")}>
@@ -88,6 +98,9 @@ export function NexAnswerBody({ message, components, reducedMotion, showTakeMeTh
       )}
 
       {answered && toolList}
+
+      {/* Page components for what the tools found, once the answer is complete. */}
+      {!message.streaming && !message.error && cards.length > 0 && <AnswerCards cards={cards} />}
 
       {/* Collapsed by default: a recruiter never has to open it,
           an engineer can. */}

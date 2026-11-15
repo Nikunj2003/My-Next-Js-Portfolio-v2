@@ -489,7 +489,7 @@ export function executeTool(request: ToolCallRequest): ToolCallResult {
       }
 
       const section = String(args.section ?? "all");
-      const base = { title: study.title, employer: study.employer, period: study.period, link: getCaseStudyPath(study.slug) };
+      const base = { slug: study.slug, title: study.title, employer: study.employer, period: study.period, link: getCaseStudyPath(study.slug) };
 
       const pick: Record<string, unknown> = {
         problem: { ...base, problem: study.problem },
@@ -553,6 +553,7 @@ export function executeTool(request: ToolCallRequest): ToolCallResult {
       return finish(
         {
           systems: found.map((study) => ({
+            slug: study.slug,
             title: study.title,
             link: getCaseStudyPath(study.slug),
             stack: study.stack,

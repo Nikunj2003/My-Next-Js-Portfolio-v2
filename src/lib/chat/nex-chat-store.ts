@@ -7,6 +7,7 @@
  * conversation. Everything that used to live inside `NexChat` (sending,
  * streaming, retry, abort, persistence) is here; the components only render.
  */
+import { parseCard } from "@/lib/chat/cards";
 import {
   CHAT_CLIENT_TIMEOUT_MS,
   CHAT_ENDPOINT,
@@ -186,6 +187,7 @@ function sanitizeStoredToolCall(value: unknown): ChatToolCall | null {
     refused: call.refused === true ? true : undefined,
     href: typeof call.href === "string" && SAFE_HREF.test(call.href) ? call.href : undefined,
     highlight: typeof call.highlight === "string" && /^[\w:-]{1,80}$/.test(call.highlight) ? call.highlight : undefined,
+    card: parseCard(call.card) ? (call.card as string) : undefined,
   };
 }
 

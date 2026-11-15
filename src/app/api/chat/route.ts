@@ -1,3 +1,4 @@
+import { cardForToolResult } from "@/lib/chat/cards";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { AI_MODEL, AI_REASONING_EFFORT, SYSTEM_PROMPT, SUGGESTION_SYSTEM_PROMPT } from "@/lib/ai-config";
@@ -979,6 +980,7 @@ export async function POST(request: Request) {
                 refused: result.refused,
                 href,
                 highlight,
+                card: cardForToolResult(name, result.refused, result.output),
               },
             });
 
