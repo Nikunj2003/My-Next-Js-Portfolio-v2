@@ -5,10 +5,10 @@ import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { InlineAnswer } from "@/components/ai/InlineAnswer";
-import { openAiTwin } from "@/lib/ask-twin";
+import { openNex } from "@/lib/ask-nex";
 
 /** Re-exported so existing call sites keep working. */
-export { openAiTwin as askAboutThis } from "@/lib/ask-twin";
+export { openNex as askAboutThis } from "@/lib/ask-nex";
 
 /**
  * Shared geometry for both affordances, so a pill and the link beside it cannot
@@ -30,7 +30,7 @@ const AFFORDANCE_BASE =
 /**
  * The single "ask about this" affordance used everywhere.
  *
- * Opens the AI Twin panel by DEFAULT. The panel is the right home for an answer
+ * Opens the Nex panel by DEFAULT. The panel is the right home for an answer
  * of unpredictable length: it scrolls independently, it keeps the conversation
  * so a visitor can follow up, and it cannot disturb the page's layout.
  *
@@ -66,7 +66,7 @@ export default function AskAboutThis({
     <>
       <button
         type="button"
-        onClick={() => (inline ? setOpen((prev) => !prev) : openAiTwin(question))}
+        onClick={() => (inline ? setOpen((prev) => !prev) : openNex(question))}
         aria-label={`${label}: ${question}`}
         aria-expanded={inline ? open : undefined}
         className={cn(AFFORDANCE_BASE, "ml-2", open && "border-primary/40 bg-primary/10 text-primary", className)}

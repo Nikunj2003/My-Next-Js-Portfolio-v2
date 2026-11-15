@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { Loader2, Wrench, X } from "lucide-react";
 import { useAssistantAnswer } from "@/components/ai/useAssistantAnswer";
 import { AnswerBody } from "@/components/ai/AnswerBody";
-import { openAiTwin } from "@/lib/ask-twin";
+import { openNex } from "@/lib/ask-nex";
 import { cn } from "@/lib/utils";
 
 /**
@@ -13,8 +13,8 @@ import { cn } from "@/lib/utils";
  *
  * The rule this follows: inline when the answer is about what the visitor is
  * already reading (a case-study section, an experience bullet); the panel
- * stays for anything cross-site (navigation, open-ended chat). A "Continue in
- * AI Twin" handoff is what lets a visitor go from a scoped in-page answer to
+ * stays for anything cross-site (navigation, open-ended chat). A "Continue with
+ * Nex" handoff is what lets a visitor go from a scoped in-page answer to
  * an open conversation without re-typing the question.
  */
 export function InlineAnswer({
@@ -46,11 +46,11 @@ export function InlineAnswer({
     onDismiss?.();
   };
 
-  const handleContinueInTwin = () => {
+  const handleContinueWithNex = () => {
     // Hands the already-answered exchange to the panel rather than making the
     // visitor re-ask: the panel appends it to its own message list and
     // persists it, same as any other turn.
-    openAiTwin(question, status === "done" ? content : undefined, { expand: true });
+    openNex(question, status === "done" ? content : undefined, { expand: true });
     handleClose();
   };
 
@@ -141,10 +141,10 @@ export function InlineAnswer({
         {status === "done" && (
           <button
             type="button"
-            onClick={handleContinueInTwin}
+            onClick={handleContinueWithNex}
             className="mt-3 inline-flex items-center gap-1.5 font-mono text-[11px] font-medium uppercase tracking-wider text-primary transition-colors hover:text-primary/80"
           >
-            Continue in AI Twin →
+            Continue with Nex →
           </button>
         )}
       </span>

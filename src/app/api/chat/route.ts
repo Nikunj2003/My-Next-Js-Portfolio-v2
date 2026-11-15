@@ -17,7 +17,7 @@ import {
   type ChatTrace,
 } from "@/lib/chat-contract";
 import { TOOL_DEFINITIONS, executeTool, formatToolCall } from "@/lib/ai-tools";
-import { CHAT_MEMORY_WINDOW, appendContextualLinks, findMatchingProjects, normalizeText, trimConversationHistory } from "@/lib/ai-twin";
+import { CHAT_MEMORY_WINDOW, appendContextualLinks, findMatchingProjects, normalizeText, trimConversationHistory } from "@/lib/nex-knowledge";
 import { checkGlobalBudget, checkRateLimit, getClientKey, getRateLimitHeaders } from "@/lib/rate-limit";
 import { readBodyTextCapped } from "@/lib/request-body";
 import { resolveChatCompletionsUrl } from "@/lib/llm-url";
@@ -238,28 +238,28 @@ function buildFallbackSuggestions(
 
   const fallbackByCategory: Record<string, string[]> = {
     experience: [
-      "What impact are you driving at ArmorCode?",
-      "How did Xansr shape your backend style?",
+      "What impact is Nikunj driving at ArmorCode?",
+      "How did Xansr shape his backend style?",
     ],
     skills: [
-      "Which tools do you use most day to day?",
-      "Which skill do you lean on most?",
+      "Which tools does he use day to day?",
+      "Which skill does he lean on most?",
     ],
     projects: [
       "Which project should I open first?",
-      "Which build best shows your style?",
+      "Which build best shows his style?",
     ],
     achievements: [
-      "Which result are you proudest of?",
+      "Which result was hardest to earn?",
       "What achievement stands out most?",
     ],
     contact: [
-      "Could you share your LinkedIn?",
-      "What's the best way to reach you?",
+      "Where's his LinkedIn?",
+      "What's the best way to reach him?",
     ],
     career_goals: [
-      "What are you building next?",
-      "Where do you want to grow next?",
+      "What is Nikunj building next?",
+      "Where does he want to grow next?",
     ],
   };
 
@@ -267,9 +267,9 @@ function buildFallbackSuggestions(
     const reference = getProjectReference(project.title);
 
     return [
-      `How did you build ${reference}?`,
+      `How was ${reference} built?`,
       `What was hardest in ${reference}?`,
-      `Could you share the ${reference} repo?`,
+      `Where's the ${reference} repo?`,
     ];
   });
 
@@ -616,21 +616,21 @@ function parseToolArgs(raw: string | undefined): Record<string, unknown> {
 
 function classifyUpstreamFailure(status: number): { code: ChatErrorCode; error: string; retryable: boolean } {
   if (status === 429) {
-    return { code: "upstream_rate_limited", error: "The AI service is busy. Please try again shortly.", retryable: true };
+    return { code: "upstream_rate_limited", error: "Nex's model is busy. Please try again shortly.", retryable: true };
   }
   if (status === 401 || status === 403) {
-    return { code: "upstream_auth_error", error: "The AI service rejected the request. Please contact Nikunj directly.", retryable: false };
+    return { code: "upstream_auth_error", error: "Nex can't answer right now. Please contact Nikunj directly.", retryable: false };
   }
   // A 4xx other than 429 means the request itself was wrong, so replaying it
   // verbatim fails identically. Only 5xx and unknown statuses are worth a retry.
   if (status >= 400 && status < 500) {
     return {
       code: "upstream_error",
-      error: "The AI service could not process that request.",
+      error: "Nex couldn't process that request.",
       retryable: false,
     };
   }
-  return { code: "upstream_error", error: "The AI service returned an error. Please try again.", retryable: true };
+  return { code: "upstream_error", error: "Nex's model returned an error. Please try again.", retryable: true };
 }
 
 export async function POST(request: Request) {
@@ -658,7 +658,7 @@ export async function POST(request: Request) {
     return createChatErrorResponse(
       429,
       "rate_limited",
-      "The AI Twin is very busy right now. Please try again later.",
+      "Nex is handling a lot of questions right now. Try again in a minute.",
       { ...rateLimitHeaders, "Retry-After": String(budget.retryAfter) }
     );
   }
@@ -699,7 +699,7 @@ export async function POST(request: Request) {
     return createChatErrorResponse(
       503,
       "service_unavailable",
-      "The AI service is not configured right now. Please contact Nikunj directly if you need help.",
+      "Nex isn't configured right now. Please contact Nikunj directly.",
       rateLimitHeaders,
       false
     );
@@ -713,7 +713,7 @@ export async function POST(request: Request) {
     return createChatErrorResponse(
       503,
       "service_unavailable",
-      "The AI service is not configured right now. Please contact Nikunj directly if you need help.",
+      "Nex isn't configured right now. Please contact Nikunj directly.",
       rateLimitHeaders,
       false
     );
@@ -881,14 +881,14 @@ export async function POST(request: Request) {
               console.error("LLM stream ended early");
               send({
                 type: "error",
-                error: "The AI service ended its response early. Please try again.",
+                error: "Nex stopped before the answer finished. Please try again.",
                 code: "upstream_error",
                 retryable: true,
               });
             } else if (isAbortError(error)) {
               send({
                 type: "error",
-                error: "The AI service took too long to respond. Please try again.",
+                error: "Nex took too long to respond. Please try again.",
                 code: "upstream_timeout",
                 retryable: true,
               });
@@ -896,7 +896,7 @@ export async function POST(request: Request) {
               console.error("LLM request failed");
               send({
                 type: "error",
-                error: "Could not reach the AI service. Please try again.",
+                error: "Nex couldn't reach its model. Please try again.",
                 code: "upstream_unreachable",
                 retryable: true,
               });
@@ -1217,9 +1217,9 @@ Rules:
 
 function getDefaultSuggestions() {
   return [
-    "Which project best shows your backend depth?",
-    "How do you approach platform reliability?",
+    "Which project best shows his backend depth?",
+    "How does he approach platform reliability?",
     "Which build shows end-to-end ownership?",
-    "What's the best way to connect with you?"
+    "What's the best way to reach Nikunj?"
   ];
 }

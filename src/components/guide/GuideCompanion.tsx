@@ -5,11 +5,11 @@ import { usePathname } from "next/navigation";
 import { animate, cancelFrame, frame as frameLoop, motion, useMotionValue, useReducedMotion } from "framer-motion";
 import GuideAvatar from "@/components/guide/GuideAvatar";
 import { StaticGuideMark, prefersStatic } from "@/components/guide/GuideAvatarSlot";
-import { TwinBubble } from "@/components/guide/TwinBubble";
+import { NexBubble } from "@/components/guide/NexBubble";
 import { useGuideTour } from "@/components/guide/GuideTourNarrator";
 import { SECTION_IDS } from "@/lib/guide/anchors";
 import { emitGuide } from "@/lib/guide/bus";
-import { dispatchCompanion, openAsk, openPanel, setHeroVisible, useCompanionState } from "@/lib/guide/companion-store";
+import { dispatchCompanion, getCompanionState, openAsk, openPanel, setHeroVisible, useCompanionState } from "@/lib/guide/companion-store";
 import {
   activeSectionAt,
   blendPoint,
@@ -20,6 +20,8 @@ import {
   gutterPoint,
   heroHandoffFrame,
   heroHandoffProgress,
+  routeTravelFrame,
+  routeTravelMs,
   underPanelPoint,
   type BubbleSide,
   type Point,
@@ -76,7 +78,7 @@ type SpotRule = {
  * avatar once the hero scrolls away and travels down the page with the
  * visitor, sitting in the free space of each section: under the sticky intro
  * panels of About, Experience and Skills (so it rides with the panel), at the
- * top corner of the Work, AI Twin and Contact blocks, or in the left margin.
+ * top corner of the Work, Nex and Contact blocks, or in the left margin.
  * When the section changes it glides to the new spot, eased, in about half a
  * second. Its bubble (ask box, tip or tour) is placed in the same frame as the
  * avatar, so it moves with it exactly.
@@ -132,7 +134,13 @@ export default function GuideCompanion() {
   // as visible on every load, was drawn, then faded out once the hero
   // reported in (the flash on arrival and refresh).
   const [settled, setSettled] = useState(false);
-  const visible = (!isHome || settled) && (touring || !heroVisible) && !(isMobile && (askOpen || companion.panelOpen));
+  // A new page settles afresh (the trip between pages starts from that moment).
+  const [settledPath, setSettledPath] = useState(pathname);
+  if (settledPath !== pathname) {
+    setSettledPath(pathname);
+    setSettled(false);
+  }
+  const visible = settled && (touring || !heroVisible) && !(isMobile && (askOpen || companion.panelOpen));
 
   useEffect(() => {
     dispatchCompanion({ type: "companion/visible", visible });
@@ -151,14 +159,16 @@ export default function GuideCompanion() {
   // Phones scroll natively (touch bypasses Lenis), and a main-thread loop
   // riding on content always trails a compositor scroll, so there it sits in
   // the corner instead.
-  const cornerOnly = touring || companion.panelOpen || !isHome || isMobile;
+  const cornerOnly = touring || companion.panelOpen || isMobile;
+  const route = routeKind(pathname);
   const rule = useMemo<SpotRule>(() => {
-    if (cornerOnly || !activeSection) {
-      if (!cornerOnly && isHome && !activeSection) return marginRule("margin");
-      return CORNER;
-    }
+    if (cornerOnly) return CORNER;
+    // Other pages have spots of their own (the case study's table of
+    // contents, the index's headings); only an unknown page uses the corner.
+    if (route !== "home") return ROUTE_RULES[route] ?? CORNER;
+    if (!activeSection) return marginRule("margin");
     return SECTION_RULES[activeSection] ?? marginRule(activeSection);
-  }, [activeSection, cornerOnly, isHome]);
+  }, [activeSection, cornerOnly, route]);
 
   // The frame loop. Every frame: pick the section that owns the screen, read
   // the current rule's point from the live layout, blend from the previous
@@ -178,6 +188,8 @@ export default function GuideCompanion() {
 
   const settledRef = useRef(false);
   const mountedAtRef = useRef(0);
+  /** A trip between pages in progress: from where the avatar was on the page it left. */
+  const travelRef = useRef<{ from: Point; fromScale: number; start: number; ms: number; toHero: boolean } | null>(null);
   const reduceMotionRef = useRef(reduceMotion);
   const isMobileRef = useRef(isMobile);
   useLayoutEffect(() => {
@@ -197,6 +209,16 @@ export default function GuideCompanion() {
     mountedAtRef.current = performance.now();
     // Coming back to the homepage is a fresh load for the hero: wait for it again.
     settledRef.current = false;
+    // Arriving from another page (a link, the agent, the back button): hop
+    // from where the avatar was on screen to its spot here, instead of
+    // appearing there. Nothing to travel from on the first load.
+    const departed = lastDrawn;
+    travelRef.current = departed && departed.path !== pathname && !reduceMotionRef.current && performance.now() - departed.at < 4000
+      ? { from: departed.point, fromScale: departed.scale, start: -1, ms: 0, toHero: false }
+      : null;
+    lastPointRef.current = null;
+    glideRef.current = null;
+    clearLayoutCache();
     watchLayoutCache();
     const footer = () => cachedNode("footer", () => document.querySelector("footer"));
     // Runs on Framer Motion's frame loop, in its update step: after Lenis has
@@ -246,22 +268,76 @@ export default function GuideCompanion() {
         // The hero's intro has ended (HeroIntro sets this, at once when it
         // doesn't play), so the hand-off never starts from a half-built hero.
         const columnShown = !hero || document.documentElement.hasAttribute("data-hero-ready");
-        if (now - mountedAtRef.current > SETTLE_MS && columnShown) {
+        if ((!isHome || now - mountedAtRef.current > SETTLE_MS) && columnShown) {
           settledRef.current = true;
           // Decide who is the guide from the settled page, before anything is drawn.
-          if (hero) setHeroVisible(heroHere && heroBox ? handoffProgress(heroBox, viewport) < HANDOFF_SWAP_AT : false);
+          const heroGuides = Boolean(hero && heroHere && heroBox && handoffProgress(heroBox, viewport) < HANDOFF_SWAP_AT);
+          if (hero) setHeroVisible(heroGuides);
           setSettled(true);
-          opacity.set(0);
+          const travel = travelRef.current;
+          if (travel) {
+            travel.start = now;
+            travel.toHero = heroGuides;
+            if (heroGuides && heroBox) {
+              const to = { x: heroBox.left + heroBox.width / 2 - size / 2, y: heroBox.top + heroBox.height / 2 - size / 2 };
+              travel.ms = routeTravelMs(travel.from, to);
+            }
+          } else opacity.set(0);
           return;
         } else {
-          opacity.set(0);
-          if (hero) {
+          // Waiting for the new page: hold where it was, so the trip starts there.
+          const travel = travelRef.current;
+          if (travel) {
+            posX.set(travel.from.x);
+            posY.set(travel.from.y);
+            scale.set(travel.fromScale);
+            opacity.set(1);
+            if (hero) {
+              hero.style.transform = "";
+              hero.style.opacity = "0";
+            }
+          } else opacity.set(0);
+          if (hero && !travel) {
             hero.style.transform = "";
             hero.style.opacity = "";
           }
           return;
         }
       }
+      // A trip between pages: one hop from where it was to where it belongs
+      // here, read from the live layout every frame so it lands exactly. Into
+      // the homepage with the hero on screen, it lands on the hero avatar and
+      // hands over to it (the hero fades in under it as it arrives).
+      const travel = travelRef.current;
+      if (travel && travel.start >= 0) {
+        const heroTarget = travel.toHero && hero && heroBox ? heroBox : null;
+        const to = heroTarget
+          ? { x: heroTarget.left + heroTarget.width / 2 - size / 2, y: heroTarget.top + heroTarget.height / 2 - size / 2 }
+          : clampToViewport(ruleRef.current.point(size, viewport) ?? marginRule("").point(size, viewport) ?? CORNER.point(size, viewport)!, size, viewport, footer()?.getBoundingClientRect().top ?? null);
+        if (!travel.ms) travel.ms = routeTravelMs(travel.from, to);
+        const t = Math.min(1, (now - travel.start) / travel.ms);
+        // Landing on the hero: grow to its face size, then hand over.
+        const heroScale = heroTarget ? (heroTarget.width * 0.82) / (size * 0.76) : 1;
+        const hop = routeTravelFrame({ t, from: travel.from, to, fromScale: travel.fromScale, toScale: heroScale });
+        posX.set(Math.round(hop.position.x * 2) / 2);
+        posY.set(Math.round(hop.position.y * 2) / 2);
+        scale.set(hop.scale);
+        if (heroTarget && hero) {
+          // The last fifth: the hero takes over, the small one fades into it.
+          const swap = Math.max(0, (t - 0.8) / 0.2);
+          hero.style.transform = "";
+          hero.style.opacity = String(swap);
+          opacity.set(1 - swap);
+        } else opacity.set(1);
+        if (t >= 1) {
+          travelRef.current = null;
+          lastPointRef.current = heroTarget ? null : to;
+          if (hero) hero.style.opacity = "";
+          if (heroTarget) opacity.set(0);
+        }
+        return;
+      }
+
       // Hand-off progress: a plain function of the scroll position (0 as the
       // hero avatar's top reaches the navbar, 1 a scroll of 70% of its height
       // later). No smoothing and no timer: the same scroll position always
@@ -298,6 +374,12 @@ export default function GuideCompanion() {
       // ask box), so the conversation moves exactly when the avatars swap.
       if (hero) setHeroVisible(heroHere ? morph < HANDOFF_SWAP_AT : heroBox ? heroBox.bottom > NAVBAR + heroBox.height * 0.5 && heroBox.width > 0 : false);
       if (!visibleRef.current && !handingOff) {
+        // The big hero avatar is the guide: a trip to another page starts from it.
+        // (Recorded here because by the time this effect cleans up after a route
+        // change, the hero has already left the DOM.)
+        if (heroHere && heroBox && getCompanionState().heroVisible && heroBox.bottom > 0 && heroBox.top < viewport.height) {
+          lastDrawn = { point: { x: heroBox.left + heroBox.width / 2 - size / 2, y: heroBox.top + heroBox.height / 2 - size / 2 }, scale: (heroBox.width * 0.82) / (size * 0.76), at: performance.now(), path: pathname };
+        }
         lastPointRef.current = null;
         glideRef.current = null;
         // Over the hero the hand-off owns the opacity: hidden. (Fading out on
@@ -367,6 +449,7 @@ export default function GuideCompanion() {
       lastPointRef.current = point;
       posX.set(Math.round(point.x * 2) / 2);
       posY.set(Math.round(point.y * 2) / 2);
+      if (opacity.get() > 0.5) lastDrawn = { point, scale: scale.get(), at: performance.now(), path: pathname };
 
       const kind = current === CORNER || usedFallback ? "corner" : "ride";
       if (kind !== kindRef.current) {
@@ -384,7 +467,8 @@ export default function GuideCompanion() {
         hero.style.pointerEvents = "";
       }
     };
-  }, [fade, isHome, opacity, posX, posY, scale, size]);
+    // Re-run per page: each page settles afresh and the trip starts from the last one.
+  }, [fade, isHome, opacity, pathname, posX, posY, scale, size]);
 
   // Tips: after a short dwell on a section, offer its one-liner. The policy
   // decides whether one may show (budget, cooldown, nothing else open).
@@ -416,7 +500,7 @@ export default function GuideCompanion() {
   useEffect(() => {
     if (companion.bubble !== "none" && lastBubble.current === "none") {
       const active = document.activeElement;
-      openerRef.current = active instanceof HTMLElement && active !== document.body && !active.closest("#twin-bubble") ? active : null;
+      openerRef.current = active instanceof HTMLElement && active !== document.body && !active.closest("#nex-bubble") ? active : null;
     }
     lastBubble.current = companion.bubble;
   }, [companion.bubble]);
@@ -471,9 +555,9 @@ export default function GuideCompanion() {
           onPointerLeave={() => emitGuide({ type: "page/hover", active: false })}
           onFocus={() => emitGuide({ type: "page/hover", active: true })}
           onBlur={() => emitGuide({ type: "page/hover", active: false })}
-          aria-label={companion.bubble === "ask" ? "Close the AI Twin" : "Ask Nikunj's AI Twin a question"}
+          aria-label={companion.bubble === "ask" ? "Close Nex" : "Ask Nex a question"}
           aria-expanded={companion.bubble === "ask"}
-          aria-controls="twin-bubble"
+          aria-controls="nex-bubble"
           className={
             "relative flex h-full w-full items-center justify-center rounded-full bg-[#090e1a]/90 ring-1 ring-primary/40 shadow-accent-card transition-shadow duration-300 hover:shadow-[0_16px_36px_hsl(var(--accent)/0.28)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary " +
             (visible ? "pointer-events-auto cursor-pointer" : "pointer-events-none")
@@ -500,7 +584,7 @@ export default function GuideCompanion() {
         </button>
       </motion.div>
 
-      <TwinBubble
+      <NexBubble
         anchorX={posX}
         anchorY={posY}
         anchorSize={size}
@@ -680,7 +764,7 @@ function underPanelRule(section: string): SpotRule {
 }
 
 /**
- * At the top-left corner of a section's block (Work header, AI Twin card,
+ * At the top-left corner of a section's block (Work header, Nex card,
  * Contact grid): rides with it as it scrolls, held on screen by the clamp
  * once the block's top has scrolled past.
  */
@@ -711,6 +795,115 @@ const SECTION_RULES: Record<string, SpotRule> = {
   experience: underPanelRule("experience"),
   skills: underPanelRule("skills"),
   work: blockCornerRule("work", '[data-guide-target="work-featured"]', { x: 0, y: -12 }),
-  "ai-twin": blockCornerRule("ai-twin", '[data-guide-spot="ai-twin"]', { x: 0, y: 24 }),
+  nex: blockCornerRule("nex", '[data-guide-spot="nex"]', { x: 0, y: 24 }),
   contact: blockCornerRule("contact", '[data-guide-spot="contact"]', { x: 0, y: 24 }),
+};
+
+/* ------------------------------------------------------------------------ */
+/* Other pages                                                               */
+/* ------------------------------------------------------------------------ */
+
+/**
+ * Where the avatar was last drawn, kept across page changes (this module
+ * outlives a route), so the next page's trip starts from there.
+ */
+let lastDrawn: { point: Point; scale: number; at: number; path: string } | null = null;
+
+type RouteKind = "home" | "work-index" | "case-study" | "other";
+
+function routeKind(pathname: string | null): RouteKind {
+  if (pathname === "/") return "home";
+  if (pathname === "/work") return "work-index";
+  if (pathname?.startsWith("/work/")) return "case-study";
+  return "other";
+}
+
+const routeNode = (spot: string) => cachedNode<HTMLElement>(`route:${spot}`, () => document.querySelector<HTMLElement>(`[data-guide-route-spot="${spot}"]`));
+const visibleBox = (node: HTMLElement | null) => {
+  if (!node) return null;
+  const box = node.getBoundingClientRect();
+  return box.width > 0 && box.height > 0 ? box : null;
+};
+
+/**
+ * A case study. At the top it waits beside the intro paragraph, in the empty
+ * space right of the measure. Once the two-column body arrives it rides
+ * under the sticky "On this page" contents (which pins at the top), in the
+ * empty column below the list, and leaves with it at the end of the article.
+ * One continuous path, the same both ways: it is the under-panel spot with
+ * the intro's right side as its waiting place.
+ */
+const CASE_STUDY_RULE: SpotRule = {
+  key: "route:case-study",
+  prefer: ["right", "bottom", "top"],
+  point: (size, viewport) => {
+    const introNode = routeNode("intro");
+    const tocNode = routeNode("toc");
+    const intro = visibleBox(introNode);
+    const column = cachedNode<HTMLElement>("route:column", () => document.querySelector<HTMLElement>("#case-study-article .container-narrow"));
+    const columnBox = column?.getBoundingClientRect();
+    // Waiting place: the free strip right of the intro paragraph, riding with it.
+    const beside = intro && columnBox && columnBox.right - intro.right > size * 2
+      ? { x: intro.right + (columnBox.right - intro.right) / 2 - size / 2, y: Math.max(intro.top + intro.height / 2 - size / 2, viewport.insetTop + 40) }
+      : gutterPoint(contentLeft(), size, viewport);
+    const sticky = tocNode ? stickyTop(tocNode) : null;
+    const toc = visibleBox(tocNode);
+    // Without the sticky two-column layout (narrower screens), just wait there.
+    if (!toc || sticky === null) return beside;
+    // Its resting place: under the list once it has pinned, in the empty column.
+    const rest = { x: toc.left + 20, y: Math.min(toc.bottom, sticky + toc.height) + 24 };
+    if (!beside) return rest;
+    // Slide from the waiting place to the rest over the contents' last 360px of approach.
+    const k = Math.min(1, Math.max(0, 1 - (toc.top - sticky) / 360));
+    return blendPoint(beside, rest, easeInOutCubic(k));
+  },
+};
+
+/** An element's sticky `top`, when it is laid out sticky right now (desktop), else null. */
+function stickyTop(node: HTMLElement) {
+  const key = "route:sticky-top";
+  const hit = styleCache.get(key) as number | null | undefined;
+  if (hit !== undefined) return hit;
+  const style = getComputedStyle(node);
+  const value = style.position === "sticky" ? parseFloat(style.top) || 0 : null;
+  styleCache.set(key, value);
+  return value;
+}
+
+/**
+ * The case-study index. Beside the header's intro paragraph (its right side is
+ * empty), then at the start of the group heading nearest the top of the
+ * screen, in the margin, riding with it, so it walks down the groups as you
+ * scroll.
+ */
+const WORK_INDEX_RULE: SpotRule = {
+  key: "route:work-index",
+  prefer: ["right", "bottom", "top"],
+  point: (size, viewport) => {
+    const header = visibleBox(routeNode("header"));
+    const column = cachedNode<HTMLElement>("route:index-column", () => document.querySelector<HTMLElement>("main .container-narrow"));
+    const columnBox = column?.getBoundingClientRect();
+    if (header && columnBox && header.bottom > viewport.height * 0.35 && columnBox.right - header.right > size * 2) {
+      return { x: header.right + (columnBox.right - header.right) / 2 - size / 2, y: header.top + header.height / 2 - size / 2 };
+    }
+    const left = contentLeft();
+    const gutter = gutterPoint(left, size, viewport);
+    // The group heading that owns the upper part of the screen.
+    const groups = [...document.querySelectorAll<HTMLElement>('[data-guide-route-spot="group"]')];
+    const line = viewport.height * 0.45;
+    let owner: DOMRect | null = null;
+    for (const group of groups) {
+      const box = group.getBoundingClientRect();
+      if (box.top <= line) owner = box;
+    }
+    if (!owner) owner = groups[0]?.getBoundingClientRect() ?? null;
+    if (!owner) return gutter;
+    const x = gutter ? gutter.x : owner.left;
+    return { x, y: owner.top - size / 2 + owner.height / 2 };
+  },
+};
+
+const ROUTE_RULES: Partial<Record<RouteKind, SpotRule>> = {
+  "case-study": CASE_STUDY_RULE,
+  "work-index": WORK_INDEX_RULE,
 };

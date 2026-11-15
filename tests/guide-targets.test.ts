@@ -32,13 +32,13 @@ test("every tour step points at a real section and an allow-listed highlight", (
 });
 
 test("tour steps follow the homepage section order", () => {
-  const order = ["HeroSection", "AboutSection", "ExperienceSection", "ProjectsSection", "SkillsSection", "AITwinSection", "ContactSection"];
+  const order = ["HeroSection", "AboutSection", "ExperienceSection", "ProjectsSection", "SkillsSection", "NexSection", "ContactSection"];
   const positions = order.map((name) => PAGE.indexOf(`<${name}`));
   assert.deepEqual([...positions].sort((a, b) => a - b), positions, "page.tsx section order changed; update the tour");
 });
 
 test("tour steps visit sections in page order", () => {
-  const sectionOrder = ["#hero", "#about", "#experience", "#work", "#skills", "#ai-twin", "#contact"];
+  const sectionOrder = ["#hero", "#about", "#experience", "#work", "#skills", "#nex", "#contact"];
   const indexes = TOUR_STEPS.map((step) => sectionOrder.indexOf(step.href));
   assert.ok(indexes.every((index) => index >= 0), "a tour step points at an unknown section");
   assert.deepEqual([...indexes].sort((a, b) => a - b), indexes, "tour steps jump backwards on the page");

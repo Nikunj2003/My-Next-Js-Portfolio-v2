@@ -1,5 +1,5 @@
 /**
- * Opens the AI Twin panel, optionally with a question to send.
+ * Opens the Nex panel, optionally with a question to send.
  *
  * Lives in its own module to break a cycle: `AskAboutThis` renders
  * `InlineAnswer`, and `InlineAnswer` needs to hand its exchange off to the
@@ -12,6 +12,6 @@
  *   answered turn instead of re-sending the question, and the full panel opens.
  * @param options.expand Open the full conversation panel instead of the bubble.
  */
-export function openAiTwin(question: string, answer?: string, options: { expand?: boolean } = {}) {
-  window.dispatchEvent(new CustomEvent("open-ai-twin", { detail: { question, answer, expand: options.expand } }));
+export function openNex(question: string, answer?: string, options: { expand?: boolean } = {}) {
+  window.dispatchEvent(new CustomEvent("open-nex", { detail: { question, answer, expand: options.expand } }));
 }

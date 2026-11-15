@@ -183,3 +183,21 @@ test("the bubble opens on the side covering the least text, even against prefere
   // With nothing to avoid, preference still decides.
   assert.equal(chooseBubbleSide({ x: 884, y: 487 }, 68, { width: 360, height: 112 }, viewport, ["left", "top"], null, []), "left");
 });
+
+test("page trip: starts where it was, ends on the new spot, arcs above the line, never reverses", async () => {
+  const { routeTravelFrame, routeTravelMs } = await import("../src/lib/guide/placement.ts");
+  const from = { x: 50, y: 450 };
+  const to = { x: 1086, y: 303 };
+  assert.deepEqual(routeTravelFrame({ t: 0, from, to }).position, from);
+  assert.deepEqual(routeTravelFrame({ t: 1, from, to }).position, to);
+  const mid = routeTravelFrame({ t: 0.5, from, to });
+  assert.ok(mid.position.y < (from.y + to.y) / 2 - 20, "lifts above the straight line");
+  let lastX = -Infinity;
+  for (let t = 0; t <= 1; t += 0.05) {
+    const { position } = routeTravelFrame({ t, from, to });
+    assert.ok(position.x >= lastX - 1e-9);
+    lastX = position.x;
+  }
+  assert.equal(routeTravelFrame({ t: 1, from, to, fromScale: 5, toScale: 1 }).scale, 1);
+  assert.ok(routeTravelMs(from, to) >= 620 && routeTravelMs(from, to) <= 940);
+});

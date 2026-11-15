@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { sanitizeStoredMessages } from "../src/lib/chat/twin-chat-store.ts";
+import { sanitizeStoredMessages } from "../src/lib/chat/nex-chat-store.ts";
 
 /** Stored history is whatever is in localStorage: treat it as hostile. */
 const turn = (assistant: Record<string, unknown>) => [

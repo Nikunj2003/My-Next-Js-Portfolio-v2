@@ -89,13 +89,13 @@ test("on touch screens overflow is locked too (touch bypasses Lenis)", async () 
 /**
  * The lock must match modality, not merely "an overlay is open".
  *
- * The AI Twin renders two different surfaces: a `fixed inset-0` modal with a
+ * The Nex renders two different surfaces: a `fixed inset-0` modal with a
  * backdrop on mobile, and a 20-24rem corner panel with NO scrim on desktop.
  * Locking both froze the page behind a non-modal panel the visitor is meant to
  * read alongside the page.
  */
-test("the AI Twin only locks scroll on mobile", () => {
-  const source = readFileSync("src/components/AITwinChat.tsx", "utf8");
+test("Nex only locks scroll on mobile", () => {
+  const source = readFileSync("src/components/NexChat.tsx", "utf8");
 
   assert.match(
     source,

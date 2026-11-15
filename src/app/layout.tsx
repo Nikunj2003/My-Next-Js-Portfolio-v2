@@ -9,7 +9,7 @@ import { siteConfig, ogLocale } from '@/lib/seo/site'
 import { PLAY_SCRIPT } from '@/lib/hero-intro'
 import { GuideCompanionMount } from '@/components/guide/GuideCompanionMount'
 // The full conversation panel, on every route; it loads on first open.
-import AITwinChatMount from '@/components/AITwinChatMount'
+import NexChatMount from '@/components/NexChatMount'
 import { QuietBoundary } from '@/components/QuietBoundary'
 
 // Mounted at the layout so every route gets the background layer, including
@@ -116,8 +116,8 @@ export default function RootLayout({
                   and above {children} so every route gets the reading bar. */}
               <ScrollProgress />
               {children}
-              <QuietBoundary name="AI Twin panel">
-                <AITwinChatMount />
+              <QuietBoundary name="Nex panel">
+                <NexChatMount />
               </QuietBoundary>
               <QuietBoundary name="Guide">
                 <GuideCompanionMount />

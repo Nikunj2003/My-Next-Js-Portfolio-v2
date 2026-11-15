@@ -1,10 +1,10 @@
 import { caseStudies, caseStudyBySlug, getCaseStudyPath } from "@/data/case-studies";
 import { bulletText, experiences, personalInfo, projects, stats } from "@/data/portfolio";
-import { PROJECT_ANCHOR_PREFIX, getProjectAnchor, normalizeText } from "@/lib/ai-twin";
+import { PROJECT_ANCHOR_PREFIX, getProjectAnchor, normalizeText } from "@/lib/nex-knowledge";
 import { GUIDE_HIGHLIGHTS, GUIDE_HIGHLIGHT_IDS, isGuideHighlight } from "@/lib/guide/targets";
 
 /**
- * Tools the AI Twin can call.
+ * Tools Nex can call.
  *
  * Every tool is a pure function over data already in the repo — no network, no
  * database — so a call costs microseconds and the only failure mode is
@@ -502,7 +502,9 @@ const SECTION_TARGETS: Record<string, string> = {
   "all work": "/work",
   skills: "#skills",
   contact: "#contact",
-  "ai twin": "#ai-twin",
+  nex: "#nex",
+  "ai guide": "#nex",
+  "ai twin": "#nex", // the name before Nex
   hero: "#hero",
 };
 

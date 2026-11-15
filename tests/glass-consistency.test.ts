@@ -33,7 +33,7 @@ const GLASS_TOKENS = [
  */
 const EXEMPT = [
   // Nested inside an already-glass parent; nesting glass double-blurs.
-  "src/components/AITwinChat.tsx",
+  "src/components/NexChat.tsx",
   "src/components/CommandPalette.tsx",
   "src/components/ProjectImageViewer.tsx",
   // The stacked deck must be fully opaque to occlude cards behind it.

@@ -34,7 +34,7 @@ export function ReadingPathAsk() {
         Not sure where to start?
       </div>
       <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
-        Tell the AI Twin what you&apos;re evaluating for, and it will point at the studies that actually prove it.
+        Tell Nex what you&apos;re evaluating for, and it&apos;ll point to the studies that prove it.
       </p>
 
       <form

@@ -11,7 +11,7 @@ export type TourStep = {
   /** One line, 140 characters or fewer. */
   line: string;
   cue: AvatarCue;
-  /** Sent to the AI Twin by "Ask about this". */
+  /** Sent to Nex by "Ask about this". */
   askPrompt: string;
 };
 
@@ -54,15 +54,15 @@ export const TOUR_STEPS: TourStep[] = [
     title: "The toolkit",
     line: "Agents, retrieval, evaluation and the platform work underneath them.",
     cue: { state: "curious", face: "calm" },
-    askPrompt: "Which skills has he used in production, not just side projects?",
+    askPrompt: "Which skills has Nikunj used in production, not just side projects?",
   },
   {
     id: "agent",
-    href: "#ai-twin",
-    title: "This guide is the demo",
-    line: "I'm a tool-calling agent over his work. I show every call I make and say when something isn't measured.",
+    href: "#nex",
+    title: "Meet Nex",
+    line: "I'm a tool-calling agent over Nikunj's work. Every call I make is shown, and unmeasured means unmeasured.",
     cue: { state: "happy", face: "happy" },
-    askPrompt: "How do you decide which tool to call?",
+    askPrompt: "How do you decide which tool to call, Nex?",
   },
   {
     id: "contact",

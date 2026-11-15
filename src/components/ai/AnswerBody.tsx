@@ -8,10 +8,10 @@ import { cn } from "@/lib/utils";
 import { scrollToHash } from "@/lib/scroll";
 
 /**
- * The markdown renderer shared by the AI Twin panel and every inline answer
+ * The markdown renderer shared by the Nex panel and every inline answer
  * surface.
  *
- * Extracted from `AITwinChat.tsx`'s `markdownComponents` so an inline answer
+ * Extracted from `NexChat.tsx`'s `markdownComponents` so an inline answer
  * and the panel render identically rather than forking the markdown/link
  * styling into two implementations that drift.
  */

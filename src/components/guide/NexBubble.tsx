@@ -19,7 +19,7 @@ const REST_MS = 350;
 /** A change of side fades out and back in over this long. */
 const SIDE_SWITCH_MS = 260;
 
-type TwinBubbleProps = {
+type NexBubbleProps = {
   /** The avatar's position, written every frame by the companion. */
   anchorX: MotionValue<number>;
   anchorY: MotionValue<number>;
@@ -53,7 +53,7 @@ type TwinBubbleProps = {
  *
  * On phones it is a bottom sheet (modal for the ask box only).
  */
-export function TwinBubble(props: TwinBubbleProps) {
+export function NexBubble(props: NexBubbleProps) {
   const { isMobile } = props;
   return isMobile ? <MobileSheet {...props} /> : <DesktopBubble {...props} />;
 }
@@ -80,7 +80,7 @@ function readViewport(): Viewport {
   return { width: document.documentElement.clientWidth, height: window.innerHeight, insetTop: NAVBAR, insetBottom: 0 };
 }
 
-function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, visible, isMobile, activeSection, onExpand, returnFocus, tourContent }: TwinBubbleProps) {
+function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, visible, isMobile, activeSection, onExpand, returnFocus, tourContent }: NexBubbleProps) {
   const { showing, tip } = useShowing(visible, isMobile);
   const reduceMotion = Boolean(useReducedMotion());
   const close = useClose(showing, returnFocus);
@@ -119,6 +119,12 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
   // scrolling. Reading text on screen is avoided where a side allows it.
   const preferKey = (corner ? ["left", "top"] : prefer).join(",");
   const [openSide, setOpenSide] = useState<BubbleSide>("right");
+  // Hidden until it has been measured and its side chosen from that. It was
+  // drawn first on a guessed side and height (right, 220px), then moved once
+  // measured: in the corner that showed as a flash on the right, then a jump
+  // to the left.
+  const [readyNode, setReadyNode] = useState<HTMLDivElement | null>(null);
+  const ready = node !== null && readyNode === node;
   const sideRef = useRef<BubbleSide | null>(null);
   const choose = useCallback(
     (fresh: boolean) => {
@@ -272,10 +278,12 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
         const first = !measuredRef.current;
         measuredRef.current = true;
         heightRef.current = height;
-        placeRef.current(performance.now());
-        // The first real measurement may show the guessed side doesn't fit.
+        // The first real measurement may show the guessed side doesn't fit:
+        // choose, then place, then show, all before the next paint.
         if (first) chooseRef.current(true);
         else chooseRef.current(false);
+        placeRef.current(performance.now());
+        if (first) setReadyNode(node);
       }
     });
     observer.observe(node);
@@ -291,21 +299,21 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
 
   return (
     // One bubble node at a time: the old one leaves before the new one enters,
-    // so `#twin-bubble` is never on two elements.
+    // so `#nex-bubble` is never on two elements.
     <AnimatePresence mode="wait">
       {open && content && (
         <motion.div
-          key={`twin-bubble-${showing}`}
+          key={`nex-bubble-${showing}`}
           ref={setNode}
-          id="twin-bubble"
+          id="nex-bubble"
           data-placement={openSide}
           role={showing === "ask" ? "dialog" : "group"}
-          aria-label="Nikunj's AI Twin"
+          aria-label="Nex, AI guide"
           initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.94 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.94 }}
           transition={{ duration: reduceMotion ? 0.12 : 0.18 }}
-          style={{ left, top, width: BUBBLE_WIDTH, maxHeight, transformOrigin: ORIGIN[openSide] }}
+          style={{ left, top, width: BUBBLE_WIDTH, maxHeight, transformOrigin: ORIGIN[openSide], visibility: ready ? "visible" : "hidden" }}
           className="fixed z-50 flex flex-col overflow-hidden rounded-2xl border border-border/60 glass-strong glass-overlay shadow-accent-card"
         >
           {content}
@@ -315,7 +323,7 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
   );
 }
 
-function MobileSheet({ visible, isMobile, activeSection, onExpand, returnFocus, tourContent }: TwinBubbleProps) {
+function MobileSheet({ visible, isMobile, activeSection, onExpand, returnFocus, tourContent }: NexBubbleProps) {
   const { showing, tip } = useShowing(visible, isMobile);
   const reduceMotion = Boolean(useReducedMotion());
   const close = useClose(showing, returnFocus);
@@ -330,7 +338,7 @@ function MobileSheet({ visible, isMobile, activeSection, onExpand, returnFocus, 
         <>
           {showing === "ask" && (
             <motion.div
-              key="twin-scrim"
+              key="nex-scrim"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -340,11 +348,11 @@ function MobileSheet({ visible, isMobile, activeSection, onExpand, returnFocus, 
             />
           )}
           <motion.div
-            key="twin-sheet"
-            id="twin-bubble"
+            key="nex-sheet"
+            id="nex-bubble"
             role={showing === "ask" ? "dialog" : "group"}
             aria-modal={showing === "ask" ? true : undefined}
-            aria-label="Nikunj's AI Twin"
+            aria-label="Nex, AI guide"
             initial={reduceMotion ? { opacity: 0 } : { y: "100%" }}
             animate={reduceMotion ? { opacity: 1 } : { y: 0 }}
             exit={reduceMotion ? { opacity: 0 } : { y: "100%" }}
@@ -383,7 +391,7 @@ const ORIGIN: Record<BubbleSide, string> = { right: "0% 100%", left: "100% 100%"
 function readingRects(): Rect[] {
   const rects: Rect[] = [];
   document.querySelectorAll("main h1, main h2, main h3, main p, main li").forEach((node) => {
-    if (node.closest("#twin-bubble, #twin-bubble-hero, nav")) return;
+    if (node.closest("#nex-bubble, #nex-bubble-hero, nav")) return;
     const box = node.getBoundingClientRect();
     if (box.width === 0 || box.bottom < 0 || box.top > window.innerHeight) return;
     rects.push({ left: box.left, top: box.top, width: box.width, height: box.height });

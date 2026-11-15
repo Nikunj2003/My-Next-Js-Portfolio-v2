@@ -7,7 +7,7 @@ export const SECTION_LINKS = [
   { href: "#experience", label: "Experience" },
   { href: "#work", label: "Work" },
   { href: "#skills", label: "Skills" },
-  { href: "#ai-twin", label: "AI Twin" },
+  { href: "#nex", label: "Nex" },
   { href: "#contact", label: "Contact" },
 ] as const;
 

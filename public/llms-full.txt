@@ -34,7 +34,7 @@ Core areas:
 - Experience section: https://nikunj.codenex.dev/#experience
 - Work section: https://nikunj.codenex.dev/#work
 - Skills section: https://nikunj.codenex.dev/#skills
-- AI Twin section: https://nikunj.codenex.dev/#ai-twin
+- Nex (AI guide) section: https://nikunj.codenex.dev/#nex
 - Contact section: https://nikunj.codenex.dev/#contact
 
 ## Identity and external profiles
@@ -44,9 +44,9 @@ Core areas:
 - Contact email: njkhitha2003@gmail.com
 - Location signal: Gurugram, Haryana, India
 
-## The AI Twin on this site
+## Nex, the AI guide on this site
 
-The assistant on nikunj.codenex.dev is itself a portfolio artifact rather than a support widget. It runs a tool-calling agent loop (up to three tool rounds) over an OpenAI-compatible endpoint, streaming NDJSON events to the browser.
+Nex is the AI guide on nikunj.codenex.dev. It answers questions about Nikunj's work in the third person, says plainly that it is an AI and not Nikunj, and is itself a portfolio artifact rather than a support widget. It runs a tool-calling agent loop (up to three tool rounds) over an OpenAI-compatible endpoint, streaming NDJSON events to the browser.
 
 - Tools: search_work (ranked search across systems, projects, and experience), get_case_study (full detail on one system), get_metric (a measured value with its measurement context), compare_systems (side-by-side), navigate_to (allow-listed navigation the agent performs on the page).
 - Every tool call is shown to the visitor as it executes, with a collapsible trace reporting rounds, latency, grounding sources, and any refusals.

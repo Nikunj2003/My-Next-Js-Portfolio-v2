@@ -7,7 +7,7 @@ import type { ChatToolCall } from "@/lib/chat-contract";
 import type { Message } from "@/lib/chat/types";
 import { cn } from "@/lib/utils";
 
-type TwinAssistantBodyProps = {
+type NexAnswerBodyProps = {
   message: Message;
   components: Components;
   reducedMotion: boolean;
@@ -21,7 +21,7 @@ type TwinAssistantBodyProps = {
  * live tool calls, the paced answer text, the progress label, and the
  * collapsed trace. One component, so the two surfaces never drift apart.
  */
-export function TwinAssistantBody({ message, components, reducedMotion, showTakeMeThere, onTakeMeThere }: TwinAssistantBodyProps) {
+export function NexAnswerBody({ message, components, reducedMotion, showTakeMeThere, onTakeMeThere }: NexAnswerBodyProps) {
   const calls = message.toolCalls ?? [];
   // Before any answer text, the running tools ARE the progress, so they lead.
   // Once the answer starts they move under it: the answer is what people read,
@@ -31,19 +31,24 @@ export function TwinAssistantBody({ message, components, reducedMotion, showTake
     calls.length > 0 ? (
         <ul className={cn("flex flex-col gap-1.5 border-l-2 border-primary/25 pl-3", answered ? "mt-3" : "mb-1")}>
           {calls.map((call) => (
-            <li key={call.id} className="flex items-baseline gap-2 font-mono text-[11px] leading-relaxed">
+            <li key={call.id} className="flex items-start gap-2 font-mono text-[11px] leading-relaxed">
               <Wrench
                 className={cn(
-                  "mt-0.5 h-3 w-3 shrink-0",
+                  "mt-[0.3em] h-3 w-3 shrink-0",
                   call.status === "running" ? "animate-spin motion-reduce:animate-none text-primary" : "text-primary/70"
                 )}
               />
-              <span className="min-w-0 break-all text-foreground/75">{call.label}</span>
-              {call.status === "done" && (
-                <span className={cn("shrink-0", call.refused ? "text-amber-500/90" : "text-muted-foreground/70")}>
-                  {call.refused ? "· none" : `· ${call.summary}`}
-                </span>
-              )}
+              {/* One wrapping block: the call and its result share the row's
+                  width and break between words. Only the button is fixed, so
+                  the call can never be squeezed to one letter per line. */}
+              <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
+                <span className="text-foreground/75">{call.label}</span>
+                {call.status === "done" && (
+                  <span className={call.refused ? "text-amber-500/90" : "text-muted-foreground/70"}>
+                    {call.refused ? " · none" : ` · ${call.summary}`}
+                  </span>
+                )}
+              </span>
               {call.status === "done" && !call.refused && call.name === "navigate_to" && call.href && (showTakeMeThere || !call.href.startsWith("#")) && !/\.pdf$/i.test(call.href) && (
                 <button
                   type="button"

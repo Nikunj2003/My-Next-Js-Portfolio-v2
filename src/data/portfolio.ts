@@ -31,7 +31,7 @@ export interface Highlight {
 export const about = {
   summary: "I focus on the engineering work that makes AI useful after the first successful prompt: connecting models to the right tools and context, controlling what those tools can do, preserving useful memory, measuring behavior, and debugging failures across model, protocol, application, and infrastructure boundaries.",
   /**
-   * Structured so a card can lead with the figure and stay compact. The AI Twin
+   * Structured so a card can lead with the figure and stay compact. Nex
    * still receives the full prose via the derived strings below.
    */
   highlights: [
@@ -85,7 +85,7 @@ export const recognition = {
     "First-ever recipient of ArmorCode's AI Ninja Award, presented on the company's global platform, and the youngest person to receive an award at the company.",
 };
 
-/** Prose form of the highlights, for the AI Twin context and SEO surfaces. */
+/** Prose form of the highlights, for Nex's context and SEO surfaces. */
 export const highlightSentences = about.highlights.map(
   (highlight) => `${highlight.metric} ${highlight.label.toLowerCase()} — ${highlight.detail}`
 );
@@ -351,11 +351,11 @@ export const skillCategories = [
   },
 ];
 
-/** Phrased to exercise the AI Twin's tools rather than invite a canned answer. */
+/** Phrased to exercise Nex's tools rather than invite a canned answer. */
 export const chatSuggestions = [
   "Which system handles tenant isolation?",
-  "How does the evaluation platform work?",
+  "How does Nikunj's evaluation platform work?",
   "Compare the MCP registry and the RAG layer",
-  "What broke in production, and how was it fixed?",
-  "Show me the strongest proof of ownership",
+  "What broke in production, and how did he fix it?",
+  "Show me his strongest proof of ownership",
 ];
