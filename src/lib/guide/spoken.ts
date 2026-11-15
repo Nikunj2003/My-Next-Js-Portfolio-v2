@@ -26,6 +26,13 @@ export function say(text: string, ms = 3200) {
   hideTimer = setTimeout(() => set(null), ms);
 }
 
+/** Stop saying anything (a new page: the old line was about the old one). */
+export function hush() {
+  if (hideTimer) clearTimeout(hideTimer);
+  hideTimer = null;
+  set(null);
+}
+
 export function getSpoken() {
   return spoken;
 }

@@ -61,7 +61,7 @@ test("the hero hands off straight to About's spot (no second hop at the hero/Abo
 });
 
 test("in the hero and the footer, clicking Nex pets it; elsewhere it opens the ask box", () => {
-  assert.match(companion, /const petMode = inHero \|\| companion\.footerDocked;/);
+  assert.match(companion, /const petMode = inHero \|\| inSocket \|\| companion\.footerDocked;/);
   assert.match(companion, /if \(petMode\) \{\n\s+emitGuide\(\{ type: "pet\/click"/);
 });
 

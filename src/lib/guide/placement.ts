@@ -212,13 +212,15 @@ export function heroDockFrame(input: {
   /** The companion's size and its spot's top-left. */
   size: number;
   spot: Point;
+  /** The scale it starts at; by default the hero's face size. */
+  startScale?: number;
 }) {
   const { heroCentre, heroDiameter, size, spot } = input;
   const t = clamp(input.t, 0, 1);
   // Path and size share one eased progress: it shrinks as it travels and
   // arrives at full size exactly on its spot.
   const u = easeInOutCubic(t);
-  const startScale = heroFaceScale(heroDiameter, size);
+  const startScale = input.startScale ?? heroFaceScale(heroDiameter, size);
   const scale = startScale + (1 - startScale) * u;
   // A quadratic curve whose control point is at the start's x and the spot's
   // y: down to the spot's height first, then across. Both coordinates move one way.
@@ -230,6 +232,16 @@ export function heroDockFrame(input: {
   };
   const chrome = easeInOutCubic(clamp((t - 0.15) / 0.6, 0, 1));
   return { position, scale, chrome };
+}
+
+/**
+ * How far Nex has left a page header's socket, from the page's scroll:
+ * 0 at the top of the page, 1 once the visitor has scrolled `span` of the
+ * screen height (after a 40px lead), the same pacing as leaving the hero.
+ * A plain function of the scroll, so it reverses exactly.
+ */
+export function routeSocketProgress(scrollY: number, viewportHeight: number, span = 1.1, lead = 40) {
+  return clamp((scrollY - lead) / Math.max(1, viewportHeight * span), 0, 1);
 }
 
 /**

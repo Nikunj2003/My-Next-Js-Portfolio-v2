@@ -13,7 +13,7 @@ import {
   underPanelPoint,
   heroDockFrame,
   heroHandoffProgress,
-  COMPANION_FACE_SHARE, HERO_FACE_SHARE, freeBubbleSide } from "../src/lib/guide/placement.ts";
+  COMPANION_FACE_SHARE, HERO_FACE_SHARE, freeBubbleSide, routeSocketProgress } from "../src/lib/guide/placement.ts";
 import { lookToward } from "../src/lib/guide/gaze.ts";
 
 const viewport = { width: 1440, height: 900, insetTop: 85, insetBottom: 0 };
@@ -239,4 +239,13 @@ test("a tip only takes a side that covers no reading text", () => {
   // Text all around: no free side, so no tip.
   const everywhere = [{ left: 0, top: 88, width: 1280, height: 632 }];
   assert.equal(freeBubbleSide({ x: 116, y: 640 }, 68, bubble, viewport, ["bottom", "right", "top"], everywhere), null);
+});
+
+test("leaving a page header's socket is paced like the hero and reverses exactly", () => {
+  assert.equal(routeSocketProgress(0, 900), 0);
+  assert.equal(routeSocketProgress(40, 900), 0);
+  assert.equal(routeSocketProgress(40 + 1000, 900), 1);
+  assert.ok(Math.abs(routeSocketProgress(40 + 495, 900) - 0.5) < 1e-9);
+  assert.equal(routeSocketProgress(535, 900), routeSocketProgress(535, 900));
+  assert.ok(routeSocketProgress(300, 900) < routeSocketProgress(301, 900));
 });

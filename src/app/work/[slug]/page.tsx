@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { RouteNexSocket } from "@/components/guide/RouteNexSocket";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, ArrowUpRight, Download } from "lucide-react";
 import { caseStudies, caseStudyBySlug, getCaseStudyPath, getThemeAdjacent } from "@/data/case-studies";
@@ -111,7 +112,8 @@ const CaseStudyPage = async ({ params }: PageProps) => {
 
             {/* Header: identity and headline metrics sit above the narrative,
                 because that is the order these pages actually get read in. */}
-            <div>
+            <div className="flex items-start justify-between gap-10">
+            <div className="min-w-0">
               <div className="mt-8 flex flex-wrap items-center gap-3 font-mono text-xs">
                 {study.employer && (
                   <span className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-primary">
@@ -137,6 +139,10 @@ const CaseStudyPage = async ({ params }: PageProps) => {
               <p data-guide-route-spot="intro" className="mt-5 max-w-3xl text-lg leading-relaxed text-foreground/85" style={{ textWrap: "pretty" }}>
                 {study.oneLiner}
               </p>
+            </div>
+            <div className="mt-8">
+              <RouteNexSocket prompt="Ask me why a decision went the way it did. I answer from this page." />
+            </div>
             </div>
 
             <div>

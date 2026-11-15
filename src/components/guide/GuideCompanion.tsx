@@ -18,6 +18,7 @@ import {
   easeInOutCubic,
   gutterPoint,
   heroDockFrame,
+  routeSocketProgress,
   footerDockFrame,
   footerDockProgress,
   freeBubbleSide,
@@ -32,7 +33,7 @@ import {
 } from "@/lib/guide/placement";
 import { SECTION_TIPS, TIP_RULES } from "@/lib/guide/tips";
 import { HOVER_LINE } from "@/lib/guide/hero-lines";
-import { getSpoken, say, sayPetLine } from "@/lib/guide/spoken";
+import { getSpoken, hush, say, sayPetLine } from "@/lib/guide/spoken";
 import { introPending, markAvatarDrawn } from "@/lib/hero-intro";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useChatAvailability } from "@/hooks/useChatAvailability";
@@ -126,6 +127,8 @@ export default function GuideCompanion() {
   // and reacts to clicks like a pet (set by the loop on change only).
   const [inHero, setInHero] = useState(false);
   const inHeroRef = useRef(false);
+  const [inSocket, setInSocket] = useState(false);
+  const inSocketRef = useRef(false);
   // The live drawing has rendered: until then the hero's socket keeps its still one.
   const [drawn, setDrawn] = useState(false);
 
@@ -227,6 +230,8 @@ export default function GuideCompanion() {
 
   useEffect(() => {
     mountedAtRef.current = performance.now();
+    // A new page: whatever Nex was saying was about the last one.
+    hush();
     // Coming back to the homepage is a fresh load for the hero: wait for it again.
     settledRef.current = false;
     // Arriving from another page (a link, the agent, the back button): hop
@@ -241,6 +246,11 @@ export default function GuideCompanion() {
     clearLayoutCache();
     watchLayoutCache();
     const footer = () => cachedNode("footer", () => document.querySelector("footer"));
+    /** A page header's socket (/work, a case study), when Nex may rest in it now. */
+    const routeSocketBox = () =>
+      !isHome && !isMobileRef.current && !touringRef.current && !panelOpenRef.current
+        ? visibleBox(cachedNode<HTMLElement>("route-socket", () => document.querySelector<HTMLElement>("[data-guide-route-socket]")))
+        : null;
     const footerSocket = () => cachedNode<HTMLElement>("footer-socket", () => document.querySelector<HTMLElement>("[data-guide-footer-socket]"));
     /**
      * The footer landing, from the live layout: how far along it is, and the
@@ -361,7 +371,9 @@ export default function GuideCompanion() {
       // the homepage with the hero on screen, it lands in the hero's socket.
       const travel = travelRef.current;
       if (travel && travel.start >= 0) {
-        const heroTarget = travel.toHero && hero && heroBox ? heroBox : null;
+        // Into the hero, or a page header's socket when the page opens at its top.
+        const socketTarget = !isHome && routeSocketProgress(window.scrollY, viewport.height, HANDOFF_SPAN) === 0 ? routeSocketBox() : null;
+        const heroTarget = travel.toHero && hero && heroBox ? heroBox : socketTarget;
         const landing = heroTarget ? null : footerLanding(viewport);
         const docked = landing && landing.progress >= 1 ? landing : null;
         const to = docked
@@ -372,17 +384,18 @@ export default function GuideCompanion() {
         if (!travel.ms) travel.ms = routeTravelMs(travel.from, to);
         const t = Math.min(1, (now - travel.start) / travel.ms);
         // Landing in the hero: grow to its face size.
-        const heroScale = heroTarget ? heroFaceScale(heroTarget.width, size) : docked ? FOOTER_SLOT / size : 1;
+        const heroScale = socketTarget && heroTarget === socketTarget ? socketTarget.width / size : heroTarget ? heroFaceScale(heroTarget.width, size) : docked ? FOOTER_SLOT / size : 1;
         const hop = routeTravelFrame({ t, from: travel.from, to, fromScale: travel.fromScale, toScale: heroScale });
         posX.set(Math.round(hop.position.x * 2) / 2);
         posY.set(Math.round(hop.position.y * 2) / 2);
         scale.set(hop.scale);
-        chrome.set(travel.fromChrome + ((heroTarget ? 0 : 1) - travel.fromChrome) * easeInOutCubic(t));
+        const inHeroSocket = Boolean(heroTarget) && heroTarget !== socketTarget;
+        chrome.set(travel.fromChrome + ((inHeroSocket ? 0 : 1) - travel.fromChrome) * easeInOutCubic(t));
         opacity.set(1);
-        markInHero(Boolean(heroTarget));
+        markInHero(inHeroSocket);
         if (t >= 1) {
           travelRef.current = null;
-          lastPointRef.current = heroTarget ? null : to;
+          lastPointRef.current = heroTarget && !socketTarget ? null : to;
           if (docked) landedRef.current = true;
         }
         return;
@@ -412,7 +425,20 @@ export default function GuideCompanion() {
       const ruled = current.point(size, viewport) ?? marginRule("").point(size, viewport);
       const usedFallback = ruled === null;
       let target = ruled ?? fallback;
-      const landing = leavingHero ? null : footerLanding(viewport);
+      // A page header's socket (/work, a case study): Nex rests in it, drawn
+      // at its size, and leaves for its reading spot over the same span of
+      // scrolling as the hero, along the same path. Desktop only.
+      const routeSocket = routeSocketBox();
+      const socketProgress = routeSocketProgress(window.scrollY, viewport.height, HANDOFF_SPAN);
+      const routeMorph = routeSocket ? (reduceMotionRef.current ? (socketProgress < 0.5 ? 0 : 1) : socketProgress) : 1;
+      const leavingSocket = Boolean(routeSocket) && routeMorph < 1;
+      // Resting in the socket (its own Ask lives in the page): petting, like the hero.
+      const resting = Boolean(routeSocket) && routeMorph < HANDOFF_SWAP_AT;
+      if (resting !== inSocketRef.current) {
+        inSocketRef.current = resting;
+        setInSocket(resting);
+      }
+      const landing = leavingHero || leavingSocket ? null : footerLanding(viewport);
       // The footer is an obstacle for every spot but its own slot. With the
       // panel open the corner sits just below the panel, over the page's end:
       // pushing it above the footer put it inside the panel.
@@ -434,6 +460,17 @@ export default function GuideCompanion() {
         scale.set(frame.scale);
         chrome.set(frame.chrome);
         opacity.set(1);
+      } else if (leavingSocket && routeSocket) {
+        const frame = heroDockFrame({ t: routeMorph, heroCentre: { x: routeSocket.left + routeSocket.width / 2, y: routeSocket.top + routeSocket.height / 2 }, heroDiameter: routeSocket.width, size, spot: target, startScale: routeSocket.width / size });
+        // Never under the navbar: the socket scrolls up behind it while Nex
+        // is still large, so its drawn top is held below the navbar's band.
+        const drawn = size * frame.scale;
+        const top = frame.position.y + size / 2 - drawn / 2;
+        point = { x: frame.position.x, y: frame.position.y + Math.max(0, viewport.insetTop + 8 - top) };
+        glideRef.current = null;
+        scale.set(frame.scale);
+        chrome.set(1);
+        opacity.set(fade.get());
       } else if (!last) {
         point = target; // appearing: straight to the spot
       } else if (!glideRef.current) {
@@ -447,7 +484,7 @@ export default function GuideCompanion() {
         }
       }
 
-      if (!leavingHero) {
+      if (!leavingHero && !leavingSocket) {
         scale.set(1);
         chrome.set(1);
         // Fully shown, or the short in-place fade on other pages, the tour and the panel.
@@ -497,6 +534,8 @@ export default function GuideCompanion() {
       setFooterDocked(false);
       inHeroRef.current = false;
       setInHero(false);
+      inSocketRef.current = false;
+      setInSocket(false);
     };
     // Re-run per page: each page settles afresh and the trip starts from the last one.
   }, [chrome, fade, isHome, opacity, pathname, posX, posY, scale, size]);
@@ -561,7 +600,7 @@ export default function GuideCompanion() {
   const lookAt = useMemo<readonly [number, number] | null>(() => (inHero ? null : spotKind === "corner" ? [-0.45, 0.25] : [0.6, 0]), [inHero, spotKind]);
   // Where Nex is a character to play with rather than a button: in the hero
   // and once it has landed in the footer (both have their own Ask Nex).
-  const petMode = inHero || companion.footerDocked;
+  const petMode = inHero || inSocket || companion.footerDocked;
 
   // Focus goes back to whatever opened the bubble when the companion is
   // hidden (over the hero), otherwise to the companion. Never scrolls.
