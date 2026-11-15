@@ -36,8 +36,8 @@ const Footer = () => {
     <footer className="relative z-10 pb-8 pt-12 sm:pt-16">
       <div className="container-narrow">
         <SpotlightCard className="w-full">
-          <div className="px-6 pb-6 pt-10 sm:px-10 sm:pt-12">
-            <div data-guide-footer-band className="grid items-center gap-10 text-center md:min-h-[22rem] md:grid-cols-[minmax(0,1fr)_15rem_minmax(0,1fr)] md:gap-10 md:text-left">
+          <div className="px-6 pb-6 pt-8 sm:px-10 sm:pt-10">
+            <div data-guide-footer-band className="grid items-center gap-10 text-center md:min-h-[20rem] md:grid-cols-[minmax(0,1fr)_15rem_minmax(0,1fr)] md:gap-10 md:text-left">
               {/* Sign-off */}
               <div className="order-2 md:order-1">
                 <p className="font-[family-name:var(--font-display)] text-[1.625rem] font-semibold leading-[1.15] tracking-[-0.025em] text-foreground sm:text-[1.875rem]" style={{ textWrap: "balance" }}>
@@ -106,7 +106,7 @@ const Footer = () => {
               </FooterAskHost>
             </div>
 
-            <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-foreground/10 pt-5 text-xs text-muted-foreground">
+            <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-foreground/10 pt-5 text-xs text-muted-foreground">
               <p>© {new Date().getFullYear()} Nikunj Khitha</p>
               <Link
                 href="/"

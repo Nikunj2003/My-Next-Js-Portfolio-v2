@@ -13,12 +13,6 @@ import { useSpoken } from "@/lib/guide/spoken";
  * when it closes. Same ask box as the hero's; one is mounted at a time
  * (`askHost`). Phones use the sheet, so the links stay.
  */
-/**
- * The footer chat's fixed height, the same as the landing band's minimum
- * (`md:min-h-[22rem]` in Footer), so opening it never changes the band.
- */
-const FOOTER_CHAT_HEIGHT = 352;
-
 export function FooterAskHost({ children }: { children: ReactNode }) {
   const companion = useCompanionState();
   const isMobile = useIsMobile();
@@ -62,7 +56,9 @@ export function FooterAskHost({ children }: { children: ReactNode }) {
   }, [open, close]);
 
   return (
-    <div ref={hostRef} className="order-3 min-w-0 md:justify-self-stretch">
+    // Relative, and the chat fills it absolutely: the band keeps the height
+    // its sign-off and Nex give it, so opening the chat never changes it.
+    <div ref={hostRef} className="relative order-3 min-w-0 self-stretch md:justify-self-stretch">
       <AnimatePresence initial={false} mode="wait">
         {open ? (
           <motion.div
@@ -74,9 +70,7 @@ export function FooterAskHost({ children }: { children: ReactNode }) {
             animate={{ opacity: 1, y: 0 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6 }}
             transition={{ duration: reduceMotion ? 0.1 : 0.22 }}
-            // The band's own height: opening the chat never moves Nex or the sign-off.
-            style={{ height: FOOTER_CHAT_HEIGHT }}
-            className="flex w-full flex-col overflow-hidden rounded-2xl border border-primary/20 text-left glass-strong shadow-accent-soft"
+            className="flex w-full flex-col overflow-hidden rounded-2xl md:absolute md:inset-0 border border-primary/20 text-left glass-strong shadow-accent-soft"
           >
             <AskContent inline fill activeSection="contact" onExpand={openPanel} onClose={close} isMobile={false} reduceMotion={reduceMotion} />
           </motion.div>
@@ -87,7 +81,7 @@ export function FooterAskHost({ children }: { children: ReactNode }) {
             animate={{ opacity: 1, x: 0 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 8 }}
             transition={{ duration: reduceMotion ? 0.1 : 0.2 }}
-            className="flex md:justify-end"
+            className="flex h-full items-center md:justify-end"
           >
             {children}
           </motion.div>
