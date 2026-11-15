@@ -36,8 +36,9 @@ test("scrolling the page is never blocked by the bubble riding under a still poi
 test("the hand-off has no timer or rate cap: it is drawn from the scroll position each frame", () => {
   assert.doesNotMatch(companion, /MORPH_MS/);
   assert.match(companion, /heroHandoffProgress\(heroBox\.top/);
-  // The hero is styled from the same frame object as the companion.
-  assert.match(companion, /styleHero\(frame\)/);
+  // One Nex: the companion itself is drawn from the frame; the hero is never restyled.
+  assert.match(companion, /heroDockFrame\(\{ t: morph/);
+  assert.doesNotMatch(companion, /hero\.style\./);
 });
 
 test("nothing is drawn until the page has settled after a load or refresh", () => {
@@ -59,8 +60,9 @@ test("the hero hands off straight to About's spot (no second hop at the hero/Abo
   assert.match(companion, /underPanelPoint\(/);
 });
 
-test("the faded hero never catches clicks", () => {
-  assert.match(companion, /hero\.style\.pointerEvents = frame && frame\.heroOpacity < 0\.5 \? "none" : ""/);
+test("in the hero and the footer, clicking Nex pets it; elsewhere it opens the ask box", () => {
+  assert.match(companion, /const petMode = inHero \|\| companion\.footerDocked;/);
+  assert.match(companion, /if \(petMode\) \{\n\s+emitGuide\(\{ type: "pet\/click"/);
 });
 
 test("phones keep the companion in the corner (touch scroll is native; riding it trails)", () => {
@@ -90,10 +92,11 @@ test("the bubble is never shown before it has been measured and placed on its re
 });
 
 test("the companion and the hero avatar pause when they can't be seen", () => {
-  assert.match(companion, /paused=\{!visible && !travelling\}/, "live while travelling to its spot");
+  assert.match(companion, /paused=\{!visible && !inHero\}/, "live while in the hero");
   assert.match(companion, /prefersStatic\(\)/, "low-power devices get the still drawing");
+  // The hero has no live avatar of its own: one Nex on the site.
   const hero = readFileSync(new URL("../src/components/guide/GuideHeroAvatar.tsx", import.meta.url), "utf8");
-  assert.match(hero, /paused=\{isMobile \|\| handedOff\}/);
+  assert.doesNotMatch(hero, /GuideAvatarSlot size|<GuideAvatar /);
 });
 
 test("the companion finds its anchors by data attributes, not layout class names", () => {
@@ -109,7 +112,7 @@ test("the bubble keeps the side being read after a spot change, and follows its 
 test("the hand-off is paced for a normal scroll, and a change of bubble side fades", () => {
   assert.match(companion, /const HANDOFF_SPAN = 1\.1;/);
   const placement = readFileSync(new URL("../src/lib/guide/placement.ts", import.meta.url), "utf8");
-  assert.match(placement, /export const FADE_SHARE = 0\.45;/);
+  assert.doesNotMatch(placement, /FADE_SHARE/, "nothing is cross-faded");
   assert.match(bubble, /const SIDE_SWITCH_MS = 260;/);
   assert.match(bubble, /el\.style\.filter = filter;/);
 });
@@ -120,9 +123,8 @@ test("placing the bubble never schedules itself (it used to double its callbacks
   assert.doesNotMatch(placement, /requestAnimationFrame/);
 });
 
-test("during the cross-fade both discs show one face (the companion mirrors the hero's drawing)", () => {
-  assert.match(companion, /mirrorHero\(hero, mirrorRef\.current, size\)/);
-  assert.match(companion, /const mirroring = handingOff && morph < FADE_SHARE;/);
-  // Sized by style: the library's inline 300px style beats a width attribute.
-  assert.match(companion, /copy\.style\.width = inner;/);
+test("one Nex: no second face is copied or cross-faded during the hand-off", () => {
+  assert.doesNotMatch(companion, /mirrorHero|mirrorRef/);
+  // The socket's still drawing hides once the live Nex sits in it.
+  assert.match(companion, /root\.dataset\.nexInHero = ""/);
 });

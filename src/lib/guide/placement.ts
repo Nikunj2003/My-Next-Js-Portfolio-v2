@@ -165,24 +165,9 @@ export function underPanelPoint(input: {
 }
 
 /**
- * The hero hand-off as a pure function of one number, `t`: 0 = the big hero
- * avatar is the guide, 1 = the small companion is, sitting at its spot.
- *
- * `t` comes straight from the scroll position (no smoothing, no timer), so the
- * same scroll position always draws the same frame. Stopping mid-way leaves it
- * mid-way, and scrolling back plays exactly the same frames in reverse.
- *
- * One continuous motion: the avatar leaves the hero, shrinking as it goes,
- * and lands on its spot at its own size. The big hero avatar and the small
- * companion are drawn as the same disc (same centre, same face size) while
- * they cross-fade over the first 45%, so it reads as one character
- * moving, not one fading out and another appearing. Every output is
- * monotonic in `t`, so the motion never reverses.
- */
-/**
- * The drawn face's share of each avatar's box. The hero's face is 84% of its
- * stage (GuideHeroAvatar); the companion draws its face at `size - 16` inside
- * its disc. Every size match (hand-off, page hops, the footer) uses these.
+ * The drawn face's share of each avatar's box. In the hero socket Nex's face
+ * is drawn at 84% of the stage; the companion draws its face at `size - 16`
+ * inside its disc. Every size match (hero, page hops, the footer) uses these.
  */
 export const HERO_FACE_SHARE = 0.84;
 export const COMPANION_FACE_SHARE = 0.76;
@@ -192,56 +177,43 @@ export function heroFaceScale(heroDiameter: number, size: number) {
   return (heroDiameter * HERO_FACE_SHARE) / (size * COMPANION_FACE_SHARE);
 }
 
-/** The share of the hand-off spent cross-fading the two avatars. */
-export const FADE_SHARE = 0.45;
-
-export function heroHandoffFrame(input: {
+/**
+ * Nex leaving the hero, as a pure function of one number, `t`: 0 = sitting in
+ * the hero's socket at the hero's face size, 1 = at its spot at its own size.
+ *
+ * There is one Nex: the same element shrinks as it travels, so nothing is
+ * cross-faded. `t` comes straight from the scroll position (no smoothing, no
+ * timer), so the same scroll always draws the same frame and scrolling back
+ * plays it in reverse. `chrome` is the opacity of the companion's own disc:
+ * in the socket the hero's disc and ring are drawn by the page, so its own
+ * fades in on the way out. Every output is monotonic in `t`.
+ */
+export function heroDockFrame(input: {
   t: number;
-  /** The hero avatar's centre and diameter, as laid out (untransformed). */
+  /** The hero socket's centre and diameter, as laid out. */
   heroCentre: Point;
   heroDiameter: number;
   /** The companion's size and its spot's top-left. */
   size: number;
   spot: Point;
-  /** The face's share of each avatar's box, to match faces rather than boxes. */
-  heroFace?: number;
-  companionFace?: number;
 }) {
-  const { heroCentre, heroDiameter, size, spot, heroFace = HERO_FACE_SHARE, companionFace = COMPANION_FACE_SHARE } = input;
+  const { heroCentre, heroDiameter, size, spot } = input;
   const t = clamp(input.t, 0, 1);
-
-  // Path and size share one eased progress, so the small one shrinks as it
-  // travels and arrives at full size exactly on its spot (no growing in place,
-  // no shrinking after it has landed).
+  // Path and size share one eased progress: it shrinks as it travels and
+  // arrives at full size exactly on its spot.
   const u = easeInOutCubic(t);
-  const startScale = (heroDiameter * heroFace) / (size * companionFace);
-  const companionScale = startScale + (1 - startScale) * u;
-
-  // The big one is drawn at the small one's size and place as long as it is
-  // visible, so the two are one disc while they cross-fade. It fades out over
-  // the first part and the small one fades in over the same stretch.
-  // Over the first 45%: long enough to read as one face turning into the
-  // other at a normal scroll speed (a quarter was over in about 70ms).
-  const swap = clamp(t / FADE_SHARE, 0, 1);
-  const companionOpacity = easeInOutCubic(swap);
-  const heroOpacity = 1 - companionOpacity;
-
-  // Path: from the hero's centre to the spot, on a quadratic curve whose
-  // control point is at the start's x and the spot's y, so it moves to the
-  // spot's height first, then across. Both coordinates move one way only.
+  const startScale = heroFaceScale(heroDiameter, size);
+  const scale = startScale + (1 - startScale) * u;
+  // A quadratic curve whose control point is at the start's x and the spot's
+  // y: down to the spot's height first, then across. Both coordinates move one way.
   const from = { x: heroCentre.x - size / 2, y: heroCentre.y - size / 2 };
   const control = { x: from.x, y: spot.y };
   const position = {
     x: (1 - u) * (1 - u) * from.x + 2 * (1 - u) * u * control.x + u * u * spot.x,
     y: (1 - u) * (1 - u) * from.y + 2 * (1 - u) * u * control.y + u * u * spot.y,
   };
-
-  // The hero follows the small one while it is still visible: the same
-  // centre offset and the same face size, so they never separate.
-  const centre = { x: position.x + size / 2, y: position.y + size / 2 };
-  const heroScale = (size * companionScale * companionFace) / (heroDiameter * heroFace);
-  const heroOffset = { x: centre.x - heroCentre.x, y: centre.y - heroCentre.y };
-  return { heroScale, heroOpacity, heroOffset, companionScale, companionOpacity, position };
+  const chrome = easeInOutCubic(clamp((t - 0.15) / 0.6, 0, 1));
+  return { position, scale, chrome };
 }
 
 /**

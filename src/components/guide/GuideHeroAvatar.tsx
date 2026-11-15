@@ -3,53 +3,38 @@
 import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { GuideAvatarSlot } from "@/components/guide/GuideAvatarSlot";
+import { StaticGuideMark } from "@/components/guide/GuideAvatarSlot";
 import { emitGuide } from "@/lib/guide/bus";
-import { ASLEEP_LINE, BORED_LINE, DIZZY_LINE, HOVER_LINE, PET_LINES, WAKE_LINE, greetingFor } from "@/lib/guide/hero-lines";
+import { ASLEEP_LINE, BORED_LINE, DIZZY_LINE, HOVER_LINE, WAKE_LINE, greetingFor } from "@/lib/guide/hero-lines";
+import { getSpoken, say as sayLine, sayPetLine, useSpoken } from "@/lib/guide/spoken";
 import { useGuideView } from "@/lib/guide/useGuideView";
 import { dispatchCompanion, openPanel, takeAskOpener, setHeroVisible, useCompanionState } from "@/lib/guide/companion-store";
 import { AskContent } from "@/components/guide/AskContent";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { introPending, markAvatarDrawn } from "@/lib/hero-intro";
+import { introPending } from "@/lib/hero-intro";
 import { HERO_FACE_SHARE } from "@/lib/guide/placement";
 
 /**
- * Nex in the hero, and what it says.
+ * Nex's place in the hero, and what it says.
  *
- * Two pieces in the page flow, so nothing in the hero ever overlaps:
- *  - `GuideHeroAvatar`: only the face, its ring and glow, sized by the
- *    identity row's `--stage` (240px, 200px on smaller screens). The name
- *    sits either side of it on one line through the face's centre.
- *  - `HeroAskHost`: below the identity row, the caption (what Nex says) and
- *    the proof links, or, once the visitor asks, the conversation. It opens in
- *    the page: what follows moves down rather than being covered.
+ * There is one Nex on the site: the companion (`GuideCompanion`). On desktop
+ * it sits in this socket while the hero is on screen, drawn at the socket's
+ * size, follows the pointer and reacts to clicks, then shrinks into the page
+ * as the visitor scrolls. This component only lays out the place for it:
+ *  - `GuideHeroAvatar`: the socket (ring, disc, glow and the intro's z's and
+ *    pulse) sized by the identity row's `--stage`, with a still drawing that
+ *    shows until the live Nex has arrived (and on phones, where the companion
+ *    waits in the corner). Its button is the keyboard stop for petting Nex.
+ *  - `HeroAskHost`: below the identity row, what Nex says and the proof
+ *    links, or, once the visitor asks, the conversation, in the page flow.
  *
- * `data-guide-hero-avatar` is the button the companion hands off from (its
- * layout box is the stage, untransformed); `data-guide-target="hero-guide"`
- * lets the tour and the agent point here.
+ * `data-guide-hero-avatar` is the socket the companion sits in (its layout
+ * box is the stage); `data-guide-target="hero-guide"` lets the tour and the
+ * agent point here.
  */
 
-/** The live face's drawn size inside the stage (the hand-off's measured box). */
+/** The face's drawn size inside the stage (the companion matches it). */
 const FACE_SHARE = HERO_FACE_SHARE;
-
-/** Shared between the stage and the host below it: the line Nex is saying right now. */
-let spoken: string | null = null;
-const spokenListeners = new Set<() => void>();
-function setSpoken(next: string | null) {
-  if (spoken === next) return;
-  spoken = next;
-  spokenListeners.forEach((listener) => listener());
-}
-function useSpoken() {
-  return useSyncExternalStore(
-    (listener) => {
-      spokenListeners.add(listener);
-      return () => spokenListeners.delete(listener);
-    },
-    () => spoken,
-    () => null
-  );
-}
 
 function useStageSize() {
   // Mirrors `.hero-identity { --stage }` in globals.css.
@@ -66,27 +51,14 @@ function useStageSize() {
 
 export function GuideHeroAvatar() {
   const view = useGuideView();
-  const companion = useCompanionState();
-  const isMobile = useIsMobile();
   const stage = useStageSize();
   const face = Math.round(stage * FACE_SHARE);
-  const avatarRef = useRef<HTMLButtonElement>(null);
-  // The companion has taken over (the hand-off is past its swap): the hero is
-  // faded out, so its frame loop can rest. Before the companion has loaded,
-  // and during the tour (narrated from the corner), the hero stays live.
-  const handedOff = companion.companionVisible && !companion.heroVisible && companion.bubble !== "tour";
 
-  // Whether the hero avatar is the guide right now (`heroVisible`) is set by
-  // the companion's frame loop from the scroll hand-off. Reset on unmount.
+  // Whether Nex in the hero is the guide right now (`heroVisible`) is set by
+  // the companion's frame loop from the scroll. Reset on unmount.
   useEffect(() => () => setHeroVisible(false), []);
 
-  const hideTimer = useRef<number | null>(null);
-  const streakRef = useRef(0);
-  const say = useCallback((text: string, ms = 3200) => {
-    setSpoken(text);
-    if (hideTimer.current) window.clearTimeout(hideTimer.current);
-    hideTimer.current = window.setTimeout(() => setSpoken(null), ms);
-  }, []);
+  const say = useCallback((text: string, ms = 3200) => sayLine(text, ms), []);
 
   // Greet once, when the page has settled: after the intro if it plays.
   useEffect(() => {
@@ -109,13 +81,11 @@ export function GuideHeroAvatar() {
         cancelled = true;
         observer.disconnect();
         window.clearTimeout(timer);
-        if (hideTimer.current) window.clearTimeout(hideTimer.current);
       };
     }
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
-      if (hideTimer.current) window.clearTimeout(hideTimer.current);
     };
   }, [say]);
 
@@ -134,28 +104,26 @@ export function GuideHeroAvatar() {
     return () => window.clearTimeout(timer);
   }, [say, view.face, view.state]);
 
+  // Keyboard (and pointer before the live Nex has arrived): the same reaction
+  // as clicking the live Nex over this socket.
   const onClick = () => {
     emitGuide({ type: "pet/click", now: Date.now() });
-    streakRef.current = (streakRef.current % PET_LINES.length) + 1;
-    say(PET_LINES[streakRef.current - 1], 2200);
+    sayPetLine();
   };
 
   return (
-    // The stage. Below lg the companion avatar takes over this role, so the
-    // hero shows the still drawing at a smaller size (via CSS).
     <span data-guide-hero-column data-guide-target="hero-guide" className="relative flex justify-center" style={{ width: "var(--stage)", height: "var(--stage)" }}>
       <span data-hero-part="avatar-glow" aria-hidden="true" className="pointer-events-none absolute inset-[-14%] rounded-full bg-[radial-gradient(circle,hsl(var(--primary)/0.16)_0%,transparent_68%)]" />
-      {/* The intro moves this wrapper (in from the screen centre); the
-          companion's hand-off styles the button inside it. Never the same element. */}
+      {/* The intro moves this wrapper (in from the screen centre), and the
+          live Nex follows wherever it is drawn. */}
       <span data-hero-part="stage" className="relative block h-full w-full">
         <button
-          ref={avatarRef}
           type="button"
           data-guide-hero-avatar
           onClick={onClick}
           onPointerEnter={() => {
             emitGuide({ type: "page/hover", active: true });
-            if (!spoken) say(HOVER_LINE, 2400);
+            if (!getSpoken()) say(HOVER_LINE, 2400);
           }}
           onPointerLeave={() => emitGuide({ type: "page/hover", active: false })}
           onFocus={() => emitGuide({ type: "page/hover", active: true })}
@@ -172,7 +140,10 @@ export function GuideHeroAvatar() {
             <span className="hero-z absolute left-9 -top-11 font-mono text-2xl font-bold text-primary [animation-delay:1200ms]">Z</span>
           </span>
           <span aria-hidden="true" data-hero-part="pulse" className="pointer-events-none absolute inset-[12%] rounded-full border-2 border-primary/80 opacity-0" />
-          <GuideAvatarSlot size={face} followPointer settleAfterMs={10_000} paused={isMobile || handedOff} onDrawn={markAvatarDrawn} />
+          {/* Until the live Nex sits here (`html[data-nex-in-hero]`), and on phones. */}
+          <span data-hero-still className="nex-socket-still relative inline-flex items-center justify-center" style={{ width: face, height: face }}>
+            <StaticGuideMark size={face} />
+          </span>
         </button>
       </span>
     </span>

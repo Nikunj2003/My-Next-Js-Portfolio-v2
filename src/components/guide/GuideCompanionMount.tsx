@@ -6,6 +6,7 @@ import { whenIdle } from "@/components/guide/GuideAvatarSlot";
 import { appendNexExchange } from "@/lib/chat/nex-chat-store";
 import { openAsk, openPanel } from "@/lib/guide/companion-store";
 import { START_TOUR_EVENT } from "@/lib/guide/tour-control";
+import { introPending } from "@/lib/hero-intro";
 import type { AskHost } from "@/lib/guide/bubble-policy";
 
 const GuideCompanion = dynamic(() => import("@/components/guide/GuideCompanion"), { ssr: false, loading: () => null });
@@ -25,7 +26,15 @@ export function GuideCompanionMount() {
   const [pendingTour, setPendingTour] = useState(false);
   const replayingRef = useRef(false);
 
-  useEffect(() => whenIdle(() => setReady(true)), []);
+  // On idle, so it costs nothing on first load, except when the hero's intro
+  // is about to play: the intro moves this one Nex, so it loads at once.
+  useEffect(() => {
+    if (introPending()) {
+      queueMicrotask(() => setReady(true));
+      return;
+    }
+    return whenIdle(() => setReady(true));
+  }, []);
 
   // A tour start before the companion has loaded would reach nobody. Load it
   // now, then replay the event once the narrator is listening (it marks <html>).

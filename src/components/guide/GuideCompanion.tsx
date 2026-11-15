@@ -16,9 +16,8 @@ import {
   clampToViewport,
   cornerPoint,
   easeInOutCubic,
-  FADE_SHARE,
   gutterPoint,
-  heroHandoffFrame,
+  heroDockFrame,
   footerDockFrame,
   footerDockProgress,
   heroFaceScale,
@@ -31,6 +30,9 @@ import {
   type Viewport,
 } from "@/lib/guide/placement";
 import { SECTION_TIPS, TIP_RULES } from "@/lib/guide/tips";
+import { HOVER_LINE } from "@/lib/guide/hero-lines";
+import { getSpoken, say, sayPetLine } from "@/lib/guide/spoken";
+import { introPending, markAvatarDrawn } from "@/lib/hero-intro";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useChatAvailability } from "@/hooks/useChatAvailability";
 import { NAVBAR_CLEARANCE as NAVBAR } from "@/lib/scroll";
@@ -39,7 +41,7 @@ const SIZE = 68;
 const MOBILE_SIZE = 56;
 /** How long the glide between two sections' spots takes. */
 const GLIDE_MS = 650;
-/** The hand-off progress at which the conversation moves (mid cross-fade, while both are one disc). */
+/** The hand-off progress at which the conversation leaves the hero for the companion's own bubble. */
 const HANDOFF_SWAP_AT = 0.22;
 /**
  * How the hand-off maps onto scrolling: it begins once the visitor has
@@ -105,22 +107,24 @@ export default function GuideCompanion() {
   // The hero avatar reports itself (desktop homepage only, with hysteresis).
   const heroVisible = isHome && companion.heroVisible;
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const mirrorRef = useRef<HTMLSpanElement>(null);
 
   // Written by the frame loop below, read by the avatar layer and the bubble.
   const posX = useMotionValue(0);
   const posY = useMotionValue(0);
   const opacity = useMotionValue(0);
   const scale = useMotionValue(1);
+  // The companion's own disc and ring. In the hero's socket the page draws
+  // them, so only the face shows; they fade in as Nex leaves for the page.
+  const chrome = useMotionValue(1);
   const [spotKind, setSpotKind] = useState<"ride" | "corner">("ride");
   // Save-data and low-memory devices get the still drawing, as the hero does.
   const [lowPower] = useState(() => typeof navigator !== "undefined" && prefersStatic());
-  // True while the hero hand-off is between its ends (set by the loop on change only).
-  const [handingOffState, setHandingOffState] = useState(false);
-  // Past the cross-fade but still on its way to the spot (the hero is gone).
-  const [travelling, setTravelling] = useState(false);
-  const travellingRef = useRef(false);
-  const handingOffRef = useRef(false);
+  // Sitting in (or leaving) the hero's socket: it follows the pointer there
+  // and reacts to clicks like a pet (set by the loop on change only).
+  const [inHero, setInHero] = useState(false);
+  const inHeroRef = useRef(false);
+  // The live drawing has rendered: until then the hero's socket keeps its still one.
+  const [drawn, setDrawn] = useState(false);
 
   // Availability drives the "offline" sleep.
   useEffect(() => {
@@ -145,7 +149,10 @@ export default function GuideCompanion() {
     setSettledPath(pathname);
     setSettled(false);
   }
-  const visible = settled && (touring || !heroVisible) && !(isMobile && (askOpen || companion.panelOpen));
+  // One Nex: on desktop it is in the hero's socket while the hero is on
+  // screen, so it is visible there too. Phones keep the still drawing in the
+  // hero and show the companion (in the corner) once the hero has scrolled away.
+  const visible = settled && (touring || !(isMobile && heroVisible)) && !(isMobile && (askOpen || companion.panelOpen));
 
   useEffect(() => {
     dispatchCompanion({ type: "companion/visible", visible });
@@ -194,7 +201,7 @@ export default function GuideCompanion() {
   const settledRef = useRef(false);
   const mountedAtRef = useRef(0);
   /** A trip between pages in progress: from where the avatar was on the page it left. */
-  const travelRef = useRef<{ from: Point; fromScale: number; start: number; ms: number; toHero: boolean } | null>(null);
+  const travelRef = useRef<{ from: Point; fromScale: number; fromChrome: number; start: number; ms: number; toHero: boolean } | null>(null);
   const reduceMotionRef = useRef(reduceMotion);
   const isMobileRef = useRef(isMobile);
   useLayoutEffect(() => {
@@ -224,7 +231,7 @@ export default function GuideCompanion() {
     // appearing there. Nothing to travel from on the first load.
     const departed = lastDrawn;
     travelRef.current = departed && departed.path !== pathname && !reduceMotionRef.current && performance.now() - departed.at < 4000
-      ? { from: departed.point, fromScale: departed.scale, start: -1, ms: 0, toHero: false }
+      ? { from: departed.point, fromScale: departed.scale, fromChrome: departed.chrome, start: -1, ms: 0, toHero: false }
       : null;
     lastPointRef.current = null;
     glideRef.current = null;
@@ -279,18 +286,34 @@ export default function GuideCompanion() {
         }
       }
 
-      // The hero hand-off, tied to the scroll position rather than a timer:
-      // as the hero avatar slides under the navbar it shrinks and fades, and
-      // the companion grows out of it on its way to its spot. Scrolling back
-      // up plays it in reverse. `morph` is 0 with the hero fully in view and 1
-      // once it has handed over.
-      const hero = isHome && !isMobileRef.current ? cachedNode<HTMLElement>("hero", () => document.querySelector<HTMLElement>("[data-guide-hero-avatar]")) : null;
-      // The hero's layout box, without the scale and fade this loop applies to
-      // it: measuring the transformed box fed each frame's shrink back into the
-      // next frame's progress, so the hand-off never settled (and thrashed
-      // around its midpoint, where the conversation swaps between the two).
+      // The hero's socket: on desktop Nex sits in it while the hero is on
+      // screen, drawn at the socket's face size, and shrinks into the page as
+      // the visitor scrolls (one element, nothing cross-faded). Phones keep
+      // the still drawing there; the tour narrates from the corner.
+      const hero = isHome ? cachedNode<HTMLElement>("hero", () => document.querySelector<HTMLElement>("[data-guide-hero-avatar]")) : null;
+      // The socket's layout box, never a transformed one (the intro moves its wrapper).
       const heroBox = hero ? heroLayoutRect(hero) : undefined;
-      const heroHere = Boolean(hero && heroBox && heroBox.width > 0) && !touringRef.current && !reduceMotionRef.current;
+      const heroHere = Boolean(hero && heroBox && heroBox.width > 0) && !isMobileRef.current && !touringRef.current;
+      const markInHero = (next: boolean) => {
+        if (next === inHeroRef.current) return;
+        inHeroRef.current = next;
+        setInHero(next);
+      };
+
+      // The intro: Nex is drawn wherever the intro has the socket's wrapper
+      // right now (asleep at the screen's centre, then settling into place),
+      // at its size and fade, so the intro moves the one live Nex.
+      if (heroHere && hero && introPending()) {
+        const stage = cachedNode<HTMLElement>("hero-stage", () => hero.closest<HTMLElement>('[data-hero-part="stage"]'));
+        const box = (stage ?? hero).getBoundingClientRect();
+        posX.set(Math.round((box.left + box.width / 2 - size / 2) * 2) / 2);
+        posY.set(Math.round((box.top + box.height / 2 - size / 2) * 2) / 2);
+        scale.set(heroFaceScale(box.width, size));
+        chrome.set(0);
+        opacity.set(stage ? Number(getComputedStyle(stage).opacity) || 0 : 1);
+        markInHero(true);
+        return;
+      }
       // On a load or a refresh nothing is drawn until the page has settled:
       // the hero column is still fading in and the browser may still be
       // restoring a scrolled position. Animating the hand-off from that
@@ -300,7 +323,7 @@ export default function GuideCompanion() {
       if (!settledRef.current) {
         // The hero's intro has ended (HeroIntro sets this, at once when it
         // doesn't play), so the hand-off never starts from a half-built hero.
-        const columnShown = !hero || document.documentElement.hasAttribute("data-hero-ready");
+        const columnShown = !hero || !introPending();
         if ((!isHome || now - mountedAtRef.current > SETTLE_MS) && columnShown) {
           settledRef.current = true;
           // Decide who is the guide from the settled page, before anything is drawn.
@@ -315,7 +338,7 @@ export default function GuideCompanion() {
               const to = { x: heroBox.left + heroBox.width / 2 - size / 2, y: heroBox.top + heroBox.height / 2 - size / 2 };
               travel.ms = routeTravelMs(travel.from, to);
             }
-          } else opacity.set(0);
+          } else if (!heroGuides) opacity.set(0);
           return;
         } else {
           // Waiting for the new page: hold where it was, so the trip starts there.
@@ -324,23 +347,15 @@ export default function GuideCompanion() {
             posX.set(travel.from.x);
             posY.set(travel.from.y);
             scale.set(travel.fromScale);
+            chrome.set(travel.fromChrome);
             opacity.set(1);
-            if (hero) {
-              hero.style.transform = "";
-              hero.style.opacity = "0";
-            }
           } else opacity.set(0);
-          if (hero && !travel) {
-            hero.style.transform = "";
-            hero.style.opacity = "";
-          }
           return;
         }
       }
       // A trip between pages: one hop from where it was to where it belongs
       // here, read from the live layout every frame so it lands exactly. Into
-      // the homepage with the hero on screen, it lands on the hero avatar and
-      // hands over to it (the hero fades in under it as it arrives).
+      // the homepage with the hero on screen, it lands in the hero's socket.
       const travel = travelRef.current;
       if (travel && travel.start >= 0) {
         const heroTarget = travel.toHero && hero && heroBox ? heroBox : null;
@@ -353,78 +368,39 @@ export default function GuideCompanion() {
           : clampToViewport(ruleRef.current.point(size, viewport) ?? marginRule("").point(size, viewport) ?? CORNER.point(size, viewport)!, size, viewport, footer()?.getBoundingClientRect().top ?? null);
         if (!travel.ms) travel.ms = routeTravelMs(travel.from, to);
         const t = Math.min(1, (now - travel.start) / travel.ms);
-        // Landing on the hero: grow to its face size, then hand over.
+        // Landing in the hero: grow to its face size.
         const heroScale = heroTarget ? heroFaceScale(heroTarget.width, size) : docked ? FOOTER_SLOT / size : 1;
         const hop = routeTravelFrame({ t, from: travel.from, to, fromScale: travel.fromScale, toScale: heroScale });
         posX.set(Math.round(hop.position.x * 2) / 2);
         posY.set(Math.round(hop.position.y * 2) / 2);
         scale.set(hop.scale);
-        if (heroTarget && hero) {
-          // The last fifth: the hero takes over, the small one fades into it.
-          const swap = Math.max(0, (t - 0.8) / 0.2);
-          hero.style.transform = "";
-          hero.style.opacity = String(swap);
-          opacity.set(1 - swap);
-        } else opacity.set(1);
+        chrome.set(travel.fromChrome + ((heroTarget ? 0 : 1) - travel.fromChrome) * easeInOutCubic(t));
+        opacity.set(1);
+        markInHero(Boolean(heroTarget));
         if (t >= 1) {
           travelRef.current = null;
           lastPointRef.current = heroTarget ? null : to;
           if (docked) landedRef.current = true;
-          if (hero) hero.style.opacity = "";
-          if (heroTarget) opacity.set(0);
         }
         return;
       }
 
-      // Hand-off progress: a plain function of the scroll position (0 as the
-      // hero avatar's top reaches the navbar, 1 a scroll of 70% of its height
-      // later). No smoothing and no timer: the same scroll position always
-      // draws the same frame, a stop mid-way holds mid-way, and scrolling back
-      // plays the same frames in reverse. Lenis already smooths the scroll.
-      const morph = heroHere && heroBox ? handoffProgress(heroBox, viewport) : 1;
+      // How far Nex has left the hero: a plain function of the scroll
+      // position, so the same scroll draws the same frame, a stop mid-way
+      // holds and scrolling back plays it in reverse. Lenis smooths the scroll.
+      // Reduced motion: in the socket or at its spot, nothing in between.
+      let morph = heroHere && heroBox ? handoffProgress(heroBox, viewport) : 1;
+      if (reduceMotionRef.current && morph > 0 && morph < 1) morph = morph < 0.5 ? 0 : 1;
       const heroCentre = heroBox ? { x: heroBox.left + heroBox.width / 2, y: heroBox.top + heroBox.height / 2 } : { x: 0, y: 0 };
-      // Styles the hero from the same hand-off frame the companion is drawn
-      // from, so the two can't disagree by a frame.
-      const styleHero = (frame: ReturnType<typeof heroHandoffFrame> | null) => {
-        if (!hero) return;
-        hero.style.transform = frame ? `translate(${frame.heroOffset.x}px, ${frame.heroOffset.y}px) scale(${frame.heroScale})` : "";
-        hero.style.opacity = frame ? String(frame.heroOpacity) : "";
-        // A faded hero must not catch clicks meant for the page or the companion.
-        hero.style.pointerEvents = frame && frame.heroOpacity < 0.5 ? "none" : "";
-      };
-
-      // Nothing to draw while hidden and not mid hand-off; keep tracking the section only.
-      const handingOff = heroHere && morph > 0 && morph < 1;
-      // The copied hero face is only needed while the two discs overlap
-      // (the cross-fade); after it the hero is invisible and the companion's
-      // own avatar takes over for the rest of its trip, facing where it goes.
-      const mirroring = handingOff && morph < FADE_SHARE;
-      const onTheWay = handingOff && !mirroring;
-      if (onTheWay !== travellingRef.current) {
-        travellingRef.current = onTheWay;
-        setTravelling(onTheWay);
-      }
-      if (mirroring !== handingOffRef.current) {
-        handingOffRef.current = mirroring;
-        setHandingOffState(mirroring);
-      }
-      // The hand-off point decides which avatar is the guide (and hosts the
-      // ask box), so the conversation moves exactly when the avatars swap.
+      const leavingHero = heroHere && morph < 1;
+      markInHero(leavingHero);
+      // Nex in the hero hosts the conversation there; past this point the ask
+      // box moves to the companion's own bubble. Phones: while the hero shows.
       if (hero) setHeroVisible(heroHere ? morph < HANDOFF_SWAP_AT : heroBox ? heroBox.bottom > NAVBAR + heroBox.height * 0.5 && heroBox.width > 0 : false);
-      if (!visibleRef.current && !handingOff) {
-        // The big hero avatar is the guide: a trip to another page starts from it.
-        // (Recorded here because by the time this effect cleans up after a route
-        // change, the hero has already left the DOM.)
-        if (heroHere && heroBox && getCompanionState().heroVisible && heroBox.bottom > 0 && heroBox.top < viewport.height) {
-          lastDrawn = { point: { x: heroBox.left + heroBox.width / 2 - size / 2, y: heroBox.top + heroBox.height / 2 - size / 2 }, scale: heroFaceScale(heroBox.width, size), at: performance.now(), path: pathname };
-        }
+      if (!visibleRef.current) {
         lastPointRef.current = null;
         glideRef.current = null;
-        // Over the hero the hand-off owns the opacity: hidden. (Fading out on
-        // the generic timer here is what let the small avatar linger after the
-        // hero had already come back.)
-        opacity.set(heroHere ? 0 : fade.get());
-        styleHero(null);
+        opacity.set(fade.get());
         return;
       }
 
@@ -433,7 +409,7 @@ export default function GuideCompanion() {
       const ruled = current.point(size, viewport) ?? marginRule("").point(size, viewport);
       const usedFallback = ruled === null;
       let target = ruled ?? fallback;
-      const landing = heroHere && morph < 1 ? null : footerLanding(viewport);
+      const landing = leavingHero ? null : footerLanding(viewport);
       // The footer is an obstacle for every spot but its own slot. With the
       // panel open the corner sits just below the panel, over the page's end:
       // pushing it above the footer put it inside the panel.
@@ -448,14 +424,13 @@ export default function GuideCompanion() {
         else point = blendPoint(glide.from, target, easeInOutCubic(t));
       }
       const last = lastPointRef.current;
-      if (heroHere && heroBox && morph < 1) {
-        const frame = heroHandoffFrame({ t: morph, heroCentre, heroDiameter: heroBox.width, size, spot: target });
-        styleHero(frame);
-        if (hero && morph < FADE_SHARE) mirrorHero(hero, mirrorRef.current, size);
+      if (leavingHero && heroBox) {
+        const frame = heroDockFrame({ t: morph, heroCentre, heroDiameter: heroBox.width, size, spot: target });
         point = frame.position;
         glideRef.current = null;
-        scale.set(frame.companionScale);
-        opacity.set(frame.companionOpacity);
+        scale.set(frame.scale);
+        chrome.set(frame.chrome);
+        opacity.set(1);
       } else if (!last) {
         point = target; // appearing: straight to the spot
       } else if (!glideRef.current) {
@@ -469,23 +444,11 @@ export default function GuideCompanion() {
         }
       }
 
-      if (!(heroHere && morph < 1)) {
-        // Hand-off done (or no hero here): the hero, now invisible, is left to
-        // the page untransformed, so it scrolls away instead of being carried
-        // along over the content. It stays hidden while scrolled past.
-        if (hero && heroHere) {
-          hero.style.transform = "";
-          hero.style.opacity = morph >= 1 ? "0" : "";
-          hero.style.pointerEvents = morph >= 1 ? "none" : "";
-        } else if (hero) {
-          // The hand-off isn't running (the tour started mid-way, reduced
-          // motion): the hero must not keep a half-faded, unclickable style.
-          styleHero(null);
-        }
+      if (!leavingHero) {
         scale.set(1);
-        // Away from the hero (or with the hand-off complete): fully shown, or
-        // the short in-place fade on other pages, the tour and the panel.
-        opacity.set(visibleRef.current ? (heroHere ? 1 : fade.get()) : 0);
+        chrome.set(1);
+        // Fully shown, or the short in-place fade on other pages, the tour and the panel.
+        opacity.set(heroHere ? 1 : fade.get());
       }
 
       // The footer landing, last: from wherever the spot rule (and its glide)
@@ -516,7 +479,7 @@ export default function GuideCompanion() {
       lastPointRef.current = ridePoint;
       posX.set(Math.round(point.x * 2) / 2);
       posY.set(Math.round(point.y * 2) / 2);
-      if (opacity.get() > 0.5) lastDrawn = { point, scale: scale.get(), at: performance.now(), path: pathname };
+      if (opacity.get() > 0.5) lastDrawn = { point, scale: scale.get(), chrome: chrome.get(), at: performance.now(), path: pathname };
 
       const kind = current === CORNER || usedFallback ? "corner" : "ride";
       if (kind !== kindRef.current) {
@@ -529,15 +492,40 @@ export default function GuideCompanion() {
       cancelFrame(tick);
       landedRef.current = false;
       setFooterDocked(false);
-      const hero = document.querySelector<HTMLElement>("[data-guide-hero-avatar]");
-      if (hero) {
-        hero.style.opacity = "";
-        hero.style.transform = "";
-        hero.style.pointerEvents = "";
-      }
+      inHeroRef.current = false;
+      setInHero(false);
     };
     // Re-run per page: each page settles afresh and the trip starts from the last one.
-  }, [fade, isHome, opacity, pathname, posX, posY, scale, size]);
+  }, [chrome, fade, isHome, opacity, pathname, posX, posY, scale, size]);
+
+  // The live drawing has rendered: the hero's intro waits for it, and the
+  // socket's still drawing gives way to it.
+  useEffect(() => {
+    const button = buttonRef.current;
+    if (!button || lowPower) return;
+    const check = () => {
+      if (!button.querySelector("svg")) return false;
+      setDrawn(true);
+      markAvatarDrawn();
+      return true;
+    };
+    if (check()) return;
+    const observer = new MutationObserver(() => {
+      if (check()) observer.disconnect();
+    });
+    observer.observe(button, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [lowPower]);
+
+  // Tells the page Nex is in the hero's socket (its still drawing hides).
+  useEffect(() => {
+    const root = document.documentElement;
+    if (inHero && (drawn || lowPower)) root.dataset.nexInHero = "";
+    else delete root.dataset.nexInHero;
+    return () => {
+      delete root.dataset.nexInHero;
+    };
+  }, [drawn, inHero, lowPower]);
 
   // Tips: after a short dwell on a section, offer its one-liner. The policy
   // decides whether one may show (budget, cooldown, nothing else open).
@@ -562,7 +550,11 @@ export default function GuideCompanion() {
   }, [activeSection, isHome]);
 
   // Face the content. Memoised so the avatar's frame loop isn't woken by a new array each render.
-  const lookAt = useMemo<readonly [number, number]>(() => (spotKind === "corner" ? [-0.45, 0.25] : [0.6, 0]), [spotKind]);
+  // In the hero it follows the pointer instead.
+  const lookAt = useMemo<readonly [number, number] | null>(() => (inHero ? null : spotKind === "corner" ? [-0.45, 0.25] : [0.6, 0]), [inHero, spotKind]);
+  // Where Nex is a character to play with rather than a button: in the hero
+  // and once it has landed in the footer (both have their own Ask Nex).
+  const petMode = inHero || companion.footerDocked;
 
   // Focus goes back to whatever opened the bubble when the companion is
   // hidden (over the hero), otherwise to the companion. Never scrolls.
@@ -586,8 +578,17 @@ export default function GuideCompanion() {
   }, [visible]);
 
   const toggle = () => {
+    if (petMode) {
+      emitGuide({ type: "pet/click", now: Date.now() });
+      sayPetLine();
+      return;
+    }
     if (companion.bubble === "ask") dispatchCompanion({ type: "ask/close" });
     else openAsk();
+  };
+  const hover = (active: boolean) => {
+    emitGuide({ type: "page/hover", active });
+    if (active && petMode && !getSpoken()) say(HOVER_LINE, 2400);
   };
 
   // Escape closes the bubble, then the panel.
@@ -619,37 +620,32 @@ export default function GuideCompanion() {
           ref={buttonRef}
           type="button"
           data-guide-companion-button
-          tabIndex={visible ? 0 : -1}
+          // In the hero the socket's own button is the keyboard stop.
+          tabIndex={visible && !inHero ? 0 : -1}
           onClick={toggle}
           onMouseDown={(event) => event.preventDefault()}
-          onPointerEnter={() => emitGuide({ type: "page/hover", active: true })}
-          onPointerLeave={() => emitGuide({ type: "page/hover", active: false })}
-          onFocus={() => emitGuide({ type: "page/hover", active: true })}
-          onBlur={() => emitGuide({ type: "page/hover", active: false })}
-          aria-label={companion.bubble === "ask" ? "Close Nex" : "Ask Nex a question"}
-          aria-expanded={companion.bubble === "ask"}
-          aria-controls="nex-bubble"
+          onPointerEnter={() => hover(true)}
+          onPointerLeave={() => hover(false)}
+          onFocus={() => hover(true)}
+          onBlur={() => hover(false)}
+          aria-label={petMode ? "Nex, Nikunj's AI guide. Activate for a reaction." : companion.bubble === "ask" ? "Close Nex" : "Ask Nex a question"}
+          aria-expanded={petMode ? undefined : companion.bubble === "ask"}
+          aria-controls={petMode ? undefined : "nex-bubble"}
           className={
-            "relative flex h-full w-full items-center justify-center rounded-full guide-disc ring-1 ring-primary/40 shadow-accent-card transition-shadow duration-300 hover:shadow-[0_16px_36px_hsl(var(--accent)/0.28)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary " +
+            "group relative flex h-full w-full items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary " +
             (visible ? "pointer-events-auto cursor-pointer" : "pointer-events-none")
           }
         >
-          {/* During the hand-off this shows the hero avatar's own drawing, copied
-              each frame (see `mirrorHero`), so the two discs are the same face in
-              the same pose and the cross-fade can't show two different
-              expressions. The companion's own live avatar takes over once the
-              hand-off is done. */}
-          <span
-            ref={mirrorRef}
+          <motion.span
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 flex items-center justify-center"
-            style={{ display: handingOffState ? "flex" : "none" }}
+            className="pointer-events-none absolute inset-0 rounded-full guide-disc ring-1 ring-primary/40 shadow-accent-card transition-shadow duration-300 group-hover:shadow-[0_16px_36px_hsl(var(--accent)/0.28)]"
+            style={{ opacity: chrome }}
           />
           {lowPower ? (
             <StaticGuideMark size={size - 16} />
           ) : (
-            <span style={{ visibility: handingOffState ? "hidden" : "visible", display: "inline-flex" }}>
-              <GuideAvatar size={size - 16} lookAt={lookAt} settleAfterMs={10_000} paused={!visible && !travelling} />
+            <span className="relative inline-flex">
+              <GuideAvatar size={size - 16} lookAt={lookAt} followPointer={inHero} settleAfterMs={10_000} paused={!visible && !inHero} />
             </span>
           )}
         </button>
@@ -675,60 +671,10 @@ export default function GuideCompanion() {
 }
 
 /**
- * The hero avatar's box as laid out, ignoring the scale this loop (and the
- * inline ask box) apply to it. Its untransformed wrapper starts at the same
- * place and the avatar keeps its layout size, so read the wrapper's top and
- * left and the avatar's offset size: no transform is involved.
+ * The hero socket's box as laid out, ignoring the intro's transform on its
+ * wrapper: the untransformed outer wrapper's top and left and the socket's
+ * offset size.
  */
-/**
- * Copies the hero avatar's current drawing into the companion while the two
- * cross-fade, scaled to the companion's face size. One face, one pose, one
- * expression on both discs: two separate avatars, each with its own idle
- * motion, gaze and blink, never line up. Cheap: the drawing is a few dozen
- * SVG nodes, and only its attributes are copied when they change.
- */
-let mirrorIds = 0;
-function mirrorHero(hero: HTMLElement, mirror: HTMLElement | null, size: number) {
-  if (!mirror) return;
-  const source = [...hero.querySelectorAll<SVGSVGElement>("svg")].find((svg) => svg.querySelectorAll("*").length > 20);
-  if (!source) return;
-  let copy = mirror.firstElementChild as SVGSVGElement | null;
-  if (!copy || copy.dataset.from !== source.dataset.mirrorId) {
-    source.dataset.mirrorId ??= String((mirrorIds += 1));
-    copy = source.cloneNode(true) as SVGSVGElement;
-    copy.dataset.from = source.dataset.mirrorId;
-    // Ids inside the clone (clip paths) must not collide with the hero's.
-    copy.querySelectorAll("[id]").forEach((node) => node.setAttribute("id", `m-${node.id}`));
-    copy.querySelectorAll("[clip-path]").forEach((node) => node.setAttribute("clip-path", (node.getAttribute("clip-path") ?? "").replace(/url\(#/g, "url(#m-")));
-    mirror.replaceChildren(copy);
-  } else {
-    const from = source.querySelectorAll("*");
-    const to = copy.querySelectorAll("*");
-    if (from.length !== to.length) {
-      mirror.replaceChildren();
-      return;
-    }
-    from.forEach((node, index) => {
-      const target = to[index];
-      for (const attr of ["d", "transform", "opacity", "visibility", "fill", "cx", "cy", "rx", "ry", "x", "y", "width", "height"]) {
-        const value = node.getAttribute(attr);
-        if (value !== target.getAttribute(attr)) {
-          if (value === null) target.removeAttribute(attr);
-          else target.setAttribute(attr, value);
-        }
-      }
-    });
-  }
-  // The library sizes its svg with an inline style (300px for the hero), which
-  // beats the width attribute: set the style, or the copy is drawn at the
-  // hero's size inside the scaled-up companion (a face filling the screen).
-  const inner = `${size - 16}px`;
-  if (copy.style.width !== inner) {
-    copy.style.width = inner;
-    copy.style.height = inner;
-  }
-}
-
 function heroLayoutRect(hero: HTMLElement) {
   const wrapper = cachedNode<HTMLElement>("hero-wrapper", () => hero.closest<HTMLElement>('[data-guide-target="hero-guide"]')) ?? hero;
   const box = wrapper.getBoundingClientRect();
@@ -878,7 +824,7 @@ const SECTION_RULES: Record<string, SpotRule> = {
  * Where the avatar was last drawn, kept across page changes (this module
  * outlives a route), so the next page's trip starts from there.
  */
-let lastDrawn: { point: Point; scale: number; at: number; path: string } | null = null;
+let lastDrawn: { point: Point; scale: number; chrome: number; at: number; path: string } | null = null;
 
 type RouteKind = "home" | "work-index" | "case-study" | "other";
 

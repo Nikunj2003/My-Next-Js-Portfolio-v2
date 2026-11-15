@@ -11,7 +11,7 @@ import {
   gutterPoint,
   placeBubbleBeside,
   underPanelPoint,
-  heroHandoffFrame,
+  heroDockFrame,
   heroHandoffProgress,
   COMPANION_FACE_SHARE, HERO_FACE_SHARE } from "../src/lib/guide/placement.ts";
 import { lookToward } from "../src/lib/guide/gaze.ts";
@@ -131,36 +131,28 @@ test("without a margin, the under-panel spot doesn't slide; it waits at its rest
   assert.deepEqual(underPanelPoint({ panelLeft: 96, panelBottom: 1200, pinnedBottom: 665, gutterX: null }), { x: 116, y: 689 });
 });
 
-const handoff = (t: number) => heroHandoffFrame({ t, heroCentre: { x: 1047, y: 300 }, heroDiameter: 364, size: 68, spot: { x: 54, y: 689 } });
+const handoff = (t: number) => heroDockFrame({ t, heroCentre: { x: 1047, y: 300 }, heroDiameter: 240, size: 68, spot: { x: 54, y: 689 } });
 
-test("hand-off: the two avatars are one disc (same centre, same face size) at every step", () => {
-  for (let t = 0; t <= 1.0001; t += 0.05) {
-    const f = handoff(t);
-    const companionCentre = { x: f.position.x + 34, y: f.position.y + 34 };
-    const heroCentre = { x: 1047 + f.heroOffset.x, y: 300 + f.heroOffset.y };
-    assert.ok(Math.abs(companionCentre.x - heroCentre.x) < 1e-6 && Math.abs(companionCentre.y - heroCentre.y) < 1e-6, `centres apart at t=${t}`);
-    const heroFace = 364 * f.heroScale * HERO_FACE_SHARE;
-    const companionFace = 68 * f.companionScale * COMPANION_FACE_SHARE;
-    assert.ok(Math.abs(heroFace - companionFace) < 1e-6, `faces differ at t=${t}`);
-  }
+test("leaving the hero: starts on the socket at the hero's face size", () => {
+  const start = handoff(0);
+  assert.deepEqual(start.position, { x: 1047 - 34, y: 300 - 34 });
+  const face = 68 * start.scale * COMPANION_FACE_SHARE;
+  assert.ok(Math.abs(face - 240 * HERO_FACE_SHARE) < 1e-6);
+  assert.equal(start.chrome, 0);
 });
 
-test("hand-off: starts as the hero, ends on the spot at full size, and never reverses", () => {
-  const start = handoff(0);
-  assert.equal(start.heroOpacity, 1);
-  assert.equal(start.companionOpacity, 0);
-  assert.equal(start.heroScale, 1);
+test("leaving the hero: ends on the spot at full size, and never reverses", () => {
   const end = handoff(1);
   assert.deepEqual(end.position, { x: 54, y: 689 });
-  assert.equal(end.companionScale, 1);
-  assert.equal(end.companionOpacity, 1);
+  assert.equal(end.scale, 1);
+  assert.equal(end.chrome, 1);
   let last = handoff(0);
   for (let t = 0.02; t <= 1.0001; t += 0.02) {
     const f = handoff(t);
     assert.ok(f.position.x <= last.position.x + 1e-9, `x reversed at t=${t}`);
     assert.ok(f.position.y >= last.position.y - 1e-9, `y reversed at t=${t}`);
-    assert.ok(f.companionScale <= last.companionScale + 1e-9, `size grew back at t=${t}`);
-    assert.ok(f.companionOpacity >= last.companionOpacity - 1e-9, `fade reversed at t=${t}`);
+    assert.ok(f.scale <= last.scale + 1e-9, `size grew back at t=${t}`);
+    assert.ok(f.chrome >= last.chrome - 1e-9, `disc faded back at t=${t}`);
     last = f;
   }
 });

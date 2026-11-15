@@ -614,6 +614,8 @@ html[data-hero-intro="play"] #hero [data-hero-name] {
 }
 /* While the intro waits for the live avatar, the still drawing never shows. */
 html[data-hero-intro="play"] #hero [data-hero-still] { visibility: hidden; }
+/* The one live Nex is sitting in the hero's socket: its still stand-in steps aside. */
+html[data-nex-in-hero] .nex-socket-still { visibility: hidden; }
 @keyframes hero-failsafe-show { to { opacity: 1; } }
 @keyframes hero-failsafe-clip { to { clip-path: none; } }
 
