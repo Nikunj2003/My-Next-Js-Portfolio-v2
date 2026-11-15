@@ -32,3 +32,11 @@ test("the hero's markup is static; its intro lives in HeroIntro", () => {
   assert.doesNotMatch(source, /framer-motion|initial=|variants=/);
   assert.match(source, /<HeroIntro \/>/);
 });
+
+test("the hero's own Ask Nex is hidden by a wrapper on desktop, where the avatar carries one", () => {
+  // A class that sets `display` (btn-cta-secondary is inline-flex) overrides
+  // `lg:hidden` on the same element, which showed two "Ask Nex" side by side.
+  const source = readFileSync("src/components/HeroAskButton.tsx", "utf8");
+  assert.match(source, /<span className="contents lg:hidden">\s*<button/);
+  assert.doesNotMatch(source, /className="[^"]*btn-cta-secondary[^"]*lg:hidden/);
+});

@@ -10,13 +10,13 @@ import { openNex } from "@/lib/ask-nex";
  */
 export function HeroAskButton() {
   return (
-    <button
-      type="button"
-      onClick={() => openNex("")}
-      className="btn-cta-secondary w-full sm:w-auto lg:hidden"
-    >
-      <MessageCircle className="h-4 w-4 text-primary" />
-      Ask Nex
-    </button>
+    // Hidden by a wrapper: `.btn-cta-secondary` sets its own display, which
+    // overrode `lg:hidden` on the button itself and showed two "Ask Nex" on desktop.
+    <span className="contents lg:hidden">
+      <button type="button" onClick={() => openNex("")} className="btn-cta-secondary w-full sm:w-auto">
+        <MessageCircle className="h-4 w-4 text-primary" />
+        Ask Nex
+      </button>
+    </span>
   );
 }
