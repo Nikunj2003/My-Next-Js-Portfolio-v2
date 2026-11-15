@@ -37,7 +37,7 @@ const Footer = () => {
       <div className="container-narrow">
         <SpotlightCard className="w-full">
           <div className="px-6 pb-6 pt-10 sm:px-10 sm:pt-12">
-            <div data-guide-footer-band className="grid items-center gap-10 text-center md:grid-cols-[minmax(0,1fr)_15rem_minmax(0,1fr)] md:gap-10 md:text-left">
+            <div data-guide-footer-band className="grid items-center gap-10 text-center md:min-h-[22rem] md:grid-cols-[minmax(0,1fr)_15rem_minmax(0,1fr)] md:gap-10 md:text-left">
               {/* Sign-off */}
               <div className="order-2 md:order-1">
                 <p className="font-[family-name:var(--font-display)] text-[1.625rem] font-semibold leading-[1.15] tracking-[-0.025em] text-foreground sm:text-[1.875rem]" style={{ textWrap: "balance" }}>

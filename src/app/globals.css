@@ -526,14 +526,21 @@ textarea,
  * of air), capped at 96px. `cqi` reads the identity row's own width, so it
  * holds at every viewport and at 200% zoom.
  */
+/*
+ * The stage follows the screen's height, so the whole hero (identity to the
+ * figures) fits one screen below the navbar: 240px on a 1080px-tall screen,
+ * 200px at 900, 160px at 760 and below; and never wider than the width allows.
+ */
 .hero-identity {
   container-type: inline-size;
-  --stage: 240px;
+  --stage: clamp(160px, calc(100svh * 0.29 - 61px), 240px);
   --name-gap: clamp(1.5rem, 3vw, 2.75rem);
 }
-@media (max-width: 1279px), (max-height: 819px) {
-  .hero-identity { --stage: 200px; }
+@media (max-width: 1279px) {
+  .hero-identity { --stage: clamp(160px, calc(100svh * 0.29 - 61px), 200px); }
 }
+/* The hero's vertical gaps shrink on shorter screens, by the same rule. */
+#hero { --hero-gap: clamp(0.75rem, calc(100svh * 0.03 - 0.5rem), 1.75rem); }
 .hero-identity-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--stage) minmax(0, 1fr);

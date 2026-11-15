@@ -127,4 +127,6 @@ test("one Nex: no second face is copied or cross-faded during the hand-off", () 
   assert.doesNotMatch(companion, /mirrorHero|mirrorRef/);
   // The socket's still drawing hides once the live Nex sits in it.
   assert.match(companion, /root\.dataset\.nexInHero = ""/);
+  // Opening the full conversation flies Nex to the corner and back, never a snap.
+  assert.match(companion, /const PANEL_FLIGHT_MS = /);
 });

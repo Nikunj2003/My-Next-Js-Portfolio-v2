@@ -13,6 +13,12 @@ import { useSpoken } from "@/lib/guide/spoken";
  * when it closes. Same ask box as the hero's; one is mounted at a time
  * (`askHost`). Phones use the sheet, so the links stay.
  */
+/**
+ * The footer chat's fixed height, the same as the landing band's minimum
+ * (`md:min-h-[22rem]` in Footer), so opening it never changes the band.
+ */
+const FOOTER_CHAT_HEIGHT = 352;
+
 export function FooterAskHost({ children }: { children: ReactNode }) {
   const companion = useCompanionState();
   const isMobile = useIsMobile();
@@ -68,9 +74,11 @@ export function FooterAskHost({ children }: { children: ReactNode }) {
             animate={{ opacity: 1, y: 0 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6 }}
             transition={{ duration: reduceMotion ? 0.1 : 0.22 }}
+            // The band's own height: opening the chat never moves Nex or the sign-off.
+            style={{ height: FOOTER_CHAT_HEIGHT }}
             className="flex w-full flex-col overflow-hidden rounded-2xl border border-primary/20 text-left glass-strong shadow-accent-soft"
           >
-            <AskContent inline activeSection="contact" onExpand={openPanel} onClose={close} isMobile={false} reduceMotion={reduceMotion} />
+            <AskContent inline fill activeSection="contact" onExpand={openPanel} onClose={close} isMobile={false} reduceMotion={reduceMotion} />
           </motion.div>
         ) : (
           <motion.div

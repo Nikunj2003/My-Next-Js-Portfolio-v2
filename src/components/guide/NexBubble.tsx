@@ -14,6 +14,13 @@ import { NAVBAR_CLEARANCE as NAVBAR } from "@/lib/scroll";
 const BUBBLE_WIDTH = 360;
 /** A guess at the bubble's height before it has been measured. */
 const INITIAL_HEIGHT = 220;
+/**
+ * The height the ask box's side is chosen for: its reserved size, not what it
+ * measures at the moment it opens. It grows as chips load and an answer
+ * streams in; choosing from the first, smaller measurement picked a side
+ * that stopped fitting a few frames later, so it flashed there and jumped.
+ */
+const ASK_RESERVE = 460;
 const GAP = 12;
 /** How long the avatar must be still before the bubble's side is chosen again. */
 const REST_MS = 350;
@@ -129,6 +136,11 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
   const [readyNode, setReadyNode] = useState<HTMLDivElement | null>(null);
   const ready = node !== null && readyNode === node;
   const sideRef = useRef<BubbleSide | null>(null);
+  /** The size a side is chosen for: the ask box at its reserved height. */
+  const sizingHeight = useCallback(
+    () => (showing === "ask" ? Math.max(heightRef.current, Math.min(ASK_RESERVE, bubbleMaxHeight(viewport))) : heightRef.current),
+    [showing, viewport]
+  );
   const choose = useCallback(
     (fresh: boolean) => {
       const sides = preferKey.split(",") as BubbleSide[];
@@ -146,7 +158,7 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
       const next = free ?? chooseBubbleSide(
         { x: anchorX.get(), y: anchorY.get() },
         anchorSize,
-        { width: BUBBLE_WIDTH, height: heightRef.current },
+        { width: BUBBLE_WIDTH, height: sizingHeight() },
         viewport,
         sides,
         fresh ? null : sideRef.current,
@@ -157,7 +169,7 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
         setOpenSide(next);
       }
     },
-    [anchorSize, anchorX, anchorY, preferKey, showing, viewport]
+    [anchorSize, anchorX, anchorY, preferKey, showing, sizingHeight, viewport]
   );
   useLayoutEffect(() => {
     if (!open) {
@@ -212,7 +224,7 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
       const y = anchorY.get();
       const bubbleSize = { width: BUBBLE_WIDTH, height: heightRef.current };
       let side = sideRef.current ?? openSide;
-      const fitted = chooseBubbleSide({ x, y }, anchorSize, bubbleSize, viewport, preferKey.split(",") as BubbleSide[], side);
+      const fitted = chooseBubbleSide({ x, y }, anchorSize, { width: BUBBLE_WIDTH, height: sizingHeight() }, viewport, preferKey.split(",") as BubbleSide[], side);
       if (fitted !== side) {
         side = fitted;
         sideRef.current = fitted;

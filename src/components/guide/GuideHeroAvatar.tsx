@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { StaticGuideMark } from "@/components/guide/GuideAvatarSlot";
@@ -36,23 +36,8 @@ import { HERO_FACE_SHARE } from "@/lib/guide/placement";
 /** The face's drawn size inside the stage (the companion matches it). */
 const FACE_SHARE = HERO_FACE_SHARE;
 
-function useStageSize() {
-  // Mirrors `.hero-identity { --stage }` in globals.css.
-  return useSyncExternalStore(
-    (listener) => {
-      const query = window.matchMedia("(max-width: 1279px), (max-height: 819px)");
-      query.addEventListener("change", listener);
-      return () => query.removeEventListener("change", listener);
-    },
-    () => (window.matchMedia("(max-width: 1279px), (max-height: 819px)").matches ? 200 : 240),
-    () => 240
-  );
-}
-
 export function GuideHeroAvatar() {
   const view = useGuideView();
-  const stage = useStageSize();
-  const face = Math.round(stage * FACE_SHARE);
 
   // Whether Nex in the hero is the guide right now (`heroVisible`) is set by
   // the companion's frame loop from the scroll. Reset on unmount.
@@ -141,8 +126,8 @@ export function GuideHeroAvatar() {
           </span>
           <span aria-hidden="true" data-hero-part="pulse" className="pointer-events-none absolute inset-[12%] rounded-full border-2 border-primary/80 opacity-0" />
           {/* Until the live Nex sits here (`html[data-nex-in-hero]`), and on phones. */}
-          <span data-hero-still className="nex-socket-still relative inline-flex items-center justify-center" style={{ width: face, height: face }}>
-            <StaticGuideMark size={face} />
+          <span data-hero-still className="nex-socket-still relative inline-flex items-center justify-center [&>svg]:h-full [&>svg]:w-full" style={{ width: `calc(var(--stage) * ${FACE_SHARE})`, height: `calc(var(--stage) * ${FACE_SHARE})` }}>
+            <StaticGuideMark size={200} />
           </span>
         </button>
       </span>
@@ -232,7 +217,7 @@ export function HeroAskHost() {
     <motion.div
       ref={hostRef}
       data-hero-part="ask-host"
-      className="mt-5 w-full"
+      className="mt-[calc(var(--hero-gap)*0.75)] w-full"
       initial={false}
       animate={{ height }}
       transition={{ duration: reduceMotion ? 0 : 0.42, ease: [0.22, 1, 0.36, 1] }}
@@ -267,7 +252,7 @@ export function HeroAskHost() {
           >
             {/* A reserved two-line band: greetings, reactions and the status
                 line all use it, so nothing below moves when Nex talks. */}
-            <p aria-live="off" className="flex min-h-11 max-w-[30rem] items-center justify-center rounded-2xl border border-foreground/10 glass-subtle px-4 py-1.5 text-sm leading-[1.375rem] text-muted-foreground shadow-accent-soft" style={{ textWrap: "balance" }}>
+            <p aria-live="off" className="flex min-h-10 max-w-[30rem] items-center justify-center rounded-full border border-foreground/10 glass-subtle px-4 py-1.5 text-sm leading-[1.375rem] text-muted-foreground shadow-accent-soft" style={{ textWrap: "balance" }}>
               {line ?? (
                 <span className="inline-flex items-center gap-2">
                   <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-emerald-500 motion-safe:animate-pulse" />

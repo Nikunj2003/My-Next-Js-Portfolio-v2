@@ -34,7 +34,7 @@ const HeroSection = () => {
     <section
       ref={heroRef}
       id="hero"
-      className="relative overflow-hidden pb-16 pt-[calc(var(--nav-top)+var(--nav-height)+1.5rem)] sm:pb-20 lg:pb-24 lg:pt-[calc(var(--nav-top)+var(--nav-height)+3rem)]"
+      className="relative flex min-h-[100svh] flex-col justify-center overflow-hidden pb-[calc(var(--hero-gap)*1.5)] pt-[calc(var(--nav-top)+var(--nav-height)+var(--hero-gap))]"
     >
       <HeroIntro />
 
@@ -47,15 +47,15 @@ const HeroSection = () => {
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-32 bg-gradient-to-t from-background to-transparent" />
 
       <div className="container-narrow relative z-10 flex w-full flex-col items-center text-center">
-        <p data-hero-part="copy" className="inline-flex items-center gap-2 text-sm leading-6 text-muted-foreground">
-          <span aria-hidden="true" className="h-2 w-2 rounded-full bg-primary" />
+        <p data-hero-part="copy" data-hero-glass className="inline-flex items-center gap-2 rounded-full border border-foreground/10 glass-subtle px-4 py-1.5 text-sm leading-6 text-muted-foreground shadow-accent-soft">
+          <span aria-hidden="true" className="h-2 w-2 rounded-full bg-primary motion-safe:animate-pulse" />
           Available for new opportunities
         </p>
 
         {/* The name, split around Nex. The visible words are the h1 itself
             (selectable, readable by voice control); the avatar between them
             is its own labelled control. */}
-        <div className="hero-identity mt-7 w-full">
+        <div className="hero-identity mt-[var(--hero-gap)] w-full">
           <h1 className="hero-identity-row">
             <span data-hero-name="left" className="hero-name">{firstName}</span>
             <span className="sr-only"> </span>
@@ -68,7 +68,7 @@ const HeroSection = () => {
             instead of being covered. */}
         <HeroAskHost />
 
-        <p data-hero-part="copy" className="mt-6 text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem]">
+        <p data-hero-part="copy" className="mt-[var(--hero-gap)] text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem]">
           {personalInfo.role}
         </p>
         <p data-hero-part="copy" className="mt-3 max-w-[38rem] text-base leading-relaxed text-muted-foreground sm:text-[1.0625rem]" style={{ textWrap: "pretty" }}>
@@ -78,7 +78,7 @@ const HeroSection = () => {
         <HeroActions />
 
         {/* The figures: each links to the work that backs it. */}
-        <div data-hero-part="copy" data-hero-glass data-guide-target="hero-proof" className="mt-8 grid w-full max-w-3xl grid-cols-2 gap-x-6 gap-y-4 rounded-2xl border border-foreground/10 glass-subtle px-5 py-4 text-left shadow-accent-soft sm:grid-cols-4 sm:px-6">
+        <div data-hero-part="copy" data-hero-glass data-guide-target="hero-proof" className="mt-[var(--hero-gap)] grid w-full max-w-3xl grid-cols-2 gap-x-6 gap-y-4 rounded-2xl border border-foreground/10 glass-subtle px-5 py-4 text-left shadow-accent-soft sm:grid-cols-4 sm:px-6">
           {stats.map((stat) => (
             <Link
               key={stat.label}

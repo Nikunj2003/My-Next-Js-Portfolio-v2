@@ -29,10 +29,16 @@ type AskContentProps = {
   reduceMotion: boolean;
   /** Rendered in the page (the hero) rather than in a floating bubble. */
   inline?: boolean;
+  /**
+   * Fill a host of fixed height (the footer's band): the answer takes what
+   * is left and scrolls inside, so opening or answering never changes the
+   * host's size. Chips are trimmed to one row's worth there.
+   */
+  fill?: boolean;
 };
 
 /** The ask box: latest question and answer, chips, composer. Hosted by the companion's bubble or inline by the hero avatar. */
-export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceMotion, inline = false }: AskContentProps) {
+export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceMotion, inline = false, fill = false }: AskContentProps) {
   const { messages, isLoading, announcement, turnAnchorId } = useNexChat();
   const { status } = useChatAvailability();
   const router = useRouter();
@@ -134,7 +140,8 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
   }, [input, typing]);
   useEffect(() => () => emitGuide({ type: "guide/point", pointAt: null }), []);
 
-  const chips = exchange?.answer?.suggestions?.slice(0, 2) ?? (exchange ? [] : SECTION_CHIPS[activeSection ?? "hero"] ?? SECTION_CHIPS.hero);
+  const allChips = exchange?.answer?.suggestions?.slice(0, 2) ?? (exchange ? [] : SECTION_CHIPS[activeSection ?? "hero"] ?? SECTION_CHIPS.hero);
+  const chips = fill ? allChips.slice(0, exchange ? 1 : 2) : allChips;
   const answer = exchange?.answer ?? null;
 
   // Whether the answer area overflows (and so should take the wheel).
@@ -198,7 +205,7 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
           aria-live="off"
           aria-busy={Boolean(answer?.streaming) || (isLoading && !answer)}
           className="scroll-panel min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 text-[0.9375rem] leading-relaxed text-foreground"
-          style={inline ? { height: "clamp(12rem, 34svh, 20rem)" } : undefined}
+          style={inline && !fill ? { height: "clamp(12rem, 34svh, 20rem)" } : undefined}
         >
           {answer ? (
             <>

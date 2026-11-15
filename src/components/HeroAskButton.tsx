@@ -13,7 +13,7 @@ import { startGuideTour } from "@/lib/guide/tour-control";
  */
 export function HeroActions() {
   return (
-    <div data-hero-part="copy" data-hero-glass className="mt-7 grid w-full max-w-sm grid-cols-2 gap-3 sm:flex sm:w-auto sm:max-w-none sm:flex-wrap sm:justify-center">
+    <div data-hero-part="copy" data-hero-glass className="mt-[var(--hero-gap)] grid w-full max-w-sm grid-cols-2 gap-3 sm:flex sm:w-auto sm:max-w-none sm:flex-wrap sm:justify-center">
       <button type="button" onClick={() => openNex("")} className="btn-cta-primary">
         <MessageCircle aria-hidden="true" />
         Ask Nex

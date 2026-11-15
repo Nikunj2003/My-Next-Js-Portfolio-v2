@@ -66,6 +66,8 @@ const SETTLE_MS = 300;
 const MAX_RIDE_STEP = 90;
 /** The footer slot's size: Nex lands there drawn at this diameter. */
 const FOOTER_SLOT = 150;
+/** How long Nex takes to fly to the corner when the full conversation opens, and back when it closes. */
+const PANEL_FLIGHT_MS = 620;
 /** While a tip is waiting its turn (cooldown, another bubble), ask again this often. */
 const TIP_RETRY_MS = 5000;
 /** A tip's bubble, for finding free space before offering one (one to three lines). */
@@ -218,9 +220,23 @@ export default function GuideCompanion() {
   const sectionRef = useRef<string | null>(null);
   const landedRef = useRef(false);
   const panelOpenRef = useRef(companion.panelOpen);
+  /**
+   * The full conversation opening or closing moves Nex between its place in
+   * the page (the hero, a spot, the footer slot) and the corner beside the
+   * panel. One eased flight from the pose last drawn (position, size, disc)
+   * to wherever the new place is this frame, so nothing snaps: it shrinks on
+   * the way to the corner and grows back into a slot on the way home.
+   */
+  const poseFlightRef = useRef<{ from: Point; fromScale: number; fromChrome: number; start: number } | null>(null);
+  const drawnPoseRef = useRef<{ point: Point; scale: number; chrome: number } | null>(null);
   useLayoutEffect(() => {
+    if (panelOpenRef.current === companion.panelOpen) return;
     panelOpenRef.current = companion.panelOpen;
-  }, [companion.panelOpen]);
+    const pose = drawnPoseRef.current;
+    poseFlightRef.current = pose && !reduceMotion ? { from: pose.point, fromScale: pose.scale, fromChrome: pose.chrome, start: performance.now() } : null;
+    // The glide between spots would run on top of the flight: the flight owns it.
+    glideRef.current = null;
+  }, [companion.panelOpen, reduceMotion]);
   const visibleRef = useRef(visible);
   const touringRef = useRef(touring);
   useLayoutEffect(() => {
@@ -306,7 +322,9 @@ export default function GuideCompanion() {
       const hero = isHome ? cachedNode<HTMLElement>("hero", () => document.querySelector<HTMLElement>("[data-guide-hero-avatar]")) : null;
       // The socket's layout box, never a transformed one (the intro moves its wrapper).
       const heroBox = hero ? heroLayoutRect(hero) : undefined;
-      const heroHere = Boolean(hero && heroBox && heroBox.width > 0) && !isMobileRef.current && !touringRef.current;
+      // With the full conversation open, Nex sits in the corner beside it
+      // (the hero's socket shows its still drawing until it comes back).
+      const heroHere = Boolean(hero && heroBox && heroBox.width > 0) && !isMobileRef.current && !touringRef.current && !panelOpenRef.current;
       const markInHero = (next: boolean) => {
         if (next === inHeroRef.current) return;
         inHeroRef.current = next;
@@ -517,6 +535,21 @@ export default function GuideCompanion() {
       }
 
       lastPointRef.current = ridePoint;
+      // The panel's flight, last of all: from the pose drawn before it opened
+      // or closed to this frame's pose, which keeps tracking the live layout.
+      const flight = poseFlightRef.current;
+      if (flight) {
+        const k = Math.min(1, (now - flight.start) / PANEL_FLIGHT_MS);
+        if (k >= 1) poseFlightRef.current = null;
+        else {
+          const hop = routeTravelFrame({ t: k, from: flight.from, to: point, fromScale: flight.fromScale, toScale: scale.get() });
+          point = hop.position;
+          scale.set(hop.scale);
+          chrome.set(flight.fromChrome + (chrome.get() - flight.fromChrome) * easeInOutCubic(k));
+          opacity.set(Math.max(opacity.get(), 1));
+        }
+      }
+      drawnPoseRef.current = { point, scale: scale.get(), chrome: chrome.get() };
       posX.set(Math.round(point.x * 2) / 2);
       posY.set(Math.round(point.y * 2) / 2);
       if (opacity.get() > 0.5) lastDrawn = { point, scale: scale.get(), chrome: chrome.get(), at: performance.now(), path: pathname };
@@ -559,15 +592,20 @@ export default function GuideCompanion() {
     return () => observer.disconnect();
   }, [lowPower]);
 
-  // Tells the page Nex is in the hero's socket (its still drawing hides).
+  // Tells the page the live Nex is drawn on desktop, so the hero socket's
+  // still stand-in steps aside for good. The live Nex is the only face on the
+  // page from then on (in the socket, on its way, or elsewhere); the still
+  // one was showing beside it while it hopped in from another page.
   useEffect(() => {
     const root = document.documentElement;
-    if (inHero && (drawn || lowPower)) root.dataset.nexInHero = "";
+    // (While the full conversation is open Nex waits in the corner, and the
+    // socket shows its still drawing again rather than an empty ring.)
+    if (!isMobile && !companion.panelOpen && !touring && (drawn || lowPower)) root.dataset.nexInHero = "";
     else delete root.dataset.nexInHero;
     return () => {
       delete root.dataset.nexInHero;
     };
-  }, [drawn, inHero, lowPower]);
+  }, [companion.panelOpen, drawn, isMobile, lowPower, touring]);
 
   // Tips: after a short dwell on a section, offer its one-liner. The policy
   // decides whether one may show (budget, cooldown, nothing else open).
