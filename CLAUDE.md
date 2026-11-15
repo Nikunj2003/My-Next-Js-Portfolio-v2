@@ -115,6 +115,7 @@ The contact form is split cleanly between client validation and server delivery.
 - Reusable low-level primitives are in `src/components/ui/`; prefer extending those before creating new base components.
 - The site relies heavily on Tailwind utility classes plus a few shared helpers like `cn()` from `src/lib/utils.ts`.
 - Motion and reduced-motion support are already wired into key components; preserve that behavior when editing animated UI.
+- Only the hero animates in. Its entrance is CSS (`.hero-*` classes and keyframes under "Hero entrance" in `globals.css`), timed per element with `--hero-d` from one list in `HeroSection.tsx`, so it plays from the first paint without waiting for hydration and is off under reduced motion. Glass surfaces (backdrop blur) are clip-wiped in, never faded: an ancestor below full opacity flattens the blur. Other sections have no scroll entrance animations (`tests/reveal-motion.test.ts`).
 
 ## Environment variables
 

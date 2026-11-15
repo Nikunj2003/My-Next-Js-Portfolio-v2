@@ -27,12 +27,19 @@ test("no scroll-triggered entrance animations outside the hero", () => {
   }
 });
 
-test("the hero's staggered items do not fade", () => {
-  // The availability badge is a glass pill, so the hero's shared `item` variant
-  // is subject to the same rule.
-  const source = readFileSync("src/components/HeroSection.tsx", "utf8");
-  const variant = source.slice(source.indexOf("const item = {"), source.indexOf("return (", source.indexOf("const item = {")));
-
-  assert.ok(variant.length > 0, "expected to find the hero item variant");
-  assert.doesNotMatch(variant, /opacity:\s*0/, "hero items must not fade; one is a glass pill");
+test("the hero's entrance is CSS, and glass surfaces are wiped in, never faded", () => {
+  const hero = readFileSync("src/components/HeroSection.tsx", "utf8");
+  const avatar = readFileSync("src/components/guide/GuideHeroAvatar.tsx", "utf8");
+  const css = readFileSync("src/app/globals.css", "utf8");
+  // Plays from the first paint, before hydration: no framer-motion entrance.
+  assert.doesNotMatch(hero, /initial=|variants=/);
+  // Glass pills (backdrop blur) render flat while an ancestor's opacity < 1,
+  // so they are clipped in. Checked on each glass element of the hero.
+  assert.match(hero, /hero-wipe inline-flex[^"]*glass-subtle/, "the badge wipes in");
+  assert.match(hero, /hero-wipe-up btn-cta-secondary/, "the glass Resume button wipes in");
+  assert.match(avatar, /hero-chip-in/, "the glass orbit chips open out");
+  assert.match(avatar, /hero-wipe-up flex flex-wrap/, "the glass ask pill wipes in");
+  assert.doesNotMatch(hero, /data-guide-hero-column[^>]*hero-(fade|avatar)/, "the column holding glass chips never fades");
+  // Off under reduced motion.
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.hero-rise,/);
 });

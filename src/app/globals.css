@@ -444,3 +444,95 @@ textarea,
     animation: none;
   }
 }
+
+/* ------------------------------------------------------------------------ */
+/* Hero entrance                                                             */
+/* ------------------------------------------------------------------------ */
+/*
+ * The only entrance on the site. Plain CSS, so it plays from the first paint
+ * without waiting for JavaScript, and is done by about 1.4s. Each element sets
+ * its start with `--hero-d`.
+ *
+ * Glass surfaces (backdrop blur) are revealed with a clip wipe, never an
+ * opacity fade: an element, or any ancestor, below full opacity becomes a
+ * backdrop root, so its blur renders flat until the fade ends. Plain text and
+ * buttons fade.
+ */
+@layer components {
+  .hero-mask {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: bottom;
+    /* Room for descenders (the j in the name), taken back so layout is unchanged. */
+    padding-bottom: 0.14em;
+    margin-bottom: -0.14em;
+  }
+  .hero-rise,
+  .hero-fade-up,
+  .hero-wipe,
+  .hero-wipe-up,
+  .hero-avatar-in,
+  .hero-glow-in,
+  .hero-chip-in,
+  .hero-backdrop-in {
+    animation-duration: var(--hero-t, 700ms);
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    animation-fill-mode: both;
+    animation-delay: var(--hero-d, 0ms);
+  }
+  .hero-rise { display: inline-block; animation-name: hero-rise; --hero-t: 900ms; }
+  .hero-fade-up { animation-name: hero-fade-up; }
+  .hero-wipe { animation-name: hero-wipe; --hero-t: 650ms; }
+  .hero-wipe-up { animation-name: hero-wipe-up; --hero-t: 650ms; }
+  .hero-avatar-in { animation-name: hero-avatar-in; --hero-t: 1100ms; }
+  .hero-glow-in { animation-name: hero-glow-in; --hero-t: 1400ms; }
+  .hero-chip-in { animation-name: hero-chip-in; --hero-t: 550ms; }
+  .hero-backdrop-in { animation-name: hero-backdrop-in; --hero-t: 1400ms; animation-timing-function: ease-out; }
+}
+
+@keyframes hero-rise {
+  from { transform: translateY(108%); }
+  to { transform: none; }
+}
+@keyframes hero-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes hero-wipe {
+  from { clip-path: inset(0 100% 0 0 round 9999px); }
+  to { clip-path: inset(0 0 0 0 round 9999px); }
+}
+@keyframes hero-wipe-up {
+  from { clip-path: inset(100% 0 0 0 round 9999px); transform: translateY(8px); }
+  to { clip-path: inset(0 0 0 0 round 9999px); transform: none; }
+}
+@keyframes hero-avatar-in {
+  from { opacity: 0; transform: translateY(18px) scale(0.9); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes hero-glow-in {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: none; }
+}
+/* Chips carry their own position in `transform`, so they only unclip. */
+@keyframes hero-chip-in {
+  from { clip-path: circle(0% at 50% 50%); }
+  to { clip-path: circle(75% at 50% 50%); }
+}
+@keyframes hero-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-rise,
+  .hero-fade-up,
+  .hero-wipe,
+  .hero-wipe-up,
+  .hero-avatar-in,
+  .hero-glow-in,
+  .hero-chip-in,
+  .hero-backdrop-in {
+    animation: none;
+  }
+}

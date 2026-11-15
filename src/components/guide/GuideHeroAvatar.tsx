@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Compass, MessageCircle } from "lucide-react";
 import { GuideAvatarSlot } from "@/components/guide/GuideAvatarSlot";
@@ -138,7 +138,7 @@ export function GuideHeroAvatar() {
       >
         {/* Orbit of proof chips */}
         <div className={`pointer-events-none absolute inset-0 z-10 transition-opacity duration-300 ${askOpen ? "opacity-0" : "opacity-100"}`}>
-          {ORBIT.map((chip) => {
+          {ORBIT.map((chip, index) => {
             const radians = (chip.angle * Math.PI) / 180;
             return (
               <a
@@ -146,8 +146,12 @@ export function GuideHeroAvatar() {
                 href={chip.href}
                 tabIndex={askOpen ? -1 : undefined}
                 // Hidden while the ask box is open: not clickable either.
-                className={`${askOpen ? "pointer-events-none" : "pointer-events-auto"} absolute left-1/2 top-1/2 rounded-full border border-primary/25 glass-subtle px-3 py-1 font-mono text-[11px] uppercase tracking-wider text-primary-text shadow-accent-soft transition-colors hover:border-primary/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
-                style={{ transform: `translate(-50%, -50%) translate(${Math.cos(radians) * 214}px, ${Math.sin(radians) * 186}px)` }}
+                className={`hero-chip-in ${askOpen ? "pointer-events-none" : "pointer-events-auto"} absolute left-1/2 top-1/2 rounded-full border border-primary/25 glass-subtle px-3 py-1 font-mono text-[11px] uppercase tracking-wider text-primary-text shadow-accent-soft transition-colors hover:border-primary/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
+                style={{
+                  transform: `translate(-50%, -50%) translate(${Math.cos(radians) * 214}px, ${Math.sin(radians) * 186}px)`,
+                  // Glass chips open out from their centre, one after another, once the face is in.
+                  "--hero-d": `${900 + index * 80}ms`,
+                } as CSSProperties}
               >
                 {chip.label}
               </a>
@@ -170,17 +174,22 @@ export function GuideHeroAvatar() {
           aria-label="Nikunj's AI Twin avatar. Activate for a reaction."
           className="group relative flex cursor-pointer items-center justify-center rounded-full p-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
-          {/* Glow and a slow ring, static under reduced motion */}
-          <span aria-hidden="true" className="pointer-events-none absolute inset-[-12%] rounded-full bg-[radial-gradient(circle,hsl(var(--primary)/0.24)_0%,transparent_66%)]" />
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-2 rounded-full border border-dashed border-primary/25 motion-safe:animate-[spin_40s_linear_infinite]"
-          />
-          <span aria-hidden="true" className="pointer-events-none absolute inset-10 rounded-full border border-primary/10 transition-colors group-hover:border-primary/30" />
+          {/* Entrance: the face rises in once the backdrop glow is up. On an
+              inner layer, so the companion's hand-off transform on the button
+              itself is untouched. */}
+          <span aria-hidden="true" className="hero-avatar-in pointer-events-none absolute inset-0" style={{ "--hero-d": "380ms" } as CSSProperties}>
+            <span className="absolute inset-[-12%] rounded-full bg-[radial-gradient(circle,hsl(var(--primary)/0.24)_0%,transparent_66%)]" />
+            {/* A slow ring, static under reduced motion */}
+            <span className="absolute inset-2 rounded-full border border-dashed border-primary/25 motion-safe:animate-[spin_40s_linear_infinite]" />
+            <span className="absolute inset-10 rounded-full border border-primary/10 transition-colors group-hover:border-primary/30" />
+          </span>
+
           {/* Paused once the companion has taken over (it sits at opacity 0 then, which the
               library's own offscreen check still counts as visible) and below lg, where
               the hero column is display:none. */}
-          <GuideAvatarSlot size={300} followPointer settleAfterMs={10_000} paused={isMobile || handedOff} />
+          <span className="hero-avatar-in relative inline-flex" style={{ "--hero-d": "380ms" } as CSSProperties}>
+            <GuideAvatarSlot size={300} followPointer settleAfterMs={10_000} paused={isMobile || handedOff} />
+          </span>
         </button>
       </motion.div>
 
@@ -196,7 +205,7 @@ export function GuideHeroAvatar() {
       {/* What it says goes here, between the avatar and its buttons: a fixed
           slot, so the face is never covered and nothing shifts when it talks.
           At rest it shows the status line. */}
-      <div className="relative flex h-14 w-[min(24rem,80vw)] items-center justify-center">
+      <div className="hero-fade-up relative flex h-14 w-[min(24rem,80vw)] items-center justify-center" style={{ "--hero-d": "1000ms" } as CSSProperties}>
         <AnimatePresence mode="wait" initial={false}>
           {line ? (
             <motion.p
@@ -230,7 +239,8 @@ export function GuideHeroAvatar() {
       </div>
 
       <div className="flex flex-col items-center gap-3">
-        <div className="flex flex-wrap items-center justify-center gap-2">
+        {/* Glass pill: wiped up, not faded. */}
+        <div className="hero-wipe-up flex flex-wrap items-center justify-center gap-2" style={{ "--hero-d": "1080ms" } as CSSProperties}>
           <button
             type="button"
             onClick={() => openAiTwin("")}

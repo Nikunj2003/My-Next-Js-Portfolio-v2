@@ -243,8 +243,11 @@ export default function GuideCompanion() {
       // Once settled, the companion simply appears at its spot (or stays
       // hidden over the hero); the hand-off only ever plays from real scrolling.
       if (!settledRef.current) {
+        // The hero's entrance (CSS, see globals.css) has played: no animation is
+        // still running on the hero column. (It used to fade the whole column,
+        // and this waited for its opacity.)
         const column = hero?.closest<HTMLElement>("[data-guide-hero-column]");
-        const columnShown = !column || Number(getComputedStyle(column).opacity) >= 0.99;
+        const columnShown = !column || column.getAnimations({ subtree: true }).every((a) => !(a instanceof CSSAnimation) || !a.animationName.startsWith("hero-") || a.playState === "finished");
         if (now - mountedAtRef.current > SETTLE_MS && columnShown) {
           settledRef.current = true;
           // Decide who is the guide from the settled page, before anything is drawn.
