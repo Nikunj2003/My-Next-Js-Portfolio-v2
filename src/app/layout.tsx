@@ -93,7 +93,15 @@ export default function RootLayout({
                   var shouldUseDark = storedTheme ? storedTheme === 'dark' : prefersDark;
 
                   root.classList.toggle('dark', shouldUseDark);
+                  root.classList.add('js');
+                  // The hero entrance plays once per tab, on a fresh visit at
+                  // the top: not on a reload, a deep link, or a return visit.
+                  var nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+                  var seen = sessionStorage.getItem('hero-intro-seen');
+                  if (location.hash || (nav && nav.type === 'reload') || seen) root.dataset.heroIntro = 'skip';
+                  sessionStorage.setItem('hero-intro-seen', '1');
                 } catch(e) {
+                  document.documentElement.classList.add('js');
                   document.documentElement.classList.toggle(
                     'dark',
                     window.matchMedia('(prefers-color-scheme: dark)').matches

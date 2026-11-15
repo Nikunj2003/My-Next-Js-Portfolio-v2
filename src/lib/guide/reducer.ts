@@ -129,6 +129,11 @@ export function reduceGuide(model: GuideModel, event: GuideEvent): GuideModel {
         event.retryable ? RETRYABLE_ERROR : FAILED,
         TRANSIENT_MS.error,
       );
+    case "intro/wake":
+      // Opens its eyes, happy, then a small nod as it settles. Only from rest:
+      // never over a chat or the tour.
+      if (isBusy(model) || model.transient) return model;
+      return withPoke(withTransient({ ...model, now: event.now }, WAKING, TRANSIENT_MS.waking), "nod");
     case "pet/click":
       return pet(model, event.now);
     case "page/hover":

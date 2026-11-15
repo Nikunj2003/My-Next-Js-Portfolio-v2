@@ -247,7 +247,10 @@ export default function GuideCompanion() {
         // still running on the hero column. (It used to fade the whole column,
         // and this waited for its opacity.)
         const column = hero?.closest<HTMLElement>("[data-guide-hero-column]");
-        const columnShown = !column || column.getAnimations({ subtree: true }).every((a) => !(a instanceof CSSAnimation) || !a.animationName.startsWith("hero-") || a.playState === "finished");
+        const awake = !hero || Boolean(hero.closest("[data-awake]"));
+        const columnShown =
+          !column ||
+          (awake && column.getAnimations({ subtree: true }).every((a) => !(a instanceof CSSAnimation) || !a.animationName.startsWith("hero-") || a.playState === "finished"));
         if (now - mountedAtRef.current > SETTLE_MS && columnShown) {
           settledRef.current = true;
           // Decide who is the guide from the settled page, before anything is drawn.

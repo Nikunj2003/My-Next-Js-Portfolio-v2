@@ -27,19 +27,33 @@ test("no scroll-triggered entrance animations outside the hero", () => {
   }
 });
 
-test("the hero's entrance is CSS, and glass surfaces are wiped in, never faded", () => {
+test("the hero's entrance is CSS, and glass and solid buttons are never shown translucent", () => {
   const hero = readFileSync("src/components/HeroSection.tsx", "utf8");
   const avatar = readFileSync("src/components/guide/GuideHeroAvatar.tsx", "utf8");
   const css = readFileSync("src/app/globals.css", "utf8");
-  // Plays from the first paint, before hydration: no framer-motion entrance.
-  assert.doesNotMatch(hero, /initial=|variants=/);
-  // Glass pills (backdrop blur) render flat while an ancestor's opacity < 1,
-  // so they are clipped in. Checked on each glass element of the hero.
-  assert.match(hero, /hero-wipe inline-flex[^"]*glass-subtle/, "the badge wipes in");
+  assert.doesNotMatch(hero, /initial=|variants=/, "plays from the first paint, not after hydration");
+  assert.match(hero, /hero-wipe inline-flex[^"]*glass-subtle/, "the glass badge wipes in");
   assert.match(hero, /hero-wipe-up btn-cta-secondary/, "the glass Resume button wipes in");
-  assert.match(avatar, /hero-chip-in/, "the glass orbit chips open out");
-  assert.match(avatar, /hero-wipe-up flex flex-wrap/, "the glass ask pill wipes in");
-  assert.doesNotMatch(hero, /data-guide-hero-column[^>]*hero-(fade|avatar)/, "the column holding glass chips never fades");
-  // Off under reduced motion.
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.hero-rise,/);
+  assert.match(hero, /hero-pop inline-flex[^"]*bg-primary/, "the solid CTA pops open, no opacity");
+  assert.doesNotMatch(css.slice(css.indexOf("@keyframes hero-pop"), css.indexOf("@keyframes hero-fade")), /opacity/);
+  assert.match(avatar, /className=\{`hero-chip /, "the glass chips burst out");
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.hero-anim/);
+  assert.match(css, /html\[data-hero-intro="skip"\]/, "skipped on reload and deep links");
+});
+
+test("the name keeps its space, and stats never read as a wrong number", () => {
+  const hero = readFileSync("src/components/HeroSection.tsx", "utf8");
+  // The space sits between the word masks, not inside one (it collapsed there).
+  assert.match(hero, /\{index > 0 \? " " : null\}\s*<span className="hero-mask">/);
+  // The figure's first text is its final value; counting starts from 60%.
+  assert.match(hero, /className="tabular-nums">\{value\}\{suffix\}<\/span>/);
+  assert.match(hero, /const COUNT_FROM = 0\.6;/);
+});
+
+test("the hero avatar appears alive: no still drawing before the live one", () => {
+  const slot = readFileSync("src/components/guide/GuideAvatarSlot.tsx", "utf8");
+  const avatar = readFileSync("src/components/guide/GuideHeroAvatar.tsx", "utf8");
+  assert.match(slot, /hero-still-nojs/, "the still drawing is only the no-JS picture");
+  assert.match(avatar, /<GuideAvatarSlot size=\{300\} intro onAwake=\{onAwake\}/);
+  assert.match(avatar, /emitGuide\(\{ type: "intro\/wake"/, "it wakes up as it appears");
 });

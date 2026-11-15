@@ -48,7 +48,23 @@ export function whenIdle(callback: () => void) {
  * Reserves the avatar's box and shows a static mark until the live avatar is
  * mounted on idle, so the avatar never costs initial-load JS or layout shift.
  */
-export function GuideAvatarSlot({ size, className, ...props }: GuideAvatarProps) {
+export function GuideAvatarSlot({
+  size,
+  className,
+  intro = false,
+  onAwake,
+  ...props
+}: GuideAvatarProps & {
+  /** Called once the avatar is ready to be seen (live drawn, or the still fallback). */
+  onAwake?: () => void;
+  /**
+   * The hero's entrance: the still drawing is never shown while the live
+   * avatar is on its way (it is the picture only without JavaScript, on
+   * low-power devices and under reduced motion). The slot gets `data-awake`
+   * once the live drawing exists, which starts the CSS wake-up animation.
+   */
+  intro?: boolean;
+}) {
   const [live, setLive] = useState(false);
   // The still drawing stays on screen until the live avatar has actually
   // drawn (its chunk loads asynchronously), then the two cross-fade. Swapping
@@ -56,10 +72,20 @@ export function GuideAvatarSlot({ size, className, ...props }: GuideAvatarProps)
   const [drawn, setDrawn] = useState(false);
   const liveRef = useRef<HTMLSpanElement>(null);
 
+  // With the intro the live avatar loads at once (it is the hero's main
+  // picture); otherwise it waits for idle time.
+  const [stillOnly, setStillOnly] = useState(false);
   useEffect(() => {
-    if (prefersStatic()) return;
+    if (prefersStatic()) {
+      if (intro) queueMicrotask(() => setStillOnly(true));
+      return;
+    }
+    if (intro) {
+      queueMicrotask(() => setLive(true));
+      return;
+    }
     return whenIdle(() => setLive(true));
-  }, []);
+  }, [intro]);
 
   useEffect(() => {
     const node = liveRef.current;
@@ -79,17 +105,35 @@ export function GuideAvatarSlot({ size, className, ...props }: GuideAvatarProps)
     return () => observer.disconnect();
   }, [live]);
 
+  // Intro: the still drawing shows only with no JavaScript (server HTML,
+  // hidden by the `js` class the theme script sets) or when the live avatar
+  // won't load here. Never as a placeholder that then swaps to the live one.
+  const awake = intro && (drawn || stillOnly);
+  useEffect(() => {
+    if (awake) onAwake?.();
+  }, [awake, onAwake]);
   return (
-    <span className={cn("relative inline-flex shrink-0 items-center justify-center", className)} style={{ width: size, height: size }}>
+    <span
+      className={cn("relative inline-flex shrink-0 items-center justify-center", className)}
+      style={{ width: size, height: size }}
+      data-awake={awake || undefined}
+    >
       <span
         aria-hidden="true"
-        className="absolute inset-0 flex items-center justify-center transition-opacity duration-300 motion-reduce:transition-none"
+        className={cn(
+          "absolute inset-0 flex items-center justify-center transition-opacity duration-300 motion-reduce:transition-none",
+          intro && !stillOnly && "hero-still-nojs"
+        )}
         style={{ opacity: drawn ? 0 : 1 }}
       >
         <StaticGuideMark size={size} />
       </span>
       {live && (
-        <span ref={liveRef} className="relative inline-flex transition-opacity duration-300 motion-reduce:transition-none" style={{ opacity: drawn ? 1 : 0 }}>
+        <span
+          ref={liveRef}
+          className={cn("relative inline-flex", !intro && "transition-opacity duration-300 motion-reduce:transition-none")}
+          style={{ opacity: drawn ? 1 : 0 }}
+        >
           <GuideAvatar size={size} {...props} />
         </span>
       )}

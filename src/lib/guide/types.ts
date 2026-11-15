@@ -49,6 +49,8 @@ export type GuideEvent =
   | { type: "tour/end"; completed: boolean }
   | { type: "guide/point"; pointAt: ViewportPoint | null }
   | { type: "availability"; available: boolean }
+  /** The hero avatar has just appeared on a fresh visit: it wakes up. `now` makes timing testable. */
+  | { type: "intro/wake"; now: number }
   | { type: "tick"; now: number };
 
 export type AvatarCue = { state: string; face?: string };

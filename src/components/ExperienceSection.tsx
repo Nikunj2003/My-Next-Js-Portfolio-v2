@@ -23,7 +23,6 @@ function TimelineIcon({
   lineProgress: MotionValue<number>;
 }) {
   const figureRef = useRef<HTMLElement>(null);
-  const shouldReduceMotion = useReducedMotion();
   const [fillWindow, setFillWindow] = useState({ start: 0, end: 1 });
 
   useEffect(() => {
@@ -65,7 +64,7 @@ function TimelineIcon({
       <svg viewBox="0 0 100 100" className="h-full w-full rotate-[-90deg]">
         <circle cx="50" cy="50" r="20" className="fill-background stroke-primary/20 stroke-1" />
         <motion.circle
-          style={{ pathLength: shouldReduceMotion ? 1 : pathLength }}
+          style={{ pathLength }}
           cx="50"
           cy="50"
           r="20"
@@ -75,7 +74,7 @@ function TimelineIcon({
           cx="50"
           cy="50"
           r="10"
-          style={{ opacity: shouldReduceMotion ? 1 : fillOpacity }}
+          style={{ opacity: fillOpacity }}
           className="fill-primary stroke-1"
         />
       </svg>
@@ -282,7 +281,9 @@ const ExperienceSection = () => {
             <div className="absolute bottom-0 left-[24px] top-0 w-[2px] rounded-full bg-foreground/10 sm:left-[44px]" />
 
             <motion.div
-              style={{ scaleY: shouldReduceMotion ? 1 : scrollYProgress }}
+              // Always the motion value (set to 1 under reduced motion): a
+              // client-only branch here rendered different HTML than the server.
+              style={{ scaleY: scrollYProgress }}
               className="absolute bottom-0 left-[24px] top-0 w-[2px] origin-top rounded-full bg-primary glow-accent-xs sm:left-[44px]"
             />
 

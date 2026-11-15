@@ -206,3 +206,13 @@ test("closing the chat with a draft typed ends 'typing' (it stayed Listening for
   assert.equal(model.phase, "closed");
   assert.equal(model.chatOpen, false);
 });
+
+test("the hero avatar wakes up on arrival, but never over a chat", () => {
+  const woke = reduceGuide(initialGuideModel, { type: "intro/wake", now: 1000 } as GuideEvent);
+  assert.equal(woke.transient?.state, "waking");
+  assert.equal(woke.poke?.kind, "nod");
+  let busy = reduceGuide(initialGuideModel, { type: "chat/open" } as GuideEvent);
+  busy = reduceGuide(busy, { type: "chat/send" } as GuideEvent);
+  const after = reduceGuide(busy, { type: "intro/wake", now: 2000 } as GuideEvent);
+  assert.equal(after, busy);
+});

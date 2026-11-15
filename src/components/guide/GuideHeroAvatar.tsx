@@ -87,6 +87,17 @@ export function GuideHeroAvatar() {
     return () => document.removeEventListener("keydown", onKey);
   }, [askOpen, closeAsk]);
   const reduceMotion = Boolean(useReducedMotion());
+  // The entrance: awake once the live avatar has drawn. It waits for the name
+  // on the left to have started (380ms after the page began), so the two
+  // halves of the hero arrive together however fast the avatar loads.
+  const [awake, setAwake] = useState(false);
+  const [wakeDelay, setWakeDelay] = useState(0);
+  const onAwake = useCallback(() => {
+    setWakeDelay(Math.max(0, Math.round(380 - performance.now())));
+    setAwake(true);
+    // It wakes up and looks at the visitor (the library's waking state).
+    if (document.documentElement.dataset.heroIntro !== "skip") emitGuide({ type: "intro/wake", now: Date.now() });
+  }, []);
   const [line, setLine] = useState<string | null>(null);
   const hideTimer = useRef<number | null>(null);
   const streakRef = useRef(0);
@@ -129,7 +140,17 @@ export function GuideHeroAvatar() {
   };
 
   return (
-    <div ref={rootRef} className="relative flex flex-col items-center gap-4" data-guide-target="hero-guide">
+    // `data-awake` (once the live avatar has drawn) starts the right column's
+    // entrance: the face rises out of a blur, waking up, then the chips burst
+    // out from it and the caption and buttons follow. `--hero-wake-d` holds it
+    // back until the name on the left has started, if the avatar is that fast.
+    <div
+      ref={rootRef}
+      className="relative flex flex-col items-center gap-4"
+      data-guide-target="hero-guide"
+      data-awake={awake || undefined}
+      style={{ "--hero-wake-d": `${wakeDelay}ms` } as CSSProperties}
+    >
       <motion.div
         className="relative"
         style={{ transformOrigin: "50% 0%" }}
@@ -141,20 +162,28 @@ export function GuideHeroAvatar() {
           {ORBIT.map((chip, index) => {
             const radians = (chip.angle * Math.PI) / 180;
             return (
-              <a
+              // The outer span holds the chip's resting place on the orbit; the
+              // chip travels there from the avatar's centre (`--hero-cx/cy` is
+              // the way back), opening out as it goes. Glass: never faded.
+              <span
                 key={chip.label}
-                href={chip.href}
-                tabIndex={askOpen ? -1 : undefined}
-                // Hidden while the ask box is open: not clickable either.
-                className={`hero-chip-in ${askOpen ? "pointer-events-none" : "pointer-events-auto"} absolute left-1/2 top-1/2 rounded-full border border-primary/25 glass-subtle px-3 py-1 font-mono text-[11px] uppercase tracking-wider text-primary-text shadow-accent-soft transition-colors hover:border-primary/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
-                style={{
-                  transform: `translate(-50%, -50%) translate(${Math.cos(radians) * 214}px, ${Math.sin(radians) * 186}px)`,
-                  // Glass chips open out from their centre, one after another, once the face is in.
-                  "--hero-d": `${900 + index * 80}ms`,
-                } as CSSProperties}
+                className="absolute left-1/2 top-1/2"
+                style={{ transform: `translate(-50%, -50%) translate(${Math.cos(radians) * 214}px, ${Math.sin(radians) * 186}px)` }}
               >
-                {chip.label}
-              </a>
+                <a
+                  href={chip.href}
+                  tabIndex={askOpen ? -1 : undefined}
+                  // Hidden while the ask box is open: not clickable either.
+                  className={`hero-chip ${askOpen ? "pointer-events-none" : "pointer-events-auto"} block rounded-full border border-primary/25 glass-subtle px-3 py-1 font-mono text-[11px] uppercase tracking-wider text-primary-text shadow-accent-soft transition-colors hover:border-primary/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
+                  style={{
+                    "--hero-cx": `${Math.round(-Math.cos(radians) * 214)}px`,
+                    "--hero-cy": `${Math.round(-Math.sin(radians) * 186)}px`,
+                    "--hero-chip-d": `${520 + index * 70}ms`,
+                  } as CSSProperties}
+                >
+                  {chip.label}
+                </a>
+              </span>
             );
           })}
         </div>
@@ -174,10 +203,9 @@ export function GuideHeroAvatar() {
           aria-label="Nikunj's AI Twin avatar. Activate for a reaction."
           className="group relative flex cursor-pointer items-center justify-center rounded-full p-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
-          {/* Entrance: the face rises in once the backdrop glow is up. On an
-              inner layer, so the companion's hand-off transform on the button
-              itself is untouched. */}
-          <span aria-hidden="true" className="hero-avatar-in pointer-events-none absolute inset-0" style={{ "--hero-d": "380ms" } as CSSProperties}>
+          {/* The rings wake with the face. On inner layers, so the companion's
+              hand-off transform on the button itself is untouched. */}
+          <span aria-hidden="true" className="hero-avatar-wake pointer-events-none absolute inset-0">
             <span className="absolute inset-[-12%] rounded-full bg-[radial-gradient(circle,hsl(var(--primary)/0.24)_0%,transparent_66%)]" />
             {/* A slow ring, static under reduced motion */}
             <span className="absolute inset-2 rounded-full border border-dashed border-primary/25 motion-safe:animate-[spin_40s_linear_infinite]" />
@@ -187,8 +215,8 @@ export function GuideHeroAvatar() {
           {/* Paused once the companion has taken over (it sits at opacity 0 then, which the
               library's own offscreen check still counts as visible) and below lg, where
               the hero column is display:none. */}
-          <span className="hero-avatar-in relative inline-flex" style={{ "--hero-d": "380ms" } as CSSProperties}>
-            <GuideAvatarSlot size={300} followPointer settleAfterMs={10_000} paused={isMobile || handedOff} />
+          <span className="hero-avatar-wake relative inline-flex">
+            <GuideAvatarSlot size={300} intro onAwake={onAwake} followPointer settleAfterMs={10_000} paused={isMobile || handedOff} />
           </span>
         </button>
       </motion.div>
@@ -205,7 +233,7 @@ export function GuideHeroAvatar() {
       {/* What it says goes here, between the avatar and its buttons: a fixed
           slot, so the face is never covered and nothing shifts when it talks.
           At rest it shows the status line. */}
-      <div className="hero-fade-up relative flex h-14 w-[min(24rem,80vw)] items-center justify-center" style={{ "--hero-d": "1000ms" } as CSSProperties}>
+      <div className="hero-after-wake relative flex h-14 w-[min(24rem,80vw)] items-center justify-center" style={{ "--hero-after-d": "640ms" } as CSSProperties}>
         <AnimatePresence mode="wait" initial={false}>
           {line ? (
             <motion.p
@@ -240,7 +268,7 @@ export function GuideHeroAvatar() {
 
       <div className="flex flex-col items-center gap-3">
         {/* Glass pill: wiped up, not faded. */}
-        <div className="hero-wipe-up flex flex-wrap items-center justify-center gap-2" style={{ "--hero-d": "1080ms" } as CSSProperties}>
+        <div className="hero-after-wake flex flex-wrap items-center justify-center gap-2" style={{ "--hero-after-d": "720ms", "--hero-after": "hero-wipe-up" } as CSSProperties}>
           <button
             type="button"
             onClick={() => openAiTwin("")}
