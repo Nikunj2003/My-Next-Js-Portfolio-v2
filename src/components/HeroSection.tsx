@@ -50,7 +50,7 @@ const HeroSection = () => {
       <HeroRestOffset />
       {/* Its top offset holds it centred at rest; opening things below never moves it up. */}
       <div data-hero-content className="container-narrow relative z-10 mt-[var(--hero-rest,0px)] flex w-full flex-col items-center text-center">
-        <p data-hero-part="copy" data-hero-glass className="inline-flex items-center gap-2 rounded-full border border-foreground/10 glass-subtle px-4 py-1.5 text-sm leading-6 text-muted-foreground shadow-accent-soft">
+        <p data-hero-part="copy" data-hero-glass className="hero-availability inline-flex items-center gap-2 rounded-full border border-foreground/10 glass-subtle px-4 py-1.5 text-sm leading-6 text-muted-foreground shadow-accent-soft">
           <span aria-hidden="true" className="h-2 w-2 rounded-full bg-primary motion-safe:animate-pulse" />
           Available for new opportunities
         </p>
@@ -71,10 +71,10 @@ const HeroSection = () => {
             instead of being covered. */}
         <HeroAskHost />
 
-        <p data-hero-part="copy" className="mt-[var(--hero-gap)] text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem]">
+        <p data-hero-part="copy" className="hero-role mt-[var(--hero-gap)] text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem]">
           {personalInfo.role}
         </p>
-        <p data-hero-part="copy" className="mt-3 max-w-[38rem] text-base leading-relaxed text-muted-foreground sm:text-[1.0625rem]" style={{ textWrap: "pretty" }}>
+        <p data-hero-part="copy" className="hero-tagline mt-3 max-w-[38rem] text-base leading-relaxed text-muted-foreground sm:text-[1.0625rem]" style={{ textWrap: "pretty" }}>
           {personalInfo.tagline}
         </p>
 

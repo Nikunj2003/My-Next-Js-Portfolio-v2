@@ -207,7 +207,7 @@ export function HeroAskHost() {
           >
             {/* A reserved two-line band: greetings, reactions and the status
                 line all use it, so nothing below moves when Nex talks. */}
-            <p aria-live="off" className="flex min-h-10 max-w-[30rem] items-center justify-center rounded-full border border-foreground/10 glass-subtle px-4 py-1.5 text-sm leading-[1.375rem] text-muted-foreground shadow-accent-soft" style={{ textWrap: "balance" }}>
+            <p aria-live="off" className="hero-caption flex min-h-10 max-w-[30rem] items-center justify-center rounded-full border border-foreground/10 glass-subtle px-4 py-1.5 text-sm leading-[1.375rem] text-muted-foreground shadow-accent-soft" style={{ textWrap: "balance" }}>
               {line ?? (
                 <span className="inline-flex items-center gap-2">
                   <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-emerald-500 motion-safe:animate-pulse" />
@@ -215,7 +215,7 @@ export function HeroAskHost() {
                 </span>
               )}
             </p>
-            <ul className="mt-1 flex flex-wrap justify-center gap-x-5 gap-y-1">
+            <ul className="hero-proof-links mt-1 flex flex-wrap justify-center gap-x-5 gap-y-1">
               {PROOF_LINKS.map((link) => (
                 <li key={link.label}>
                   <Link
