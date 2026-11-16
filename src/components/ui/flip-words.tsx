@@ -65,7 +65,12 @@ const FlipWords = ({ words, interval = 3000, className, variant = "slot", slotWi
       ref={ref}
       className={cn(
         "relative overflow-hidden",
-        isSlot ? "inline-grid text-center align-baseline" : "inline-block text-left",
+        // A grid in both variants: the leaving word and the arriving one share
+        // one cell, so the box keeps its size while they swap. In "line" mode
+        // the leaving word used to go `position: absolute`, which collapsed
+        // the line for a frame every flip; the panel around it shrank and grew
+        // back, and the guide resting under that panel jumped with it.
+        isSlot ? "inline-grid text-center align-baseline" : "inline-grid text-left",
         className
       )}
       style={isSlot ? { width: `${widthCh}ch` } : undefined}
@@ -83,10 +88,10 @@ const FlipWords = ({ words, interval = 3000, className, variant = "slot", slotWi
           exit={
             shouldReduceMotion
               ? { opacity: 0 }
-              : { opacity: 0, y: -40, x: 40, filter: "blur(8px)", scale: 2, position: "absolute" }
+              : { opacity: 0, y: -40, x: 40, filter: "blur(8px)", scale: 2 }
           }
           aria-hidden="true"
-          className={cn("inline-block", isSlot ? "col-start-1 row-start-1" : "relative text-left")}
+          className={cn("col-start-1 row-start-1 inline-block", isSlot ? "" : "text-left")}
         >
           {current.split("").map((letter, letterIndex) => (
             <motion.span
