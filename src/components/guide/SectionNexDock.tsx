@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, MessageCircle, X } from "lucide-react";
 import { NexRing } from "@/components/guide/NexRing";
 import { type SectionHostId } from "@/lib/guide/ask-hosts";
-import { dispatchCompanion, openAsk, openRoleFit, useCompanionState } from "@/lib/guide/companion-store";
+import { dispatchCompanion, openAsk, openRoleFit, useCompanionSelector } from "@/lib/guide/companion-store";
 import { useSpoken } from "@/lib/guide/spoken";
 import { DOCK_PROMPTS, TIP_RULES } from "@/lib/guide/tips";
 
@@ -33,14 +33,15 @@ export function SectionNexDock({ section, layout = "row", eyebrow, className = "
   eyebrow?: React.ReactNode;
   className?: string;
 }) {
-  const companion = useCompanionState();
-  const spoken = useSpoken();
+  // Selected values only: the loop updates the store as the visitor scrolls,
+  // and a dock re-renders only when what it shows changes.
   const host = `section:${section}` as const;
-  const here = companion.dockSection === section;
-  const tip = here && companion.bubble === "tip" && companion.tip?.section === section ? companion.tip.text : null;
+  const here = useCompanionSelector((s) => s.dockSection === section);
+  const tip = useCompanionSelector((s) => (s.dockSection === section && s.bubble === "tip" && s.tip?.section === section ? s.tip.text : null));
+  const askOpen = useCompanionSelector((s) => s.bubble === "ask");
+  const openHere = useCompanionSelector((s) => s.bubble === "ask" && s.askHost === host);
+  const spoken = useSpoken();
   const line = tip ?? (here ? spoken : null) ?? DOCK_PROMPTS[section];
-  const askOpen = companion.bubble === "ask";
-  const openHere = askOpen && companion.askHost === host;
   const ask = () => (section === "contact" && !askOpen ? openRoleFit(host) : openAsk(undefined, host));
 
   const socket = (

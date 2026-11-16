@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { useCompanionState } from "@/lib/guide/companion-store";
+import { useCompanionSelector } from "@/lib/guide/companion-store";
 
 const NexChat = dynamic(() => import("@/components/NexChat"), { ssr: false });
 
@@ -12,7 +12,7 @@ const NexChat = dynamic(() => import("@/components/NexChat"), { ssr: false });
  * state and its exit animation.
  */
 export default function NexChatMount() {
-  const { panelOpen } = useCompanionState();
+  const panelOpen = useCompanionSelector((s) => s.panelOpen);
   const [wanted, setWanted] = useState(panelOpen);
   if (panelOpen && !wanted) setWanted(true);
   return wanted ? <NexChat /> : null;

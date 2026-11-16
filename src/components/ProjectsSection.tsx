@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
 import { useInView } from "react-intersection-observer";
 import { ArrowRight, ExternalLink, Github, Maximize2 } from "lucide-react";
@@ -45,6 +45,35 @@ const PROJECT_IMAGE_SIZES = "(min-width: 1536px) 42rem, (min-width: 1024px) 40vw
  * `new Image()` prefetch downloaded the 1-2MB source PNGs on top of that.
  * Clicking opens the full-screen viewer.
  */
+/** True once the page has loaded and the browser has been idle (shared by every card). */
+let idleAfterLoad = false;
+const idleListeners = new Set<() => void>();
+if (typeof window !== "undefined") {
+  const mark = () => {
+    const done = () => {
+      idleAfterLoad = true;
+      idleListeners.forEach((listener) => listener());
+    };
+    const ric = (window as Window & { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback;
+    // A few seconds in, so it never competes with the hero's intro.
+    window.setTimeout(() => (ric ? ric(done, { timeout: 3000 }) : done()), 3500);
+  };
+  if (document.readyState === "complete") mark();
+  else window.addEventListener("load", mark, { once: true });
+}
+function useIdleAfterLoad() {
+  return useSyncExternalStore(
+    (listener) => {
+      idleListeners.add(listener);
+      return () => {
+        idleListeners.delete(listener);
+      };
+    },
+    () => idleAfterLoad,
+    () => false
+  );
+}
+
 function ProjectGallery({
   project,
   priority,
@@ -54,7 +83,13 @@ function ProjectGallery({
   priority: boolean;
   onOpenViewer: (project: Project, index: number) => void;
 }) {
-  const [mediaRef, mediaInView] = useInView({ triggerOnce: true, threshold: 0, rootMargin: "600px 0px" });
+  const [mediaRef, nearView] = useInView({ triggerOnce: true, threshold: 0, rootMargin: "600px 0px" });
+  // Set up once the browser is idle after load, not on the visitor's first
+  // approach: Embla measures layout when it starts, and the first screenshot
+  // decodes, which landed in the middle of the first scroll. Reaching it
+  // sooner still mounts it at once.
+  const idle = useIdleAfterLoad();
+  const mediaInView = nearView || idle;
   if (project.images.length === 0) {
     return (
       <div className="flex items-center justify-center border-t border-white/10 bg-black/30 p-6 font-mono text-sm text-muted-foreground lg:w-[58%] lg:border-l lg:border-t-0">

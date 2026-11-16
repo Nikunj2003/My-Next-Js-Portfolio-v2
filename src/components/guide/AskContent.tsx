@@ -13,7 +13,7 @@ import { useNexChat } from "@/lib/chat/useNexChat";
 import { runGuideAction } from "@/lib/guide/actions";
 import { SECTION_CHIPS } from "@/lib/guide/anchors";
 import { emitGuide } from "@/lib/guide/bus";
-import { dispatchCompanion, getAskDraft, setAskDraft, takeComposerMode, takePendingQuestion, useCompanionState } from "@/lib/guide/companion-store";
+import { dispatchCompanion, getAskDraft, setAskDraft, takeComposerMode, takePendingQuestion, useCompanionSelector } from "@/lib/guide/companion-store";
 import { MAX_ROLE_LENGTH, roleFitQuestion } from "@/lib/chat/role-fit";
 import { startGuideTour } from "@/lib/guide/tour-control";
 import { useChatAvailability } from "@/hooks/useChatAvailability";
@@ -127,7 +127,7 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
   // Send a queued question ("Ask about this", the command palette): on open,
   // and whenever a new one arrives while the bubble is already up. Taken only
   // once the chat is free, so it is never dropped.
-  const { pendingQuestion } = useCompanionState();
+  const pendingQuestion = useCompanionSelector((s) => s.pendingQuestion);
   useEffect(() => {
     if (!pendingQuestion || isLoading) return;
     // Deferred a tick: sending updates the chat store and this input.

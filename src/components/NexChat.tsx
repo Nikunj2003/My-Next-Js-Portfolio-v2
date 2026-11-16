@@ -19,7 +19,7 @@ import { useLenisLock } from "@/hooks/useLenisLock";
 import { scrollToHash } from "@/lib/scroll";
 import { runGuideAction } from "@/lib/guide/actions";
 import { emitGuide } from "@/lib/guide/bus";
-import { closePanel, openPanel, takePendingQuestion, useCompanionState } from "@/lib/guide/companion-store";
+import { closePanel, openPanel, takePendingQuestion, useCompanionSelector } from "@/lib/guide/companion-store";
 import { cn } from "@/lib/utils";
 
 const messageSelector = (id: string) => `[data-message-id="${id}"]`;
@@ -40,7 +40,7 @@ const FOCUSABLE_SELECTOR =
  * "Open full conversation" or by `openNex(..., { expand: true })`.
  */
 const NexChat = () => {
-  const { panelOpen: isOpen } = useCompanionState();
+  const isOpen = useCompanionSelector((s) => s.panelOpen);
 
   const isMobile = useIsMobile();
 
@@ -246,7 +246,7 @@ const NexChat = () => {
 
   // A question asked elsewhere while the panel is open ("Ask about this", the
   // palette) is queued in the companion store; send it once the chat is free.
-  const { pendingQuestion } = useCompanionState();
+  const pendingQuestion = useCompanionSelector((s) => s.pendingQuestion);
   useEffect(() => {
     if (!isOpen || !pendingQuestion || isLoading) return;
     const timer = window.setTimeout(() => {

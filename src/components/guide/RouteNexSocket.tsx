@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, MessageCircle } from "lucide-react";
 import { useSpoken } from "@/lib/guide/spoken";
-import { openAsk, useCompanionState } from "@/lib/guide/companion-store";
+import { openAsk, useCompanionSelector } from "@/lib/guide/companion-store";
 import { NexRing } from "@/components/guide/NexRing";
 
 /** The socket's diameter: Nex rests here drawn at this size. */
@@ -18,7 +18,11 @@ export const ROUTE_SOCKET = 120;
  */
 export function RouteNexSocket({ prompt }: { prompt: string }) {
   const line = useSpoken();
-  const companion = useCompanionState();
+  const companion = {
+    companionVisible: useCompanionSelector((s) => s.companionVisible),
+    bubble: useCompanionSelector((s) => s.bubble),
+    askHost: useCompanionSelector((s) => s.askHost),
+  };
   const text = companion.companionVisible ? line ?? prompt : "";
   return (
     <div className="hidden shrink-0 flex-col items-center gap-3 lg:flex" style={{ width: 15 * 16 }}>

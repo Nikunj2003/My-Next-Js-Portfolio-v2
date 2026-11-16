@@ -10,7 +10,8 @@ test("the intro plays on every load of the homepage at the top, and only there",
   assert.equal(shouldPlayIntro(base), true);
   assert.equal(shouldPlayIntro({ ...base, hash: "#work" }), false, "a link to a section");
   assert.equal(shouldPlayIntro({ ...base, scrollY: 400 }), false, "a reload that restores a scrolled position");
-  assert.equal(shouldPlayIntro({ ...base, width: 900 }), false, "the avatar column is hidden below 1024px");
+  assert.equal(shouldPlayIntro({ ...base, width: 390 }), true, "phones and tablets get the intro too");
+  assert.equal(shouldPlayIntro({ ...base, width: 300 }), false, "below the narrowest supported phone");
   assert.equal(shouldPlayIntro({ ...base, reducedMotion: true }), false);
   assert.equal(shouldPlayIntro({ ...base, path: "/work" }), false);
 });

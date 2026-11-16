@@ -76,12 +76,16 @@ export type IntroEnv = {
 };
 
 /**
- * Whether the intro plays: on every load of the homepage at the top, on a
- * wide screen (the avatar column is hidden below 1024px), with motion allowed.
+ * Whether the intro plays: on every load of the homepage at the top, at any
+ * width (below 1024px the name stacks around Nex and the arcs sweep in from
+ * the sides the same way), with motion allowed.
  * Not on a link to a section, nor a reload that restores a scrolled position.
  */
+/** Narrowest screen the intro plays on (a small phone). */
+export const INTRO_MIN_WIDTH = 320;
+
 export function shouldPlayIntro(env: IntroEnv) {
-  return env.path === "/" && !env.hash && env.scrollY <= 0 && env.width >= 1024 && !env.reducedMotion;
+  return env.path === "/" && !env.hash && env.scrollY <= 0 && env.width >= INTRO_MIN_WIDTH && !env.reducedMotion;
 }
 
 /**
@@ -96,7 +100,7 @@ export const PLAY_SCRIPT = `
     var nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
     var saved = Number(sessionStorage.getItem(key)) || 0;
     var restoring = nav && (nav.type === 'reload' || nav.type === 'back_forward') && history.scrollRestoration !== 'manual' && saved > 0;
-    if (location.pathname === '/' && !location.hash && window.scrollY <= 0 && !restoring && window.innerWidth >= 1024 &&
+    if (location.pathname === '/' && !location.hash && window.scrollY <= 0 && !restoring && window.innerWidth >= ${INTRO_MIN_WIDTH} &&
         !window.matchMedia('(prefers-reduced-motion: reduce)').matches) r.dataset.heroIntro = 'play';
     // A reload partway down: the browser paints the top of the page, then
     // restores the scroll a moment later, which flashed the hero. Hold the

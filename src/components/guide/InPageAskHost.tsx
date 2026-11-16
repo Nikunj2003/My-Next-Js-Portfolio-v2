@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion, type TargetAndTransition } from "framer-motion";
-import { AskContent } from "@/components/guide/AskContent";
+import { LazyAskContent as AskContent } from "@/components/guide/LazyAskContent";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { hostDomId, hostSection, type AskHost } from "@/lib/guide/ask-hosts";
-import { dispatchCompanion, openPanel, takeAskOpener, useCompanionState } from "@/lib/guide/companion-store";
+import { dispatchCompanion, openPanel, takeAskOpener, useCompanionSelector } from "@/lib/guide/companion-store";
 import { NAVBAR_CLEARANCE } from "@/lib/scroll";
 
 type Lenis = { scrollTo: (y: number, options?: object) => void };
@@ -19,10 +19,10 @@ type Lenis = { scrollTo: (y: number, options?: object) => void };
  *  - once laid out, it is brought into view with one scroll, never per token.
  */
 export function useInPageHost(host: AskHost, options: { fallbackFocus?: () => HTMLElement | null } = {}) {
-  const companion = useCompanionState();
   const isMobile = useIsMobile();
   const reduceMotion = Boolean(useReducedMotion());
-  const open = companion.bubble === "ask" && companion.askHost === host && !isMobile;
+  const openHere = useCompanionSelector((s) => s.bubble === "ask" && s.askHost === host);
+  const open = openHere && !isMobile;
   const openerRef = useRef<HTMLElement | null>(null);
   const hostRef = useRef<HTMLDivElement>(null);
   const { fallbackFocus } = options;
