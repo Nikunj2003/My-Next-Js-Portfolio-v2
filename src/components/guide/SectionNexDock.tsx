@@ -61,16 +61,18 @@ export function SectionNexDock({ section, layout = "row", eyebrow, className = "
     </button>
   );
 
+  // Centred under a header: the line (two lines reserved) above one fixed
+  // action row, so a tip coming or going never changes the header's height.
   const speech = (
-    <div className={"flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 " + (layout === "stack" ? "justify-center" : "")}>
-      <p aria-live="off" className={"min-w-0 text-[0.8125rem] leading-snug text-muted-foreground " + (layout === "stack" ? "text-center" : "")} style={{ textWrap: "balance" }}>
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.span key={line} className="block" initial={{ opacity: 0, y: -3 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.16 }}>
-            {line}
+    <div className="flex w-full max-w-md flex-col items-center gap-2">
+      <DockLine line={line} className="h-10 w-full text-center text-[0.8125rem] leading-5" />
+      <span className="relative flex h-8 items-center justify-center">
+        <AnimatePresence mode="popLayout" initial={false}>
+          <motion.span key={tip ? "tip" : "action"} className="flex items-center" initial={{ opacity: 0, y: -3 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+            {tip ? <DockTipActions section={section} /> : action}
           </motion.span>
         </AnimatePresence>
-      </p>
-      {tip ? <DockTipActions section={section} /> : action}
+      </span>
     </div>
   );
 
@@ -88,19 +90,36 @@ export function SectionNexDock({ section, layout = "row", eyebrow, className = "
     <div className={"flex items-center gap-4 " + className}>
       {socket}
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <div className="flex min-h-8 flex-wrap items-center justify-between gap-2">
+        {/* One row that never wraps: the label, then the action or, while a
+            tip shows, its two small controls in the same space. */}
+        <div className="flex h-8 items-center justify-between gap-2">
           {eyebrow}
-          {tip ? <DockTipActions section={section} /> : action}
+          <span className="relative flex h-8 shrink-0 items-center justify-end">
+            <AnimatePresence mode="popLayout" initial={false}>
+              <motion.span key={tip ? "tip" : "action"} className="flex items-center" initial={{ opacity: 0, y: -3 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+                {tip ? <DockTipActions section={section} compact /> : action}
+              </motion.span>
+            </AnimatePresence>
+          </span>
         </div>
-        <p aria-live="off" title={line} className="line-clamp-2 min-h-[2.25rem] text-[0.8125rem] leading-[1.125rem] text-muted-foreground">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.span key={line} initial={{ opacity: 0, y: -3 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.16 }}>
-              {line}
-            </motion.span>
-          </AnimatePresence>
-        </p>
+        {/* Two lines reserved: a tip is longer than the prompt, and the panel
+            must not change height when one comes or goes. */}
+        <DockLine line={line} className="h-9 text-[0.8125rem] leading-[1.125rem]" />
       </div>
     </div>
+  );
+}
+
+/** Nex's line in a dock: a fixed box, the text cross-fading inside it, vertically centred. */
+function DockLine({ line, className }: { line: string; className: string }) {
+  return (
+    <p aria-live="off" title={line} className={"flex items-center overflow-hidden text-muted-foreground " + className} style={{ textWrap: "balance" }}>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.span key={line} className="line-clamp-2 w-full" initial={{ opacity: 0, y: -3 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+          {line}
+        </motion.span>
+      </AnimatePresence>
+    </p>
   );
 }
 
@@ -109,7 +128,7 @@ export function SectionNexDock({ section, layout = "row", eyebrow, className = "
  * it goes after `showMs` unless hovered or focused, "Ask now" opens the
  * conversation here, and it can be dismissed or tips turned off.
  */
-function DockTipActions({ section }: { section: SectionHostId }) {
+function DockTipActions({ section, compact = false }: { section: SectionHostId; compact?: boolean }) {
   const [hovered, setHovered] = useState(false);
   useEffect(() => {
     if (hovered) return;
@@ -136,13 +155,13 @@ function DockTipActions({ section }: { section: SectionHostId }) {
       >
         Ask now <ArrowRight className="h-3 w-3" aria-hidden="true" />
       </button>
-      <button
+      {!compact && <button
         type="button"
         onClick={() => dispatchCompanion({ type: "tip/dismiss", forever: true })}
         className="min-h-8 text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         Don&apos;t show tips
-      </button>
+      </button>}
       <button
         type="button"
         onClick={() => dispatchCompanion({ type: "tip/dismiss", forever: false })}

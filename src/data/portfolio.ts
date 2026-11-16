@@ -358,6 +358,8 @@ export const chatSuggestions = [
   "Compare the MCP registry and the RAG layer",
   "What broke in production, and how did he fix it?",
   "Show me his strongest proof of ownership",
+  "What does Nex refuse to answer?",
+  "Which role is he looking for next?",
 ];
 
 /**

@@ -18,6 +18,7 @@ import { MAX_ROLE_LENGTH, roleFitQuestion } from "@/lib/chat/role-fit";
 import { startGuideTour } from "@/lib/guide/tour-control";
 import { useChatAvailability } from "@/hooks/useChatAvailability";
 import { NexRing } from "@/components/guide/NexRing";
+import { Collapse } from "@/components/ui/collapse";
 import { scrollToHash } from "@/lib/scroll";
 
 /** Matches the server's per-message limit (api/chat/route.ts). */
@@ -255,9 +256,12 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
         </div>
       )}
 
-      <div className="flex flex-col gap-3 border-t border-foreground/[0.07] px-4 py-3.5">
-        {chips.length > 0 && !isLoading && (
-          <div>
+      <div className="flex flex-col border-t border-foreground/[0.07] px-4 py-3.5">
+        {/* The rows above the composer ease in and out (chips come back when
+            an answer ends and go while one is coming), so nothing snaps. Each
+            carries its own bottom gap: a closed row takes no space at all. */}
+        <Collapse open={chips.length > 0 && !isLoading}>
+          <div className="pb-3">
             <p className="mb-2 text-xs text-muted-foreground">{exchange ? "Ask next" : "Try one"}</p>
             <div className="flex flex-wrap gap-2">
               {chips.map((chip) => (
@@ -274,8 +278,9 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
               ))}
             </div>
           </div>
-        )}
-        {activeSection === "contact" && !roleFit && !isLoading && (
+        </Collapse>
+        <Collapse open={activeSection === "contact" && !roleFit && !isLoading}>
+          <div className="pb-3">
           <button
             type="button"
             onClick={startRoleFit}
@@ -284,9 +289,13 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
             <Briefcase className="h-3.5 w-3.5" aria-hidden="true" />
             Check a role&apos;s fit
           </button>
-        )}
-        {roleFit && <p className="text-xs text-muted-foreground">Paste a role; Nex says how his work fits, gaps included. Nothing is sent to Nikunj.</p>}
-        {!exchange && activeSection !== "contact" && (
+          </div>
+        </Collapse>
+        <Collapse open={roleFit}>
+          <p className="pb-3 text-xs text-muted-foreground">Paste a role; Nex says how his work fits, gaps included. Nothing is sent to Nikunj.</p>
+        </Collapse>
+        <Collapse open={!exchange && activeSection !== "contact"}>
+          <div className="pb-3">
           <button
             type="button"
             onClick={() => {
@@ -298,7 +307,8 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
             <Compass className="h-3.5 w-3.5" aria-hidden="true" />
             Take the 60-second tour
           </button>
-        )}
+          </div>
+        </Collapse>
         <form
           className="flex items-center gap-1.5 rounded-full border border-foreground/10 bg-background/55 py-1 pl-4 pr-1 transition-colors focus-within:border-primary/45 focus-within:ring-2 focus-within:ring-primary/15"
           onSubmit={(event) => {

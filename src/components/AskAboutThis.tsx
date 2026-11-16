@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { InlineAnswer } from "@/components/ai/InlineAnswer";
+import { Collapse } from "@/components/ui/collapse";
 import { openNex } from "@/lib/ask-nex";
 import type { AskHost } from "@/lib/guide/ask-hosts";
 
@@ -80,7 +81,11 @@ export default function AskAboutThis({
         {label}
       </button>
 
-      {inline && open && <InlineAnswer question={question} onDismiss={() => setOpen(false)} />}
+      {inline && (
+        <Collapse open={open} as="span">
+          <InlineAnswer question={question} onDismiss={() => setOpen(false)} />
+        </Collapse>
+      )}
     </>
   );
 }
