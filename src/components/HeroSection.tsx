@@ -4,6 +4,7 @@ import Link from "next/link";
 import { personalInfo, stats } from "@/data/portfolio";
 import { GuideHeroAvatar, HeroAskHost } from "@/components/guide/GuideHeroAvatar";
 import { HeroIntro } from "@/components/HeroIntro";
+import { HeroRestOffset } from "@/components/HeroRestOffset";
 import { HeroActions } from "@/components/HeroAskButton";
 
 /**
@@ -34,7 +35,7 @@ const HeroSection = () => {
     <section
       ref={heroRef}
       id="hero"
-      className="relative flex min-h-[100svh] flex-col justify-center overflow-hidden pb-[calc(var(--hero-gap)*1.5)] pt-[calc(var(--nav-top)+var(--nav-height)+var(--hero-gap))]"
+      className="relative flex min-h-[100svh] flex-col overflow-hidden pb-[calc(var(--hero-gap)*1.5)] pt-[calc(var(--nav-top)+var(--nav-height)+var(--hero-gap))]"
     >
       <HeroIntro />
 
@@ -46,7 +47,9 @@ const HeroSection = () => {
       </div>
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-32 bg-gradient-to-t from-background to-transparent" />
 
-      <div className="container-narrow relative z-10 flex w-full flex-col items-center text-center">
+      <HeroRestOffset />
+      {/* Its top offset holds it centred at rest; opening things below never moves it up. */}
+      <div data-hero-content className="container-narrow relative z-10 mt-[var(--hero-rest,0px)] flex w-full flex-col items-center text-center">
         <p data-hero-part="copy" data-hero-glass className="inline-flex items-center gap-2 rounded-full border border-foreground/10 glass-subtle px-4 py-1.5 text-sm leading-6 text-muted-foreground shadow-accent-soft">
           <span aria-hidden="true" className="h-2 w-2 rounded-full bg-primary motion-safe:animate-pulse" />
           Available for new opportunities

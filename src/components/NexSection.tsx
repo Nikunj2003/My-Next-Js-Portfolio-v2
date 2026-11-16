@@ -49,7 +49,7 @@ const NexSection = () => {
     <section id="nex" className="section-padding relative z-10">
       <span id={LEGACY_SECTION_ID} aria-hidden="true" className="absolute top-0 block h-0 w-0" />
       <div className="container-narrow">
-        <div data-guide-spot="nex">
+        <div data-guide-spot="nex" data-guide-target="nex-card">
           <SpotlightCard className="w-full relative">
             <div className="relative p-6 sm:p-8 md:p-12 lg:p-16 flex flex-col lg:flex-row items-center gap-12 lg:gap-16 text-center lg:text-left">
               {/* Background Glow */}

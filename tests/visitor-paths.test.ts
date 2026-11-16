@@ -22,6 +22,8 @@ test("every path has steps that point at real sections and highlights", () => {
     for (const step of path.steps) {
       const section = step.href.replace(/^#/, "");
       assert.ok(section === "hero" || (SECTION_IDS as readonly string[]).includes(section), `${id}: ${step.href} is a homepage section`);
+      // Every stop rings its target, so the tour reads the same at each stop.
+      assert.ok(step.highlight, `${id}/${step.id}: every stop has a highlight`);
       if (step.highlight) {
         assert.ok(GUIDE_HIGHLIGHT_IDS.includes(step.highlight), `${id}: ${step.highlight} is an allowed highlight`);
         assert.match(allSource, new RegExp(`data-guide-target="${step.highlight}"`), `${id}: ${step.highlight} exists in the page`);
