@@ -37,8 +37,8 @@ an OpenAI-compatible LLM (`gpt-6-luna` through a self-hosted Bifrost gateway by 
   number would undercut it.
 - **Answers carry page components**: when a tool returns a metric, a case study or a comparison,
   the answer shows the matching card, validated against the site's own ids.
-- **Nex's own eval** (`npm run eval:nex`): a 30-question golden set with a deterministic scorer;
-  the published snapshot (date, model, result) is shown in the Nex section.
+- **Nex's own eval** (`npm run eval:nex`): a 30-question golden set with a deterministic scorer,
+  run as a development check.
 - **One Nex across the site**: a single animated guide sits in the hero between the two halves of
   the name, shrinks into the page as you scroll, rests in reserved sockets on `/work` and every case
   study, and lands in the footer's slot at the end of every page. The conversation opens in the page

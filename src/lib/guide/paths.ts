@@ -70,11 +70,11 @@ export const VISITOR_PATHS: Record<VisitorId, VisitorPath> = {
   engineer: {
     id: "engineer",
     label: "Engineer",
-    blurb: "Architecture, decisions and the eval behind Nex.",
+    blurb: "Architecture, decisions and how Nex works.",
     steps: [
       step("featured"),
       step("skills"),
-      { ...step("agent"), highlight: "nex-eval", line: "I'm a tool-calling agent over his work. My own eval run is published here, with its limits." },
+      { ...step("agent"), line: "I'm a tool-calling agent over his work. Every call I make is shown, so you can check how I got there." },
       step("contact"),
     ],
     context: "The reader is an engineer: lead with architecture, design decisions, rejected alternatives and failure modes. Technical detail is welcome.",

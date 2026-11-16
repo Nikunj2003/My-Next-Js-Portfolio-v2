@@ -577,6 +577,13 @@ textarea,
   .hero-name { font-size: clamp(2.75rem, 13cqi, 4rem); justify-self: center !important; background-image: none !important; color: hsl(var(--foreground)); }
 }
 
+/* Contact's two panels: padding and gaps follow the screen height, so the
+   heading and both panels fit one screen from the navbar's Contact link. */
+.contact-panel { padding: clamp(1.125rem, 3.2svh, 2rem); gap: clamp(0.625rem, 1.9svh, 1.25rem); }
+@media (max-height: 760px) and (min-width: 1024px) { .contact-panel .heading-lg { font-size: 1.875rem; } }
+.contact-stack { gap: clamp(0.75rem, 1.8svh, 1rem); }
+@media (max-width: 639px) { .contact-panel { padding: 1.5rem; } }
+
 /* The ring around Nex, in the hero and in the footer's landing slot: one
    incomplete circle, the shared motif. */
 .nex-ring {

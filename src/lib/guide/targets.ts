@@ -14,7 +14,6 @@ export const GUIDE_HIGHLIGHTS = {
   "contact-form": "Contact form",
   "about-panel": "About's intro panel",
   "skills-panel": "Skills overview",
-  "nex-eval": "Nex's own eval scorecard",
   "pillar-quality": "Pillar: measured quality",
   "pillar-tools": "Pillar: governed tools",
   "pillar-retrieval": "Pillar: grounded retrieval",

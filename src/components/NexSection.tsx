@@ -1,6 +1,5 @@
 "use client";
 import { useEffect } from "react";
-import { NexEvalScorecard } from "@/components/NexEvalScorecard";
 import { Bot, MessageCircle } from "lucide-react";
 import { chatSuggestions } from "@/data/portfolio";
 import { openNex } from "@/lib/ask-nex";
@@ -100,8 +99,6 @@ const NexSection = () => {
                   <MessageCircle className="w-4 h-4" />
                   {primaryButtonLabel}
                 </button>
-
-                <NexEvalScorecard />
               </div>
 
               {/* Right Content - The Prompt Chips */}
