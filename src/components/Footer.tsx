@@ -7,7 +7,7 @@ import { scrollToHash, scrollToTop } from "@/lib/scroll";
 import { SECTION_LINKS, SOCIAL_LINKS } from "@/data/site-links";
 import { openNex } from "@/lib/ask-nex";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
-import { FooterAskHost, FooterNexLine } from "@/components/guide/FooterAskHost";
+import { FooterAskHost, FooterNexLine, FooterRing } from "@/components/guide/FooterAskHost";
 
 /**
  * The end of every page (homepage, /work and every case study): one glass
@@ -69,8 +69,8 @@ const Footer = () => {
                 <FooterNexLine />
                 <span data-guide-footer-socket aria-hidden="true" className="relative mt-4 block h-[150px] w-[150px]">
                   <span className="pointer-events-none absolute inset-[-18%] rounded-full bg-[radial-gradient(circle,hsl(var(--primary)/0.12)_0%,transparent_68%)]" />
-                  <span className="nex-ring" />
-                  <span className="absolute inset-[9px] rounded-full border border-dashed border-primary/25" />
+                  {/* Out past the landed disc, so the ring shows round it; dim until Nex arrives. */}
+                  <FooterRing />
                 </span>
                 <button type="button" onClick={() => openNex("", undefined, { host: "footer" })} className="btn-cta-primary mt-7">
                   <MessageCircle aria-hidden="true" />

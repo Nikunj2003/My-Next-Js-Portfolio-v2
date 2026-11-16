@@ -84,3 +84,14 @@ test("a refresh keeps the visitor's place: the route-change scroll reset ignores
   assert.match(smooth, /if \(previous === null \|\| previous === pathname\) return;/);
   assert.doesNotMatch(smooth, /isFirstRenderRef/, "a first-run flag breaks under React's double effects");
 });
+
+test("Nex's ring is one component everywhere it rests, and the intro draws it on", () => {
+  for (const file of ["src/components/guide/GuideHeroAvatar.tsx", "src/components/guide/FooterAskHost.tsx", "src/components/guide/RouteNexSocket.tsx"]) {
+    assert.match(readFileSync(file, "utf8"), /<NexRing /, `${file} uses NexRing`);
+  }
+  const intro = readFileSync("src/components/HeroIntro.tsx", "utf8");
+  assert.match(intro, /strokeDashoffset: 1 \}, \{ strokeDashoffset: 0/, "the track draws on");
+  const css = readFileSync("src/app/globals.css", "utf8");
+  assert.match(css, /prefers-reduced-motion: reduce\)[^}]*\{\s*\.nex-ring-orbit, \.nex-ring-think \{ animation: none; \}/, "still under reduced motion");
+  assert.match(css, /\[data-hero-part="ring-track"\],[\s\S]*?hero-failsafe-show 0s 4s/, "the ring has the intro's failsafe");
+});

@@ -577,16 +577,18 @@ textarea,
   .hero-name { font-size: clamp(2.75rem, 13cqi, 4rem); justify-self: center !important; background-image: none !important; color: hsl(var(--foreground)); }
 }
 
-/* The ring around Nex, in the hero and in the footer's landing slot: one
-   incomplete circle, the shared motif. */
-.nex-ring {
-  position: absolute;
-  inset: 0;
-  border-radius: 9999px;
-  background: conic-gradient(from 200deg, hsl(var(--primary) / 0.45) 0deg 270deg, transparent 270deg 360deg);
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 1.5px), #000 calc(100% - 1px));
-  mask: radial-gradient(farthest-side, transparent calc(100% - 1.5px), #000 calc(100% - 1px));
-  pointer-events: none;
+/* The ring around Nex wherever it rests (NexRing): a faint track with
+   ticks, a slow orbiting arc, and a quicker arc while Nex is answering. */
+.nex-ring-orbit, .nex-ring-think { transform-origin: 50px 50px; transform-box: view-box; }
+.nex-ring-orbit { animation: nex-orbit 18s linear infinite; animation-play-state: paused; }
+.nex-ring-svg[data-running] .nex-ring-orbit { animation-play-state: running; }
+.nex-ring-head { filter: drop-shadow(0 0 1.6px hsl(var(--primary) / 0.9)); }
+.nex-ring-think { opacity: 0; transition: opacity 400ms ease; animation: nex-orbit 1.4s linear infinite; animation-play-state: paused; }
+.nex-ring-svg[data-thinking] .nex-ring-think { opacity: 1; }
+.nex-ring-svg[data-thinking][data-running] .nex-ring-think { animation-play-state: running; }
+@keyframes nex-orbit { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .nex-ring-orbit, .nex-ring-think { animation: none; }
 }
 
 /* ------------------------------------------------------------------------ */
@@ -614,6 +616,13 @@ html[data-hero-intro="play"] #hero [data-hero-part="copy"][data-hero-glass] {
   animation: hero-failsafe-clip 0s 4s forwards;
 }
 html[data-hero-intro="play"] #hero [data-hero-part="avatar-glow"] { opacity: 0; }
+/* The ring is off while Nex sleeps; the intro draws it on as Nex wakes. */
+html[data-hero-intro="play"] #hero [data-hero-part="ring-track"],
+html[data-hero-intro="play"] #hero [data-hero-part="ring-orbit"] {
+  opacity: 0;
+  animation: hero-failsafe-show 0s 4s forwards;
+}
+html[data-hero-intro="play"] #hero [data-hero-part="ring-track"] circle { stroke-dasharray: 1 1; stroke-dashoffset: 1; }
 /* The two halves of the name wait off to their sides until the intro sweeps them in. */
 html[data-hero-intro="play"] #hero [data-hero-name] {
   opacity: 0;

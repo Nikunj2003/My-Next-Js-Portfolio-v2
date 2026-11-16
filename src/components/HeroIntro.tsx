@@ -46,6 +46,11 @@ export function HeroIntro() {
     const glow = q("[data-hero-part=avatar-glow]");
     const zz = q("[data-hero-part=zz]");
     const pulse = q("[data-hero-part=pulse]");
+    // The ring: its track draws on as Nex wakes, its orbit fades in as it settles.
+    const ringTrack = q("[data-hero-part=ring-track]");
+    const ringTrackLine = ringTrack?.querySelector("circle") ?? null;
+    const ringTicks = ringTrack ? [...ringTrack.querySelectorAll("line")] : [];
+    const ringOrbit = q("[data-hero-part=ring-orbit]");
     const backdrop = q("[data-hero-part=backdrop]");
     const names = [...(hero?.querySelectorAll<HTMLElement>("[data-hero-name]") ?? [])];
     const caption = q("[data-hero-part=ask-host]");
@@ -102,12 +107,17 @@ export function HeroIntro() {
       play(zz, [{ opacity: 1 }, { opacity: 0 }], { duration: 200 });
       play(pulse, [{ opacity: 0.85, transform: "scale(0.9)" }, { opacity: 0, transform: "scale(1.6)" }], { duration: 800, easing: EASE_OUT });
       play(glow, [{ opacity: 0.4 }, { opacity: 1 }], { duration: 600, easing: EASE_OUT });
+      // Power on: one sweep draws the track round Nex, the ticks land after it.
+      play(ringTrack, [{ opacity: 0 }, { opacity: 1 }], { duration: 120 });
+      play(ringTrackLine, [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { duration: INTRO.wakeMs + 260, easing: EASE_IN_OUT });
+      ringTicks.forEach((tick, index) => play(tick, [{ opacity: 0 }, { opacity: 1 }], { duration: 200, delay: 140 + index * ((INTRO.wakeMs + 120) / 4) }));
       play(backdrop, [{ opacity: 0 }, { opacity: 1 }], { duration: 1000, easing: EASE_OUT });
       await wait(INTRO.wakeMs);
       if (!alive || skipped) return;
 
       // 3. It settles into its place, shrinking to size, and the name closes in.
       const settle = play(stage, [{ transform: asleep }, { transform: "none" }], { duration: INTRO.moveMs, easing: EASE_IN_OUT });
+      play(ringOrbit, [{ opacity: 0 }, { opacity: 1 }], { duration: 600, delay: INTRO.moveMs * 0.5, easing: EASE_OUT });
       nameStarts.forEach(({ el, left, distance, lift }) => {
         play(el, nameArcFrames({ left, distance, lift }), { duration: INTRO.nameMs, delay: INTRO.nameStartMs, easing: "linear" });
       });

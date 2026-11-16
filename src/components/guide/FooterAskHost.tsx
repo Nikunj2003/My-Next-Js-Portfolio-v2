@@ -6,6 +6,7 @@ import { AskContent } from "@/components/guide/AskContent";
 import { dispatchCompanion, openPanel, takeAskOpener, useCompanionState } from "@/lib/guide/companion-store";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSpoken } from "@/lib/guide/spoken";
+import { NexRing } from "@/components/guide/NexRing";
 
 /**
  * The footer's right-hand column: its links, or, once the visitor asks here,
@@ -125,4 +126,10 @@ export function FooterNexLine() {
       </AnimatePresence>
     </div>
   );
+}
+
+/** The footer slot's ring, a little outside the landed 150px disc; dim while the slot is empty. */
+export function FooterRing() {
+  const { footerDocked } = useCompanionState();
+  return <NexRing dim={!footerDocked} outset={12} className="transition-opacity duration-500" />;
 }

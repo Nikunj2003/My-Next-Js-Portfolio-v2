@@ -4,6 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { StaticGuideMark } from "@/components/guide/GuideAvatarSlot";
+import { NexRing } from "@/components/guide/NexRing";
 import { emitGuide } from "@/lib/guide/bus";
 import { ASLEEP_LINE, BORED_LINE, DIZZY_LINE, HOVER_LINE, WAKE_LINE, greetingFor } from "@/lib/guide/hero-lines";
 import { getSpoken, say as sayLine, sayPetLine, useSpoken } from "@/lib/guide/spoken";
@@ -116,7 +117,8 @@ export function GuideHeroAvatar() {
           aria-label="Nex, Nikunj's AI guide. Activate for a reaction."
           className="group relative flex h-full w-full cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
-          <span aria-hidden="true" className="nex-ring" />
+          {/* Out past the live disc (it is drawn larger than the stage), so the ring shows round it. */}
+          <NexRing outset="8%" />
           <span aria-hidden="true" className="pointer-events-none absolute inset-[7%] rounded-full guide-disc" />
           {/* The intro's sleeping z's and its wake pulse (animated by HeroIntro). */}
           <span aria-hidden="true" data-hero-part="zz" className="pointer-events-none absolute right-[14%] top-[10%] z-20 opacity-0">
