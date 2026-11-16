@@ -443,18 +443,38 @@ const ORIGIN: Record<BubbleSide, string> = { right: "0% 100%", left: "100% 100%"
 /**
  * Reading text on screen the bubble should not cover when it has a choice:
  * headings, paragraphs and list items in the page, not cards' own controls.
+ *
+ * Measured in document coordinates and kept until the layout changes (the
+ * page's height or width), so a call while scrolling only shifts the cached
+ * boxes by the scroll instead of measuring hundreds of elements again. That
+ * full measure, on every tip and every pause, forced a layout per call and
+ * was part of the first scroll's stutter.
  */
+let readingCache: { key: string; boxes: Rect[] } | null = null;
 export function readingRects(): Rect[] {
+  const root = document.documentElement;
+  const key = `${root.scrollHeight}x${root.clientWidth}`;
+  if (!readingCache || readingCache.key !== key) {
+    const boxes: Rect[] = [];
+    const y = window.scrollY;
+    document.querySelectorAll("main h1, main h2, main h3, main p, main li").forEach((node) => {
+      if (node.closest("#nex-bubble, [data-nex-host-live], nav")) return;
+      const box = node.getBoundingClientRect();
+      if (box.width === 0) return;
+      boxes.push({ left: box.left, top: box.top + y, width: box.width, height: box.height });
+    });
+    readingCache = { key, boxes };
+  }
+  const y = window.scrollY;
+  const height = window.innerHeight;
   const rects: Rect[] = [];
-  document.querySelectorAll("main h1, main h2, main h3, main p, main li").forEach((node) => {
-    if (node.closest("#nex-bubble, [data-nex-host-live], nav")) return;
-    const box = node.getBoundingClientRect();
-    if (box.width === 0 || box.bottom < 0 || box.top > window.innerHeight) return;
-    rects.push({ left: box.left, top: box.top, width: box.width, height: box.height });
-  });
+  for (const box of readingCache.boxes) {
+    const top = box.top - y;
+    if (top + box.height < 0 || top > height) continue;
+    rects.push({ left: box.left, top, width: box.width, height: box.height });
+  }
   return rects;
 }
-
 
 function TipContent({ text, tipSection }: { text: string; tipSection: string }) {
   const [hovered, setHovered] = useState(false);

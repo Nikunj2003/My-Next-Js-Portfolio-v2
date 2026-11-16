@@ -3,7 +3,7 @@
 import { type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { HostConversation, useInPageHost } from "@/components/guide/InPageAskHost";
-import { useCompanionState } from "@/lib/guide/companion-store";
+import { useCompanionSelector } from "@/lib/guide/companion-store";
 import { useSpoken } from "@/lib/guide/spoken";
 import { NexRing } from "@/components/guide/NexRing";
 
@@ -49,9 +49,8 @@ export function FooterAskHost({ children }: { children: ReactNode }) {
  * isn't. A reserved band, so nothing moves when it talks.
  */
 export function FooterNexLine() {
-  const companion = useCompanionState();
+  const landed = useCompanionSelector((s) => s.footerDocked);
   const line = useSpoken();
-  const landed = companion.footerDocked;
   const text = landed ? line ?? "Didn't find something? Ask me." : "";
   return (
     // A reserved band: the pill grows upward from its bottom edge, so the
@@ -80,6 +79,6 @@ export function FooterNexLine() {
 
 /** The footer slot's ring, a little outside the landed 150px disc; dim while the slot is empty. */
 export function FooterRing() {
-  const { footerDocked } = useCompanionState();
+  const footerDocked = useCompanionSelector((s) => s.footerDocked);
   return <NexRing dim={!footerDocked} outset={12} className="transition-opacity duration-500" />;
 }

@@ -14,7 +14,7 @@ import { resolveAskHost } from "@/lib/guide/ask-hosts";
  * which bubble is showing, whether the panel is open, and the tip budget.
  * Transitions go through the pure `reduceBubble`.
  */
-type CompanionState = BubbleState & {
+export type CompanionState = BubbleState & {
   /** A question to send as soon as the ask bubble opens (from "Ask about this"). */
   pendingQuestion: string | null;
   /**
@@ -191,4 +191,15 @@ export function getCompanionState() {
 const serverState = state;
 export function useCompanionState() {
   return useSyncExternalStore(subscribeCompanion, getCompanionState, () => serverState);
+}
+
+/**
+ * One value from the companion state: the component re-renders only when
+ * that value changes, not on every update (the loop reports section, dock
+ * and footer changes while the visitor scrolls, and a re-render of every
+ * subscriber in that frame is what made the first scroll stutter). Return a
+ * primitive or a stable reference from `select`.
+ */
+export function useCompanionSelector<T>(select: (state: CompanionState) => T): T {
+  return useSyncExternalStore(subscribeCompanion, () => select(getCompanionState()), () => select(serverState));
 }
