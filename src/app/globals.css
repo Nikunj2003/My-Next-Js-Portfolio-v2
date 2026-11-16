@@ -533,11 +533,16 @@ textarea,
  */
 .hero-identity {
   container-type: inline-size;
-  --stage: clamp(136px, calc(100svh * 0.32 - 92px), 240px);
+  --stage: clamp(128px, calc(100svh * 0.29 - 86px), 232px);
   --name-gap: clamp(1.5rem, 3vw, 2.75rem);
+  /* Nex's ring sits 8% of the stage outside it (NexRing outset="8%"): the
+     identity row reserves that much above and below, plus air, so the ring
+     never meets the availability line or the caption. */
+  --ring-out: calc(var(--stage) * 0.08 + clamp(0.5rem, 1.6svh, 1rem));
+  padding-block: var(--ring-out);
 }
 @media (max-width: 1279px) {
-  .hero-identity { --stage: clamp(136px, calc(100svh * 0.32 - 92px), 200px); }
+  .hero-identity { --stage: clamp(128px, calc(100svh * 0.29 - 86px), 196px); }
 }
 /* The hero's vertical gaps shrink on shorter screens, by the same rule. */
 #hero { --hero-gap: clamp(0.625rem, calc(100svh * 0.034 - 0.85rem), 1.75rem); }

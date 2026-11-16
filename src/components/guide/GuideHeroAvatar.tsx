@@ -219,7 +219,7 @@ export function HeroAskHost() {
     <motion.div
       ref={hostRef}
       data-hero-part="ask-host"
-      className="mt-[calc(var(--hero-gap)*0.75)] w-full"
+      className="w-full"
       initial={false}
       animate={{ height }}
       transition={{ duration: reduceMotion ? 0 : 0.42, ease: [0.22, 1, 0.36, 1] }}

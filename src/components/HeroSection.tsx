@@ -58,7 +58,7 @@ const HeroSection = () => {
         {/* The name, split around Nex. The visible words are the h1 itself
             (selectable, readable by voice control); the avatar between them
             is its own labelled control. */}
-        <div className="hero-identity mt-[var(--hero-gap)] w-full">
+        <div className="hero-identity w-full">
           <h1 className="hero-identity-row">
             <span data-hero-name="left" className="hero-name">{firstName}</span>
             <span className="sr-only"> </span>
