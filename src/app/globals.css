@@ -560,7 +560,10 @@ details[open]::details-content { block-size: auto; opacity: 1; }
 .hero-identity {
   container-type: inline-size;
   --stage: clamp(128px, calc(100svh * 0.29 - 86px), 232px);
-  --name-gap: clamp(1.5rem, 3vw, 2.75rem);
+  /* Between a name and the stage: the ring's 8% outset plus air, never less
+     than the ring needs (it was 3vw, which put the ring 8px from the names
+     on a portrait tablet). */
+  --name-gap: max(calc(var(--stage) * 0.08 + 1rem), clamp(1.5rem, 3vw, 2.75rem));
   /* Nex's ring sits 8% of the stage outside it (NexRing outset="8%"): the
      identity row reserves that much above and below, plus air, so the ring
      never meets the availability line or the caption. */
@@ -602,8 +605,13 @@ details[open]::details-content { block-size: auto; opacity: 1; }
 @media (forced-colors: active) {
   .hero-name { background: none; color: CanvasText; }
 }
-/* Below 1024px the name stacks around a smaller, still Nex. */
-@media (max-width: 1023px) {
+/* Below 600px (phones upright) the name stacks around Nex. Wider screens
+   (tablets either way up, phones on their side) keep the one row: it fits
+   from 600px (names ~58px) and is about 250px shorter than the stack. */
+@media (max-width: 599px) {
+  /* The stage follows the width as well as the height, so the stack fits a
+     short phone: 104px at 360x640, 160px at 390x844, never above 196px. */
+  .hero-identity { --stage: clamp(104px, min(calc(100svh * 0.24 - 40px), 42vw), 196px); }
   /* The ring sits 8% of the stage outside it (NexRing outset="8%"), so the
      gap above and below the stage clears it, plus air, never the names. */
   .hero-identity-row { grid-template-columns: minmax(0, 1fr); row-gap: calc(var(--stage) * 0.08 + 0.625rem); justify-items: center; }
