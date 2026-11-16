@@ -45,7 +45,7 @@ function CardView({ card }: { card: AnswerCard }) {
     if (!study) return null;
     return (
       <Link href={getCaseStudyPath(study.slug)} className={`${FRAME} group block transition-colors hover:border-primary/50`}>
-        <p className="flex items-start justify-between gap-2 text-sm font-semibold text-foreground group-hover:text-primary">
+        <p className="flex items-start justify-between gap-2 text-sm font-semibold text-foreground group-hover:text-primary-text">
           {study.title}
           <ArrowUpRight className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         </p>
@@ -66,7 +66,7 @@ function CardView({ card }: { card: AnswerCard }) {
       <div className="mt-2 flex flex-col gap-3">
         {studies.map((study) => (
           <div key={study.slug} className="border-l-2 border-primary/30 pl-3">
-            <Link href={getCaseStudyPath(study.slug)} className="text-sm font-semibold text-foreground hover:text-primary">
+            <Link href={getCaseStudyPath(study.slug)} className="text-sm font-semibold text-foreground hover:text-primary-text">
               {study.title}
             </Link>
             <p className="mt-0.5 text-xs text-foreground/80">

@@ -23,8 +23,8 @@ export { openNex as askAboutThis } from "@/lib/ask-nex";
 const AFFORDANCE_BASE =
   "inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 align-middle font-mono text-[10px] font-medium uppercase tracking-wider transition-colors duration-200 " +
   "border-primary/15 text-primary-text " +
-  "hover:border-primary/40 hover:bg-primary/10 hover:text-primary " +
-  "focus-visible:border-primary/40 focus-visible:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 " +
+  "hover:border-primary/40 hover:bg-primary/10 hover:text-primary-text " +
+  "focus-visible:border-primary/40 focus-visible:text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 " +
   "motion-reduce:transition-none";
 
 /**
@@ -69,7 +69,7 @@ export default function AskAboutThis({
         onClick={() => (inline ? setOpen((prev) => !prev) : openNex(question))}
         aria-label={`${label}: ${question}`}
         aria-expanded={inline ? open : undefined}
-        className={cn(AFFORDANCE_BASE, "ml-2", open && "border-primary/40 bg-primary/10 text-primary", className)}
+        className={cn(AFFORDANCE_BASE, "ml-2", open && "border-primary/40 bg-primary/10 text-primary-text", className)}
       >
         <Sparkles className="h-2.5 w-2.5" />
         {label}

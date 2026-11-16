@@ -24,7 +24,7 @@ export function MarginNote({ label, children }: { label: string; children: React
   return (
     <aside aria-label={`Nex: ${label}`} className="mt-3 xl:mt-1">
       <details className="group xl:hidden">
-        <summary className="inline-flex min-h-8 cursor-pointer list-none items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-primary-text hover:text-primary">
+        <summary className="inline-flex min-h-8 cursor-pointer list-none items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-primary-text hover:text-primary-text">
           <Sparkles className="h-3 w-3" aria-hidden="true" />
           {label}
         </summary>

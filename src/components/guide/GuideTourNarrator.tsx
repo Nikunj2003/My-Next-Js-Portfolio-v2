@@ -372,7 +372,7 @@ function TourNarration({ index, steps, drifted, onBack, onNext, onResume, onSkip
           onClick={onAsk}
           className="inline-flex min-h-10 items-center gap-2 rounded-full border border-border/50 px-4 text-sm font-medium text-foreground transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
-          <MessageCircle className="h-4 w-4 text-primary" aria-hidden="true" />
+          <MessageCircle className="h-4 w-4 text-primary-text" aria-hidden="true" />
           Ask about this
         </button>
         <div className="ml-auto flex items-center gap-2">

@@ -46,7 +46,7 @@ function PillarBody({ label, claim, action }: { label: string; claim: string; ac
     <>
       <span className="font-mono text-[11px] uppercase tracking-wider text-primary-text">{label}</span>
       <span className="text-xs leading-snug text-muted-foreground">{claim}</span>
-      <span className="mt-auto inline-flex items-center gap-1 pt-1 text-[11px] font-semibold text-foreground/70 group-hover:text-primary">
+      <span className="mt-auto inline-flex items-center gap-1 pt-1 text-[11px] font-semibold text-foreground/70 group-hover:text-primary-text">
         {action}
         <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
       </span>

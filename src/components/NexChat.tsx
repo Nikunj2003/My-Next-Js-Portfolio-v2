@@ -482,7 +482,7 @@ const NexChat = () => {
         <button
           type="button"
           onClick={jumpToLatest}
-          className="absolute bottom-3 left-1/2 flex min-h-9 -translate-x-1/2 items-center gap-1.5 rounded-full border border-border/50 glass-strong px-3 py-1.5 text-xs font-medium text-foreground shadow-accent-soft transition-colors hover:text-primary"
+          className="absolute bottom-3 left-1/2 flex min-h-9 -translate-x-1/2 items-center gap-1.5 rounded-full border border-border/50 glass-strong px-3 py-1.5 text-xs font-medium text-foreground shadow-accent-soft transition-colors hover:text-primary-text"
         >
           <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />
           Jump to latest

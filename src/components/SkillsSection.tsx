@@ -41,7 +41,7 @@ const SkillsSection = () => {
                   <FlipWords
                     variant="line"
                     words={["Learning fast.", "Building deep.", "Shipping reliably."]}
-                    className="text-primary"
+                    className="text-primary-text"
                   />
                 </p>
               </div>
@@ -65,10 +65,10 @@ const SkillsSection = () => {
                       */}
                       <div className="flex items-center gap-4">
                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-foreground/5 glass-subtle transition-transform duration-500 group-hover:scale-110 group-hover:border-primary/30">
-                          <Icon className="h-5 w-5 text-primary" />
+                          <Icon className="h-5 w-5 text-primary-text" />
                         </div>
                         <div>
-                          <h3 className="heading-md transition-colors duration-300 group-hover:text-primary">
+                          <h3 className="heading-md transition-colors duration-300 group-hover:text-primary-text">
                             {cat.title}
                           </h3>
                           <p className="mt-1 font-mono text-xs text-muted-foreground">{cat.skills.length} technologies</p>
@@ -94,7 +94,7 @@ const SkillsSection = () => {
                                 <a
                                   href={evidence.href}
                                   title={`Proof: ${evidence.label}`}
-                                  className={`${chip} border-primary/25 text-foreground/90 hover:border-primary/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
+                                  className={`${chip} border-primary/25 text-foreground/90 hover:border-primary/60 hover:text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
                                 >
                                   {skill}
                                   <span className="sr-only"> (proof: {evidence.label})</span>

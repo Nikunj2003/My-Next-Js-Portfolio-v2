@@ -112,7 +112,7 @@ function ExperienceItem({
                 </span>
               )}
               <h3 className="heading-md text-foreground">{exp.role}</h3>
-              <span className="mt-1 block font-medium text-primary">{exp.company}</span>
+              <span className="mt-1 block font-medium text-primary-text">{exp.company}</span>
             </div>
 
             <div className="flex w-full flex-col items-end gap-2 md:w-auto md:flex-none">
@@ -277,7 +277,7 @@ const ExperienceSection = () => {
                   {/* The story runs oldest first; the role that carries it is last, so point at it. */}
                   <a
                     href="#current-role"
-                    className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-primary-text hover:text-primary"
+                    className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-primary-text hover:text-primary-text"
                   >
                     Now: {experiences[experiences.length - 1].role}, {experiences[experiences.length - 1].company}
                     <span aria-hidden="true">↓</span>
@@ -286,7 +286,7 @@ const ExperienceSection = () => {
                   <div className="hidden lg:block">
                     <p className="mt-6 inline-flex flex-nowrap items-baseline whitespace-nowrap text-base font-semibold text-foreground sm:text-xl lg:mt-8">
                     And a new{" "}
-                    <FlipWords words={["adventure", "chapter", "journey"]} slotWidth={9} className="px-2 text-primary" />{" "}
+                    <FlipWords words={["adventure", "chapter", "journey"]} slotWidth={9} className="px-2 text-primary-text" />{" "}
                     ahead
                   </p>
                   </div>
@@ -320,7 +320,7 @@ const ExperienceSection = () => {
             <div className="mt-8 pl-[50px] lg:hidden sm:pl-[90px]">
               <p className="mt-6 inline-flex flex-nowrap items-baseline whitespace-nowrap text-base font-semibold text-foreground sm:text-xl lg:mt-8">
                     And a new{" "}
-                    <FlipWords words={["adventure", "chapter", "journey"]} slotWidth={9} className="px-2 text-primary" />{" "}
+                    <FlipWords words={["adventure", "chapter", "journey"]} slotWidth={9} className="px-2 text-primary-text" />{" "}
                     ahead
                   </p>
             </div>

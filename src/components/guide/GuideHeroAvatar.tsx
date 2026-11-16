@@ -120,9 +120,9 @@ export function GuideHeroAvatar() {
           <span aria-hidden="true" className="pointer-events-none absolute inset-[7%] rounded-full guide-disc" />
           {/* The intro's sleeping z's and its wake pulse (animated by HeroIntro). */}
           <span aria-hidden="true" data-hero-part="zz" className="pointer-events-none absolute right-[14%] top-[10%] z-20 opacity-0">
-            <span className="hero-z absolute font-mono text-base font-bold text-primary">z</span>
-            <span className="hero-z absolute left-4 -top-5 font-mono text-xl font-bold text-primary [animation-delay:600ms]">z</span>
-            <span className="hero-z absolute left-9 -top-11 font-mono text-2xl font-bold text-primary [animation-delay:1200ms]">Z</span>
+            <span className="hero-z absolute font-mono text-base font-bold text-primary-text">z</span>
+            <span className="hero-z absolute left-4 -top-5 font-mono text-xl font-bold text-primary-text [animation-delay:600ms]">z</span>
+            <span className="hero-z absolute left-9 -top-11 font-mono text-2xl font-bold text-primary-text [animation-delay:1200ms]">Z</span>
           </span>
           <span aria-hidden="true" data-hero-part="pulse" className="pointer-events-none absolute inset-[12%] rounded-full border-2 border-primary/80 opacity-0" />
           {/* Until the live Nex sits here (`html[data-nex-in-hero]`), and on phones. */}

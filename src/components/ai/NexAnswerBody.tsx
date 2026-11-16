@@ -45,7 +45,7 @@ export function NexAnswerBody({ message, components, reducedMotion, showTakeMeTh
               <Wrench
                 className={cn(
                   "mt-[0.3em] h-3 w-3 shrink-0",
-                  call.status === "running" ? "animate-spin motion-reduce:animate-none text-primary" : "text-primary/70"
+                  call.status === "running" ? "animate-spin motion-reduce:animate-none text-primary-text" : "text-primary/70"
                 )}
               />
               {/* One wrapping block: the call and its result share the row's
@@ -106,7 +106,7 @@ export function NexAnswerBody({ message, components, reducedMotion, showTakeMeTh
           an engineer can. */}
       {message.trace && !message.error && (
         <details className="group mt-3 pt-1">
-          <summary className="cursor-pointer list-none font-mono text-[11px] text-muted-foreground/70 transition-colors hover:text-primary">
+          <summary className="cursor-pointer list-none font-mono text-[11px] text-muted-foreground/70 transition-colors hover:text-primary-text">
             <span className="group-open:hidden">
               trace · {message.trace.toolCount} tool{message.trace.toolCount === 1 ? "" : "s"} ·{" "}
               {(message.trace.elapsedMs / 1000).toFixed(1)}s

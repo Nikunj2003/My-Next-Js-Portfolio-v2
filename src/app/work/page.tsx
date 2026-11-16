@@ -64,7 +64,7 @@ const WorkIndexPage = () => (
           <div className="mb-8">
             <Link
               href="/"
-              className="-my-3 inline-flex min-h-11 items-center gap-2 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+              className="-my-3 inline-flex min-h-11 items-center gap-2 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-primary-text"
             >
               <ArrowLeft className="h-4 w-4" />
               Home

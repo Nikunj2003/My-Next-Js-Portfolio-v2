@@ -140,7 +140,7 @@ const CommandPalette = () => {
 
           <Command loop className="flex min-h-0 flex-1 flex-col">
             <div className="flex shrink-0 items-center gap-3 border-b border-foreground/10 px-4">
-              <Search className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+              <Search className="h-4 w-4 shrink-0 text-primary-text" aria-hidden="true" />
               <Command.Input
                 value={query}
                 onValueChange={setQuery}
@@ -161,7 +161,7 @@ const CommandPalette = () => {
                   <button
                     type="button"
                     onClick={() => askNex(trimmedQuery)}
-                    className="inline-flex items-center gap-2 rounded-xl px-3 py-2 font-medium text-primary transition-colors hover:bg-primary/10"
+                    className="inline-flex items-center gap-2 rounded-xl px-3 py-2 font-medium text-primary-text transition-colors hover:bg-primary/10"
                   >
                     <Sparkles className="h-4 w-4" />
                     Ask Nex instead
@@ -182,7 +182,7 @@ const CommandPalette = () => {
                     onSelect={() => run(() => router.push(getCaseStudyPath(study.slug)))}
                     className={itemClass}
                   >
-                    <FileText className="h-4 w-4 shrink-0 text-primary" />
+                    <FileText className="h-4 w-4 shrink-0 text-primary-text" />
                     <span className="truncate">{study.title}</span>
                     <span className="ml-auto shrink-0 font-mono text-[10px] uppercase tracking-wider text-muted-foreground/50">
                       {study.tags[0]}
@@ -206,7 +206,7 @@ const CommandPalette = () => {
                     <Layers className="h-4 w-4 shrink-0 opacity-50" />
                     <span className="truncate">{project.title}</span>
                     {project.live ? (
-                      <span className="ml-auto inline-flex shrink-0 items-center gap-1 font-mono text-[10px] uppercase tracking-wider text-primary">
+                      <span className="ml-auto inline-flex shrink-0 items-center gap-1 font-mono text-[10px] uppercase tracking-wider text-primary-text">
                         <ExternalLink className="h-2.5 w-2.5" />
                         live
                       </span>
@@ -227,7 +227,7 @@ const CommandPalette = () => {
                   </Command.Item>
                 ))}
                 <Command.Item value="nex ai guide twin chat assistant agent ask question" onSelect={() => askNex("")} className={itemClass}>
-                  <MessageCircle className="h-4 w-4 shrink-0 text-primary" />
+                  <MessageCircle className="h-4 w-4 shrink-0 text-primary-text" />
                   Open Nex
                 </Command.Item>
               </Command.Group>
@@ -275,7 +275,7 @@ const CommandPalette = () => {
                   className={groupClass}
                 >
                   <Command.Item value={`ask ${trimmedQuery}`} onSelect={() => askNex(trimmedQuery)} className={itemClass}>
-                    <Sparkles className="h-4 w-4 shrink-0 text-primary" />
+                    <Sparkles className="h-4 w-4 shrink-0 text-primary-text" />
                     <span className="truncate">
                       Ask Nex: <span className="text-foreground">&ldquo;{trimmedQuery}&rdquo;</span>
                     </span>

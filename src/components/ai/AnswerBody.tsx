@@ -51,7 +51,7 @@ export function buildAnswerComponents(
               navigateToPath(href);
             }
           }}
-          className="font-medium text-primary underline decoration-primary/40 underline-offset-4 transition-colors hover:text-primary/80 break-words"
+          className="font-medium text-primary-text underline decoration-primary/40 underline-offset-4 transition-colors hover:text-primary/80 break-words"
         >
           {children}
         </a>
@@ -65,8 +65,8 @@ export function buildAnswerComponents(
       </span>
     ),
     p: ({ children }) => <p className="mb-3 last:mb-0 whitespace-pre-wrap">{children}</p>,
-    ul: ({ children }) => <ul className="mb-3 list-disc space-y-2 pl-5 marker:text-primary last:mb-0">{children}</ul>,
-    ol: ({ children }) => <ol className="mb-3 list-decimal space-y-2 pl-5 marker:text-primary last:mb-0">{children}</ol>,
+    ul: ({ children }) => <ul className="mb-3 list-disc space-y-2 pl-5 marker:text-primary-text last:mb-0">{children}</ul>,
+    ol: ({ children }) => <ol className="mb-3 list-decimal space-y-2 pl-5 marker:text-primary-text last:mb-0">{children}</ol>,
     li: ({ children }) => <li className="pl-1">{children}</li>,
     strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
     em: ({ children }) => <em className="text-foreground/90">{children}</em>,
@@ -90,7 +90,7 @@ export function buildAnswerComponents(
           {...props}
           className={cn(
             "font-mono",
-            isBlock ? "text-[12px] text-foreground" : "rounded-md bg-background/70 px-1.5 py-0.5 text-[0.82em] text-primary",
+            isBlock ? "text-[12px] text-foreground" : "rounded-md bg-background/70 px-1.5 py-0.5 text-[0.82em] text-primary-text",
             className
           )}
         >

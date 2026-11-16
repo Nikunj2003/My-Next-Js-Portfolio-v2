@@ -134,7 +134,7 @@ const AboutSection = () => {
             <div>
               <SpotlightCard className="overflow-hidden">
                 <div className="flex items-start gap-5 p-6">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10 text-primary glow-accent-sm">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10 text-primary-text glow-accent-sm">
                     <Award className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
@@ -184,7 +184,7 @@ const AboutSection = () => {
                   <li key={highlight.label} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-5 py-3 text-sm">
                     <span className="font-bold tabular-nums text-foreground">{highlight.metric}</span>
                     <span className="text-muted-foreground">{highlight.label}</span>
-                    <a href={proofHref(highlight.metric)} className="ml-auto font-mono text-[11px] uppercase tracking-wider text-primary-text hover:text-primary">
+                    <a href={proofHref(highlight.metric)} className="ml-auto font-mono text-[11px] uppercase tracking-wider text-primary-text hover:text-primary-text">
                       See the proof
                     </a>
                   </li>

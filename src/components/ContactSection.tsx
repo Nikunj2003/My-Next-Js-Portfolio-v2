@@ -127,7 +127,7 @@ const ContactSection = () => {
 
         {/* Heading */}
         <div className="mb-14 text-center">
-          <div className="inline-flex items-center px-3 py-1.5 rounded-full glass-subtle border border-primary/20 text-xs font-mono text-primary mb-6">
+          <div className="inline-flex items-center px-3 py-1.5 rounded-full glass-subtle border border-primary/20 text-xs font-mono text-primary-text mb-6">
             Connect
           </div>
           <h2 className="heading-xl mb-4">
@@ -178,13 +178,13 @@ const ContactSection = () => {
                       className="group flex items-center gap-4 px-5 py-4 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 border border-black/5 dark:border-white/5 hover:border-primary/20 dark:hover:border-primary/20 transition-all duration-300"
                     >
                       <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                        <Icon className="w-4 h-4 text-primary" />
+                        <Icon className="w-4 h-4 text-primary-text" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-[11px] font-mono text-muted-foreground uppercase tracking-widest mb-1">{label}</p>
                         <p className="text-sm font-semibold truncate text-foreground/90">{value}</p>
                       </div>
-                      <ArrowUpRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-primary transition-colors shrink-0" />
+                      <ArrowUpRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-primary-text transition-colors shrink-0" />
                     </a>
                   ))}
                 </div>
@@ -322,7 +322,7 @@ const ContactSection = () => {
                       <span className="flex min-w-0 items-center gap-2.5">
                         {(() => {
                           const ReasonIcon = REASON_ICONS[form.reason];
-                          return <ReasonIcon className="h-4 w-4 shrink-0 text-primary" />;
+                          return <ReasonIcon className="h-4 w-4 shrink-0 text-primary-text" />;
                         })()}
                         <span className="truncate">{form.reason}</span>
                       </span>
@@ -377,7 +377,7 @@ const ContactSection = () => {
                   disabled={isSubmitting}
                   className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl glass-subtle border border-black/10 dark:border-white/10 text-foreground font-bold text-sm tracking-wide hover:bg-black/10 dark:hover:bg-white/10 transition-all duration-300 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <Send className="w-4 h-4 text-primary" />
+                  <Send className="w-4 h-4 text-primary-text" />
                   {isSubmitting ? "Sending..." : "Send Message"}
                 </button>
                 <p className="text-[11px] font-medium text-muted-foreground/60 text-center border-t border-black/10 dark:border-white/5 pt-4">

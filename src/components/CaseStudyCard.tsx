@@ -65,7 +65,7 @@ const CaseStudyCard = ({
         {/* Glyph inline with the title rather than on its own row —
             it was costing ~70px of height for one small icon. */}
         <div className="flex items-start gap-3">
-          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary transition-colors duration-300 group-hover/system:border-primary/50">
+          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary-text transition-colors duration-300 group-hover/system:border-primary/50">
             <Glyph className="h-4 w-4" />
           </span>
           <Heading className="text-lg font-bold leading-snug tracking-tight text-foreground">
@@ -123,7 +123,7 @@ const CaseStudyCard = ({
         */}
         <Link
           href={getCaseStudyPath(study.slug)}
-          className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary after:absolute after:inset-0 after:rounded-[inherit] after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary-text after:absolute after:inset-0 after:rounded-[inherit] after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           Read case study
           <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover/system:translate-x-1 motion-reduce:transition-none" />

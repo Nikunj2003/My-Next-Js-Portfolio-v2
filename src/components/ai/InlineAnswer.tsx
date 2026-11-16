@@ -89,7 +89,7 @@ export function InlineAnswer({
                 <Wrench
                   className={cn(
                     "mt-0.5 h-3 w-3 shrink-0",
-                    call.status === "running" ? "animate-spin motion-reduce:animate-none text-primary" : "text-primary/70"
+                    call.status === "running" ? "animate-spin motion-reduce:animate-none text-primary-text" : "text-primary/70"
                   )}
                 />
                 <span className="min-w-0 break-all text-foreground/75">{call.label}</span>
@@ -142,7 +142,7 @@ export function InlineAnswer({
           <button
             type="button"
             onClick={handleContinueWithNex}
-            className="mt-3 inline-flex items-center gap-1.5 font-mono text-[11px] font-medium uppercase tracking-wider text-primary transition-colors hover:text-primary/80"
+            className="mt-3 inline-flex items-center gap-1.5 font-mono text-[11px] font-medium uppercase tracking-wider text-primary-text transition-colors hover:text-primary/80"
           >
             Continue with Nex →
           </button>

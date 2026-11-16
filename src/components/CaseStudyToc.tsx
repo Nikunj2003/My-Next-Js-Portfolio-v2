@@ -79,7 +79,7 @@ const CaseStudyToc = ({ items }: { items: TocItem[] }) => {
                   className={cn(
                     "-ml-px block border-l-2 py-1.5 pl-4 text-sm leading-snug transition-colors",
                     isActive
-                      ? "border-primary font-semibold text-primary"
+                      ? "border-primary font-semibold text-primary-text"
                       : "border-transparent text-muted-foreground hover:border-primary/40 hover:text-foreground"
                   )}
                 >

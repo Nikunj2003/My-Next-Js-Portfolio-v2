@@ -103,7 +103,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
             <div className="mb-8">
               <Link
                 href="/work"
-                className="-my-3 inline-flex min-h-11 items-center gap-2 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                className="-my-3 inline-flex min-h-11 items-center gap-2 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-primary-text"
               >
                 <ArrowLeft className="h-4 w-4" />
                 All work
@@ -116,7 +116,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
             <div className="min-w-0">
               <div className="mt-8 flex flex-wrap items-center gap-3 font-mono text-xs">
                 {study.employer && (
-                  <span className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-primary">
+                  <span className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-primary-text">
                     {study.employer}
                   </span>
                 )}
@@ -174,7 +174,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                 Nex's get_metric tool answers from. */}
             {measured.length > 0 && (
               <details className="group mt-4 max-w-3xl">
-                <summary className="inline-flex min-h-8 cursor-pointer list-none items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-primary-text hover:text-primary">
+                <summary className="inline-flex min-h-8 cursor-pointer list-none items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-primary-text hover:text-primary-text">
                   How these were measured
                   <span aria-hidden="true" className="transition-transform group-open:rotate-90">›</span>
                 </summary>
@@ -366,7 +366,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                 {study.stack.map((item) => (
                   <li
                     key={item}
-                    className="rounded-lg border border-primary/20 bg-primary/10 px-3 py-1.5 font-mono text-xs text-primary"
+                    className="rounded-lg border border-primary/20 bg-primary/10 px-3 py-1.5 font-mono text-xs text-primary-text"
                   >
                     {item}
                   </li>
@@ -404,7 +404,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                     <ArrowLeft className="h-3 w-3" />
                     Previous
                   </span>
-                  <span className="text-sm font-semibold text-foreground group-hover:text-primary">{previous.title}</span>
+                  <span className="text-sm font-semibold text-foreground group-hover:text-primary-text">{previous.title}</span>
                 </Link>
               ) : (
                 <span />
@@ -418,7 +418,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                     Next
                     <ArrowRight className="h-3 w-3" />
                   </span>
-                  <span className="text-sm font-semibold text-foreground group-hover:text-primary">{next.title}</span>
+                  <span className="text-sm font-semibold text-foreground group-hover:text-primary-text">{next.title}</span>
                 </Link>
               )}
             </nav>
@@ -437,7 +437,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                   download
                   className="btn-cta-secondary"
                 >
-                  <Download className="h-4 w-4 text-primary" />
+                  <Download className="h-4 w-4 text-primary-text" />
                   Download resume
                 </a>
               </div>

@@ -58,7 +58,7 @@ const NexSection = () => {
               
               {/* Left Content */}
               <div className="flex-1 relative z-10">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-subtle border border-black/10 dark:border-white/10 text-xs font-mono text-primary mb-6">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-subtle border border-black/10 dark:border-white/10 text-xs font-mono text-primary-text mb-6">
                   <span
                     className={`w-2 h-2 rounded-full motion-reduce:animate-none ${
                       status === "available"
@@ -122,7 +122,7 @@ const NexSection = () => {
                       &ldquo;{s}&rdquo;
                     </span>
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 opacity-50 group-hover:opacity-100 transition-opacity">
-                       <Bot className="w-4 h-4 text-primary" />
+                       <Bot className="w-4 h-4 text-primary-text" />
                     </div>
                   </button>
                 ))}

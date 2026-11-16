@@ -35,7 +35,7 @@ export function ReadingPathAsk() {
 
   return (
     <div className="mb-16 rounded-2xl border border-primary/20 glass-subtle p-6 sm:p-7">
-      <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-primary">
+      <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-primary-text">
         <Compass className="h-3.5 w-3.5" />
         Not sure where to start?
       </div>
