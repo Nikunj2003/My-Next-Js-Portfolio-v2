@@ -516,6 +516,21 @@ textarea,
   }
 }
 
+/* Every disclosure (the answer trace, "How these were measured", margin
+   notes) opens and closes by easing its height, not by snapping. Browsers
+   without ::details-content / interpolate-size simply open at once. */
+:root { interpolate-size: allow-keywords; }
+details::details-content {
+  block-size: 0;
+  overflow-y: clip;
+  opacity: 0;
+  transition: block-size 280ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms ease, content-visibility 280ms allow-discrete;
+}
+details[open]::details-content { block-size: auto; opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  details::details-content { transition: none; }
+}
+
 /* ------------------------------------------------------------------------ */
 /* Hero identity: Nikunj · Nex · Khitha                                      */
 /* ------------------------------------------------------------------------ */

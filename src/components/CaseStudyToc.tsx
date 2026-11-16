@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { Collapse } from "@/components/ui/collapse";
 
 export interface TocItem {
   id: string;
@@ -61,13 +62,8 @@ const CaseStudyToc = ({ items }: { items: TocItem[] }) => {
           <span className="font-mono text-xs text-muted-foreground">{open ? "hide" : "show"}</span>
         </button>
 
-        <ol
-          id="case-study-toc-list"
-          className={cn(
-            "mt-3 flex-col gap-1 border-l border-black/10 dark:border-white/10 lg:mt-0 lg:flex",
-            open ? "flex" : "hidden"
-          )}
-        >
+        {/* Desktop: always shown. Phones: a disclosure that eases open. */}
+        <ol className="hidden flex-col gap-1 border-l border-black/10 dark:border-white/10 lg:flex">
           {items.map((item) => {
             const isActive = activeId === item.id;
             return (
@@ -89,6 +85,32 @@ const CaseStudyToc = ({ items }: { items: TocItem[] }) => {
             );
           })}
         </ol>
+        <div className="lg:hidden">
+          <Collapse open={open} id="case-study-toc-list">
+            <ol className="mt-3 flex flex-col gap-1 border-l border-black/10 dark:border-white/10">
+          {items.map((item) => {
+            const isActive = activeId === item.id;
+            return (
+              <li key={item.id}>
+                <a
+                  href={`#${item.id}`}
+                  onClick={() => setOpen(false)}
+                  aria-current={isActive ? "location" : undefined}
+                  className={cn(
+                    "-ml-px block border-l-2 py-1.5 pl-4 text-sm leading-snug transition-colors",
+                    isActive
+                      ? "border-primary font-semibold text-primary-text"
+                      : "border-transparent text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                  )}
+                >
+                  {item.label}
+                </a>
+              </li>
+            );
+          })}
+            </ol>
+          </Collapse>
+        </div>
       </nav>
     </>
   );

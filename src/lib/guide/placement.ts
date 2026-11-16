@@ -153,8 +153,10 @@ function overlapArea(a: Rect, b: Rect) {
  * A section's dock (its ringed socket), as one continuous function of where
  * the socket is on screen, so the path is the same scrolling down and up:
  * - while the socket is below the screen Nex waits in the margin (mid-height);
- * - as the socket rises into view (over `range` px above the screen's bottom)
- *   it slides from the margin into the socket;
+ * - as the socket rises into view it slides from the margin into the socket,
+ *   done once the socket is `range` px clear of the screen's bottom (so a
+ *   section in focus always has Nex in its place, even a tall one whose dock
+ *   sits low on the screen);
  * - it rests in the socket while the socket is on screen (a socket in a sticky
  *   panel pins with it, so Nex does too);
  * - as the socket passes under the navbar it slides back out to the margin.
@@ -178,7 +180,7 @@ export function socketDockPoint(input: {
   leaveAt?: number;
   leaveRange?: number;
 }): { point: Point; hold: number } {
-  const { socket, size, viewport, gutter, range = 240, leaveRange = 280 } = input;
+  const { socket, size, viewport, gutter, range = 120, leaveRange = 280 } = input;
   const leaveAt = input.leaveAt ?? viewport.insetTop + 40;
   const at = { x: socket.x - size / 2, y: socket.y - size / 2 };
   if (!gutter) return { point: at, hold: 1 };

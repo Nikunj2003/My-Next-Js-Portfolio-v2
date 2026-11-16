@@ -53,26 +53,34 @@ const NexSection = () => {
       <div className="container-narrow">
         <div data-guide-spot="nex" data-guide-target="nex-card">
           <SpotlightCard className="w-full relative">
-            <div className="relative p-6 sm:p-8 md:p-12 lg:p-16 flex flex-col lg:flex-row items-center gap-12 lg:gap-16 text-center lg:text-left">
+            <div className="relative p-6 sm:p-8 md:p-12 lg:p-16 flex flex-col lg:flex-row lg:items-stretch items-center gap-12 lg:gap-16 text-center lg:text-left">
               {/* Background Glow */}
               <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 opacity-50 pointer-events-none" />
               
               {/* Left Content */}
               <div className="flex-1 relative z-10">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-subtle border border-black/10 dark:border-white/10 text-xs font-mono text-primary-text mb-6">
-                  <span
-                    className={`w-2 h-2 rounded-full motion-reduce:animate-none ${
-                      status === "available"
-                        ? "bg-primary animate-pulse"
-                        : status === "checking"
-                          ? "bg-amber-400 animate-pulse"
-                          : status === "unknown"
-                            ? "bg-amber-400/70"
-                          : "bg-muted-foreground/60"
-                    }`}
-                  />
-                  {statusLabel}
-                </div>
+                {/* Nex's place, at the top of the card: in view as soon as the
+                    section is, with the status as its label. */}
+                <SectionNexDock
+                  section="nex"
+                  className="mb-6 text-left"
+                  eyebrow={
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-subtle border border-black/10 dark:border-white/10 text-xs font-mono text-primary-text">
+                    <span
+                      className={`w-2 h-2 rounded-full motion-reduce:animate-none ${
+                        status === "available"
+                          ? "bg-primary animate-pulse"
+                          : status === "checking"
+                            ? "bg-amber-400 animate-pulse"
+                            : status === "unknown"
+                              ? "bg-amber-400/70"
+                            : "bg-muted-foreground/60"
+                      }`}
+                    />
+                    {statusLabel}
+                  </div>
+                  }
+                />
                 <h2 className="heading-xl mb-2">
                   Meet <span className="text-gradient">Nex</span>
                 </h2>
@@ -90,8 +98,6 @@ const NexSection = () => {
                   Ask for a number that isn&apos;t published and Nex says so instead of estimating, the same discipline Nikunj&apos;s evaluation platform enforces. It can only take you to pages on an allow-list, and it is scored against its own golden set.
                 </p>
 
-                <SectionNexDock section="nex" className="mb-6 justify-center lg:justify-start" />
-
                 <button 
                   onClick={() => handlePromptClick("")}
                   className={`inline-flex items-center gap-2 px-8 py-4 rounded-full font-bold text-sm tracking-wide transition-all duration-300 active:scale-95 ${
@@ -106,7 +112,7 @@ const NexSection = () => {
               </div>
 
               {/* Right Content - The Prompt Chips */}
-              <div className="w-full lg:w-1/2 relative z-10 flex flex-col gap-3">
+              <div className="w-full lg:w-1/2 relative z-10 flex flex-col gap-3 lg:justify-between">
                 <p className="text-xs font-mono text-muted-foreground mb-2 uppercase tracking-widest hidden lg:block ml-2">Suggested prompts</p>
                 {chatSuggestions.map((s) => (
                   <button
