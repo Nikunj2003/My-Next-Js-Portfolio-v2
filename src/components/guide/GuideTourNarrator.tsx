@@ -6,11 +6,13 @@ import { ArrowLeft, ArrowRight, MessageCircle, X } from "lucide-react";
 import { clearGuideHighlight, highlightGuideTarget, pointOfElement } from "@/lib/guide/actions";
 import { emitGuide } from "@/lib/guide/bus";
 import { dispatchCompanion, openAsk, useCompanionState } from "@/lib/guide/companion-store";
-import { writeGuidePrefs } from "@/lib/guide/prefs";
+import { readGuidePrefs, writeGuidePrefs } from "@/lib/guide/prefs";
 import { guideTargetSelector } from "@/lib/guide/targets";
 import { START_TOUR_EVENT } from "@/lib/guide/tour-control";
 import { planTourScroll, resolveTargetBox } from "@/lib/guide/tour-plan";
-import { TOUR_STEPS } from "@/lib/guide/tour";
+import { stepsFor, type VisitorId } from "@/lib/guide/paths";
+import type { TourStep } from "@/lib/guide/tour";
+import type { StartTourDetail } from "@/lib/guide/tour-control";
 import { scrollToOffset, NAVBAR_CLEARANCE as NAVBAR } from "@/lib/scroll";
 
 /** Room the narrator takes at the bottom: the companion in the corner with its bubble beside it. */
@@ -27,6 +29,12 @@ const INTERACTIVE_FOCUS =
  */
 export function useGuideTour(isMobile: boolean) {
   const [index, setIndex] = useState<number | null>(null);
+  // The steps of the visitor path being toured (the 60-second tour by default).
+  const [steps, setSteps] = useState<TourStep[]>(() => stepsFor("default"));
+  const stepsRef = useRef(steps);
+  useEffect(() => {
+    stepsRef.current = steps;
+  }, [steps]);
   const [drifted, setDrifted] = useState(false);
   const [announcement, setAnnouncement] = useState("");
   const scrollingRef = useRef(false);
@@ -39,14 +47,14 @@ export function useGuideTour(isMobile: boolean) {
   const pathname = usePathname();
   const companion = useCompanionState();
 
-  const targetOf = useCallback((step: (typeof TOUR_STEPS)[number]) => {
+  const targetOf = useCallback((step: TourStep) => {
     const highlighted = step.highlight ? document.querySelector(guideTargetSelector(step.highlight)) : null;
     return (highlighted ?? document.querySelector(step.href)) as HTMLElement | null;
   }, []);
 
   /** Where the page should scroll for this step right now, or null when the target is already clear. */
   const planFor = useCallback(
-    (step: (typeof TOUR_STEPS)[number]) => {
+    (step: TourStep) => {
       const element = targetOf(step);
       if (!element) return null;
       const box = resolveTargetBox(element, (node) => getComputedStyle(node as unknown as Element).position === "sticky");
@@ -65,7 +73,7 @@ export function useGuideTour(isMobile: boolean) {
   /** Scrolls to a step and, once settled, rings it and points the avatar at it. */
   const runStep = useCallback(
     (next: number) => {
-      const step = TOUR_STEPS[next];
+      const step = stepsRef.current[next];
       if (!step) return;
       const run = ++runRef.current;
       cancelScrollRef.current?.();
@@ -105,13 +113,13 @@ export function useGuideTour(isMobile: boolean) {
 
   const goTo = useCallback(
     (next: number) => {
-      const step = TOUR_STEPS[next];
+      const step = stepsRef.current[next];
       if (!step) return;
       setIndex(next);
       setDrifted(false);
       dispatchCompanion({ type: "tour/open" });
       emitGuide({ type: "tour/start" });
-      setAnnouncement(`Step ${next + 1} of ${TOUR_STEPS.length}: ${step.title}. ${step.line}`);
+      setAnnouncement(`Step ${next + 1} of ${stepsRef.current.length}: ${step.title}. ${step.line}`);
       runStep(next);
     },
     [runStep]
@@ -150,7 +158,13 @@ export function useGuideTour(isMobile: boolean) {
   // The route timer lives in a ref: routing home changes `pathname`, which
   // re-runs this effect, and its cleanup must not cancel the pending start.
   useEffect(() => {
-    const onStart = () => {
+    const onStart = (event: Event) => {
+      // The visitor's path, remembered for the chat and the next chooser.
+      const pathId: VisitorId = (event as CustomEvent<StartTourDetail>).detail?.pathId ?? readGuidePrefs().visitor ?? "default";
+      writeGuidePrefs({ visitor: pathId });
+      const chosen = stepsFor(pathId);
+      stepsRef.current = chosen;
+      setSteps(chosen);
       if (routeTimerRef.current) clearTimeout(routeTimerRef.current);
       routeTimerRef.current = null;
       if (pathname !== "/") {
@@ -179,7 +193,7 @@ export function useGuideTour(isMobile: boolean) {
     const giveUp = performance.now() + 5000;
     const wait = () => {
       if (!pendingStartRef.current) return;
-      if (targetOf(TOUR_STEPS[0]) || performance.now() > giveUp) {
+      if (targetOf(stepsRef.current[0]) || performance.now() > giveUp) {
         pendingStartRef.current = false;
         goToRef.current(0);
         return;
@@ -234,7 +248,7 @@ export function useGuideTour(isMobile: boolean) {
         event.preventDefault();
         end(false);
       } else if (event.key === "ArrowRight") {
-        if (index! < TOUR_STEPS.length - 1) goTo(index! + 1);
+        if (index! < steps.length - 1) goTo(index! + 1);
         else end(true);
       } else if (event.key === "ArrowLeft" && index! > 0) {
         goTo(index! - 1);
@@ -242,7 +256,7 @@ export function useGuideTour(isMobile: boolean) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [active, end, goTo, index]);
+  }, [active, end, goTo, index, steps.length]);
 
   // The layout changes under the tour (rotation, keyboard, resize): plan the current step again.
   useEffect(() => {
@@ -267,7 +281,7 @@ export function useGuideTour(isMobile: boolean) {
   // Offer to resume if the visitor scrolls away from the step on their own.
   useEffect(() => {
     if (!active) return;
-    const element = targetOf(TOUR_STEPS[index!]);
+    const element = targetOf(steps[index!]);
     if (!element) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -277,18 +291,19 @@ export function useGuideTour(isMobile: boolean) {
     );
     observer.observe(element);
     return () => observer.disconnect();
-  }, [active, index, targetOf]);
+  }, [active, index, steps, targetOf]);
 
   const narrator = active ? (
     <TourNarration
       index={index!}
+      steps={steps}
       drifted={drifted}
       onBack={() => goTo(index! - 1)}
-      onNext={() => (index! < TOUR_STEPS.length - 1 ? goTo(index! + 1) : end(true))}
+      onNext={() => (index! < steps.length - 1 ? goTo(index! + 1) : end(true))}
       onResume={() => goTo(index!)}
       onSkip={() => end(false)}
       onAsk={() => {
-        const prompt = TOUR_STEPS[index!].askPrompt;
+        const prompt = steps[index!].askPrompt;
         end(false);
         openAsk(prompt);
       }}
@@ -300,6 +315,7 @@ export function useGuideTour(isMobile: boolean) {
 
 type NarrationProps = {
   index: number;
+  steps: TourStep[];
   drifted: boolean;
   onBack: () => void;
   onNext: () => void;
@@ -308,8 +324,8 @@ type NarrationProps = {
   onAsk: () => void;
 };
 
-function TourNarration({ index, drifted, onBack, onNext, onResume, onSkip, onAsk }: NarrationProps) {
-  const isLast = index === TOUR_STEPS.length - 1;
+function TourNarration({ index, steps, drifted, onBack, onNext, onResume, onSkip, onAsk }: NarrationProps) {
+  const isLast = index === steps.length - 1;
   const nextRef = useRef<HTMLButtonElement>(null);
   // The tour has just started: put the keyboard on "Next" without moving the page.
   useEffect(() => {
@@ -319,7 +335,7 @@ function TourNarration({ index, drifted, onBack, onNext, onResume, onSkip, onAsk
     <div className="px-5 py-4" role="region" aria-label="Guided tour">
       <div className="mb-1.5 flex items-center justify-between gap-3">
         <p className="font-mono text-[11px] uppercase tracking-wider text-primary-text">
-          Tour · {index + 1} / {TOUR_STEPS.length}
+          Tour · {index + 1} / {steps.length}
         </p>
         <button
           type="button"
@@ -334,7 +350,7 @@ function TourNarration({ index, drifted, onBack, onNext, onResume, onSkip, onAsk
           the current one, so the card is as tall as the longest step on every
           step: it never grows or shrinks (and moves up and down) between steps. */}
       <div className="grid">
-        {TOUR_STEPS.map((each, i) => (
+        {steps.map((each, i) => (
           <div key={each.title} aria-hidden={i !== index} className={"col-start-1 row-start-1 " + (i === index ? "" : "invisible")}>
             <h2 className="text-base font-semibold text-foreground">{each.title}</h2>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{each.line}</p>

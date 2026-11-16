@@ -359,3 +359,19 @@ test("stored empty messages from an old failure are dropped on load", () => {
   hydrateNexChat();
   assert.ok(getNexChatSnapshot().messages.every((message) => message.content.trim().length > 0));
 });
+
+test("the chosen visitor path is sent with the request; the default tour sends none", async () => {
+  let body: Record<string, unknown> = {};
+  const capture = async (_url: unknown, init?: RequestInit) => {
+    body = JSON.parse(String(init?.body));
+    return ndjsonResponse(answerEvents);
+  };
+  configureNexChat({ fetch: capture as typeof fetch, storage: memoryStorage(), visitor: () => "engineer" });
+  hydrateNexChat();
+  await sendNexMessage("hi");
+  assert.equal(body.visitor, "engineer");
+  configureNexChat({ fetch: capture as typeof fetch, storage: memoryStorage(), visitor: () => "default" });
+  hydrateNexChat();
+  await sendNexMessage("hi");
+  assert.equal(body.visitor, undefined);
+});

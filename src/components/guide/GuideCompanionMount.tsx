@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { whenIdle } from "@/components/guide/GuideAvatarSlot";
 import { appendNexExchange } from "@/lib/chat/nex-chat-store";
 import { openAsk, openPanel } from "@/lib/guide/companion-store";
-import { START_TOUR_EVENT } from "@/lib/guide/tour-control";
+import { START_TOUR_EVENT, type StartTourDetail } from "@/lib/guide/tour-control";
 import { introPending } from "@/lib/hero-intro";
 import type { AskHost } from "@/lib/guide/bubble-policy";
 
@@ -23,7 +23,8 @@ const GuideCompanion = dynamic(() => import("@/components/guide/GuideCompanion")
  */
 export function GuideCompanionMount() {
   const [ready, setReady] = useState(false);
-  const [pendingTour, setPendingTour] = useState(false);
+  // The start waiting for the narrator, with its visitor path (replayed as asked).
+  const [pendingTour, setPendingTour] = useState<false | StartTourDetail>(false);
   const replayingRef = useRef(false);
 
   // On idle, so it costs nothing on first load, except when the hero's intro
@@ -39,10 +40,10 @@ export function GuideCompanionMount() {
   // A tour start before the companion has loaded would reach nobody. Load it
   // now, then replay the event once the narrator is listening (it marks <html>).
   useEffect(() => {
-    const onStart = () => {
+    const onStart = (event: Event) => {
       if (replayingRef.current || document.documentElement.dataset.guideTour === "ready") return;
       setReady(true);
-      setPendingTour(true);
+      setPendingTour((event as CustomEvent<StartTourDetail>).detail ?? {});
     };
     window.addEventListener(START_TOUR_EVENT, onStart);
     return () => window.removeEventListener(START_TOUR_EVENT, onStart);
@@ -55,7 +56,7 @@ export function GuideCompanionMount() {
     const poll = () => {
       if (document.documentElement.dataset.guideTour === "ready") {
         replayingRef.current = true;
-        window.dispatchEvent(new CustomEvent(START_TOUR_EVENT));
+        window.dispatchEvent(new CustomEvent<StartTourDetail>(START_TOUR_EVENT, { detail: pendingTour || {} }));
         replayingRef.current = false;
         setPendingTour(false);
       } else if (performance.now() - startedAt < 5000) {

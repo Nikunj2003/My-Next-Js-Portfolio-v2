@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Compass } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
+import { Compass, CornerDownRight } from "lucide-react";
 import { InlineAnswer } from "@/components/ai/InlineAnswer";
+import { TourChooser } from "@/components/guide/TourChooser";
 
 const EXAMPLES = [
   "Which study proves he can debug production infrastructure?",
@@ -21,6 +22,11 @@ const EXAMPLES = [
 export function ReadingPathAsk() {
   const [question, setQuestion] = useState<string | null>(null);
   const [input, setInput] = useState("");
+  // Or take a tour: the same choice of paths as the hero (it goes home to run).
+  const [choosing, setChoosing] = useState(false);
+  const tourRef = useRef<HTMLButtonElement>(null);
+  const closeChooser = useCallback(() => setChoosing(false), []);
+  const returnFocusTo = useCallback(() => tourRef.current, []);
 
   const ask = (q: string) => {
     if (!q.trim()) return;
@@ -33,9 +39,16 @@ export function ReadingPathAsk() {
         <Compass className="h-3.5 w-3.5" />
         Not sure where to start?
       </div>
-      <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
-        Tell Nex what you&apos;re evaluating for, and it&apos;ll point to the studies that prove it.
-      </p>
+      <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
+        <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
+          Tell Nex what you&apos;re evaluating for, and it&apos;ll point to the studies that prove it. Or take a tour for your role.
+        </p>
+        <button ref={tourRef} type="button" onClick={() => setChoosing((open) => !open)} aria-expanded={choosing} className="btn-cta-secondary shrink-0">
+          <Compass aria-hidden="true" />
+          Take a tour
+        </button>
+      </div>
+      <TourChooser open={choosing} onClose={closeChooser} returnFocusTo={returnFocusTo} />
 
       <form
         onSubmit={(event) => {
@@ -62,9 +75,10 @@ export function ReadingPathAsk() {
             key={example}
             type="button"
             onClick={() => ask(example)}
-            className="rounded-full border border-foreground/10 bg-foreground/5 px-3 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground"
+            className="inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-full border border-primary/20 bg-primary/[0.06] px-3.5 py-1.5 text-left text-[0.8125rem] leading-snug text-foreground/90 transition-colors hover:border-primary/45 hover:bg-primary/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
-            {example}
+            <CornerDownRight className="h-3.5 w-3.5 shrink-0 text-primary-text" aria-hidden="true" />
+            <span className="min-w-0">{example}</span>
           </button>
         ))}
       </div>

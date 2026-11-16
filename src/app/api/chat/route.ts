@@ -1,3 +1,4 @@
+import { VISITOR_IDS, visitorContext } from "@/lib/guide/paths";
 import { cardForToolResult } from "@/lib/chat/cards";
 import { addToolCallDelta } from "@/lib/chat/tool-name";
 import { NextResponse } from "next/server";
@@ -93,6 +94,9 @@ const chatHistoryMessageSchema = z.object({
 const chatRequestSchema = z.object({
   message: z.string().trim().min(1, "Message is required").max(MAX_MESSAGE_LENGTH),
   conversationHistory: z.array(chatHistoryMessageSchema).max(CHAT_MEMORY_WINDOW).optional().default([]),
+  // Who is reading, from the tour's visitor paths: an id from a fixed list,
+  // mapped to an authored note below. Anything else is dropped, not an error.
+  visitor: z.enum(VISITOR_IDS).optional().catch(undefined),
 });
 
 const categoryKeywords: Record<string, RegExp> = {
@@ -688,7 +692,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { message, conversationHistory } = parsedBody.data;
+  const { message, conversationHistory, visitor } = parsedBody.data;
 
   const apiKey = process.env.LLM_API_KEY?.trim();
   if (!apiKey) {
@@ -723,7 +727,8 @@ export async function POST(request: Request) {
 
   const recentMessages = trimConversationHistory(conversationHistory, CHAT_MEMORY_WINDOW);
 
-  const messages: ChatCompletionMessageParam[] = [{ role: "system", content: SYSTEM_PROMPT }];
+  const reader = visitorContext(visitor);
+  const messages: ChatCompletionMessageParam[] = [{ role: "system", content: reader ? `${SYSTEM_PROMPT}\n\n## Who is reading\n${reader} Stay within the same facts and rules; this only changes emphasis.` : SYSTEM_PROMPT }];
   recentMessages.forEach((msg) => {
     messages.push({ role: msg.sender === "user" ? "user" : "assistant", content: msg.content });
   });
