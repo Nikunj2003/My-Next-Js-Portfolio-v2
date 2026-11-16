@@ -71,3 +71,10 @@ test("the tour start carries the path through a deferred start", () => {
   assert.doesNotMatch(narrator, /TOUR_STEPS/, "the narrator reads the chosen path's steps");
   assert.match(narrator, /writeGuidePrefs\(\{ visitor: pathId \}\)/);
 });
+
+test("the role-fit question never exceeds the chat's 1200-character limit", async () => {
+  const { roleFitQuestion, MAX_ROLE_LENGTH } = await import("../src/lib/chat/role-fit.ts");
+  assert.ok(roleFitQuestion("x".repeat(5000)).length <= 1200);
+  assert.ok(MAX_ROLE_LENGTH > 900, "room for a real job description");
+  assert.ok(roleFitQuestion("  Senior AI engineer  ").endsWith("Role: Senior AI engineer"));
+});

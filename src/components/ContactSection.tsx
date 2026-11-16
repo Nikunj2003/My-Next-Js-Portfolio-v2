@@ -1,4 +1,5 @@
 "use client";
+import { RoleFitAsk } from "@/components/ai/RoleFitAsk";
 import Image from "next/image";
 import { useRef, useState } from "react";
 import { Send, Download, ArrowUpRight, Briefcase, Users, GitPullRequest, MessageSquare } from "lucide-react";
@@ -163,6 +164,8 @@ const ContactSection = () => {
                     If you are hiring for Applied AI systems, AI product engineering, agent workflows, or AI-platform reliability, I would welcome a conversation about the team, workflow, or problem you are solving. I&apos;m also open to thoughtful collaborations and open-source conversations.
                   </p>
                 </div>
+
+                <RoleFitAsk />
 
                 {/* Social links */}
                 <div className="flex flex-col gap-3">
