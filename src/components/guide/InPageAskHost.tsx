@@ -30,7 +30,46 @@ export function useInPageHost(host: AskHost, options: { fallbackFocus?: () => HT
   useEffect(() => {
     if (!open) return;
     openerRef.current = takeAskOpener();
-    return revealWhenSettled(() => hostRef.current, reduceMotion);
+    const element = hostRef.current;
+    if (!element) return;
+    // One reveal at a time; each waits for the layout to settle first.
+    let stop: (() => void) | null = null;
+    const reveal = () => {
+      stop = revealWhenSettled(() => hostRef.current, reduceMotion, () => {
+        stop = null;
+      });
+    };
+    reveal();
+    // The conversation grows after it opens: the first question adds the
+    // answer area, and the chips come back when an answer ends. Nothing
+    // scrolled for that, so the composer and the answer slid below the
+    // screen. When it grows while its bottom (the composer) was in view, it
+    // is brought back into view the same way, once the layout has settled.
+    // Streaming text never resizes it (the answer scrolls inside a fixed
+    // area), so this never follows tokens; and a reader who has scrolled the
+    // composer out of view is left where they are.
+    // "In view" is read from the page as it was just before it grew: the
+    // composer's place in the document then, against the scroll now. A reader
+    // who scrolled the conversation away mid-answer is never pulled back to it.
+    const docBottom = () => element.getBoundingClientRect().bottom + window.scrollY;
+    let lastHeight = element.getBoundingClientRect().height;
+    let lastBottom = docBottom();
+    const observer = new ResizeObserver(() => {
+      const box = element.getBoundingClientRect();
+      const grew = box.height > lastHeight + 1;
+      const wasBottom = lastBottom - window.scrollY;
+      lastHeight = box.height;
+      lastBottom = docBottom();
+      if (!grew || stop) return;
+      const wasInView = wasBottom > NAVBAR_CLEARANCE && wasBottom <= window.innerHeight + 2;
+      if (!wasInView) return;
+      reveal();
+    });
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+      stop?.();
+    };
   }, [open, reduceMotion]);
 
   const close = useCallback(() => {
@@ -69,20 +108,32 @@ export function useInPageHost(host: AskHost, options: { fallbackFocus?: () => HT
  * its top wins when it is taller than the screen). The visitor scrolling
  * themselves cancels it.
  */
-function revealWhenSettled(node: () => HTMLElement | null, reduceMotion: boolean) {
+function revealWhenSettled(node: () => HTMLElement | null, reduceMotion: boolean, onDone?: () => void) {
   const lenis = () => (window as Window & { __lenis?: Lenis }).__lenis;
   const start = performance.now();
   let frame = 0;
   let still = 0;
   let last: { docTop: number; height: number } | null = null;
   let cancelled = false;
-  const cancel = () => {
+  // The visitor scrolling the page themselves takes over. Keys only when they
+  // scroll it (Enter sends the question, which is what grows the host).
+  const cancel = () => finish();
+  const SCROLL_KEYS = new Set(["PageUp", "PageDown", "Home", "End", "ArrowUp", "ArrowDown", " "]);
+  const cancelKey = (event: KeyboardEvent) => {
+    const target = event.target as HTMLElement | null;
+    if (target?.closest("input, textarea, [contenteditable=true]")) return;
+    if (SCROLL_KEYS.has(event.key)) finish();
+  };
+  const finish = () => {
+    if (cancelled) return;
     cancelled = true;
+    detach();
+    onDone?.();
   };
   const step = () => {
     if (cancelled) return;
     const element = node();
-    if (!element) return;
+    if (!element) return finish();
     const box = element.getBoundingClientRect();
     const docTop = box.top + window.scrollY;
     // Still once its place in the page and its size have held for a few frames.
@@ -96,24 +147,28 @@ function revealWhenSettled(node: () => HTMLElement | null, reduceMotion: boolean
       let by = 0;
       if (settled.top < top || settled.height > bottom - top) by = settled.top - top;
       else if (settled.bottom > bottom) by = settled.bottom - bottom;
-      if (Math.abs(by) < 1) return;
-      const instance = lenis();
-      if (instance) instance.scrollTo(window.scrollY + by, { duration: reduceMotion ? 0 : 0.6 });
-      else window.scrollTo({ top: window.scrollY + by, behavior: reduceMotion ? "auto" : "smooth" });
-      return;
+      if (Math.abs(by) >= 1) {
+        const instance = lenis();
+        if (instance) instance.scrollTo(window.scrollY + by, { duration: reduceMotion ? 0 : 0.6 });
+        else window.scrollTo({ top: window.scrollY + by, behavior: reduceMotion ? "auto" : "smooth" });
+      }
+      return finish();
     }
     frame = requestAnimationFrame(step);
+  };
+  const detach = () => {
+    cancelAnimationFrame(frame);
+    window.removeEventListener("wheel", cancel);
+    window.removeEventListener("touchstart", cancel);
+    window.removeEventListener("keydown", cancelKey);
   };
   frame = requestAnimationFrame(step);
   window.addEventListener("wheel", cancel, { passive: true });
   window.addEventListener("touchstart", cancel, { passive: true });
-  window.addEventListener("keydown", cancel);
+  window.addEventListener("keydown", cancelKey);
   return () => {
     cancelled = true;
-    cancelAnimationFrame(frame);
-    window.removeEventListener("wheel", cancel);
-    window.removeEventListener("touchstart", cancel);
-    window.removeEventListener("keydown", cancel);
+    detach();
   };
 }
 
