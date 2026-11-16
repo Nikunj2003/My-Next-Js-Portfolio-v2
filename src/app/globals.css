@@ -255,6 +255,17 @@ textarea,
     background-color: color-mix(in oklab, hsl(var(--background)) 55%, transparent);
   }
 
+  /* Glass inside glass: a surface already blurs everything behind it, so a
+     blurred pill or chip inside it blurs an already-blurred, near-flat fill
+     and draws the same pixels (measured: 83 such surfaces on the homepage,
+     no visible change). Its own fill stays; only the second blur pass goes,
+     which is a full re-blur per surface per frame while the page moves. */
+  :is(.glass, .glass-strong, .glass-subtle, .glass-tier-surface, .glass-tier-chrome, .panel-sticky, .glass-nav, .glass-overlay)
+    :is(.glass, .glass-strong, .glass-subtle, .glass-tier-surface, .glass-tier-chrome, .btn-cta-secondary) {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
   /* Direct tier access, for components that supply their own fill and only need
      the blur at the right depth (SpotlightCard, toasts, the project deck). */
   .glass-tier-surface {
@@ -593,16 +604,18 @@ details[open]::details-content { block-size: auto; opacity: 1; }
 }
 /* Below 1024px the name stacks around a smaller, still Nex. */
 @media (max-width: 1023px) {
-  .hero-identity-row { grid-template-columns: minmax(0, 1fr); row-gap: 0.25rem; justify-items: center; }
+  /* The ring sits 8% of the stage outside it (NexRing outset="8%"), so the
+     gap above and below the stage clears it, plus air, never the names. */
+  .hero-identity-row { grid-template-columns: minmax(0, 1fr); row-gap: calc(var(--stage) * 0.08 + 0.625rem); justify-items: center; }
   .hero-name { font-size: clamp(2.75rem, 13cqi, 4rem); justify-self: center !important; background-image: none !important; color: hsl(var(--foreground)); }
 }
 
 /* The ring around Nex wherever it rests (NexRing): a faint track with
    ticks, a slow orbiting arc, and a quicker arc while Nex is answering. */
-.nex-ring-orbit, .nex-ring-think { transform-origin: 50px 50px; transform-box: view-box; }
+/* The orbit and the thinking arc are HTML layers rotated by the compositor. */
+.nex-ring-orbit, .nex-ring-think { transform-origin: 50% 50%; will-change: transform; }
 .nex-ring-orbit { animation: nex-orbit 18s linear infinite; animation-play-state: paused; }
 .nex-ring-svg[data-running] .nex-ring-orbit { animation-play-state: running; }
-.nex-ring-head { filter: drop-shadow(0 0 1.6px hsl(var(--primary) / 0.9)); }
 .nex-ring-think { opacity: 0; transition: opacity 400ms ease; animation: nex-orbit 1.4s linear infinite; animation-play-state: paused; }
 .nex-ring-svg[data-thinking] .nex-ring-think { opacity: 1; }
 .nex-ring-svg[data-thinking][data-running] .nex-ring-think { animation-play-state: running; }

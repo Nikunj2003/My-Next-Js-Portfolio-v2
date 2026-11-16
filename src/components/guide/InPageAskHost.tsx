@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion, type TargetAndTransition } from "framer-motion";
-import { AskContent } from "@/components/guide/AskContent";
+import { LazyAskContent as AskContent } from "@/components/guide/LazyAskContent";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { hostDomId, hostSection, type AskHost } from "@/lib/guide/ask-hosts";
 import { dispatchCompanion, openPanel, takeAskOpener, useCompanionSelector } from "@/lib/guide/companion-store";

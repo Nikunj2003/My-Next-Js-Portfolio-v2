@@ -24,8 +24,8 @@ const SkillsSection = () => {
           {/* Left Column: Sticky Header */}
           <div className="w-full shrink-0 lg:sticky lg:top-32 lg:w-1/3">
             <div data-guide-panel data-guide-target="skills-panel" className="panel-sticky">
-              <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
-              <div className="absolute -bottom-20 -left-16 h-40 w-40 rounded-full bg-accent/10 blur-3xl" />
+              <div aria-hidden="true" className="pointer-events-none absolute -right-[7.5rem] -top-[7.5rem] h-72 w-72 rounded-full bg-[radial-gradient(circle,hsl(var(--primary)/0.1)_0%,hsl(var(--primary)/0.05)_35%,transparent_70%)]" />
+              <div aria-hidden="true" className="pointer-events-none absolute -bottom-[8.5rem] -left-[7.5rem] h-72 w-72 rounded-full bg-[radial-gradient(circle,hsl(var(--accent)/0.1)_0%,hsl(var(--accent)/0.05)_35%,transparent_70%)]" />
 
               <div className="relative">
                 <SectionNexDock

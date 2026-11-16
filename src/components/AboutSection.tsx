@@ -47,8 +47,8 @@ const AboutSection = () => {
           <div className="w-full shrink-0 lg:sticky lg:top-32 lg:w-1/3">
             <div>
               <div data-guide-panel data-guide-target="about-panel" className="panel-sticky">
-                <div aria-hidden="true" className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
-                <div aria-hidden="true" className="absolute -bottom-20 -left-16 h-40 w-40 rounded-full bg-accent/10 blur-3xl" />
+                <div aria-hidden="true" className="pointer-events-none absolute -right-[7.5rem] -top-[7.5rem] h-72 w-72 rounded-full bg-[radial-gradient(circle,hsl(var(--primary)/0.1)_0%,hsl(var(--primary)/0.05)_35%,transparent_70%)]" />
+                <div aria-hidden="true" className="pointer-events-none absolute -bottom-[8.5rem] -left-[7.5rem] h-72 w-72 rounded-full bg-[radial-gradient(circle,hsl(var(--accent)/0.1)_0%,hsl(var(--accent)/0.05)_35%,transparent_70%)]" />
 
                 <div className="relative">
                   <SectionNexDock section="about" className="mb-6" eyebrow={<div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 font-mono text-xs text-primary-text">
@@ -117,7 +117,7 @@ const AboutSection = () => {
             <div>
               <div className="flex items-start gap-5">
                 <div className="relative hidden h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 sm:flex">
-                  <div aria-hidden="true" className="absolute inset-0 rounded-2xl bg-primary/20 blur-xl" />
+                  <div aria-hidden="true" className="pointer-events-none absolute -inset-6 rounded-[2rem] bg-[radial-gradient(closest-side,hsl(var(--primary)/0.2),hsl(var(--primary)/0.08)_55%,transparent)]" />
                   <Image
                     src={logo}
                     alt=""

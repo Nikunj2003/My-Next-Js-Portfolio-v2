@@ -433,14 +433,11 @@ export default function GuideCompanion() {
       const viewport: Viewport = { width: document.documentElement.clientWidth, height: window.innerHeight, insetTop: NAVBAR, insetBottom: 0 };
 
       if (isHome) {
-        const sections = ["hero", ...SECTION_IDS]
-          .map((id) => {
-            const node = cachedNode(`section:${id}`, () => document.getElementById(id));
-            if (!node) return null;
-            const box = node.getBoundingClientRect();
-            return { id, top: box.top, bottom: box.bottom };
-          })
-          .filter((section): section is { id: string; top: number; bottom: number } => section !== null);
+        // Section bounds in page coordinates, measured once per layout (the
+        // page's height and width) and read against the scroll: seven layout
+        // reads every frame were most of the loop's cost while scrolling.
+        const y = window.scrollY;
+        const sections = sectionBounds().map((section) => ({ id: section.id, top: section.top - y, bottom: section.bottom - y }));
         const next = activeSectionAt(sections, viewport.height, sectionRef.current);
         if (next !== sectionRef.current) {
           sectionRef.current = next;
@@ -966,6 +963,7 @@ const nodeCache = new Map<string, Element | null>();
 const styleCache = new Map<string, number | { panel: HTMLElement; stickyTop: number } | null>();
 let cacheWatched = false;
 function clearLayoutCache() {
+  sectionCache = null;
   nodeCache.clear();
   missedAt.clear();
   styleCache.clear();
@@ -1110,6 +1108,27 @@ const visibleBox = (node: HTMLElement | null) => {
   const box = node.getBoundingClientRect();
   return box.width > 0 && box.height > 0 ? box : null;
 };
+
+/**
+ * The homepage sections' bounds in page coordinates, kept until the page's
+ * height or width changes (an answer row opening, a resize, an image loading).
+ * A sticky panel never moves its section, so these stay true while scrolling.
+ */
+let sectionCache: { key: string; bounds: { id: string; top: number; bottom: number }[] } | null = null;
+function sectionBounds() {
+  const root = document.documentElement;
+  const key = `${root.scrollHeight}x${root.clientWidth}`;
+  if (sectionCache && sectionCache.key === key) return sectionCache.bounds;
+  const y = window.scrollY;
+  const bounds = ["hero", ...SECTION_IDS].flatMap((id) => {
+    const node = document.getElementById(id);
+    if (!node) return [];
+    const box = node.getBoundingClientRect();
+    return [{ id, top: box.top + y, bottom: box.bottom + y }];
+  });
+  sectionCache = { key, bounds };
+  return bounds;
+}
 
 /** When the page last scrolled (tips wait for it to be still). */
 let lastScrollAt = 0;

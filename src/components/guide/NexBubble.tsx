@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, cancelFrame, frame, motion, useMotionValue, useReducedMotion, type MotionValue } from "framer-motion";
 import { ArrowRight, X } from "lucide-react";
-import { AskContent } from "@/components/guide/AskContent";
+import { LazyAskContent as AskContent } from "@/components/guide/LazyAskContent";
 import { openRoleFit, dispatchCompanion, useCompanionState } from "@/lib/guide/companion-store";
 import { bubbleMaxHeight, chooseBubbleSide,
   freeBubbleSide, easeInOutCubic, placeBubbleBeside, type BubbleSide, type Rect, type Viewport } from "@/lib/guide/placement";

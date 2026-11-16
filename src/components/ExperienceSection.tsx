@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  cancelFrame,
+  frame,
   motion,
   useMotionValue,
   useReducedMotion,
@@ -195,43 +197,36 @@ const ExperienceSection = () => {
     const element = timelineRef.current;
     if (!element) return;
 
-    let frameId: number | null = null;
+    // The line follows the scroll on Framer Motion's frame loop, in its read
+    // step, with everything else that moves (Lenis scrolls in that step):
+    // a separate scroll listener and rAF ran a frame late and read layout on
+    // its own. The timeline's place in the page is measured once per layout
+    // and the progress comes from the scroll alone.
     let isTracking = false;
+    let place: { key: string; top: number; height: number } | null = null;
 
     const updateProgress = () => {
-      const rect = element.getBoundingClientRect();
-      const viewportThreshold = window.innerHeight * 0.8;
-      const total = Math.max(rect.height, 1);
-      const rawProgress = (viewportThreshold - rect.top) / total;
-      const clampedProgress = Math.max(0, Math.min(1, rawProgress));
-
-      scrollYProgress.set(clampedProgress);
-      frameId = null;
-    };
-
-    const requestUpdate = () => {
-      if (!isTracking || frameId !== null) return;
-      frameId = window.requestAnimationFrame(updateProgress);
+      const root = document.documentElement;
+      const key = `${root.scrollHeight}x${root.clientWidth}x${window.innerHeight}`;
+      if (!place || place.key !== key) {
+        const rect = element.getBoundingClientRect();
+        place = { key, top: rect.top + window.scrollY, height: Math.max(rect.height, 1) };
+      }
+      const top = place.top - window.scrollY;
+      const rawProgress = (window.innerHeight * 0.8 - top) / place.height;
+      scrollYProgress.set(Math.max(0, Math.min(1, rawProgress)));
     };
 
     const startTracking = () => {
       if (isTracking) return;
       isTracking = true;
-      window.addEventListener("scroll", requestUpdate, { passive: true });
-      window.addEventListener("resize", requestUpdate);
-      requestUpdate();
+      frame.read(updateProgress, true);
     };
 
     const stopTracking = () => {
       if (!isTracking) return;
       isTracking = false;
-      window.removeEventListener("scroll", requestUpdate);
-      window.removeEventListener("resize", requestUpdate);
-
-      if (frameId !== null) {
-        window.cancelAnimationFrame(frameId);
-        frameId = null;
-      }
+      cancelFrame(updateProgress);
     };
 
     const observer = new IntersectionObserver(
@@ -261,8 +256,8 @@ const ExperienceSection = () => {
           <div className="w-full shrink-0 lg:sticky lg:top-32 lg:w-1/3">
             <div>
               <div data-guide-panel className="panel-sticky" data-guide-target="experience-intro">
-                <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
-                <div className="absolute -bottom-20 -left-16 h-40 w-40 rounded-full bg-accent/10 blur-3xl" />
+                <div aria-hidden="true" className="pointer-events-none absolute -right-[7.5rem] -top-[7.5rem] h-72 w-72 rounded-full bg-[radial-gradient(circle,hsl(var(--primary)/0.1)_0%,hsl(var(--primary)/0.05)_35%,transparent_70%)]" />
+                <div aria-hidden="true" className="pointer-events-none absolute -bottom-[8.5rem] -left-[7.5rem] h-72 w-72 rounded-full bg-[radial-gradient(circle,hsl(var(--accent)/0.1)_0%,hsl(var(--accent)/0.05)_35%,transparent_70%)]" />
 
                 <div className="relative">
                   <SectionNexDock
