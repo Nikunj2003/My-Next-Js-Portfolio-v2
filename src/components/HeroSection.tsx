@@ -81,7 +81,7 @@ const HeroSection = () => {
         <HeroActions />
 
         {/* The figures: each links to the work that backs it. */}
-        <div data-hero-part="copy" data-hero-glass data-guide-target="hero-proof" className="mt-[var(--hero-gap)] grid w-full max-w-3xl grid-cols-2 gap-x-6 gap-y-4 rounded-2xl border border-foreground/10 glass-subtle px-5 py-4 text-left shadow-accent-soft sm:grid-cols-4 sm:px-6">
+        <div data-hero-part="copy" data-hero-glass data-guide-target="hero-proof" className="hero-figures mt-[var(--hero-gap)] grid w-full max-w-3xl grid-cols-2 gap-x-6 gap-y-4 rounded-2xl border border-foreground/10 glass-subtle px-5 py-4 text-left shadow-accent-soft sm:grid-cols-4 sm:px-6">
           {stats.map((stat) => (
             <Link
               key={stat.label}
@@ -92,8 +92,12 @@ const HeroSection = () => {
                 {stat.value}
                 {stat.suffix}
               </span>
-              <span className="mt-0.5 block text-[0.8125rem] leading-snug text-muted-foreground transition-colors group-hover:text-foreground">
+              <span className="hero-figure-label mt-0.5 block text-[0.8125rem] leading-snug text-muted-foreground transition-colors group-hover:text-foreground">
                 {stat.label.charAt(0) + stat.label.slice(1).toLowerCase()}
+              </span>
+              {/* Phones: one row of four, so the label is the short one. */}
+              <span aria-hidden="true" className="hero-figure-short hidden text-muted-foreground transition-colors group-hover:text-foreground">
+                {stat.short}
               </span>
             </Link>
           ))}

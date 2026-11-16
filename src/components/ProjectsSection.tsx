@@ -255,7 +255,8 @@ function ProjectCard({
               ))}
             </ul>
 
-            <div className="mt-6 flex items-center gap-2">
+            {/* Wraps on narrow phones: three actions don't fit 280px in one line. */}
+            <div className="mt-6 flex flex-wrap items-center gap-2">
               {project.live && (
                 <a
                   href={project.live}
