@@ -55,7 +55,7 @@ export function SectionNexDock({ section, layout = "row", eyebrow, className = "
     <button
       type="button"
       onClick={ask}
-      className="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-full border border-primary/25 bg-primary/[0.07] px-3 text-xs font-semibold text-primary-text transition-colors hover:border-primary/50 hover:bg-primary/[0.13] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      className="relative before:absolute before:-inset-y-1.5 before:inset-x-0 before:content-[''] inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-full border border-primary/25 bg-primary/[0.07] px-3 text-xs font-semibold text-primary-text transition-colors hover:border-primary/50 hover:bg-primary/[0.13] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
     >
       {askOpen ? <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" /> : <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" />}
       {askOpen ? "Continue here" : section === "contact" ? "Check a role's fit" : "Ask Nex"}

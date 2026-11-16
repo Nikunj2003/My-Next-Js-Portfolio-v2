@@ -271,7 +271,7 @@ function ProjectCard({
                 href={project.github}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-full border border-white/10 glass-subtle px-4 py-2 text-xs font-bold text-foreground transition-colors hover:border-primary/30 hover:text-primary-text"
+                className="relative before:absolute before:-inset-y-1.5 before:inset-x-0 before:content-[''] inline-flex items-center gap-1.5 rounded-full border border-white/10 glass-subtle px-4 py-2 text-xs font-bold text-foreground transition-colors hover:border-primary/30 hover:text-primary-text"
               >
                 <Github className="h-3.5 w-3.5" />
                 Source
@@ -279,7 +279,7 @@ function ProjectCard({
               {studyPath(project.slug) && (
                 <Link
                   href={studyPath(project.slug)!}
-                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold text-primary-text transition-colors hover:text-primary-text"
+                  className="relative before:absolute before:-inset-y-1.5 before:inset-x-0 before:content-[''] inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold text-primary-text transition-colors hover:text-primary-text"
                 >
                   Case study
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -356,7 +356,7 @@ const ProjectsSection = ({ featured, caseStudyCount }: { featured: ReactNode; ca
         <div className="mb-24 mt-6">
           <Link
             href="/work"
-            className="group/all inline-flex items-center gap-2 text-sm font-semibold text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="relative before:absolute before:-inset-y-3 before:-inset-x-1 before:content-[''] group/all inline-flex items-center gap-2 text-sm font-semibold text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             View all {caseStudyCount} case studies
             <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover/all:translate-x-1 motion-reduce:transition-none" />
@@ -411,7 +411,7 @@ const ProjectsSection = ({ featured, caseStudyCount }: { featured: ReactNode; ca
                         href={project.github}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-primary-text"
+                        className="relative before:absolute before:-inset-y-3 before:-inset-x-1 before:content-[''] inline-flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-primary-text"
                       >
                         <Github className="h-3.5 w-3.5" />
                         Source

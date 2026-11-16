@@ -22,8 +22,10 @@ export { openNex as askAboutThis } from "@/lib/ask-nex";
  * focus raise the contrast, so hover signals "this is interactive" rather than
  * "this exists".
  */
+// `before:` is an invisible hit area: the pill keeps its small look, the
+// finger gets a 44px-tall target (WCAG 2.5.8 / Apple's 44pt).
 const AFFORDANCE_BASE =
-  "inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 align-middle font-mono text-[10px] font-medium uppercase tracking-wider transition-colors duration-200 " +
+  "relative before:absolute before:-inset-x-1 before:-inset-y-3 before:content-[''] inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 align-middle font-mono text-[10px] font-medium uppercase tracking-wider transition-colors duration-200 " +
   "border-primary/15 text-primary-text " +
   "hover:border-primary/40 hover:bg-primary/10 hover:text-primary-text " +
   "focus-visible:border-primary/40 focus-visible:text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 " +

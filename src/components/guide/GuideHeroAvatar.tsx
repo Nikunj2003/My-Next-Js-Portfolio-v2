@@ -220,7 +220,7 @@ export function HeroAskHost() {
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="inline-flex min-h-8 items-center text-sm font-medium text-primary-text underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className="relative before:absolute before:-inset-y-1.5 before:inset-x-0 before:content-[''] inline-flex min-h-8 items-center text-sm font-medium text-primary-text underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
                     {link.label}
                   </Link>
