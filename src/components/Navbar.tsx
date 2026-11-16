@@ -200,10 +200,10 @@ const Navbar = () => {
 
   return (
     <>
-      <div className="fixed top-0 inset-x-0 z-50 flex justify-center px-4 pt-[max(1rem,env(safe-area-inset-top))] sm:pt-[max(1.5rem,env(safe-area-inset-top))] pointer-events-none">
+      <div className="fixed top-0 inset-x-0 z-50 flex justify-center px-4 pt-[var(--nav-top)] pointer-events-none">
         <nav
           aria-label="Main"
-          className={`pointer-events-auto transition-all duration-500 rounded-2xl sm:rounded-full container-width flex items-center justify-between px-4 sm:px-6 h-14 sm:h-16 border ${
+          className={`pointer-events-auto transition-all duration-500 rounded-2xl sm:rounded-full container-width flex items-center justify-between px-4 sm:px-6 h-[var(--nav-height)] border ${
             scrolled ? "glass-nav shadow-accent-card border-foreground/10" : "bg-transparent border-transparent"
           }`}
         >
@@ -221,7 +221,7 @@ const Navbar = () => {
                 aria-current={currentSection === link.href ? "location" : undefined}
                 className={`px-3 py-2 text-sm font-medium transition-all duration-200 rounded-full ${
                   currentSection === link.href
-                    ? "bg-primary/10 text-primary shadow-[0_0_14px_hsl(var(--accent)/0.1)]"
+                    ? "bg-primary/10 text-primary-text shadow-[0_0_14px_hsl(var(--accent)/0.1)]"
                     : "text-muted-foreground hover:text-foreground hover:bg-foreground/10"
                 }`}
               >
@@ -234,7 +234,7 @@ const Navbar = () => {
               type="button"
               onClick={() => window.dispatchEvent(new CustomEvent("open-command-palette"))}
               aria-label="Open command palette"
-              className="hidden items-center gap-1.5 rounded-full border border-foreground/10 px-3 py-1.5 font-mono text-[11px] text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary lg:flex"
+              className="hidden items-center gap-1.5 rounded-full border border-foreground/10 px-3 py-1.5 font-mono text-[11px] text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary-text lg:flex"
             >
               <Search className="h-3 w-3" />
               <kbd className="font-sans">⌘K</kbd>
@@ -243,7 +243,7 @@ const Navbar = () => {
             <a
               href={personalInfo.resumeUrl}
               download
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-full bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 active:scale-[0.97] ml-2"
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-full bg-primary/10 border border-primary/20 text-primary-text hover:bg-primary hover:text-primary-foreground transition-all duration-300 active:scale-[0.97] ml-2"
             >
               <Download className="w-3.5 h-3.5" />
               Resume
@@ -298,7 +298,7 @@ const Navbar = () => {
                   aria-current={currentSection === link.href ? "location" : undefined}
                   className={`block px-4 py-3 text-sm rounded-lg transition-colors font-medium w-full ${
                     currentSection === link.href
-                      ? "bg-primary/10 text-primary"
+                      ? "bg-primary/10 text-primary-text"
                       : "text-muted-foreground hover:text-foreground hover:bg-foreground/5"
                   }`}
                 >

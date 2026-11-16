@@ -6,6 +6,7 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { InlineAnswer } from "@/components/ai/InlineAnswer";
 import { openNex } from "@/lib/ask-nex";
+import type { AskHost } from "@/lib/guide/ask-hosts";
 
 /** Re-exported so existing call sites keep working. */
 export { openNex as askAboutThis } from "@/lib/ask-nex";
@@ -23,16 +24,17 @@ export { openNex as askAboutThis } from "@/lib/ask-nex";
 const AFFORDANCE_BASE =
   "inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 align-middle font-mono text-[10px] font-medium uppercase tracking-wider transition-colors duration-200 " +
   "border-primary/15 text-primary-text " +
-  "hover:border-primary/40 hover:bg-primary/10 hover:text-primary " +
-  "focus-visible:border-primary/40 focus-visible:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 " +
+  "hover:border-primary/40 hover:bg-primary/10 hover:text-primary-text " +
+  "focus-visible:border-primary/40 focus-visible:text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 " +
   "motion-reduce:transition-none";
 
 /**
  * The single "ask about this" affordance used everywhere.
  *
- * Opens the Nex panel by DEFAULT. The panel is the right home for an answer
- * of unpredictable length: it scrolls independently, it keeps the conversation
- * so a visitor can follow up, and it cannot disturb the page's layout.
+ * Opens the conversation with Nex by DEFAULT, wherever asking opens
+ * (`resolveAskHost`: the section's own host, a page row, or the bubble), or in
+ * a given `host` (a case-study section's row). It keeps the conversation, so
+ * a visitor can follow up, and the answer scrolls inside its own surface.
  *
  * `inline` opts a surface into answering in place instead, and is deliberately
  * rare. An inline answer only works where the container is full-width prose
@@ -50,6 +52,7 @@ export default function AskAboutThis({
   label = "Ask about this",
   className,
   inline = false,
+  host,
 }: {
   question: string;
   label?: string;
@@ -59,6 +62,8 @@ export default function AskAboutThis({
    * that can grow downward without pushing sibling content around.
    */
   inline?: boolean;
+  /** Where the answer opens (a page row, `page:<id>`); by default wherever asking opens. */
+  host?: AskHost;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -66,10 +71,10 @@ export default function AskAboutThis({
     <>
       <button
         type="button"
-        onClick={() => (inline ? setOpen((prev) => !prev) : openNex(question))}
+        onClick={() => (inline ? setOpen((prev) => !prev) : openNex(question, undefined, { host }))}
         aria-label={`${label}: ${question}`}
         aria-expanded={inline ? open : undefined}
-        className={cn(AFFORDANCE_BASE, "ml-2", open && "border-primary/40 bg-primary/10 text-primary", className)}
+        className={cn(AFFORDANCE_BASE, "ml-2", open && "border-primary/40 bg-primary/10 text-primary-text", className)}
       >
         <Sparkles className="h-2.5 w-2.5" />
         {label}

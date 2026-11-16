@@ -12,6 +12,13 @@ export const GUIDE_HIGHLIGHTS = {
   "work-featured": "Featured case studies",
   "experience-intro": "Experience overview",
   "contact-form": "Contact form",
+  "about-panel": "About's intro panel",
+  "skills-panel": "Skills overview",
+  "nex-card": "The Nex section's card",
+  "pillar-quality": "Pillar: measured quality",
+  "pillar-tools": "Pillar: governed tools",
+  "pillar-retrieval": "Pillar: grounded retrieval",
+  "pillar-cost": "Pillar: controlled cost",
 } as const;
 
 export type GuideHighlight = keyof typeof GUIDE_HIGHLIGHTS;

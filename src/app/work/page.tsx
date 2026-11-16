@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { RouteNexSocket } from "@/components/guide/RouteNexSocket";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { caseStudies, caseStudiesByTheme } from "@/data/case-studies";
 import { personalInfo } from "@/data/portfolio";
@@ -63,14 +64,15 @@ const WorkIndexPage = () => (
           <div className="mb-8">
             <Link
               href="/"
-              className="-my-3 inline-flex min-h-11 items-center gap-2 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+              className="-my-3 inline-flex min-h-11 items-center gap-2 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-primary-text"
             >
               <ArrowLeft className="h-4 w-4" />
               Home
             </Link>
           </div>
 
-          <div>
+          <div className="flex items-start justify-between gap-10">
+            <div className="min-w-0">
             <div className="mb-4 font-mono text-xs uppercase tracking-widest text-primary-text">Case studies</div>
             <h1 className="heading-xl mb-6">
               Engineering <span className="text-gradient">Case Studies</span>
@@ -79,6 +81,8 @@ const WorkIndexPage = () => (
               Each write-up covers the problem, the constraints it ran under, the decisions taken with the
               alternatives rejected, measured results, and an explicit statement of what was mine versus shared.
             </p>
+            </div>
+            <RouteNexSocket prompt={`${caseStudies.length} studies. Tell me the role and I'll pick three to read first.`} />
           </div>
 
           <div>

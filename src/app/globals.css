@@ -11,6 +11,15 @@
   }
 
   :root {
+    /* The navbar's real footprint (Navbar.tsx): top inset + bar height. The
+       hero starts below it, so the first line never crowds the bar. */
+    --nav-top: max(1rem, env(safe-area-inset-top));
+    --nav-height: 3.5rem;
+    /* The hero's name: ink on the outside, a darker teal toward Nex. */
+    --name-ink: hsl(var(--foreground));
+    --name-inner: hsl(175 70% 24%);
+    --gradient-mid: hsl(170 62% 38%);
+    --guide-disc: hsl(168 38% 92% / 0.95);
     --background: 40 20% 97%;
     --foreground: 220 25% 10%;
     --card: 40 15% 95%;
@@ -71,6 +80,9 @@
   }
 
   .dark {
+    --name-inner: hsl(168 62% 70%);
+    --gradient-mid: hsl(var(--accent));
+    --guide-disc: rgb(9 14 26 / 0.9);
     --background: 224 47% 7%;
     --foreground: 170 20% 92%;
     --card: 221 39% 11%;
@@ -93,6 +105,13 @@
     --border: 221 20% 18%;
     --input: 221 20% 18%;
     --ring: 170 68% 50%;
+  }
+}
+
+@media (min-width: 640px) {
+  :root {
+    --nav-top: max(1.5rem, env(safe-area-inset-top));
+    --nav-height: 4rem;
   }
 }
 
@@ -272,8 +291,20 @@ textarea,
     backdrop-filter: blur(var(--blur-overlay)) saturate(150%);
   }
 
+  /* The accent's middle stop is set per theme: in light mode the raw accent
+     (50% lightness) washed out to near-white against the cream background,
+     so it is darkened there to stay in the same family as dark mode's look. */
   .text-gradient {
-    @apply bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent;
+    background-image: linear-gradient(to right, hsl(var(--primary)), var(--gradient-mid), hsl(var(--primary)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* The companion's disc: dark in both themes would be a black hole on the
+     cream page, so light mode uses a soft tinted surface instead. */
+  .guide-disc {
+    background-color: var(--guide-disc);
   }
 
   /* Call-to-action buttons.
@@ -290,18 +321,58 @@ textarea,
           also truncate the rest of the list.
      So anything in either category is written as plain CSS below. Check the
      compiled output, not just the source, when editing these. */
+  /* One action family. Links and buttons share the same box: 48px tall,
+     1px border on every variant, so a filled and an outlined button sit on
+     one line at one height. Written as plain CSS (see the note above). */
+  .btn-cta-primary,
+  .btn-cta-secondary {
+    box-sizing: border-box;
+    display: inline-flex;
+    min-height: 3rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 9999px;
+    border: 1px solid transparent;
+    padding: 0 1.375rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    transition: background-color 200ms, border-color 200ms, color 200ms;
+  }
+
   .btn-cta-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-bold tracking-wide text-primary-foreground transition-all duration-300 active:scale-95;
+    background-color: hsl(var(--primary));
+    border-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+  }
+
+  .btn-cta-primary:hover {
+    background-color: color-mix(in oklab, hsl(var(--primary)) 88%, hsl(var(--foreground)));
   }
 
   .btn-cta-secondary {
-    border: 1px solid hsl(var(--primary) / 0.5);
+    border-color: hsl(var(--primary) / 0.35);
     background-color: color-mix(in oklab, hsl(var(--background)) 55%, transparent);
-    @apply inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-sm font-bold tracking-wide text-foreground transition-all duration-300 active:scale-95;
+    color: hsl(var(--foreground));
   }
 
   .btn-cta-secondary:hover {
-    background-color: hsl(var(--primary) / 0.1);
+    border-color: hsl(var(--primary) / 0.7);
+    background-color: hsl(var(--primary) / 0.08);
+  }
+
+  .btn-cta-primary:active,
+  .btn-cta-secondary:active {
+    transform: translateY(1px);
+  }
+
+  .btn-cta-primary svg,
+  .btn-cta-secondary svg {
+    width: 1rem;
+    height: 1rem;
+    flex: none;
   }
 
   .shadow-accent-soft {
@@ -446,6 +517,86 @@ textarea,
 }
 
 /* ------------------------------------------------------------------------ */
+/* Hero identity: Nikunj · Nex · Khitha                                      */
+/* ------------------------------------------------------------------------ */
+/*
+ * Sizes come from measurement, not guesses. In Sora 650 at -0.035em, "Nikunj"
+ * is 3.24em wide and "Khitha" 3.18em. Each name gets a column of
+ * (row - stage - 2 x gap) / 2, so the size is that column / 3.4 (a few percent
+ * of air), capped at 96px. `cqi` reads the identity row's own width, so it
+ * holds at every viewport and at 200% zoom.
+ */
+/*
+ * The stage follows the screen's height, so the whole hero (identity to the
+ * figures) fits one screen below the navbar: 240px on a 1080px-tall screen,
+ * 200px at 900, 160px at 760 and below; and never wider than the width allows.
+ */
+.hero-identity {
+  container-type: inline-size;
+  --stage: clamp(128px, calc(100svh * 0.29 - 86px), 232px);
+  --name-gap: clamp(1.5rem, 3vw, 2.75rem);
+  /* Nex's ring sits 8% of the stage outside it (NexRing outset="8%"): the
+     identity row reserves that much above and below, plus air, so the ring
+     never meets the availability line or the caption. */
+  --ring-out: calc(var(--stage) * 0.08 + clamp(0.5rem, 1.6svh, 1rem));
+  padding-block: var(--ring-out);
+}
+@media (max-width: 1279px) {
+  .hero-identity { --stage: clamp(128px, calc(100svh * 0.29 - 86px), 196px); }
+}
+/* The hero's vertical gaps shrink on shorter screens, by the same rule. */
+#hero { --hero-gap: clamp(0.625rem, calc(100svh * 0.034 - 0.85rem), 1.75rem); }
+.hero-identity-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--stage) minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--name-gap);
+}
+.hero-name {
+  font-family: var(--font-display), "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  white-space: nowrap;
+  font-size: min(6rem, calc((100cqi - var(--stage) - 2 * var(--name-gap)) / 2 / 3.4));
+  /* Room for the j's descender inside the clipped background. */
+  padding-bottom: 0.08em;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.hero-name[data-hero-name="left"] {
+  justify-self: end;
+  background-image: linear-gradient(90deg, var(--name-ink) 45%, var(--name-inner));
+}
+.hero-name[data-hero-name="right"] {
+  justify-self: start;
+  background-image: linear-gradient(270deg, var(--name-ink) 45%, var(--name-inner));
+}
+@media (forced-colors: active) {
+  .hero-name { background: none; color: CanvasText; }
+}
+/* Below 1024px the name stacks around a smaller, still Nex. */
+@media (max-width: 1023px) {
+  .hero-identity-row { grid-template-columns: minmax(0, 1fr); row-gap: 0.25rem; justify-items: center; }
+  .hero-name { font-size: clamp(2.75rem, 13cqi, 4rem); justify-self: center !important; background-image: none !important; color: hsl(var(--foreground)); }
+}
+
+/* The ring around Nex wherever it rests (NexRing): a faint track with
+   ticks, a slow orbiting arc, and a quicker arc while Nex is answering. */
+.nex-ring-orbit, .nex-ring-think { transform-origin: 50px 50px; transform-box: view-box; }
+.nex-ring-orbit { animation: nex-orbit 18s linear infinite; animation-play-state: paused; }
+.nex-ring-svg[data-running] .nex-ring-orbit { animation-play-state: running; }
+.nex-ring-head { filter: drop-shadow(0 0 1.6px hsl(var(--primary) / 0.9)); }
+.nex-ring-think { opacity: 0; transition: opacity 400ms ease; animation: nex-orbit 1.4s linear infinite; animation-play-state: paused; }
+.nex-ring-svg[data-thinking] .nex-ring-think { opacity: 1; }
+.nex-ring-svg[data-thinking][data-running] .nex-ring-think { animation-play-state: running; }
+@keyframes nex-orbit { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .nex-ring-orbit, .nex-ring-think { animation: none; }
+}
+
+/* ------------------------------------------------------------------------ */
 /* Hero intro (played by components/HeroIntro.tsx)                           */
 /* ------------------------------------------------------------------------ */
 /*
@@ -459,20 +610,38 @@ textarea,
  */
 html[data-hero-intro="play"] #hero [data-hero-part="copy"]:not([data-hero-glass]),
 html[data-hero-intro="play"] #hero [data-hero-part="avatar-ui"],
+html[data-hero-intro="play"] #hero [data-hero-part="ask-host"],
 html[data-hero-intro="play"] #hero [data-hero-part="backdrop"],
 html[data-hero-intro="play"] #hero [data-hero-part="stage"] {
   opacity: 0;
   animation: hero-failsafe-show 0s 4s forwards;
 }
-html[data-hero-intro="play"] #hero [data-hero-part="copy"][data-hero-glass],
-html[data-hero-intro="play"] #hero [data-hero-chip] {
+html[data-hero-intro="play"] #hero [data-hero-part="copy"][data-hero-glass] {
   clip-path: inset(0 0 100% 0);
   animation: hero-failsafe-clip 0s 4s forwards;
 }
 html[data-hero-intro="play"] #hero [data-hero-part="avatar-glow"] { opacity: 0; }
+/* The ring is off while Nex sleeps; the intro draws it on as Nex wakes. */
+html[data-hero-intro="play"] #hero [data-hero-part="ring-track"],
+html[data-hero-intro="play"] #hero [data-hero-part="ring-orbit"] {
+  opacity: 0;
+  animation: hero-failsafe-show 0s 4s forwards;
+}
+html[data-hero-intro="play"] #hero [data-hero-part="ring-track"] circle { stroke-dasharray: 1 1; stroke-dashoffset: 1; }
+/* The two halves of the name wait off to their sides until the intro sweeps them in. */
+html[data-hero-intro="play"] #hero [data-hero-name] {
+  opacity: 0;
+  animation: hero-failsafe-show 0s 4s forwards;
+}
 /* While the intro waits for the live avatar, the still drawing never shows. */
 html[data-hero-intro="play"] #hero [data-hero-still] { visibility: hidden; }
+/* The one live Nex is sitting in the hero's socket: its still stand-in steps aside. */
+html[data-nex-in-hero] .nex-socket-still { visibility: hidden; }
 @keyframes hero-failsafe-show { to { opacity: 1; } }
+/* A reload partway down the page: hidden until the browser has restored the
+   scroll (see PLAY_SCRIPT), with the same kind of CSS failsafe. */
+html[data-restoring] body { visibility: hidden; animation: restore-failsafe 0s 0.9s forwards; }
+@keyframes restore-failsafe { to { visibility: visible; } }
 @keyframes hero-failsafe-clip { to { clip-path: none; } }
 
 /* The sleeping z's drift up and fade, one after another. */

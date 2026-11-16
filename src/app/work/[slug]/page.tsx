@@ -1,14 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { RouteNexSocket } from "@/components/guide/RouteNexSocket";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, ArrowUpRight, Download } from "lucide-react";
-import { caseStudies, caseStudyBySlug, getAdjacentCaseStudies, getCaseStudyPath } from "@/data/case-studies";
+import { caseStudies, caseStudyBySlug, getCaseStudyPath, getThemeAdjacent } from "@/data/case-studies";
+import { METRICS } from "@/data/metrics";
+import { pillarById } from "@/data/thesis";
+import { Annotated, MarginNote } from "@/components/case-study/MarginNote";
+import { RelatedStudies } from "@/components/case-study/RelatedStudies";
 import { personalInfo } from "@/data/portfolio";
 import { getCaseStudyGraph, toJsonLd } from "@/lib/seo/jsonld";
 import { siteConfig } from "@/lib/seo/site";
 import CaseStudyDiagram from "@/components/diagrams";
 import CaseStudyToc, { type TocItem } from "@/components/CaseStudyToc";
 import AskAboutThis from "@/components/AskAboutThis";
+import { PageAskRow } from "@/components/guide/InPageAskHost";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -60,7 +66,13 @@ const CaseStudyPage = async ({ params }: PageProps) => {
 
   if (!study) notFound();
 
-  const { previous, next } = getAdjacentCaseStudies(study.slug);
+  // Prev/next follow the /work groups, so reading on stays inside a theme.
+  const { previous, next } = getThemeAdjacent(study.slug);
+  const metricById = new Map(METRICS.map((metric) => [metric.id, metric]));
+  const measured = study.results.flatMap((result) => {
+    const metric = result.metricId ? metricById.get(result.metricId) : undefined;
+    return metric ? [{ result, metric }] : [];
+  });
 
   const sectionId = (heading: string) =>
     heading
@@ -92,7 +104,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
             <div className="mb-8">
               <Link
                 href="/work"
-                className="-my-3 inline-flex min-h-11 items-center gap-2 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                className="-my-3 inline-flex min-h-11 items-center gap-2 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-primary-text"
               >
                 <ArrowLeft className="h-4 w-4" />
                 All work
@@ -101,14 +113,20 @@ const CaseStudyPage = async ({ params }: PageProps) => {
 
             {/* Header: identity and headline metrics sit above the narrative,
                 because that is the order these pages actually get read in. */}
-            <div>
+            <div className="flex items-start justify-between gap-10">
+            <div className="min-w-0">
               <div className="mt-8 flex flex-wrap items-center gap-3 font-mono text-xs">
                 {study.employer && (
-                  <span className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-primary">
+                  <span className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-primary-text">
                     {study.employer}
                   </span>
                 )}
                 <span className="text-muted-foreground">{study.period}</span>
+                {(study.pillars ?? []).map((id) => (
+                  <span key={id} className="rounded-full border border-primary/30 px-3 py-1.5 text-primary-text">
+                    {pillarById(id).label}
+                  </span>
+                ))}
                 {study.tags.map((tag) => (
                   <span key={tag} className="rounded-full border border-foreground/10 bg-foreground/5 px-3 py-1.5 text-muted-foreground">
                     {tag}
@@ -123,9 +141,13 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                 {study.oneLiner}
               </p>
             </div>
+            <div className="mt-8">
+              <RouteNexSocket prompt="Ask me why a decision went the way it did. I answer from this page." />
+            </div>
+            </div>
 
             <div>
-              <dl className="mt-10 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-foreground/10 glass-subtle glow-accent-panel sm:grid-cols-4">
+              <dl data-guide-target="cs-results" className="mt-10 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-foreground/10 glass-subtle glow-accent-panel sm:grid-cols-4">
                 {study.results.map((result) => (
                   <div key={result.label} className="bg-background/20 p-5">
                     <dt className="sr-only">{result.label}</dt>
@@ -140,11 +162,44 @@ const CaseStudyPage = async ({ params }: PageProps) => {
               </dl>
             </div>
 
+            {/* Who owned what, up front: the first thing an interviewer checks. */}
+            <p data-guide-target="cs-ownership" className="mt-6 flex max-w-3xl gap-2 text-sm leading-relaxed text-foreground/80">
+              <span className="shrink-0 font-mono text-[11px] uppercase tracking-widest text-primary-text">Ownership</span>
+              <span>
+                {study.ownershipSummary}{" "}
+                <a href="#ownership" className="text-primary-text underline-offset-4 hover:underline">Details</a>
+              </span>
+            </p>
+
+            {/* How each headline figure was measured, from the same record
+                Nex's get_metric tool answers from. */}
+            {measured.length > 0 && (
+              <details className="group mt-4 max-w-3xl">
+                <summary className="inline-flex min-h-8 cursor-pointer list-none items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-primary-text hover:text-primary-text">
+                  How these were measured
+                  <span aria-hidden="true" className="transition-transform group-open:rotate-90">›</span>
+                </summary>
+                <dl className="mt-3 flex flex-col gap-3 border-l-2 border-primary/25 pl-4">
+                  {measured.map(({ result, metric }) => (
+                    <div key={result.label}>
+                      <dt className="text-sm font-semibold text-foreground">
+                        {result.metric} <span className="font-normal text-muted-foreground">{result.label}</span>
+                      </dt>
+                      <dd className="mt-0.5 text-sm leading-relaxed text-muted-foreground">{metric.context}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </details>
+            )}
+
             <div>
               <p className="mt-10 max-w-3xl text-lg leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
                 {study.summary}
               </p>
             </div>
+
+            {/* Asking from the header opens here, under the summary. */}
+            <PageAskRow id="header" context="case-study" label={study.title} />
 
             {/* Two columns from here: sticky TOC beside the prose. */}
             <div className="mt-16 flex flex-col gap-10 lg:flex-row lg:gap-14">
@@ -158,10 +213,13 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                   <h2 id="problem" className="heading-md scroll-mt-28">The problem</h2>
                   <div className="mt-2 flex min-h-6 items-center">
                     <AskAboutThis
+                      label="Why it mattered"
                       question={`What problem did the ${study.title} solve, and why did it matter?`}
                       className="ml-0"
+                      host="page:problem"
                     />
                   </div>
+                  <PageAskRow id="problem" context="case-study" label="The problem" />
                   <div className="mt-4 rounded-2xl border border-foreground/10 glass-subtle p-6">
                     <p className="text-base leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
                       {study.problem}
@@ -173,10 +231,13 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                   <h2 id="constraints" className="heading-md mt-14 scroll-mt-28">Constraints</h2>
                   <div className="mt-2 flex min-h-6 items-center">
                     <AskAboutThis
+                      label="Why hard?"
                       question={`What made the constraints on the ${study.title} hard to work within?`}
                       className="ml-0"
+                      host="page:constraints"
                     />
                   </div>
+                  <PageAskRow id="constraints" context="case-study" label="Constraints" />
                   <ul className="mt-4 flex flex-col divide-y divide-foreground/10 overflow-hidden rounded-2xl glass-subtle">
                     {study.constraints.map((constraint) => (
                       <li key={constraint} className="flex gap-3 p-5 text-base leading-relaxed text-muted-foreground">
@@ -192,28 +253,54 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                     <h2 id="architecture" className="heading-md mt-14 scroll-mt-28">Architecture</h2>
                     <div className="mt-2 flex min-h-6 items-center">
                       <AskAboutThis
+                        label="Walk me through it"
                         question={`Walk me through the architecture diagram for the ${study.title}.`}
                         className="ml-0"
+                      host="page:architecture"
                       />
                     </div>
+                  <PageAskRow id="architecture" context="case-study" label="Architecture" />
                     <CaseStudyDiagram diagram={study.diagram} description={study.diagramCaption} />
                   </div>
                 )}
 
                 <div>
-                  <h2 id="decisions" className="heading-md mt-14 scroll-mt-28">Decisions</h2>
+                  <h2 id="decisions" data-guide-target="cs-decisions" className="heading-md mt-14 scroll-mt-28">Decisions</h2>
                   <div className="mt-2 flex min-h-6 items-center">
                     <AskAboutThis
-                      question={`What did you consider and reject while building the ${study.title}?`}
+                      label="What was rejected?"
+                      question={`What did Nikunj consider and reject while building the ${study.title}?`}
                       className="ml-0"
+                      host="page:decisions"
                     />
                   </div>
+                  <PageAskRow id="decisions" context="case-study" label="Decisions" />
               <p className="mt-3 text-sm text-muted-foreground">
-                What I chose, why, and what I turned down to get there.
+                What was chosen, why, and what was turned down to get there.
               </p>
               <div className="mt-6 flex flex-col gap-4">
                 {study.decisions.map((decision) => (
-                  <SpotlightCard key={decision.choice}>
+                  <Annotated
+                    key={decision.choice}
+                    note={
+                      decision.rejected && decision.rejected.length > 0 ? (
+                        <MarginNote label="Why not the others?">
+                          <ul className="flex flex-col gap-2">
+                            {decision.rejected.map((item) => {
+                              const [option, ...why] = item.split(" — ");
+                              return (
+                                <li key={item}>
+                                  <span className="font-semibold text-foreground/85">{option}</span>
+                                  {why.length > 0 && <>: {why.join(" — ")}</>}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </MarginNote>
+                      ) : null
+                    }
+                  >
+                  <SpotlightCard>
                     <div className="p-6 sm:p-7">
                       {/* Sibling below the heading: decision titles vary a lot
                           in length, so inline the pill never sat in the same
@@ -221,8 +308,10 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                       <h3 className="text-lg font-bold tracking-tight text-foreground">{decision.choice}</h3>
                       <div className="mt-2 flex min-h-6 items-center">
                         <AskAboutThis
-                          question={`On the ${study.title}, why did you choose "${decision.choice}" over the alternatives?`}
+                          label={decision.rejected?.length ? "Why not the others?" : "Why this?"}
+                          question={`On the ${study.title}, why did Nikunj choose "${decision.choice}" over the alternatives?`}
                           className="ml-0"
+                          host="page:decisions"
                         />
                       </div>
                       <p className="mt-3 text-sm leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
@@ -245,6 +334,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                       )}
                     </div>
                   </SpotlightCard>
+                  </Annotated>
                 ))}
               </div>
             </div>
@@ -261,10 +351,13 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                       </h2>
                       <div className="mt-2 flex min-h-6 items-center">
                         <AskAboutThis
+                          label="Go deeper"
                           question={`On the ${study.title}: explain "${section.heading}" in more detail.`}
                           className="ml-0"
+                      host={`page:${sectionId(section.heading)}`}
                         />
                       </div>
+                  <PageAskRow id={sectionId(section.heading)} context="case-study" label={section.heading} />
                     </div>
                 <p className="mt-4 text-base leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
                   {section.body}
@@ -288,7 +381,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                 {study.stack.map((item) => (
                   <li
                     key={item}
-                    className="rounded-lg border border-primary/20 bg-primary/10 px-3 py-1.5 font-mono text-xs text-primary"
+                    className="rounded-lg border border-primary/20 bg-primary/10 px-3 py-1.5 font-mono text-xs text-primary-text"
                   >
                     {item}
                   </li>
@@ -301,7 +394,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                 <div>
                   <h2 id="ownership" className="heading-md mt-14 scroll-mt-28">What was mine</h2>
                   <div className="mt-2 flex min-h-6 items-center">
-                    <AskAboutThis question={`Who owned what on the ${study.title}?`} className="ml-0" />
+                    <AskAboutThis label="Who owned what?" question={`Who owned what on the ${study.title}?`} className="ml-0" />
                   </div>
                   <div className="mt-4 rounded-2xl border border-primary/20 glass-subtle p-6 glow-accent-panel">
                     <p className="text-base leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
@@ -314,6 +407,8 @@ const CaseStudyPage = async ({ params }: PageProps) => {
               </div>
             </div>
 
+            <RelatedStudies slug={study.slug} />
+
             <nav aria-label="More case studies" className="mt-16 grid gap-4 border-t border-foreground/10 pt-8 sm:grid-cols-2">
               {previous ? (
                 <Link
@@ -324,7 +419,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                     <ArrowLeft className="h-3 w-3" />
                     Previous
                   </span>
-                  <span className="text-sm font-semibold text-foreground group-hover:text-primary">{previous.title}</span>
+                  <span className="text-sm font-semibold text-foreground group-hover:text-primary-text">{previous.title}</span>
                 </Link>
               ) : (
                 <span />
@@ -338,7 +433,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                     Next
                     <ArrowRight className="h-3 w-3" />
                   </span>
-                  <span className="text-sm font-semibold text-foreground group-hover:text-primary">{next.title}</span>
+                  <span className="text-sm font-semibold text-foreground group-hover:text-primary-text">{next.title}</span>
                 </Link>
               )}
             </nav>
@@ -357,7 +452,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                   download
                   className="btn-cta-secondary"
                 >
-                  <Download className="h-4 w-4 text-primary" />
+                  <Download className="h-4 w-4 text-primary-text" />
                   Download resume
                 </a>
               </div>

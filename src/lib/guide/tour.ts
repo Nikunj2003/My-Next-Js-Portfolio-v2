@@ -51,6 +51,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     id: "skills",
     href: "#skills",
+    highlight: "skills-panel",
     title: "The toolkit",
     line: "Agents, retrieval, evaluation and the platform work underneath them.",
     cue: { state: "curious", face: "calm" },
@@ -59,6 +60,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     id: "agent",
     href: "#nex",
+    highlight: "nex-card",
     title: "Meet Nex",
     line: "I'm a tool-calling agent over Nikunj's work. Every call I make is shown, and unmeasured means unmeasured.",
     cue: { state: "happy", face: "happy" },

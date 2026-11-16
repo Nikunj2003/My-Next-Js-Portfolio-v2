@@ -32,3 +32,14 @@ test("the hero's markup is static; its intro lives in HeroIntro", () => {
   assert.doesNotMatch(source, /framer-motion|initial=|variants=/);
   assert.match(source, /<HeroIntro \/>/);
 });
+
+test("the hero has exactly one Ask Nex: in its action row, not on the avatar", () => {
+  const avatar = readFileSync("src/components/guide/GuideHeroAvatar.tsx", "utf8");
+  const actions = readFileSync("src/components/HeroAskButton.tsx", "utf8");
+  assert.doesNotMatch(avatar, />\s*Ask Nex\s*</, "the avatar carries no Ask Nex button of its own");
+  assert.equal((actions.match(/>\s*Ask Nex\s*</g) ?? []).length, 1);
+  // One action family: every hero action uses the shared button classes, and
+  // responsive hiding never sits on the same element as a display-setting class.
+  assert.doesNotMatch(actions, /className="[^"]*btn-cta-[^"]*(lg|max-lg|sm|md):hidden/);
+  assert.equal((actions.match(/className="btn-cta-(primary|secondary)"/g) ?? []).length, 4);
+});

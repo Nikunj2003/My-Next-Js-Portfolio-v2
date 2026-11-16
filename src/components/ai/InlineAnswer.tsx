@@ -5,6 +5,7 @@ import { Loader2, Wrench, X } from "lucide-react";
 import { useAssistantAnswer } from "@/components/ai/useAssistantAnswer";
 import { AnswerBody } from "@/components/ai/AnswerBody";
 import { openNex } from "@/lib/ask-nex";
+import type { AskHost } from "@/lib/guide/ask-hosts";
 import { cn } from "@/lib/utils";
 
 /**
@@ -21,9 +22,12 @@ export function InlineAnswer({
   question,
   className = "",
   onDismiss,
+  host,
 }: {
   question: string;
   className?: string;
+  /** Where "Continue with Nex" opens the conversation (a page row); by default the section's own host. */
+  host?: AskHost;
   /** Called when the visitor closes the answer. */
   onDismiss?: () => void;
 }) {
@@ -47,10 +51,11 @@ export function InlineAnswer({
   };
 
   const handleContinueWithNex = () => {
-    // Hands the already-answered exchange to the panel rather than making the
-    // visitor re-ask: the panel appends it to its own message list and
-    // persists it, same as any other turn.
-    openNex(question, status === "done" ? content : undefined, { expand: true });
+    // Hands the already-answered exchange on rather than making the visitor
+    // re-ask: it is appended to the conversation and persisted, same as any
+    // other turn, and the conversation opens in the section's own host.
+    if (status === "done") openNex(question, content, { inPage: true, host });
+    else openNex(question, undefined, { expand: true });
     handleClose();
   };
 
@@ -89,7 +94,7 @@ export function InlineAnswer({
                 <Wrench
                   className={cn(
                     "mt-0.5 h-3 w-3 shrink-0",
-                    call.status === "running" ? "animate-spin motion-reduce:animate-none text-primary" : "text-primary/70"
+                    call.status === "running" ? "animate-spin motion-reduce:animate-none text-primary-text" : "text-primary/70"
                   )}
                 />
                 <span className="min-w-0 break-all text-foreground/75">{call.label}</span>
@@ -142,7 +147,7 @@ export function InlineAnswer({
           <button
             type="button"
             onClick={handleContinueWithNex}
-            className="mt-3 inline-flex items-center gap-1.5 font-mono text-[11px] font-medium uppercase tracking-wider text-primary transition-colors hover:text-primary/80"
+            className="mt-3 inline-flex items-center gap-1.5 font-mono text-[11px] font-medium uppercase tracking-wider text-primary-text transition-colors hover:text-primary/80"
           >
             Continue with Nex →
           </button>

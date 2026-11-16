@@ -97,6 +97,12 @@ export type ChatToolCall = {
   href?: string;
   /** Set by navigate_to: an allow-listed element to ring after scrolling. */
   highlight?: string;
+  /**
+   * A page component to show under the answer (`metric:<id>`, `study:<slug>`,
+   * `compare:<a>,<b>`). Set by the server from the tool's own output only;
+   * parsed against local data by `lib/chat/cards.ts`.
+   */
+  card?: string;
 };
 
 /** Closing summary of how the answer was produced. */

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { type Components } from "react-markdown";
-import { Compass, Maximize2, Send, X } from "lucide-react";
+import { Briefcase, Compass, CornerDownRight, Maximize2, MessageCircle, Send, X } from "lucide-react";
 import { buildAnswerComponents } from "@/components/ai/AnswerBody";
 import { NexAnswerBody } from "@/components/ai/NexAnswerBody";
 import type { ChatToolCall } from "@/lib/chat-contract";
@@ -13,9 +13,11 @@ import { useNexChat } from "@/lib/chat/useNexChat";
 import { runGuideAction } from "@/lib/guide/actions";
 import { SECTION_CHIPS } from "@/lib/guide/anchors";
 import { emitGuide } from "@/lib/guide/bus";
-import { dispatchCompanion, getAskDraft, setAskDraft, takePendingQuestion, useCompanionState } from "@/lib/guide/companion-store";
+import { dispatchCompanion, getAskDraft, setAskDraft, takeComposerMode, takePendingQuestion, useCompanionState } from "@/lib/guide/companion-store";
+import { MAX_ROLE_LENGTH, roleFitQuestion } from "@/lib/chat/role-fit";
 import { startGuideTour } from "@/lib/guide/tour-control";
 import { useChatAvailability } from "@/hooks/useChatAvailability";
+import { NexRing } from "@/components/guide/NexRing";
 import { scrollToHash } from "@/lib/scroll";
 
 /** Matches the server's per-message limit (api/chat/route.ts). */
@@ -29,10 +31,24 @@ type AskContentProps = {
   reduceMotion: boolean;
   /** Rendered in the page (the hero) rather than in a floating bubble. */
   inline?: boolean;
+  /**
+   * Fill a host of fixed height (the footer's band): the answer takes what
+   * is left and scrolls inside, so opening or answering never changes the
+   * host's size. Chips are trimmed to one row's worth there.
+   */
+  fill?: boolean;
+  /** The answer area's height in an in-page row (CSS length); by default a compact one. */
+  bodyHeight?: string;
+  /**
+   * A reserved place for Nex at the head of the conversation (in-page rows):
+   * a ringed socket the companion flies to and rests in while it is open, in
+   * place of the small chat icon.
+   */
+  socket?: boolean;
 };
 
 /** The ask box: latest question and answer, chips, composer. Hosted by the companion's bubble or inline by the hero avatar. */
-export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceMotion, inline = false }: AskContentProps) {
+export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceMotion, inline = false, fill = false, bodyHeight, socket = false }: AskContentProps) {
   const { messages, isLoading, announcement, turnAnchorId } = useNexChat();
   const { status } = useChatAvailability();
   const router = useRouter();
@@ -46,6 +62,12 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
   }, []);
   const inputRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
+  // Role-fit mode: what is typed is a role, sent wrapped as a fit question.
+  const [roleFit, setRoleFit] = useState(() => takeComposerMode() === "role-fit");
+  const startRoleFit = () => {
+    setRoleFit(true);
+    inputRef.current?.focus({ preventScroll: true });
+  };
   const exchange = selectLatestExchange(messages);
   const unavailable = status === "unavailable";
 
@@ -134,7 +156,8 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
   }, [input, typing]);
   useEffect(() => () => emitGuide({ type: "guide/point", pointAt: null }), []);
 
-  const chips = exchange?.answer?.suggestions?.slice(0, 2) ?? (exchange ? [] : SECTION_CHIPS[activeSection ?? "hero"] ?? SECTION_CHIPS.hero);
+  const allChips = exchange?.answer?.suggestions?.slice(0, 2) ?? (exchange ? [] : SECTION_CHIPS[activeSection ?? "hero"] ?? SECTION_CHIPS.hero);
+  const chips = fill ? allChips.slice(0, exchange ? 1 : 2) : allChips;
   const answer = exchange?.answer ?? null;
 
   // Whether the answer area overflows (and so should take the wheel).
@@ -154,13 +177,21 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <p className="sr-only" role="status" aria-live="polite">{announcement}</p>
-      <div className="flex items-start gap-2 border-b border-border/40 px-4 py-3">
+      <div className={"flex gap-3 border-b border-foreground/[0.07] px-4 py-3.5 " + (socket ? "items-center gap-4" : "items-start")}>
+        {socket ? (
+          <span data-guide-ask-socket aria-hidden="true" className="relative -my-1 block h-[68px] w-[68px] shrink-0">
+            <span className="pointer-events-none absolute inset-[-20%] rounded-full bg-[radial-gradient(circle,hsl(var(--primary)/0.12)_0%,transparent_68%)]" />
+            <NexRing outset={6} />
+          </span>
+        ) : (
+          <span aria-hidden="true" className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary-text">
+          <MessageCircle className="h-3.5 w-3.5" />
+        </span>
+        )}
         <div className="min-w-0 flex-1">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            {exchange ? "You asked" : "Nex · AI guide"}
-          </p>
-          <p className="mt-0.5 line-clamp-2 text-sm font-semibold text-foreground">
-            {exchange ? exchange.question.content : "Ask me anything about Nikunj's work."}
+          <p className="text-xs text-muted-foreground">{exchange ? "You asked" : "Nex, AI guide"}</p>
+          <p className="mt-0.5 line-clamp-2 text-[0.9375rem] font-semibold leading-snug text-foreground">
+            {exchange ? exchange.question.content : "Ask about Nikunj's work. I answer from his case studies."}
           </p>
           {exchange && exchange.question.content.length > 90 && (
             <button type="button" onClick={onExpand} className="mt-0.5 text-[11px] font-medium text-primary-text hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
@@ -196,8 +227,8 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
           role="log"
           aria-live="off"
           aria-busy={Boolean(answer?.streaming) || (isLoading && !answer)}
-          className="scroll-panel min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 text-sm leading-relaxed text-foreground"
-          style={{ maxHeight: inline ? "min(36vh, 300px)" : undefined }}
+          className="scroll-panel min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 text-[0.9375rem] leading-relaxed text-foreground"
+          style={inline && !fill ? { height: bodyHeight ?? "clamp(12rem, 34svh, 20rem)", flex: "none" } : undefined}
         >
           {answer ? (
             <>
@@ -224,23 +255,38 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
         </div>
       )}
 
-      <div className="flex flex-col gap-2 border-t border-border/40 px-3 py-3">
+      <div className="flex flex-col gap-3 border-t border-foreground/[0.07] px-4 py-3.5">
         {chips.length > 0 && !isLoading && (
-          <div className="flex flex-wrap gap-1.5">
-            {chips.map((chip) => (
-              <button
-                key={chip}
-                type="button"
-                onClick={() => send(chip, false)}
-                disabled={unavailable}
-                className="min-h-11 max-w-full truncate rounded-full bg-primary/10 md:min-h-8 px-3 text-xs text-foreground transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-60"
-              >
-                {chip}
-              </button>
-            ))}
+          <div>
+            <p className="mb-2 text-xs text-muted-foreground">{exchange ? "Ask next" : "Try one"}</p>
+            <div className="flex flex-wrap gap-2">
+              {chips.map((chip) => (
+                <button
+                  key={chip}
+                  type="button"
+                  onClick={() => send(chip, false)}
+                  disabled={unavailable}
+                  className="inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-full border border-primary/20 bg-primary/[0.06] px-3.5 py-1.5 text-left text-[0.8125rem] leading-snug text-foreground/90 transition-colors hover:border-primary/45 hover:bg-primary/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-60"
+                >
+                  <CornerDownRight className="h-3.5 w-3.5 shrink-0 text-primary-text" aria-hidden="true" />
+                  <span className="min-w-0">{chip}</span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
-        {!exchange && (
+        {activeSection === "contact" && !roleFit && !isLoading && (
+          <button
+            type="button"
+            onClick={startRoleFit}
+            className="inline-flex min-h-8 items-center gap-1.5 self-start text-xs font-semibold text-primary-text hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <Briefcase className="h-3.5 w-3.5" aria-hidden="true" />
+            Check a role&apos;s fit
+          </button>
+        )}
+        {roleFit && <p className="text-xs text-muted-foreground">Paste a role; Nex says how his work fits, gaps included. Nothing is sent to Nikunj.</p>}
+        {!exchange && activeSection !== "contact" && (
           <button
             type="button"
             onClick={() => {
@@ -254,27 +300,48 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
           </button>
         )}
         <form
-          className="flex items-center gap-2"
+          className="flex items-center gap-1.5 rounded-full border border-foreground/10 bg-background/55 py-1 pl-4 pr-1 transition-colors focus-within:border-primary/45 focus-within:ring-2 focus-within:ring-primary/15"
           onSubmit={(event) => {
             event.preventDefault();
+            if (!input.trim()) return;
+            if (roleFit) {
+              if (send(roleFitQuestion(input), false)) {
+                setInput("");
+                setRoleFit(false);
+              }
+              return;
+            }
             send(input);
           }}
         >
+          {roleFit && (
+            <button
+              type="button"
+              onClick={() => setRoleFit(false)}
+              aria-label="Stop checking a role's fit"
+              title="Back to asking"
+              className="-ml-2 flex h-8 shrink-0 items-center gap-1 rounded-full bg-primary/12 px-2.5 text-xs font-semibold text-primary-text"
+            >
+              <Briefcase className="h-3.5 w-3.5" aria-hidden="true" />
+              Role
+              <X className="h-3 w-3 opacity-70" aria-hidden="true" />
+            </button>
+          )}
           <input
             ref={inputRef}
             value={input}
             onChange={(event) => setInput(event.target.value)}
-            placeholder={unavailable ? "Nex is offline right now." : "Ask Nex…"}
-            aria-label="Ask Nex"
+            placeholder={unavailable ? "Nex is offline right now." : roleFit ? "Paste the role or job description…" : "Ask about his work…"}
+            aria-label={roleFit ? "Role to check Nikunj's fit against" : "Ask Nex"}
             autoComplete="off"
-            maxLength={MAX_QUESTION_LENGTH}
+            maxLength={roleFit ? MAX_ROLE_LENGTH : MAX_QUESTION_LENGTH}
             disabled={unavailable}
-            className="min-h-10 flex-1 rounded-xl border border-border/40 bg-background/60 px-3 text-base sm:text-sm outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary/40 focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+            className="min-h-10 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground/70 disabled:opacity-60 sm:text-sm"
           />
           <button
             type="submit"
             disabled={!input.trim() || isLoading || unavailable}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-transform active:scale-95 disabled:opacity-50"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-[opacity,transform] active:scale-95 disabled:opacity-40"
             aria-label="Send"
           >
             <Send className="h-4 w-4" aria-hidden="true" />

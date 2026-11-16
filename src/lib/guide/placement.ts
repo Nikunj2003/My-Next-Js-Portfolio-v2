@@ -86,6 +86,22 @@ export function bubbleOverflow(anchor: Point, size: number, side: BubbleSide, bu
  * the one that covers the least reading text (`avoid`), preferring earlier
  * sides; if none fits, the one that overflows least.
  */
+/**
+ * A side where the bubble fits on screen and covers none of the reading text
+ * (`avoid`), in preference order, or null when every fitting side covers some.
+ * Tips use it: an unasked-for line only shows in free space, never over text.
+ */
+export function freeBubbleSide(anchor: Point, size: number, bubble: { width: number; height: number }, viewport: Viewport, prefer: BubbleSide[], avoid: Rect[], gap = 12): BubbleSide | null {
+  const sides = [...prefer, ...(["right", "bottom", "top", "left"] as const).filter((side) => !prefer.includes(side))];
+  for (const side of sides) {
+    if (bubbleOverflow(anchor, size, side, bubble, viewport, gap) !== 0) continue;
+    const placed = placeBubbleBeside(anchor, size, side, bubble, viewport, gap);
+    const rect = { left: placed.left, top: placed.top, width: bubble.width, height: Math.min(bubble.height, placed.maxHeight) };
+    if (avoid.every((other) => overlapArea(rect, other) === 0)) return side;
+  }
+  return null;
+}
+
 export function chooseBubbleSide(
   anchor: Point,
   size: number,
@@ -134,102 +150,114 @@ function overlapArea(a: Rect, b: Rect) {
 }
 
 /**
- * The spot under a sticky intro panel, as one continuous function of the
- * panel's position, so the path is the same scrolling down and up and never
- * reverses:
- * - Height: the resting height under the pinned panel (`pinnedBottom + gap`),
- *   or higher once the panel scrolls away at the end of the section (it rides
- *   up with it). It never dips to the screen bottom while the panel arrives.
- * - Across: it waits in the margin while the panel arrives, then slides in
- *   under it over the last `range` px of the panel's approach.
- * With no margin (narrower screens) it just waits at the resting spot.
+ * A section's dock (its ringed socket), as one continuous function of where
+ * the socket is on screen, so the path is the same scrolling down and up:
+ * - while the socket is below the screen Nex waits in the margin (mid-height);
+ * - as the socket rises into view (over `range` px above the screen's bottom)
+ *   it slides from the margin into the socket;
+ * - it rests in the socket while the socket is on screen (a socket in a sticky
+ *   panel pins with it, so Nex does too);
+ * - as the socket passes under the navbar it slides back out to the margin.
+ * `hold` is how far into the socket it is (1 = resting in it). With no margin
+ * (narrower screens) it stays on the socket and the caller clamps it.
  */
-export function underPanelPoint(input: {
-  panelLeft: number;
-  panelBottom: number;
-  /** Where the panel's bottom sits once pinned (sticky top + its height). */
-  pinnedBottom: number;
-  /** The margin's x, or null when there is no margin. */
-  gutterX: number | null;
-  gap?: number;
-  inset?: number;
+export function socketDockPoint(input: {
+  /** The socket's centre on screen. */
+  socket: Point;
+  size: number;
+  viewport: Viewport;
+  /** The margin's top-left for this size, or null when there is no margin. */
+  gutter: Point | null;
+  /** Scrolling over which it slides in from below. */
   range?: number;
-}): Point {
-  const { panelLeft, panelBottom, pinnedBottom, gutterX, gap = 24, inset = 20, range = 280 } = input;
-  const restY = pinnedBottom + gap;
-  const y = Math.min(panelBottom + gap, restY);
-  const spotX = panelLeft + inset;
-  if (gutterX === null) return { x: spotX, y };
-  const k = clamp(1 - (panelBottom - pinnedBottom) / range, 0, 1);
-  return { x: gutterX + (spotX - gutterX) * easeInOutCubic(k), y };
+  /**
+   * The socket's top at which it starts to slide out, and the scrolling it
+   * takes: it starts just above where sticky panels pin (navbar + 40), so a
+   * pinned socket keeps Nex, and finishes once the socket is above the screen.
+   */
+  leaveAt?: number;
+  leaveRange?: number;
+}): { point: Point; hold: number } {
+  const { socket, size, viewport, gutter, range = 240, leaveRange = 280 } = input;
+  const leaveAt = input.leaveAt ?? viewport.insetTop + 40;
+  const at = { x: socket.x - size / 2, y: socket.y - size / 2 };
+  if (!gutter) return { point: at, hold: 1 };
+  const enter = clamp((viewport.height - MARGIN - (socket.y + size / 2)) / range, 0, 1);
+  const leave = clamp((socket.y - size / 2 - leaveAt + leaveRange) / leaveRange, 0, 1);
+  const hold = Math.min(enter, leave);
+  // Smoothstep, not the cubic: its peak speed is half as high, so a fast
+  // scroll never moves Nex further in a frame than the ride smoothing allows.
+  const u = hold * hold * (3 - 2 * hold);
+  return { point: { x: gutter.x + (at.x - gutter.x) * u, y: gutter.y + (at.y - gutter.y) * u }, hold };
 }
 
 /**
- * The hero hand-off as a pure function of one number, `t`: 0 = the big hero
- * avatar is the guide, 1 = the small companion is, sitting at its spot.
- *
- * `t` comes straight from the scroll position (no smoothing, no timer), so the
- * same scroll position always draws the same frame. Stopping mid-way leaves it
- * mid-way, and scrolling back plays exactly the same frames in reverse.
- *
- * One continuous motion: the avatar leaves the hero, shrinking as it goes,
- * and lands on its spot at its own size. The big hero avatar and the small
- * companion are drawn as the same disc (same centre, same face size) while
- * they cross-fade over the first 45%, so it reads as one character
- * moving, not one fading out and another appearing. Every output is
- * monotonic in `t`, so the motion never reverses.
+ * The drawn face's share of each avatar's box. In the hero socket Nex's face
+ * is drawn at 84% of the stage; the companion draws its face at `size - 16`
+ * inside its disc. Every size match (hero, page hops, the footer) uses these.
  */
-/** The share of the hand-off spent cross-fading the two avatars. */
-export const FADE_SHARE = 0.45;
+export const HERO_FACE_SHARE = 0.84;
+export const COMPANION_FACE_SHARE = 0.76;
 
-export function heroHandoffFrame(input: {
+/** Scale that draws the companion's face at the hero's face size. */
+export function heroFaceScale(heroDiameter: number, size: number) {
+  return (heroDiameter * HERO_FACE_SHARE) / (size * COMPANION_FACE_SHARE);
+}
+
+/**
+ * Nex leaving the hero, as a pure function of one number, `t`: 0 = sitting in
+ * the hero's socket at the hero's face size, 1 = at its spot at its own size.
+ *
+ * There is one Nex: the same element shrinks as it travels, so nothing is
+ * cross-faded. `t` comes straight from the scroll position (no smoothing, no
+ * timer), so the same scroll always draws the same frame and scrolling back
+ * plays it in reverse. `chrome` is the opacity of the companion's own disc:
+ * in the socket the hero's disc and ring are drawn by the page, so its own
+ * fades in on the way out. Every output is monotonic in `t`.
+ */
+export function heroDockFrame(input: {
   t: number;
-  /** The hero avatar's centre and diameter, as laid out (untransformed). */
+  /** The hero socket's centre and diameter, as laid out. */
   heroCentre: Point;
   heroDiameter: number;
   /** The companion's size and its spot's top-left. */
   size: number;
   spot: Point;
-  /** The face's share of each avatar's box, to match faces rather than boxes. */
-  heroFace?: number;
-  companionFace?: number;
+  /** The scale it starts at; by default the hero's face size. */
+  startScale?: number;
 }) {
-  const { heroCentre, heroDiameter, size, spot, heroFace = 0.82, companionFace = 0.76 } = input;
+  const { heroCentre, heroDiameter, size, spot } = input;
   const t = clamp(input.t, 0, 1);
-
-  // Path and size share one eased progress, so the small one shrinks as it
-  // travels and arrives at full size exactly on its spot (no growing in place,
-  // no shrinking after it has landed).
+  // Path and size share one eased progress: it shrinks as it travels and
+  // arrives at full size exactly on its spot.
   const u = easeInOutCubic(t);
-  const startScale = (heroDiameter * heroFace) / (size * companionFace);
-  const companionScale = startScale + (1 - startScale) * u;
-
-  // The big one is drawn at the small one's size and place as long as it is
-  // visible, so the two are one disc while they cross-fade. It fades out over
-  // the first part and the small one fades in over the same stretch.
-  // Over the first 45%: long enough to read as one face turning into the
-  // other at a normal scroll speed (a quarter was over in about 70ms).
-  const swap = clamp(t / FADE_SHARE, 0, 1);
-  const companionOpacity = easeInOutCubic(swap);
-  const heroOpacity = 1 - companionOpacity;
-
-  // Path: from the hero's centre to the spot, on a quadratic curve whose
-  // control point is at the start's x and the spot's y, so it moves to the
-  // spot's height first, then across. Both coordinates move one way only.
+  const startScale = input.startScale ?? heroFaceScale(heroDiameter, size);
+  const scale = startScale + (1 - startScale) * u;
+  // A quadratic curve whose control point is at the start's x and the spot's
+  // y: down to the spot's height first, then across. Both coordinates move one way.
   const from = { x: heroCentre.x - size / 2, y: heroCentre.y - size / 2 };
   const control = { x: from.x, y: spot.y };
   const position = {
     x: (1 - u) * (1 - u) * from.x + 2 * (1 - u) * u * control.x + u * u * spot.x,
     y: (1 - u) * (1 - u) * from.y + 2 * (1 - u) * u * control.y + u * u * spot.y,
   };
-
-  // The hero follows the small one while it is still visible: the same
-  // centre offset and the same face size, so they never separate.
-  const centre = { x: position.x + size / 2, y: position.y + size / 2 };
-  const heroScale = (size * companionScale * companionFace) / (heroDiameter * heroFace);
-  const heroOffset = { x: centre.x - heroCentre.x, y: centre.y - heroCentre.y };
-  return { heroScale, heroOpacity, heroOffset, companionScale, companionOpacity, position };
+  const chrome = easeInOutCubic(clamp((t - 0.15) / 0.6, 0, 1));
+  return { position, scale, chrome };
 }
+
+/**
+ * How far Nex has left a page header's socket, from where the socket is on
+ * screen: 0 while it is at its resting place (`restTop`, its top with the
+ * page at the top), 1 by the time its top reaches the navbar's edge. So Nex
+ * is back to its own size before the slot would slide under the navbar, and
+ * never sits large over what follows the header (a case study's results).
+ * A plain function of the scroll, so it reverses exactly.
+ */
+export function routeSocketProgress(socketTop: number, restTop: number, navBottom: number) {
+  const distance = Math.max(1, restTop - navBottom);
+  return clamp((restTop - socketTop) / distance, 0, 1);
+}
+
 
 /**
  * How far the hand-off has got, from the hero avatar's position on screen: 0
@@ -308,4 +336,43 @@ export function activeSectionAt(
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), Math.max(min, max));
+}
+
+/**
+ * The footer landing's progress, paced like the hero hand-off: it runs over
+ * `span` px of scrolling (the hand-off's span), ending exactly when the page
+ * can scroll no further, so leaving the hero and arriving at the footer feel
+ * the same. `remaining` is the scroll left before the page ends. On a page
+ * too short for the full span it runs over what there is. A pure function of
+ * position: scrolling back plays it in reverse.
+ */
+export function footerDockProgress(input: { remaining: number; span: number; scrolled: number }) {
+  const { remaining, span, scrolled } = input;
+  const run = Math.max(1, Math.min(span, scrolled + remaining));
+  return clamp(1 - Math.max(0, remaining) / run, 0, 1);
+}
+
+/**
+ * One frame of the landing, in top-left coordinates of the unscaled `size`
+ * box (scale is applied around the centre, so the visible disc is centred on
+ * `slotCentre` at the end). A hop, like the trips between pages: it rises
+ * away from its spot, travels above the page content on an arc, and comes
+ * down into the slot, growing as it lands. `opacity` dips mid-flight so the
+ * disc reads as passing over the page rather than sitting on its text, and
+ * is full again before it lands.
+ */
+export function footerDockFrame(input: { t: number; from: Point; slotCentre: Point; size: number; slotSize: number; fromScale?: number }) {
+  const { from, slotCentre, size, slotSize, fromScale = 1 } = input;
+  const t = clamp(input.t, 0, 1);
+  const u = easeInOutCubic(t);
+  const to = { x: slotCentre.x - size / 2, y: slotCentre.y - size / 2 };
+  const distance = Math.hypot(to.x - from.x, to.y - from.y);
+  const lift = Math.min(160, 40 + distance * 0.2) * 4 * u * (1 - u);
+  const position = { x: from.x + (to.x - from.x) * u, y: from.y + (to.y - from.y) * u - lift };
+  // Growth waits for the second half, so it is still small while it crosses.
+  const grow = easeInOutCubic(clamp((t - 0.4) / 0.6, 0, 1));
+  const toScale = slotSize / size;
+  const dip = t <= 0 || t >= 0.85 ? 0 : Math.sin((Math.PI * t) / 0.85);
+  const opacity = 1 - 0.55 * dip;
+  return { position, scale: fromScale + (toScale - fromScale) * grow, opacity };
 }

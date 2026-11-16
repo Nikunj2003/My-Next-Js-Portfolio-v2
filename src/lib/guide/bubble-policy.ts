@@ -1,4 +1,5 @@
 import { TIP_RULES } from "@/lib/guide/tips";
+import type { AskHost } from "@/lib/guide/ask-hosts";
 
 /**
  * What the companion's single bubble is showing. One bubble at a time, by
@@ -7,8 +8,17 @@ import { TIP_RULES } from "@/lib/guide/tips";
  */
 export type BubbleKind = "none" | "tip" | "ask" | "tour";
 
+/**
+ * Where an open ask box lives (`lib/guide/ask-hosts.ts`): an in-page host
+ * (the hero, the footer, a section's dock) or `float`, the companion's bubble
+ * (the sheet on phones). Chosen when it opens; scrolling never changes it.
+ */
+export type { AskHost };
+
 export type BubbleState = {
   bubble: BubbleKind;
+  /** Set while `bubble` is "ask", null otherwise. */
+  askHost: AskHost | null;
   panelOpen: boolean;
   companionVisible: boolean;
   tip: { section: string; text: string } | null;
@@ -16,7 +26,7 @@ export type BubbleState = {
 };
 
 export type BubbleAction =
-  | { type: "ask/open" }
+  | { type: "ask/open"; host?: AskHost }
   | { type: "ask/close" }
   | { type: "panel/open" }
   | { type: "panel/close" }
@@ -30,6 +40,7 @@ export type BubbleAction =
 
 export const initialBubbleState: BubbleState = {
   bubble: "none",
+  askHost: null,
   panelOpen: false,
   companionVisible: false,
   tip: null,
@@ -40,22 +51,32 @@ function dropTip(state: BubbleState): BubbleState {
   return state.bubble === "tip" ? { ...state, bubble: "none", tip: null } : state.tip ? { ...state, tip: null } : state;
 }
 
+/** Leaving "ask" always clears its host: `askHost !== null` iff `bubble === "ask"`. */
+function withBubble(state: BubbleState, bubble: BubbleKind): BubbleState {
+  return { ...state, bubble, askHost: bubble === "ask" ? state.askHost : null };
+}
+
 export function reduceBubble(state: BubbleState, action: BubbleAction): BubbleState {
   switch (action.type) {
     case "ask/open":
       // With the full panel open the conversation is already on screen; a
       // second surface beside it would split it in two.
       if (state.panelOpen) return state;
-      return state.bubble === "ask" ? state : { ...dropTip(state), bubble: "ask" };
+      {
+        const host = action.host ?? "float";
+        // Already open: opening it from somewhere else moves it there.
+        if (state.bubble === "ask") return state.askHost === host ? state : { ...state, askHost: host };
+        return { ...dropTip(state), bubble: "ask", askHost: host };
+      }
     case "ask/close":
-      return state.bubble === "ask" ? { ...state, bubble: "none" } : state;
+      return state.bubble === "ask" ? withBubble(state, "none") : state;
     case "panel/open":
       // The panel takes over the conversation; the bubble closes beside it.
-      return { ...dropTip(state), panelOpen: true, bubble: state.bubble === "tour" ? "tour" : "none" };
+      return withBubble({ ...dropTip(state), panelOpen: true }, state.bubble === "tour" ? "tour" : "none");
     case "panel/close":
       return state.panelOpen ? { ...state, panelOpen: false } : state;
     case "tour/open":
-      return { ...dropTip(state), bubble: "tour" };
+      return withBubble(dropTip(state), "tour");
     case "tour/close":
       return state.bubble === "tour" ? { ...state, bubble: "none" } : state;
     case "tip/offer": {
@@ -84,7 +105,7 @@ export function reduceBubble(state: BubbleState, action: BubbleAction): BubbleSt
       return action.visible ? next : dropTip(next);
     }
     case "escape":
-      if (state.bubble !== "none") return { ...state, bubble: "none", tip: null };
+      if (state.bubble !== "none") return { ...withBubble(state, "none"), tip: null };
       if (state.panelOpen) return { ...state, panelOpen: false };
       return state;
     default:

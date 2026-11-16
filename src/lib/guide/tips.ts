@@ -18,3 +18,13 @@ export const TIP_RULES = {
   /** How long a tip stays up when not hovered or focused. */
   showMs: 6000,
 };
+
+/** What Nex says in a section's dock while it rests there and has nothing else to say. Short: one line beside the socket. */
+export const DOCK_PROMPTS: Record<string, string> = {
+  about: "Ask me what he owns end to end.",
+  experience: "Ask what he owned in any role.",
+  skills: "Ask where a skill ran in production.",
+  work: "Ask how any of these was built.",
+  nex: "That's me. Ask, and watch the tools I call.",
+  contact: "Paste a role and I'll check his fit.",
+};

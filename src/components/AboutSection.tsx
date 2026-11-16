@@ -1,16 +1,29 @@
 import Image from "next/image";
 import { Award, Download, MapPin } from "lucide-react";
-import { about, experiences, personalInfo, recognition } from "@/data/portfolio";
+import { about, experiences, personalInfo, recognition, stats } from "@/data/portfolio";
+import { THESIS } from "@/data/thesis";
 import { siteConfig } from "@/lib/seo/site";
 import logo from "@/assets/logo.png";
 
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import AskAboutThis from "@/components/AskAboutThis";
+import { SectionNexDock } from "@/components/guide/SectionNexDock";
+import { PanelAskSwap } from "@/components/guide/InPageAskHost";
 
 /** Latest entry is the current role; the earliest ArmorCode entry sets tenure. */
 const currentRole = experiences[experiences.length - 1];
 const armorCodeStart = experiences.find((experience) => experience.company === "ArmorCode");
 const tenureLabel = armorCodeStart ? `${armorCodeStart.period.split(/\s*[-–]\s*/)[0]} — present` : currentRole.period;
+
+/**
+ * Highlights whose number the hero already shows in full. Here they are a
+ * compact line linking to the same proof, so the page doesn't repeat itself;
+ * the rest keep their full cards.
+ */
+const heroFigures = new Set(stats.map((stat) => `${stat.value}${stat.suffix}`));
+const repeated = about.highlights.filter((highlight) => heroFigures.has(highlight.metric));
+const unique = about.highlights.filter((highlight) => !heroFigures.has(highlight.metric));
+const proofHref = (metric: string) => stats.find((stat) => `${stat.value}${stat.suffix}` === metric)?.href ?? "#work";
 
 /**
  * About section.
@@ -33,23 +46,24 @@ const AboutSection = () => {
           {/* Left Column: Sticky Header */}
           <div className="w-full shrink-0 lg:sticky lg:top-32 lg:w-1/3">
             <div>
-              <div data-guide-panel className="panel-sticky">
+              <div data-guide-panel data-guide-target="about-panel" className="panel-sticky">
                 <div aria-hidden="true" className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
                 <div aria-hidden="true" className="absolute -bottom-20 -left-16 h-40 w-40 rounded-full bg-accent/10 blur-3xl" />
 
                 <div className="relative">
-                  <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 font-mono text-xs text-primary-text">
+                  <SectionNexDock section="about" className="mb-6" eyebrow={<div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 font-mono text-xs text-primary-text">
                     <span className="h-2 w-2 rounded-full bg-primary shadow-[0_0_12px_hsl(var(--accent)/0.6)]" />
                     Profile
-                  </div>
+                  </div>} />
 
                   <h2 className="heading-xl mb-6">
                     About <br className="hidden lg:block" />
                     <span className="text-gradient">Nikunj</span>
                   </h2>
 
+                  <PanelAskSwap section="about">
                   <p className="max-w-md leading-relaxed text-muted-foreground">
-                    {personalInfo.tagline}
+                    {THESIS}
                   </p>
 
                   {/* Identity facts, matching the weight of the FlipWords line
@@ -92,6 +106,7 @@ const AboutSection = () => {
                       Resume
                     </a>
                   </div>
+                  </PanelAskSwap>
                 </div>
               </div>
             </div>
@@ -123,7 +138,7 @@ const AboutSection = () => {
             <div>
               <SpotlightCard className="overflow-hidden">
                 <div className="flex items-start gap-5 p-6">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10 text-primary glow-accent-sm">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10 text-primary-text glow-accent-sm">
                     <Award className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
@@ -140,7 +155,7 @@ const AboutSection = () => {
             {/* Metric-led proof. Two across inside a 2/3 column keeps each card
                 at a readable measure — three across gave ~23 chars per line. */}
             <div className="grid gap-4 sm:grid-cols-2">
-              {about.highlights.map((highlight) => (
+              {unique.map((highlight) => (
                 <SpotlightCard key={highlight.label} className="h-full">
                   <div className="flex h-full flex-col gap-3 p-6">
                     <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -166,6 +181,20 @@ const AboutSection = () => {
                 </SpotlightCard>
               ))}
             </div>
+
+            {repeated.length > 0 && (
+              <ul className="flex flex-col divide-y divide-foreground/10 rounded-2xl glass-subtle">
+                {repeated.map((highlight) => (
+                  <li key={highlight.label} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-5 py-3 text-sm">
+                    <span className="font-bold tabular-nums text-foreground">{highlight.metric}</span>
+                    <span className="text-muted-foreground">{highlight.label}</span>
+                    <a href={proofHref(highlight.metric)} className="ml-auto font-mono text-[11px] uppercase tracking-wider text-primary-text hover:text-primary-text">
+                      See the proof
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
 
           </div>
 

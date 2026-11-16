@@ -341,3 +341,8 @@ test("get_case_study ignores prototype keys as section names", () => {
   }
   assert.equal(call("get_case_study", { slug: "constructor" }).refused, true);
 });
+
+test("get_metric returns the metric's stable id with the value", () => {
+  const result = executeTool({ id: "m", name: "get_metric", args: { name: "kappa" } });
+  assert.equal((result.output as { id?: string }).id, "judge-kappa");
+});

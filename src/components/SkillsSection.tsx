@@ -1,8 +1,10 @@
 import { Brain, Layers, Database, Server, Wrench } from "lucide-react";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import FlipWords from "@/components/ui/flip-words";
-import { skillCategories } from "@/data/portfolio";
+import { skillCategories, skillEvidence } from "@/data/portfolio";
 import AskAboutThis from "@/components/AskAboutThis";
+import { SectionNexDock } from "@/components/guide/SectionNexDock";
+import { PanelAskSwap } from "@/components/guide/InPageAskHost";
 
 /** Keyed by exact category title — a miss falls back to Wrench silently, so
  *  these must be updated in the same edit as any title change in portfolio.ts. */
@@ -21,29 +23,33 @@ const SkillsSection = () => {
 
           {/* Left Column: Sticky Header */}
           <div className="w-full shrink-0 lg:sticky lg:top-32 lg:w-1/3">
-            <div data-guide-panel className="panel-sticky">
+            <div data-guide-panel data-guide-target="skills-panel" className="panel-sticky">
               <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
               <div className="absolute -bottom-20 -left-16 h-40 w-40 rounded-full bg-accent/10 blur-3xl" />
 
               <div className="relative">
-                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 font-mono text-xs text-primary-text">
-                  Expertise
-                </div>
+                <SectionNexDock
+                  section="skills"
+                  className="mb-6"
+                  eyebrow={<div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 font-mono text-xs text-primary-text">Expertise</div>}
+                />
                 <h2 className="heading-xl mb-6">
                   Technical <br className="hidden lg:block" />
                   <span className="text-gradient">Stack</span>
                 </h2>
+                <PanelAskSwap section="skills">
                 <p className="max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
-                  The technologies I reach for most often when building agent systems, governed MCP tools, evaluation pipelines, and full-stack AI products.
+                  The technologies I reach for most often when building agent systems, governed MCP tools, evaluation pipelines, and full-stack AI products. Highlighted ones link to the work that proves them.
                 </p>
 
                 <p className="mt-10 text-left text-base font-semibold text-foreground sm:text-xl md:text-2xl">
                   <FlipWords
                     variant="line"
                     words={["Learning fast.", "Building deep.", "Shipping reliably."]}
-                    className="text-primary"
+                    className="text-primary-text"
                   />
                 </p>
+                </PanelAskSwap>
               </div>
             </div>
           </div>
@@ -65,10 +71,10 @@ const SkillsSection = () => {
                       */}
                       <div className="flex items-center gap-4">
                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-foreground/5 glass-subtle transition-transform duration-500 group-hover:scale-110 group-hover:border-primary/30">
-                          <Icon className="h-5 w-5 text-primary" />
+                          <Icon className="h-5 w-5 text-primary-text" />
                         </div>
                         <div>
-                          <h3 className="heading-md transition-colors duration-300 group-hover:text-primary">
+                          <h3 className="heading-md transition-colors duration-300 group-hover:text-primary-text">
                             {cat.title}
                           </h3>
                           <p className="mt-1 font-mono text-xs text-muted-foreground">{cat.skills.length} technologies</p>
@@ -84,14 +90,27 @@ const SkillsSection = () => {
                       </p>
 
                       <ul className="flex flex-wrap gap-2.5">
-                        {cat.skills.map((skill) => (
-                          <li
-                            key={skill}
-                            className="select-none rounded-xl border border-foreground/5 px-4 py-2 text-sm font-medium glass-subtle text-foreground/80 transition-all duration-300 hover:border-primary/40 hover:bg-foreground/10 hover:text-primary"
-                          >
-                            {skill}
-                          </li>
-                        ))}
+                        {cat.skills.map((skill) => {
+                          // A skill with evidence on the site links to it; the rest stay plain.
+                          const evidence = skillEvidence[skill];
+                          const chip = "block rounded-xl border px-4 py-2 text-sm font-medium glass-subtle transition-all duration-300";
+                          return (
+                            <li key={skill}>
+                              {evidence ? (
+                                <a
+                                  href={evidence.href}
+                                  title={`Proof: ${evidence.label}`}
+                                  className={`${chip} border-primary/25 text-foreground/90 hover:border-primary/60 hover:text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
+                                >
+                                  {skill}
+                                  <span className="sr-only"> (proof: {evidence.label})</span>
+                                </a>
+                              ) : (
+                                <span className={`${chip} select-none border-foreground/5 text-foreground/70`}>{skill}</span>
+                              )}
+                            </li>
+                          );
+                        })}
                       </ul>
                     </div>
                   </SpotlightCard>

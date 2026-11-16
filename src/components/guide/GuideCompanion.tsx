@@ -5,29 +5,36 @@ import { usePathname } from "next/navigation";
 import { animate, cancelFrame, frame as frameLoop, motion, useMotionValue, useReducedMotion } from "framer-motion";
 import GuideAvatar from "@/components/guide/GuideAvatar";
 import { StaticGuideMark, prefersStatic } from "@/components/guide/GuideAvatarSlot";
-import { NexBubble } from "@/components/guide/NexBubble";
+import { NexBubble, readingRects } from "@/components/guide/NexBubble";
 import { useGuideTour } from "@/components/guide/GuideTourNarrator";
 import { SECTION_IDS } from "@/lib/guide/anchors";
 import { emitGuide } from "@/lib/guide/bus";
-import { dispatchCompanion, getCompanionState, openAsk, openPanel, setHeroVisible, useCompanionState } from "@/lib/guide/companion-store";
+import { dispatchCompanion, getCompanionState, openAsk, openPanel, setCompanionSection, setDockSection, setFooterDocked, setHeroVisible, useCompanionState } from "@/lib/guide/companion-store";
 import {
   activeSectionAt,
   blendPoint,
   clampToViewport,
   cornerPoint,
   easeInOutCubic,
-  FADE_SHARE,
   gutterPoint,
-  heroHandoffFrame,
+  heroDockFrame,
+  routeSocketProgress,
+  footerDockFrame,
+  footerDockProgress,
+  freeBubbleSide,
+  heroFaceScale,
   heroHandoffProgress,
   routeTravelFrame,
   routeTravelMs,
-  underPanelPoint,
+  socketDockPoint,
   type BubbleSide,
   type Point,
   type Viewport,
 } from "@/lib/guide/placement";
 import { SECTION_TIPS, TIP_RULES } from "@/lib/guide/tips";
+import { HOVER_LINE } from "@/lib/guide/hero-lines";
+import { getSpoken, hush, say, sayPetLine } from "@/lib/guide/spoken";
+import { introPending, markAvatarDrawn } from "@/lib/hero-intro";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useChatAvailability } from "@/hooks/useChatAvailability";
 import { NAVBAR_CLEARANCE as NAVBAR } from "@/lib/scroll";
@@ -36,7 +43,7 @@ const SIZE = 68;
 const MOBILE_SIZE = 56;
 /** How long the glide between two sections' spots takes. */
 const GLIDE_MS = 650;
-/** The hand-off progress at which the conversation moves (mid cross-fade, while both are one disc). */
+/** The hand-off progress at which the conversation leaves the hero for the companion's own bubble. */
 const HANDOFF_SWAP_AT = 0.22;
 /**
  * How the hand-off maps onto scrolling: it begins once the visitor has
@@ -57,8 +64,14 @@ function handoffProgress(heroBox: { top: number }, viewport: Viewport) {
 const SETTLE_MS = 300;
 /** Per-frame movement above this while riding is a discontinuity, smoothed into a glide. */
 const MAX_RIDE_STEP = 90;
+/** The footer slot's size: Nex lands there drawn at this diameter. */
+const FOOTER_SLOT = 150;
+/** How long Nex takes to fly to the corner when the full conversation opens, and back when it closes. */
+const PANEL_FLIGHT_MS = 620;
 /** While a tip is waiting its turn (cooldown, another bubble), ask again this often. */
 const TIP_RETRY_MS = 5000;
+/** A tip's bubble, for finding free space before offering one (one to three lines). */
+const TIP_BOX = { width: 360, height: 112 };
 
 /**
  * A spot is a rule for where the avatar sits, evaluated every frame: either
@@ -100,22 +113,27 @@ export default function GuideCompanion() {
   // The hero avatar reports itself (desktop homepage only, with hysteresis).
   const heroVisible = isHome && companion.heroVisible;
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const mirrorRef = useRef<HTMLSpanElement>(null);
 
   // Written by the frame loop below, read by the avatar layer and the bubble.
   const posX = useMotionValue(0);
   const posY = useMotionValue(0);
   const opacity = useMotionValue(0);
   const scale = useMotionValue(1);
+  // The companion's own disc and ring. In the hero's socket the page draws
+  // them, so only the face shows; they fade in as Nex leaves for the page.
+  const chrome = useMotionValue(1);
   const [spotKind, setSpotKind] = useState<"ride" | "corner">("ride");
   // Save-data and low-memory devices get the still drawing, as the hero does.
   const [lowPower] = useState(() => typeof navigator !== "undefined" && prefersStatic());
-  // True while the hero hand-off is between its ends (set by the loop on change only).
-  const [handingOffState, setHandingOffState] = useState(false);
-  // Past the cross-fade but still on its way to the spot (the hero is gone).
-  const [travelling, setTravelling] = useState(false);
-  const travellingRef = useRef(false);
-  const handingOffRef = useRef(false);
+  // Sitting in (or leaving) the hero's socket: it follows the pointer there
+  // and reacts to clicks like a pet (set by the loop on change only).
+  const [inHero, setInHero] = useState(false);
+  const inHeroRef = useRef(false);
+  const [inSocket, setInSocket] = useState(false);
+  const inSocketRef = useRef(false);
+  const dockSectionRef = useRef<string | null>(null);
+  // The live drawing has rendered: until then the hero's socket keeps its still one.
+  const [drawn, setDrawn] = useState(false);
 
   // Availability drives the "offline" sleep.
   useEffect(() => {
@@ -140,7 +158,10 @@ export default function GuideCompanion() {
     setSettledPath(pathname);
     setSettled(false);
   }
-  const visible = settled && (touring || !heroVisible) && !(isMobile && (askOpen || companion.panelOpen));
+  // One Nex: on desktop it is in the hero's socket while the hero is on
+  // screen, so it is visible there too. Phones keep the still drawing in the
+  // hero and show the companion (in the corner) once the hero has scrolled away.
+  const visible = settled && (touring || !(isMobile && heroVisible)) && !(isMobile && (askOpen || companion.panelOpen));
 
   useEffect(() => {
     dispatchCompanion({ type: "companion/visible", visible });
@@ -161,14 +182,28 @@ export default function GuideCompanion() {
   // the corner instead.
   const cornerOnly = touring || companion.panelOpen || isMobile;
   const route = routeKind(pathname);
+  const routeRef = useRef(route);
+  useLayoutEffect(() => {
+    routeRef.current = route;
+  }, [route]);
+  // The conversation is open in a row that reserves a place for Nex: that
+  // place is where it goes (one glide there, and back when it closes).
+  // (The rows: Work, Nex and Contact's, and the page rows on /work and case
+  // studies. The sticky panels keep Nex in their own dock beside it.)
+  const askSocketHost = companion.bubble === "ask" && !isMobile && !touring && !companion.panelOpen && hostHasSocket(companion.askHost) ? companion.askHost : null;
+  const askSocketRef = useRef(askSocketHost);
+  useLayoutEffect(() => {
+    askSocketRef.current = askSocketHost;
+  }, [askSocketHost]);
   const rule = useMemo<SpotRule>(() => {
     if (cornerOnly) return CORNER;
+    if (askSocketHost) return askSocketRule(askSocketHost);
     // Other pages have spots of their own (the case study's table of
     // contents, the index's headings); only an unknown page uses the corner.
     if (route !== "home") return ROUTE_RULES[route] ?? CORNER;
     if (!activeSection) return marginRule("margin");
     return SECTION_RULES[activeSection] ?? marginRule(activeSection);
-  }, [activeSection, cornerOnly, route]);
+  }, [activeSection, askSocketHost, cornerOnly, route]);
 
   // The frame loop. Every frame: pick the section that owns the screen, read
   // the current rule's point from the live layout, blend from the previous
@@ -189,7 +224,7 @@ export default function GuideCompanion() {
   const settledRef = useRef(false);
   const mountedAtRef = useRef(0);
   /** A trip between pages in progress: from where the avatar was on the page it left. */
-  const travelRef = useRef<{ from: Point; fromScale: number; start: number; ms: number; toHero: boolean } | null>(null);
+  const travelRef = useRef<{ from: Point; fromScale: number; fromChrome: number; start: number; ms: number; toHero: boolean } | null>(null);
   const reduceMotionRef = useRef(reduceMotion);
   const isMobileRef = useRef(isMobile);
   useLayoutEffect(() => {
@@ -198,6 +233,31 @@ export default function GuideCompanion() {
   }, [isMobile, reduceMotion]);
 
   const sectionRef = useRef<string | null>(null);
+  const landedRef = useRef(false);
+  /** Nex is on its way into the footer's slot (any progress at all): no tips. */
+  const landingRef = useRef(false);
+  const panelOpenRef = useRef(companion.panelOpen);
+  /**
+   * The full conversation opening or closing moves Nex between its place in
+   * the page (the hero, a spot, the footer slot) and the corner beside the
+   * panel. One eased flight from the pose last drawn (position, size, disc)
+   * to wherever the new place is this frame, so nothing snaps: it shrinks on
+   * the way to the corner and grows back into a slot on the way home.
+   */
+  const poseFlightRef = useRef<{ from: Point; fromScale: number; fromChrome: number; start: number } | null>(null);
+  const drawnPoseRef = useRef<{ point: Point; scale: number; chrome: number } | null>(null);
+  // The tour moves Nex to the corner the same way (it narrates from there).
+  const cornerModeRef = useRef(false);
+  const cornerMode = companion.panelOpen || touring;
+  useLayoutEffect(() => {
+    panelOpenRef.current = companion.panelOpen;
+    if (cornerModeRef.current === cornerMode) return;
+    cornerModeRef.current = cornerMode;
+    const pose = drawnPoseRef.current;
+    poseFlightRef.current = pose && !reduceMotion ? { from: pose.point, fromScale: pose.scale, fromChrome: pose.chrome, start: performance.now() } : null;
+    // The glide between spots would run on top of the flight: the flight owns it.
+    glideRef.current = null;
+  }, [companion.panelOpen, cornerMode, reduceMotion]);
   const visibleRef = useRef(visible);
   const touringRef = useRef(touring);
   useLayoutEffect(() => {
@@ -207,6 +267,8 @@ export default function GuideCompanion() {
 
   useEffect(() => {
     mountedAtRef.current = performance.now();
+    // A new page: whatever Nex was saying was about the last one.
+    hush();
     // Coming back to the homepage is a fresh load for the hero: wait for it again.
     settledRef.current = false;
     // Arriving from another page (a link, the agent, the back button): hop
@@ -214,13 +276,43 @@ export default function GuideCompanion() {
     // appearing there. Nothing to travel from on the first load.
     const departed = lastDrawn;
     travelRef.current = departed && departed.path !== pathname && !reduceMotionRef.current && performance.now() - departed.at < 4000
-      ? { from: departed.point, fromScale: departed.scale, start: -1, ms: 0, toHero: false }
+      ? { from: departed.point, fromScale: departed.scale, fromChrome: departed.chrome, start: -1, ms: 0, toHero: false }
       : null;
     lastPointRef.current = null;
     glideRef.current = null;
     clearLayoutCache();
     watchLayoutCache();
+    underContents = false;
+    dock = null;
     const footer = () => cachedNode("footer", () => document.querySelector("footer"));
+    /** A page header's socket (/work, a case study), when Nex may rest in it now. */
+    const routeSocketBox = () =>
+      !isHome && !isMobileRef.current && !touringRef.current && !panelOpenRef.current && !askSocketRef.current
+        ? visibleBox(cachedNode<HTMLElement>("route-socket", () => document.querySelector<HTMLElement>("[data-guide-route-socket]")))
+        : null;
+    const footerSocket = () => cachedNode<HTMLElement>("footer-socket", () => document.querySelector<HTMLElement>("[data-guide-footer-socket]"));
+    /**
+     * The footer landing, from the live layout: how far along it is, and the
+     * slot's centre. Desktop with motion only; the tour, the panel and phones
+     * keep the corner. Reduced motion snaps: landed once the band is in view.
+     */
+    const footerLanding = (viewport: Viewport) => {
+      if (isMobileRef.current || touringRef.current || panelOpenRef.current) return null;
+      const socket = footerSocket()?.getBoundingClientRect();
+      if (!socket || !socket.width) return null;
+      // Paced like the hero hand-off (same span of scrolling). The scroll left
+      // before the page ends ignores the footer's own conversation, so opening
+      // it never pulls Nex back out of the slot.
+      const host = document.getElementById("nex-host-footer")?.getBoundingClientRect().height ?? 0;
+      const remaining = document.documentElement.scrollHeight - host - window.innerHeight - window.scrollY;
+      let progress = footerDockProgress({ remaining, span: viewport.height * HANDOFF_SPAN, scrolled: window.scrollY });
+      // While its conversation is open in the footer, Nex stays in the slot.
+      const state = getCompanionState();
+      if (state.bubble === "ask" && state.askHost === "footer") progress = 1;
+      if (reduceMotionRef.current) progress = progress > 0.5 ? 1 : 0;
+      if (progress <= 0) return null;
+      return { progress, centre: { x: socket.left + socket.width / 2, y: socket.top + socket.height / 2 } };
+    };
     // Runs on Framer Motion's frame loop, in its update step: after Lenis has
     // scrolled (SmoothScroll drives Lenis from the read step) and before the
     // render step, so the avatar, the hero and the bubble are all drawn in the
@@ -242,22 +334,41 @@ export default function GuideCompanion() {
         if (next !== sectionRef.current) {
           sectionRef.current = next;
           setActiveSection(next);
+          setCompanionSection(next);
           if (next) emitGuide({ type: "page/section", id: next });
         }
       }
 
-      // The hero hand-off, tied to the scroll position rather than a timer:
-      // as the hero avatar slides under the navbar it shrinks and fades, and
-      // the companion grows out of it on its way to its spot. Scrolling back
-      // up plays it in reverse. `morph` is 0 with the hero fully in view and 1
-      // once it has handed over.
-      const hero = isHome && !isMobileRef.current ? cachedNode<HTMLElement>("hero", () => document.querySelector<HTMLElement>("[data-guide-hero-avatar]")) : null;
-      // The hero's layout box, without the scale and fade this loop applies to
-      // it: measuring the transformed box fed each frame's shrink back into the
-      // next frame's progress, so the hand-off never settled (and thrashed
-      // around its midpoint, where the conversation swaps between the two).
+      // The hero's socket: on desktop Nex sits in it while the hero is on
+      // screen, drawn at the socket's face size, and shrinks into the page as
+      // the visitor scrolls (one element, nothing cross-faded). Phones keep
+      // the still drawing there; the tour narrates from the corner.
+      const hero = isHome ? cachedNode<HTMLElement>("hero", () => document.querySelector<HTMLElement>("[data-guide-hero-avatar]")) : null;
+      // The socket's layout box, never a transformed one (the intro moves its wrapper).
       const heroBox = hero ? heroLayoutRect(hero) : undefined;
-      const heroHere = Boolean(hero && heroBox && heroBox.width > 0) && !touringRef.current && !reduceMotionRef.current;
+      // With the full conversation open, Nex sits in the corner beside it
+      // (the hero's socket shows its still drawing until it comes back).
+      const heroHere = Boolean(hero && heroBox && heroBox.width > 0) && !isMobileRef.current && !touringRef.current && !panelOpenRef.current;
+      const markInHero = (next: boolean) => {
+        if (next === inHeroRef.current) return;
+        inHeroRef.current = next;
+        setInHero(next);
+      };
+
+      // The intro: Nex is drawn wherever the intro has the socket's wrapper
+      // right now (asleep at the screen's centre, then settling into place),
+      // at its size and fade, so the intro moves the one live Nex.
+      if (heroHere && hero && introPending()) {
+        const stage = cachedNode<HTMLElement>("hero-stage", () => hero.closest<HTMLElement>('[data-hero-part="stage"]'));
+        const box = (stage ?? hero).getBoundingClientRect();
+        posX.set(Math.round((box.left + box.width / 2 - size / 2) * 2) / 2);
+        posY.set(Math.round((box.top + box.height / 2 - size / 2) * 2) / 2);
+        scale.set(heroFaceScale(box.width, size));
+        chrome.set(0);
+        opacity.set(stage ? Number(getComputedStyle(stage).opacity) || 0 : 1);
+        markInHero(true);
+        return;
+      }
       // On a load or a refresh nothing is drawn until the page has settled:
       // the hero column is still fading in and the browser may still be
       // restoring a scrolled position. Animating the hand-off from that
@@ -267,7 +378,7 @@ export default function GuideCompanion() {
       if (!settledRef.current) {
         // The hero's intro has ended (HeroIntro sets this, at once when it
         // doesn't play), so the hand-off never starts from a half-built hero.
-        const columnShown = !hero || document.documentElement.hasAttribute("data-hero-ready");
+        const columnShown = !hero || !introPending();
         if ((!isHome || now - mountedAtRef.current > SETTLE_MS) && columnShown) {
           settledRef.current = true;
           // Decide who is the guide from the settled page, before anything is drawn.
@@ -282,7 +393,7 @@ export default function GuideCompanion() {
               const to = { x: heroBox.left + heroBox.width / 2 - size / 2, y: heroBox.top + heroBox.height / 2 - size / 2 };
               travel.ms = routeTravelMs(travel.from, to);
             }
-          } else opacity.set(0);
+          } else if (!heroGuides) opacity.set(0);
           return;
         } else {
           // Waiting for the new page: hold where it was, so the trip starts there.
@@ -291,102 +402,64 @@ export default function GuideCompanion() {
             posX.set(travel.from.x);
             posY.set(travel.from.y);
             scale.set(travel.fromScale);
+            chrome.set(travel.fromChrome);
             opacity.set(1);
-            if (hero) {
-              hero.style.transform = "";
-              hero.style.opacity = "0";
-            }
           } else opacity.set(0);
-          if (hero && !travel) {
-            hero.style.transform = "";
-            hero.style.opacity = "";
-          }
           return;
         }
       }
       // A trip between pages: one hop from where it was to where it belongs
       // here, read from the live layout every frame so it lands exactly. Into
-      // the homepage with the hero on screen, it lands on the hero avatar and
-      // hands over to it (the hero fades in under it as it arrives).
+      // the homepage with the hero on screen, it lands in the hero's socket.
       const travel = travelRef.current;
       if (travel && travel.start >= 0) {
-        const heroTarget = travel.toHero && hero && heroBox ? heroBox : null;
-        const to = heroTarget
+        // Into the hero, or a page header's socket when the page opens at its top.
+        const arriving = !isHome ? routeSocketBox() : null;
+        const socketTarget = arriving && routeSocketProgress(arriving.top, arriving.top + window.scrollY, viewport.insetTop) === 0 ? arriving : null;
+        const heroTarget = travel.toHero && hero && heroBox ? heroBox : socketTarget;
+        const landing = heroTarget ? null : footerLanding(viewport);
+        const docked = landing && landing.progress >= 1 ? landing : null;
+        const to = docked
+          ? { x: docked.centre.x - size / 2, y: docked.centre.y - size / 2 }
+          : heroTarget
           ? { x: heroTarget.left + heroTarget.width / 2 - size / 2, y: heroTarget.top + heroTarget.height / 2 - size / 2 }
           : clampToViewport(ruleRef.current.point(size, viewport) ?? marginRule("").point(size, viewport) ?? CORNER.point(size, viewport)!, size, viewport, footer()?.getBoundingClientRect().top ?? null);
         if (!travel.ms) travel.ms = routeTravelMs(travel.from, to);
         const t = Math.min(1, (now - travel.start) / travel.ms);
-        // Landing on the hero: grow to its face size, then hand over.
-        const heroScale = heroTarget ? (heroTarget.width * 0.82) / (size * 0.76) : 1;
+        // Landing in the hero: grow to its face size.
+        const heroScale = socketTarget && heroTarget === socketTarget ? socketTarget.width / size : heroTarget ? heroFaceScale(heroTarget.width, size) : docked ? FOOTER_SLOT / size : 1;
         const hop = routeTravelFrame({ t, from: travel.from, to, fromScale: travel.fromScale, toScale: heroScale });
         posX.set(Math.round(hop.position.x * 2) / 2);
         posY.set(Math.round(hop.position.y * 2) / 2);
         scale.set(hop.scale);
-        if (heroTarget && hero) {
-          // The last fifth: the hero takes over, the small one fades into it.
-          const swap = Math.max(0, (t - 0.8) / 0.2);
-          hero.style.transform = "";
-          hero.style.opacity = String(swap);
-          opacity.set(1 - swap);
-        } else opacity.set(1);
+        const inHeroSocket = Boolean(heroTarget) && heroTarget !== socketTarget;
+        chrome.set(travel.fromChrome + ((inHeroSocket ? 0 : 1) - travel.fromChrome) * easeInOutCubic(t));
+        opacity.set(1);
+        markInHero(inHeroSocket);
         if (t >= 1) {
           travelRef.current = null;
-          lastPointRef.current = heroTarget ? null : to;
-          if (hero) hero.style.opacity = "";
-          if (heroTarget) opacity.set(0);
+          lastPointRef.current = heroTarget && !socketTarget ? null : to;
+          if (docked) landedRef.current = true;
         }
         return;
       }
 
-      // Hand-off progress: a plain function of the scroll position (0 as the
-      // hero avatar's top reaches the navbar, 1 a scroll of 70% of its height
-      // later). No smoothing and no timer: the same scroll position always
-      // draws the same frame, a stop mid-way holds mid-way, and scrolling back
-      // plays the same frames in reverse. Lenis already smooths the scroll.
-      const morph = heroHere && heroBox ? handoffProgress(heroBox, viewport) : 1;
+      // How far Nex has left the hero: a plain function of the scroll
+      // position, so the same scroll draws the same frame, a stop mid-way
+      // holds and scrolling back plays it in reverse. Lenis smooths the scroll.
+      // Reduced motion: in the socket or at its spot, nothing in between.
+      let morph = heroHere && heroBox ? handoffProgress(heroBox, viewport) : 1;
+      if (reduceMotionRef.current && morph > 0 && morph < 1) morph = morph < 0.5 ? 0 : 1;
       const heroCentre = heroBox ? { x: heroBox.left + heroBox.width / 2, y: heroBox.top + heroBox.height / 2 } : { x: 0, y: 0 };
-      // Styles the hero from the same hand-off frame the companion is drawn
-      // from, so the two can't disagree by a frame.
-      const styleHero = (frame: ReturnType<typeof heroHandoffFrame> | null) => {
-        if (!hero) return;
-        hero.style.transform = frame ? `translate(${frame.heroOffset.x}px, ${frame.heroOffset.y}px) scale(${frame.heroScale})` : "";
-        hero.style.opacity = frame ? String(frame.heroOpacity) : "";
-        // A faded hero must not catch clicks meant for the page or the companion.
-        hero.style.pointerEvents = frame && frame.heroOpacity < 0.5 ? "none" : "";
-      };
-
-      // Nothing to draw while hidden and not mid hand-off; keep tracking the section only.
-      const handingOff = heroHere && morph > 0 && morph < 1;
-      // The copied hero face is only needed while the two discs overlap
-      // (the cross-fade); after it the hero is invisible and the companion's
-      // own avatar takes over for the rest of its trip, facing where it goes.
-      const mirroring = handingOff && morph < FADE_SHARE;
-      const onTheWay = handingOff && !mirroring;
-      if (onTheWay !== travellingRef.current) {
-        travellingRef.current = onTheWay;
-        setTravelling(onTheWay);
-      }
-      if (mirroring !== handingOffRef.current) {
-        handingOffRef.current = mirroring;
-        setHandingOffState(mirroring);
-      }
-      // The hand-off point decides which avatar is the guide (and hosts the
-      // ask box), so the conversation moves exactly when the avatars swap.
+      const leavingHero = heroHere && morph < 1;
+      markInHero(leavingHero);
+      // Nex in the hero hosts the conversation there; past this point the ask
+      // box moves to the companion's own bubble. Phones: while the hero shows.
       if (hero) setHeroVisible(heroHere ? morph < HANDOFF_SWAP_AT : heroBox ? heroBox.bottom > NAVBAR + heroBox.height * 0.5 && heroBox.width > 0 : false);
-      if (!visibleRef.current && !handingOff) {
-        // The big hero avatar is the guide: a trip to another page starts from it.
-        // (Recorded here because by the time this effect cleans up after a route
-        // change, the hero has already left the DOM.)
-        if (heroHere && heroBox && getCompanionState().heroVisible && heroBox.bottom > 0 && heroBox.top < viewport.height) {
-          lastDrawn = { point: { x: heroBox.left + heroBox.width / 2 - size / 2, y: heroBox.top + heroBox.height / 2 - size / 2 }, scale: (heroBox.width * 0.82) / (size * 0.76), at: performance.now(), path: pathname };
-        }
+      if (!visibleRef.current) {
         lastPointRef.current = null;
         glideRef.current = null;
-        // Over the hero the hand-off owns the opacity: hidden. (Fading out on
-        // the generic timer here is what let the small avatar linger after the
-        // hero had already come back.)
-        opacity.set(heroHere ? 0 : fade.get());
-        styleHero(null);
+        opacity.set(fade.get());
         return;
       }
 
@@ -395,7 +468,32 @@ export default function GuideCompanion() {
       const ruled = current.point(size, viewport) ?? marginRule("").point(size, viewport);
       const usedFallback = ruled === null;
       let target = ruled ?? fallback;
-      const footerTop = footer()?.getBoundingClientRect().top ?? null;
+      // A page header's socket (/work, a case study): Nex rests in it, drawn
+      // at its size, and leaves for its reading spot over the same span of
+      // scrolling as the hero, along the same path. Desktop only.
+      const routeSocket = routeSocketBox();
+      const socketProgress = routeSocket ? routeSocketProgress(routeSocket.top, routeSocket.top + window.scrollY, viewport.insetTop) : 1;
+      const routeMorph = routeSocket ? (reduceMotionRef.current ? (socketProgress < 0.5 ? 0 : 1) : socketProgress) : 1;
+      const leavingSocket = Boolean(routeSocket) && routeMorph < 1;
+      // Resting in a section's dock: the current rule is a dock, Nex is fully
+      // in its socket, nothing else is moving it (a glide, the hero, the footer).
+      const docked = isHome && !usedFallback && current.key.startsWith("dock:") && dock !== null && current.key === `dock:${dock.section}` && dock.hold >= 0.999 && !glideRef.current && !(heroHere && morph < 1) && !isMobileRef.current && !touringRef.current && !panelOpenRef.current && !landingRef.current;
+      const dockSection = docked && dock ? dock.section : null;
+      if (dockSection !== dockSectionRef.current) {
+        dockSectionRef.current = dockSection;
+        setDockSection(dockSection);
+      }
+      // Resting in a socket (its own Ask lives in the page): petting, like the hero.
+      const resting = (Boolean(routeSocket) && routeMorph < HANDOFF_SWAP_AT) || docked;
+      if (resting !== inSocketRef.current) {
+        inSocketRef.current = resting;
+        setInSocket(resting);
+      }
+      const landing = leavingHero || leavingSocket ? null : footerLanding(viewport);
+      // The footer is an obstacle for every spot but its own slot. With the
+      // panel open the corner sits just below the panel, over the page's end:
+      // pushing it above the footer put it inside the panel.
+      const footerTop = landing || panelOpenRef.current ? null : footer()?.getBoundingClientRect().top ?? null;
       target = clampToViewport(target, size, viewport, footerTop);
 
       let point = target;
@@ -403,17 +501,33 @@ export default function GuideCompanion() {
       if (glide) {
         const t = (now - glide.start) / GLIDE_MS;
         if (t >= 1) glideRef.current = null;
-        else point = blendPoint(glide.from, target, easeInOutCubic(t));
+        // Off the homepage the jumps are across the page (the right strip to
+        // under the contents): a hop up over the content, the same arc as a
+        // page change, rather than a slide through the text.
+        else point = routeRef.current !== "home" ? routeTravelFrame({ t, from: glide.from, to: target }).position : blendPoint(glide.from, target, easeInOutCubic(t));
       }
       const last = lastPointRef.current;
-      if (heroHere && heroBox && morph < 1) {
-        const frame = heroHandoffFrame({ t: morph, heroCentre, heroDiameter: heroBox.width, size, spot: target });
-        styleHero(frame);
-        if (hero && morph < FADE_SHARE) mirrorHero(hero, mirrorRef.current, size);
+      if (leavingHero && heroBox) {
+        const frame = heroDockFrame({ t: morph, heroCentre, heroDiameter: heroBox.width, size, spot: target });
         point = frame.position;
         glideRef.current = null;
-        scale.set(frame.companionScale);
-        opacity.set(frame.companionOpacity);
+        scale.set(frame.scale);
+        chrome.set(frame.chrome);
+        opacity.set(1);
+      } else if (leavingSocket && routeSocket) {
+        // Straight from the slot toward its spot (one eased blend, shrinking
+        // as it goes): unlike the hero's curve it doesn't drop to the spot's
+        // height first, which swept it across the content under the header.
+        const u = easeInOutCubic(routeMorph);
+        const from = { x: routeSocket.left + routeSocket.width / 2 - size / 2, y: routeSocket.top + routeSocket.height / 2 - size / 2 };
+        // Toward where the spot's glide has it this frame (not the spot
+        // itself): a fast scroll up while it was gliding across the page used
+        // to cancel the glide and snap it to the right first.
+        point = blendPoint(from, point, u);
+        const startScale = routeSocket.width / size;
+        scale.set(startScale + (1 - startScale) * u);
+        chrome.set(1);
+        opacity.set(fade.get());
       } else if (!last) {
         point = target; // appearing: straight to the spot
       } else if (!glideRef.current) {
@@ -427,29 +541,66 @@ export default function GuideCompanion() {
         }
       }
 
-      if (!(heroHere && morph < 1)) {
-        // Hand-off done (or no hero here): the hero, now invisible, is left to
-        // the page untransformed, so it scrolls away instead of being carried
-        // along over the content. It stays hidden while scrolled past.
-        if (hero && heroHere) {
-          hero.style.transform = "";
-          hero.style.opacity = morph >= 1 ? "0" : "";
-          hero.style.pointerEvents = morph >= 1 ? "none" : "";
-        } else if (hero) {
-          // The hand-off isn't running (the tour started mid-way, reduced
-          // motion): the hero must not keep a half-faded, unclickable style.
-          styleHero(null);
-        }
+      if (!leavingHero && !leavingSocket) {
         scale.set(1);
-        // Away from the hero (or with the hand-off complete): fully shown, or
-        // the short in-place fade on other pages, the tour and the panel.
-        opacity.set(visibleRef.current ? (heroHere ? 1 : fade.get()) : 0);
+        chrome.set(1);
+        // Fully shown, or the short in-place fade on other pages, the tour and the panel.
+        opacity.set(heroHere ? 1 : fade.get());
       }
 
-      lastPointRef.current = point;
+      // The footer landing, last: from wherever the spot rule (and its glide)
+      // put it this frame, curve into the slot and grow to its size. A pure
+      // function of the band's position, so scrolling back plays it in reverse.
+      // The ride's own position is kept unblended in `lastPointRef`, so the
+      // landing never trips the ride's jump-smoothing.
+      const ridePoint = point;
+      if (landing) {
+        const frame = footerDockFrame({ t: landing.progress, from: ridePoint, slotCentre: landing.centre, size, slotSize: FOOTER_SLOT });
+        point = frame.position;
+        scale.set(frame.scale);
+        opacity.set(opacity.get() * frame.opacity);
+      }
+      const landed = Boolean(landing && landing.progress >= 1);
+      // From the first frame of the landing a tip would open beside a disc
+      // growing into the footer, over its links: the one showing goes.
+      const nowLanding = Boolean(landing);
+      if (nowLanding !== landingRef.current) {
+        landingRef.current = nowLanding;
+        if (nowLanding && getCompanionState().bubble === "tip") dispatchCompanion({ type: "tip/expire" });
+      }
+      if (landed !== landedRef.current) {
+        landedRef.current = landed;
+        setFooterDocked(landed);
+        // Whatever it was saying up the page isn't for the footer.
+        if (landed) hush();
+        // A floating ask box can't stay beside a disc that has grown into the
+        // footer: its conversation moves into the footer's own host, in the
+        // page. (An in-page host the visitor chose keeps it.)
+        const state = getCompanionState();
+        if (landed && state.bubble === "ask" && state.askHost === "float") dispatchCompanion({ type: "ask/open", host: "footer" });
+        // A tip would open beside a 150px disc, over the footer's links.
+        if (landed && state.bubble === "tip") dispatchCompanion({ type: "tip/expire" });
+      }
+
+      lastPointRef.current = ridePoint;
+      // The panel's flight, last of all: from the pose drawn before it opened
+      // or closed to this frame's pose, which keeps tracking the live layout.
+      const flight = poseFlightRef.current;
+      if (flight) {
+        const k = Math.min(1, (now - flight.start) / PANEL_FLIGHT_MS);
+        if (k >= 1) poseFlightRef.current = null;
+        else {
+          const hop = routeTravelFrame({ t: k, from: flight.from, to: point, fromScale: flight.fromScale, toScale: scale.get() });
+          point = hop.position;
+          scale.set(hop.scale);
+          chrome.set(flight.fromChrome + (chrome.get() - flight.fromChrome) * easeInOutCubic(k));
+          opacity.set(Math.max(opacity.get(), 1));
+        }
+      }
+      drawnPoseRef.current = { point, scale: scale.get(), chrome: chrome.get() };
       posX.set(Math.round(point.x * 2) / 2);
       posY.set(Math.round(point.y * 2) / 2);
-      if (opacity.get() > 0.5) lastDrawn = { point, scale: scale.get(), at: performance.now(), path: pathname };
+      if (opacity.get() > 0.5) lastDrawn = { point, scale: scale.get(), chrome: chrome.get(), at: performance.now(), path: pathname };
 
       const kind = current === CORNER || usedFallback ? "corner" : "ride";
       if (kind !== kindRef.current) {
@@ -460,15 +611,51 @@ export default function GuideCompanion() {
     frameLoop.update(tick, true);
     return () => {
       cancelFrame(tick);
-      const hero = document.querySelector<HTMLElement>("[data-guide-hero-avatar]");
-      if (hero) {
-        hero.style.opacity = "";
-        hero.style.transform = "";
-        hero.style.pointerEvents = "";
-      }
+      landedRef.current = false;
+      setFooterDocked(false);
+      inHeroRef.current = false;
+      setInHero(false);
+      inSocketRef.current = false;
+      setInSocket(false);
+      dockSectionRef.current = null;
+      setDockSection(null);
     };
     // Re-run per page: each page settles afresh and the trip starts from the last one.
-  }, [fade, isHome, opacity, pathname, posX, posY, scale, size]);
+  }, [chrome, fade, isHome, opacity, pathname, posX, posY, scale, size]);
+
+  // The live drawing has rendered: the hero's intro waits for it, and the
+  // socket's still drawing gives way to it.
+  useEffect(() => {
+    const button = buttonRef.current;
+    if (!button || lowPower) return;
+    const check = () => {
+      if (!button.querySelector("svg")) return false;
+      setDrawn(true);
+      markAvatarDrawn();
+      return true;
+    };
+    if (check()) return;
+    const observer = new MutationObserver(() => {
+      if (check()) observer.disconnect();
+    });
+    observer.observe(button, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [lowPower]);
+
+  // Tells the page the live Nex is drawn on desktop, so the hero socket's
+  // still stand-in steps aside for good. The live Nex is the only face on the
+  // page from then on (in the socket, on its way, or elsewhere); the still
+  // one was showing beside it while it hopped in from another page.
+  useEffect(() => {
+    const root = document.documentElement;
+    // (While the full conversation is open Nex waits in the corner, and the
+    // socket shows its still drawing again rather than an empty ring.)
+    if (!isMobile && !companion.panelOpen && !touring && (drawn || lowPower)) root.dataset.nexInHero = "";
+    else delete root.dataset.nexInHero;
+    return () => {
+      delete root.dataset.nexInHero;
+    };
+  }, [companion.panelOpen, drawn, isMobile, lowPower, touring]);
 
   // Tips: after a short dwell on a section, offer its one-liner. The policy
   // decides whether one may show (budget, cooldown, nothing else open).
@@ -477,6 +664,14 @@ export default function GuideCompanion() {
     // Not in a background tab: the session's few tips would be spent unseen.
     const offer = () => {
       if (document.visibilityState !== "visible") return;
+      // Never at the footer: a tip beside the landed disc would cover its links.
+      if (getCompanionState().footerDocked || landingRef.current) return;
+      // Only into free space: when every side of Nex would cover reading text
+      // (short screens), wait; the next retry may find room as the page moves.
+      // Resting in this section's dock, the tip is the dock's line: always room.
+      const inDock = getCompanionState().dockSection === activeSection;
+      const viewport: Viewport = { width: document.documentElement.clientWidth, height: window.innerHeight, insetTop: NAVBAR, insetBottom: 0 };
+      if (!inDock && !freeBubbleSide({ x: posX.get(), y: posY.get() }, size, TIP_BOX, viewport, ruleRef.current.prefer, readingRects())) return;
       dispatchCompanion({ type: "tip/offer", section: activeSection, text: SECTION_TIPS[activeSection], now: Date.now() });
     };
     let interval = 0;
@@ -488,10 +683,14 @@ export default function GuideCompanion() {
       window.clearTimeout(timer);
       window.clearInterval(interval);
     };
-  }, [activeSection, isHome]);
+  }, [activeSection, isHome, posX, posY, size]);
 
   // Face the content. Memoised so the avatar's frame loop isn't woken by a new array each render.
-  const lookAt = useMemo<readonly [number, number]>(() => (spotKind === "corner" ? [-0.45, 0.25] : [0.6, 0]), [spotKind]);
+  // In the hero it follows the pointer instead.
+  const lookAt = useMemo<readonly [number, number] | null>(() => (inHero ? null : spotKind === "corner" ? [-0.45, 0.25] : [0.6, 0]), [inHero, spotKind]);
+  // Where Nex is a character to play with rather than a button: in the hero
+  // and once it has landed in the footer (both have their own Ask Nex).
+  const petMode = inHero || inSocket || companion.footerDocked;
 
   // Focus goes back to whatever opened the bubble when the companion is
   // hidden (over the hero), otherwise to the companion. Never scrolls.
@@ -515,8 +714,17 @@ export default function GuideCompanion() {
   }, [visible]);
 
   const toggle = () => {
+    if (petMode) {
+      emitGuide({ type: "pet/click", now: Date.now() });
+      sayPetLine();
+      return;
+    }
     if (companion.bubble === "ask") dispatchCompanion({ type: "ask/close" });
     else openAsk();
+  };
+  const hover = (active: boolean) => {
+    emitGuide({ type: "page/hover", active });
+    if (active && petMode && !getSpoken()) say(HOVER_LINE, 2400);
   };
 
   // Escape closes the bubble, then the panel.
@@ -527,15 +735,15 @@ export default function GuideCompanion() {
       if (companion.bubble === "none") return; // the panel handles its own Escape
       // The tour narrator ends the tour itself (announcement, one tour/end).
       if (companion.bubble === "tour") return;
-      // The hero hosts the ask box while it is the guide; its own handler closes it.
-      if (companion.bubble === "ask" && heroVisible) return;
+      // An in-page host (hero, footer) closes itself on Escape.
+      if (companion.bubble === "ask" && companion.askHost !== "float") return;
       event.preventDefault();
       dispatchCompanion({ type: "escape" });
       returnFocus();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [companion.bubble, companion.panelOpen, heroVisible, returnFocus]);
+  }, [companion.askHost, companion.bubble, companion.panelOpen, returnFocus]);
 
   return (
     <>
@@ -548,37 +756,32 @@ export default function GuideCompanion() {
           ref={buttonRef}
           type="button"
           data-guide-companion-button
-          tabIndex={visible ? 0 : -1}
+          // In the hero the socket's own button is the keyboard stop.
+          tabIndex={visible && !inHero ? 0 : -1}
           onClick={toggle}
           onMouseDown={(event) => event.preventDefault()}
-          onPointerEnter={() => emitGuide({ type: "page/hover", active: true })}
-          onPointerLeave={() => emitGuide({ type: "page/hover", active: false })}
-          onFocus={() => emitGuide({ type: "page/hover", active: true })}
-          onBlur={() => emitGuide({ type: "page/hover", active: false })}
-          aria-label={companion.bubble === "ask" ? "Close Nex" : "Ask Nex a question"}
-          aria-expanded={companion.bubble === "ask"}
-          aria-controls="nex-bubble"
+          onPointerEnter={() => hover(true)}
+          onPointerLeave={() => hover(false)}
+          onFocus={() => hover(true)}
+          onBlur={() => hover(false)}
+          aria-label={petMode ? "Nex, Nikunj's AI guide. Activate for a reaction." : companion.bubble === "ask" ? "Close Nex" : "Ask Nex a question"}
+          aria-expanded={petMode ? undefined : companion.bubble === "ask"}
+          aria-controls={petMode ? undefined : "nex-bubble"}
           className={
-            "relative flex h-full w-full items-center justify-center rounded-full bg-[#090e1a]/90 ring-1 ring-primary/40 shadow-accent-card transition-shadow duration-300 hover:shadow-[0_16px_36px_hsl(var(--accent)/0.28)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary " +
+            "group relative flex h-full w-full items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary " +
             (visible ? "pointer-events-auto cursor-pointer" : "pointer-events-none")
           }
         >
-          {/* During the hand-off this shows the hero avatar's own drawing, copied
-              each frame (see `mirrorHero`), so the two discs are the same face in
-              the same pose and the cross-fade can't show two different
-              expressions. The companion's own live avatar takes over once the
-              hand-off is done. */}
-          <span
-            ref={mirrorRef}
+          <motion.span
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 flex items-center justify-center"
-            style={{ display: handingOffState ? "flex" : "none" }}
+            className="pointer-events-none absolute inset-0 rounded-full guide-disc ring-1 ring-primary/40 shadow-accent-card transition-shadow duration-300 group-hover:shadow-[0_16px_36px_hsl(var(--accent)/0.28)]"
+            style={{ opacity: chrome }}
           />
           {lowPower ? (
             <StaticGuideMark size={size - 16} />
           ) : (
-            <span style={{ visibility: handingOffState ? "hidden" : "visible", display: "inline-flex" }}>
-              <GuideAvatar size={size - 16} lookAt={lookAt} settleAfterMs={10_000} paused={!visible && !travelling} />
+            <span className="relative inline-flex">
+              <GuideAvatar size={size - 16} lookAt={lookAt} followPointer={inHero} paused={!visible && !inHero} />
             </span>
           )}
         </button>
@@ -604,60 +807,10 @@ export default function GuideCompanion() {
 }
 
 /**
- * The hero avatar's box as laid out, ignoring the scale this loop (and the
- * inline ask box) apply to it. Its untransformed wrapper starts at the same
- * place and the avatar keeps its layout size, so read the wrapper's top and
- * left and the avatar's offset size: no transform is involved.
+ * The hero socket's box as laid out, ignoring the intro's transform on its
+ * wrapper: the untransformed outer wrapper's top and left and the socket's
+ * offset size.
  */
-/**
- * Copies the hero avatar's current drawing into the companion while the two
- * cross-fade, scaled to the companion's face size. One face, one pose, one
- * expression on both discs: two separate avatars, each with its own idle
- * motion, gaze and blink, never line up. Cheap: the drawing is a few dozen
- * SVG nodes, and only its attributes are copied when they change.
- */
-let mirrorIds = 0;
-function mirrorHero(hero: HTMLElement, mirror: HTMLElement | null, size: number) {
-  if (!mirror) return;
-  const source = [...hero.querySelectorAll<SVGSVGElement>("svg")].find((svg) => svg.querySelectorAll("*").length > 20);
-  if (!source) return;
-  let copy = mirror.firstElementChild as SVGSVGElement | null;
-  if (!copy || copy.dataset.from !== source.dataset.mirrorId) {
-    source.dataset.mirrorId ??= String((mirrorIds += 1));
-    copy = source.cloneNode(true) as SVGSVGElement;
-    copy.dataset.from = source.dataset.mirrorId;
-    // Ids inside the clone (clip paths) must not collide with the hero's.
-    copy.querySelectorAll("[id]").forEach((node) => node.setAttribute("id", `m-${node.id}`));
-    copy.querySelectorAll("[clip-path]").forEach((node) => node.setAttribute("clip-path", (node.getAttribute("clip-path") ?? "").replace(/url\(#/g, "url(#m-")));
-    mirror.replaceChildren(copy);
-  } else {
-    const from = source.querySelectorAll("*");
-    const to = copy.querySelectorAll("*");
-    if (from.length !== to.length) {
-      mirror.replaceChildren();
-      return;
-    }
-    from.forEach((node, index) => {
-      const target = to[index];
-      for (const attr of ["d", "transform", "opacity", "visibility", "fill", "cx", "cy", "rx", "ry", "x", "y", "width", "height"]) {
-        const value = node.getAttribute(attr);
-        if (value !== target.getAttribute(attr)) {
-          if (value === null) target.removeAttribute(attr);
-          else target.setAttribute(attr, value);
-        }
-      }
-    });
-  }
-  // The library sizes its svg with an inline style (300px for the hero), which
-  // beats the width attribute: set the style, or the copy is drawn at the
-  // hero's size inside the scaled-up companion (a face filling the screen).
-  const inner = `${size - 16}px`;
-  if (copy.style.width !== inner) {
-    copy.style.width = inner;
-    copy.style.height = inner;
-  }
-}
-
 function heroLayoutRect(hero: HTMLElement) {
   const wrapper = cachedNode<HTMLElement>("hero-wrapper", () => hero.closest<HTMLElement>('[data-guide-target="hero-guide"]')) ?? hero;
   const box = wrapper.getBoundingClientRect();
@@ -718,85 +871,82 @@ function marginRule(key: string): SpotRule {
 
 const CORNER: SpotRule = { key: "corner", prefer: ["left", "top"], point: (size, viewport) => cornerPoint(size, viewport) };
 
-/** Is this element laid out as a sticky side column right now (desktop)? */
-/** The section's sticky intro panel and the column that sticks, when the sticky layout is on (desktop). */
-function stickyPanel(section: string) {
-  const key = `sticky:${section}`;
-  const hit = styleCache.get(key) as { panel: HTMLElement; stickyTop: number } | null | undefined;
-  if (hit !== undefined && (hit === null || hit.panel.isConnected)) return hit;
-  let result: { panel: HTMLElement; stickyTop: number } | null = null;
-  const panel = document.getElementById(section)?.querySelector<HTMLElement>("[data-guide-panel]");
-  for (let node: HTMLElement | null = panel ?? null; panel && node && node.id !== section; node = node.parentElement) {
-    const style = getComputedStyle(node);
-    if (style.position === "sticky") {
-      result = { panel, stickyTop: parseFloat(style.top) || 0 };
-      break;
-    }
-  }
-  // Only remember a miss once the section exists, so it is looked for again after it mounts.
-  if (result || document.getElementById(section)) styleCache.set(key, result);
-  return result;
-}
+/**
+ * How far Nex is into the dock of the section it is following (1 = resting in
+ * its socket), written by the section's rule each frame and read by the loop
+ * (petting, tips in the dock). Reset per page.
+ */
+let dock: { section: string; hold: number } | null = null;
 
 /**
- * Under a sticky intro panel (About, Experience, Skills). One continuous,
- * scroll-driven path (`underPanelPoint`): it waits in the margin at the
- * height it will rest at, slides in under the panel as the panel pins, stays
- * while it is pinned, and rides up with it when the section ends. Without the
- * sticky layout (narrow screens) it falls back to the margin.
+ * A section's dock (`SectionNexDock`, `data-guide-section-socket`): Nex rests
+ * in the ringed socket while it is on screen, drawn at its own size. A socket
+ * in a sticky panel (About, Experience, Skills) pins with the panel, so Nex
+ * does too; one in a section header (Work, Nex, Contact) scrolls away, and Nex
+ * slides out to the margin as it nears the navbar. One continuous function of
+ * the socket's position (`socketDockPoint`), so the path is the same both ways.
+ * Without the socket (narrower screens) it waits in the margin.
  */
-function underPanelRule(section: string): SpotRule {
+function socketRule(section: string): SpotRule {
   return {
-    key: `under:${section}`,
-    // Below the avatar, in the free space under the panel, when it fits.
-    prefer: ["bottom", "right", "top"],
-    point: (size, viewport) => {
-      const sticky = stickyPanel(section);
-      if (!sticky) return gutterPoint(contentLeft(), size, viewport);
-      const box = sticky.panel.getBoundingClientRect();
-      // The panel's own offset inside the sticky column (its first child here).
-      const column = sticky.panel.parentElement!.getBoundingClientRect();
-      const stickyTop = sticky.stickyTop + (box.top - column.top);
-      const gutter = gutterPoint(contentLeft(), size, viewport);
-      return underPanelPoint({ panelLeft: box.left, panelBottom: box.bottom, pinnedBottom: stickyTop + box.height, gutterX: gutter ? gutter.x : null });
-    },
-  };
-}
-
-/**
- * At the top-left corner of a section's block (Work header, Nex card,
- * Contact grid): rides with it as it scrolls, held on screen by the clamp
- * once the block's top has scrolled past.
- */
-function blockCornerRule(section: string, selector: string, offset: Point = { x: 0, y: 0 }): SpotRule {
-  return {
-    key: `block:${section}`,
+    key: `dock:${section}`,
+    // The dock's own line carries what Nex says; a bubble opens away from the text.
     prefer: ["right", "bottom", "top"],
     point: (size, viewport) => {
-      const block = cachedNode(`block:${section}`, () => document.getElementById(section)?.querySelector(selector) ?? null);
-      const left = contentLeft();
-      if (!block) return gutterPoint(left, size, viewport);
-      const box = block.getBoundingClientRect();
-      // In the margin beside the block where there is room, else just inside it.
-      const gutter = gutterPoint(left, size, viewport);
-      const x = gutter ? gutter.x : box.left + 16 + offset.x;
-      return { x, y: box.top + offset.y };
+      const node = cachedNode<HTMLElement>(`dock:${section}`, () => document.querySelector<HTMLElement>(`[data-guide-section-socket="${section}"]`));
+      const gutter = gutterPoint(contentLeft(), size, viewport);
+      const box = node?.getBoundingClientRect();
+      if (!box || !box.width) {
+        dock = { section, hold: 0 };
+        return gutter;
+      }
+      const placed = socketDockPoint({ socket: { x: box.left + box.width / 2, y: box.top + box.height / 2 }, size, viewport, gutter });
+      dock = { section, hold: placed.hold };
+      return placed.point;
     },
   };
 }
 
-const ABOUT = underPanelRule("about");
+/**
+ * The place an open conversation reserves for Nex (`data-guide-ask-socket`,
+ * at the head of a row): Nex rests in it and scrolls with it, so it sits
+ * beside the conversation it is having rather than over the page. Once the
+ * row's head scrolls under the navbar it waits in the margin (the clamp keeps
+ * it on screen); the glide on the change of rule takes it there and back.
+ */
+function hostHasSocket(host: string | null): host is string {
+  return Boolean(host && (host.startsWith("page:") || host === "section:work" || host === "section:nex" || host === "section:contact"));
+}
+
+function askSocketRule(host: string): SpotRule {
+  return {
+    key: `ask:${host}`,
+    prefer: ["right", "bottom", "top"],
+    point: (size, viewport) => {
+      const node = document.querySelector<HTMLElement>("[data-nex-host-live] [data-guide-ask-socket]");
+      const box = node?.getBoundingClientRect();
+      const gutter = gutterPoint(contentLeft(), size, viewport);
+      if (!box || !box.width) return gutter;
+      const at = { x: box.left + box.width / 2 - size / 2, y: box.top + box.height / 2 - size / 2 };
+      // Under the navbar or off the bottom: the margin (beside the row), else the socket.
+      if (at.y < viewport.insetTop + 8 || at.y + size > viewport.height - 8) return gutter ?? at;
+      return at;
+    },
+  };
+}
+
+const ABOUT = socketRule("about");
 
 const SECTION_RULES: Record<string, SpotRule> = {
-  // The hero hands off straight to About's spot (the same rule, so crossing
+  // The hero hands off straight to About's dock (the same rule, so crossing
   // the hero/About boundary is not a change of spot and starts no glide).
   hero: ABOUT,
   about: ABOUT,
-  experience: underPanelRule("experience"),
-  skills: underPanelRule("skills"),
-  work: blockCornerRule("work", '[data-guide-target="work-featured"]', { x: 0, y: -12 }),
-  nex: blockCornerRule("nex", '[data-guide-spot="nex"]', { x: 0, y: 24 }),
-  contact: blockCornerRule("contact", '[data-guide-spot="contact"]', { x: 0, y: 24 }),
+  experience: socketRule("experience"),
+  skills: socketRule("skills"),
+  work: socketRule("work"),
+  nex: socketRule("nex"),
+  contact: socketRule("contact"),
 };
 
 /* ------------------------------------------------------------------------ */
@@ -807,7 +957,7 @@ const SECTION_RULES: Record<string, SpotRule> = {
  * Where the avatar was last drawn, kept across page changes (this module
  * outlives a route), so the next page's trip starts from there.
  */
-let lastDrawn: { point: Point; scale: number; at: number; path: string } | null = null;
+let lastDrawn: { point: Point; scale: number; chrome: number; at: number; path: string } | null = null;
 
 type RouteKind = "home" | "work-index" | "case-study" | "other";
 
@@ -825,37 +975,61 @@ const visibleBox = (node: HTMLElement | null) => {
   return box.width > 0 && box.height > 0 ? box : null;
 };
 
+/** Whether Nex is under a case study's contents (see CASE_STUDY_RULE). Reset per page. */
+let underContents = false;
+/** How far the contents must move off their pin before Nex goes back to the right. */
+const CONTENTS_RELEASE = 160;
+
 /**
- * A case study. At the top it waits beside the intro paragraph, in the empty
- * space right of the measure. Once the two-column body arrives it rides
- * under the sticky "On this page" contents (which pins at the top), in the
- * empty column below the list, and leaves with it at the end of the article.
- * One continuous path, the same both ways: it is the under-panel spot with
- * the intro's right side as its waiting place.
+ * The free strip right of the page's content, just under the navbar: where
+ * Nex waits on /work and a case study once it has left the header's slot.
+ * Null when the strip is too narrow for it (then the left margin or the corner).
+ */
+function rightRailPoint(size: number, viewport: Viewport): Point | null {
+  const column = cachedNode<HTMLElement>("route:rail-column", () => document.querySelector<HTMLElement>("main .container-narrow"));
+  if (!column) return null;
+  let padding = styleCache.get("rail-padding") as number | undefined;
+  if (padding === undefined) {
+    padding = parseFloat(getComputedStyle(column).paddingRight) || 0;
+    styleCache.set("rail-padding", padding);
+  }
+  const contentRight = column.getBoundingClientRect().right - padding;
+  const strip = viewport.width - contentRight;
+  if (strip < size + 24) return null;
+  return { x: contentRight + strip / 2 - size / 2, y: viewport.insetTop + 32 };
+}
+
+/**
+ * A case study. Nex rests in the header's slot, then waits in the free strip
+ * on the right (it never crosses the results or the prose). Once the "On this
+ * page" contents have pinned, it makes one jump to the empty column under
+ * them, rides there, and leaves with them at the end of the article.
+ * Scrolling back up past the pin, it jumps back to the right.
  */
 const CASE_STUDY_RULE: SpotRule = {
   key: "route:case-study",
-  prefer: ["right", "bottom", "top"],
+  prefer: ["bottom", "left", "right", "top"],
   point: (size, viewport) => {
-    const introNode = routeNode("intro");
     const tocNode = routeNode("toc");
-    const intro = visibleBox(introNode);
-    const column = cachedNode<HTMLElement>("route:column", () => document.querySelector<HTMLElement>("#case-study-article .container-narrow"));
-    const columnBox = column?.getBoundingClientRect();
-    // Waiting place: the free strip right of the intro paragraph, riding with it.
-    const beside = intro && columnBox && columnBox.right - intro.right > size * 2
-      ? { x: intro.right + (columnBox.right - intro.right) / 2 - size / 2, y: Math.max(intro.top + intro.height / 2 - size / 2, viewport.insetTop + 40) }
-      : gutterPoint(contentLeft(), size, viewport);
     const sticky = tocNode ? stickyTop(tocNode) : null;
     const toc = visibleBox(tocNode);
-    // Without the sticky two-column layout (narrower screens), just wait there.
-    if (!toc || sticky === null) return beside;
-    // Its resting place: under the list once it has pinned, in the empty column.
+    const rail = rightRailPoint(size, viewport) ?? gutterPoint(contentLeft(), size, viewport);
+    // Without the sticky two-column layout (narrower screens), the rail.
+    if (!toc || sticky === null) {
+      underContents = false;
+      return rail;
+    }
     const rest = { x: toc.left + 20, y: Math.min(toc.bottom, sticky + toc.height) + 24 };
-    if (!beside) return rest;
-    // Slide from the waiting place to the rest over the contents' last 360px of approach.
-    const k = Math.min(1, Math.max(0, 1 - (toc.top - sticky) / 360));
-    return blendPoint(beside, rest, easeInOutCubic(k));
+    const roomUnder = rest.y + size + 16 <= viewport.height;
+    // Which side, with hysteresis: it moves under the list once the list has
+    // pinned, and back to the right only once the list has clearly moved off
+    // its pin (scrolled well back down the page). A fast scroll up across the
+    // pin used to flip it between the two sides several times, so it bounced
+    // left and right; now each crossing is one jump.
+    if (!underContents && toc.top <= sticky + 1 && roomUnder) underContents = true;
+    else if (underContents && (toc.top > sticky + CONTENTS_RELEASE || !roomUnder)) underContents = false;
+    if (underContents) return rest;
+    return rail ?? rest;
   },
 };
 
@@ -871,36 +1045,14 @@ function stickyTop(node: HTMLElement) {
 }
 
 /**
- * The case-study index. Beside the header's intro paragraph (its right side is
- * empty), then at the start of the group heading nearest the top of the
- * screen, in the margin, riding with it, so it walks down the groups as you
- * scroll.
+ * The case-study index. Nex rests in the header's slot, then waits in the free
+ * strip on the right, beside the cards rather than over them; the left margin
+ * when that strip is too narrow.
  */
 const WORK_INDEX_RULE: SpotRule = {
   key: "route:work-index",
-  prefer: ["right", "bottom", "top"],
-  point: (size, viewport) => {
-    const header = visibleBox(routeNode("header"));
-    const column = cachedNode<HTMLElement>("route:index-column", () => document.querySelector<HTMLElement>("main .container-narrow"));
-    const columnBox = column?.getBoundingClientRect();
-    if (header && columnBox && header.bottom > viewport.height * 0.35 && columnBox.right - header.right > size * 2) {
-      return { x: header.right + (columnBox.right - header.right) / 2 - size / 2, y: header.top + header.height / 2 - size / 2 };
-    }
-    const left = contentLeft();
-    const gutter = gutterPoint(left, size, viewport);
-    // The group heading that owns the upper part of the screen.
-    const groups = [...document.querySelectorAll<HTMLElement>('[data-guide-route-spot="group"]')];
-    const line = viewport.height * 0.45;
-    let owner: DOMRect | null = null;
-    for (const group of groups) {
-      const box = group.getBoundingClientRect();
-      if (box.top <= line) owner = box;
-    }
-    if (!owner) owner = groups[0]?.getBoundingClientRect() ?? null;
-    if (!owner) return gutter;
-    const x = gutter ? gutter.x : owner.left;
-    return { x, y: owner.top - size / 2 + owner.height / 2 };
-  },
+  prefer: ["bottom", "left", "right", "top"],
+  point: (size, viewport) => rightRailPoint(size, viewport) ?? gutterPoint(contentLeft(), size, viewport),
 };
 
 const ROUTE_RULES: Partial<Record<RouteKind, SpotRule>> = {

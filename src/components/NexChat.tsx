@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { X, Send, User, Trash2, ArrowDown } from "lucide-react";
+import { X, Send, User, Trash2, ArrowDown, CornerDownRight } from "lucide-react";
 import { type Components } from "react-markdown";
 import { useRouter } from "next/navigation";
 import { buildAnswerComponents } from "@/components/ai/AnswerBody";
@@ -291,7 +291,7 @@ const NexChat = () => {
         isMobile ? "px-4 py-3 bg-background" : "px-5 py-4 bg-accent/5"
       )}>
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#090e1a] ring-1 ring-primary/30">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full guide-disc ring-1 ring-primary/30">
             <StaticGuideMark size={30} />
           </div>
           <div>
@@ -419,29 +419,11 @@ const NexChat = () => {
                     key={i}
                     onClick={() => handleSuggestionClick(s)}
                     disabled={!canSendMessages || isLoading}
-                    className={`group relative max-w-full select-none overflow-hidden rounded-full px-3 py-1 text-[11px] transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 ${
-                      canSendMessages
-                        ? "bg-primary/10 text-foreground hover:bg-primary/20"
-                        : "bg-muted/50 text-muted-foreground cursor-not-allowed"
-                    }`}
+                    className="inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-full border border-primary/20 bg-primary/[0.06] px-3.5 py-1.5 text-left text-[0.8125rem] leading-snug text-foreground/90 transition-colors hover:border-primary/45 hover:bg-primary/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
                     aria-label={`Ask: ${s}`}
                   >
-                    <span className="relative z-10 flex max-w-full items-center gap-1 overflow-hidden whitespace-nowrap">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-3 w-3 opacity-60"
-                      >
-                        <path d="M12 19l-7-7 7-7" />
-                        <path d="M19 19l-7-7 7-7" />
-                      </svg>
-                      <span className="truncate">{s}</span>
-                    </span>
+                    <CornerDownRight className="h-3.5 w-3.5 shrink-0 text-primary-text" aria-hidden="true" />
+                    <span className="min-w-0">{s}</span>
                   </button>
                 ))}
               </motion.div>
@@ -469,6 +451,29 @@ const NexChat = () => {
             </div>
           </div>
         )}
+        {/* Initial suggestions if no conversation yet */}
+        {messages.length <= 1 && !isLoading && (
+          <motion.div
+            className="flex flex-wrap gap-2 pl-11"
+            initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: shouldReduceMotion ? 0.15 : 0.3 }}
+          >
+            <p className="w-full text-xs font-medium text-muted-foreground">Try one</p>
+            {(isMobile ? chatSuggestions : chatSuggestions.slice(0, 4)).map((s) => (
+              <button
+                type="button"
+                key={s}
+                onClick={() => handleSuggestionClick(s)}
+                disabled={!canSendMessages}
+                className="inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-full border border-primary/20 bg-primary/[0.06] px-3.5 py-1.5 text-left text-[0.8125rem] leading-snug text-foreground/90 transition-colors hover:border-primary/45 hover:bg-primary/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <CornerDownRight className="h-3.5 w-3.5 shrink-0 text-primary-text" aria-hidden="true" />
+                <span className="min-w-0">{s}</span>
+              </button>
+            ))}
+          </motion.div>
+        )}
         {/* Room below a new question, so it can sit at the top while its
             answer streams in. Shrinks to nothing as the answer grows. */}
         <div ref={spacerRef} aria-hidden="true" className="pointer-events-none !mt-0 shrink-0" />
@@ -477,7 +482,7 @@ const NexChat = () => {
         <button
           type="button"
           onClick={jumpToLatest}
-          className="absolute bottom-3 left-1/2 flex min-h-9 -translate-x-1/2 items-center gap-1.5 rounded-full border border-border/50 glass-strong px-3 py-1.5 text-xs font-medium text-foreground shadow-accent-soft transition-colors hover:text-primary"
+          className="absolute bottom-3 left-1/2 flex min-h-9 -translate-x-1/2 items-center gap-1.5 rounded-full border border-border/50 glass-strong px-3 py-1.5 text-xs font-medium text-foreground shadow-accent-soft transition-colors hover:text-primary-text"
         >
           <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />
           Jump to latest
@@ -492,31 +497,6 @@ const NexChat = () => {
           ? "p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-background"
           : "p-4 bg-accent/5"
       )}>
-        {/* Initial suggestions if no conversation yet */}
-        {messages.length <= 1 && !isLoading && (
-          <motion.div
-            className="mb-4 flex flex-wrap gap-2"
-            initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: shouldReduceMotion ? 0.15 : 0.3 }}
-          >
-            {(isMobile ? chatSuggestions : chatSuggestions.slice(0, 4)).map((s) => (
-              <button
-                type="button"
-                key={s}
-                onClick={() => handleSuggestionClick(s)}
-                disabled={!canSendMessages}
-                className={`max-w-full select-none overflow-hidden rounded-full px-3 py-1 text-xs transition-colors ${
-                  canSendMessages
-                    ? "bg-primary/10 text-foreground hover:bg-primary/20"
-                    : "bg-muted/50 text-muted-foreground cursor-not-allowed"
-                }`}
-              >
-                <span className="block truncate whitespace-nowrap">{s}</span>
-              </button>
-            ))}
-          </motion.div>
-        )}
 
         {chatAvailabilityStatus === "unknown" && (
           <div className="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs text-muted-foreground">

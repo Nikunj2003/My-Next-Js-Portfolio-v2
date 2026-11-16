@@ -1,107 +1,128 @@
 "use client";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ArrowUp, Download, MessageCircle } from "lucide-react";
 import { personalInfo } from "@/data/portfolio";
-import logo from "@/assets/logo.png";
-
-import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { scrollToHash, scrollToTop } from "@/lib/scroll";
 import { SECTION_LINKS, SOCIAL_LINKS } from "@/data/site-links";
+import { openNex } from "@/lib/ask-nex";
+import { SpotlightCard } from "@/components/ui/spotlight-card";
+import { FooterAskHost, FooterNexLine, FooterRing } from "@/components/guide/FooterAskHost";
 
+/**
+ * The end of every page (homepage, /work and every case study): one glass
+ * panel with a sign-off on the left, Nex's landing slot in the centre and
+ * the links on the right.
+ *
+ * As the landing band (`data-guide-footer-band`) rises into view the scroll
+ * companion curves into the slot (`data-guide-footer-socket`) and grows to
+ * its size; scrolling back reverses it. The slot is an empty ring until Nex
+ * arrives, never a second face; once landed, clicking Nex gets a reaction and
+ * its line shows above the slot. Asking here opens the conversation in the
+ * links' column, beside Nex; the links come back when it closes.
+ */
 const Footer = () => {
   const pathname = usePathname();
-  /** The section anchors these links point at only exist on the homepage. */
   const isHome = pathname === "/";
-
-  // Off the homepage a bare "#about" resolves to nothing, so the link has to be
-  // a real navigation to "/#about" instead of a same-page jump.
+  // Off the homepage a bare "#about" resolves to nothing: navigate to "/#about".
   const sectionHref = (href: string) => (isHome ? href : `/${href}`);
-
-  const handleSectionClick = (event: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    if (!isHome) return; // let Next handle the route change
+  const onSection = (event: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (!isHome) return;
     event.preventDefault();
     scrollToHash(href);
   };
 
-  const handleHomeClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
-    if (!isHome) return;
-    event.preventDefault();
-    scrollToTop();
-  };
-
   return (
-  <footer className="py-8 relative z-10">
-    <div className="container-narrow">
-      <SpotlightCard className="w-full">
-        <div className="px-6 py-8 sm:px-10">
-          
-          {/* Mobile: centered stack | Desktop: logo-left nav-right */}
-          <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start sm:justify-between sm:gap-4 mb-8">
-            <Link href="/" onClick={handleHomeClick} className="flex items-center gap-3 group shrink-0">
-              <div className="relative">
-                <div className="absolute inset-0 bg-primary/20 blur-md rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                <Image src={logo} alt="" aria-hidden="true" sizes="32px" className="w-8 h-8 opacity-80 group-hover:opacity-100 relative z-10 transition-opacity pointer-events-none" draggable={false} />
+    <footer className="relative z-10 pb-8 pt-12 sm:pt-16">
+      <div className="container-narrow">
+        <SpotlightCard className="w-full">
+          <div className="px-6 pb-6 pt-8 sm:px-10 sm:pt-10">
+            <div data-guide-footer-band className="grid items-center gap-10 text-center md:min-h-[20rem] md:grid-cols-[minmax(0,1fr)_15rem_minmax(0,1fr)] md:gap-10 md:text-left">
+              {/* Sign-off */}
+              <div className="order-2 md:order-1">
+                <p className="font-[family-name:var(--font-display)] text-[1.625rem] font-semibold leading-[1.15] tracking-[-0.025em] text-foreground sm:text-[1.875rem]" style={{ textWrap: "balance" }}>
+                  Let&apos;s build something worth putting into production.
+                </p>
+                <p className="mx-auto mt-3 max-w-[34ch] text-sm leading-relaxed text-muted-foreground md:mx-0">
+                  Agent systems, governed tools and the evaluation that keeps them reliable.
+                </p>
+                <ul className="mt-6 flex flex-wrap justify-center gap-2 md:justify-start">
+                  {SOCIAL_LINKS.map(({ icon: Icon, label, href }) => (
+                    <li key={label}>
+                      <a
+                        href={href}
+                        target={href.startsWith("mailto") ? undefined : "_blank"}
+                        rel="noopener noreferrer"
+                        aria-label={label}
+                        title={label}
+                        className="flex h-10 w-10 items-center justify-center rounded-full border border-foreground/10 glass-subtle text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      >
+                        <Icon className="h-4 w-4" aria-hidden="true" />
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <span className="text-base font-bold text-muted-foreground group-hover:text-foreground transition-colors tracking-tight">
-                Nikunj Khitha
-              </span>
-            </Link>
 
-            <nav className="flex max-w-xl flex-wrap items-center justify-center gap-x-6 gap-y-3 sm:justify-end">
-              {SECTION_LINKS.map((l) => (
-                <Link
-                  key={l.label}
-                  href={sectionHref(l.href)}
-                  onClick={(event) => handleSectionClick(event, l.href)}
-                  className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-                >
-                  {l.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
+              {/* Nex's landing slot */}
+              <div className="order-1 flex flex-col items-center md:order-2">
+                <FooterNexLine />
+                <span data-guide-footer-socket aria-hidden="true" className="relative mt-4 block h-[150px] w-[150px]">
+                  <span className="pointer-events-none absolute inset-[-18%] rounded-full bg-[radial-gradient(circle,hsl(var(--primary)/0.12)_0%,transparent_68%)]" />
+                  {/* Out past the landed disc, so the ring shows round it; dim until Nex arrives. */}
+                  <FooterRing />
+                </span>
+                <button type="button" onClick={() => openNex("", undefined, { host: "footer" })} className="btn-cta-primary mt-7">
+                  <MessageCircle aria-hidden="true" />
+                  Ask Nex
+                </button>
+              </div>
 
-          {/* Divider */}
-          <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-6" />
+              {/* Links, or the conversation in their place */}
+              <FooterAskHost>
+                <nav aria-label="Footer">
+                  <p className="mb-3 text-xs font-semibold text-muted-foreground/80">Explore</p>
+                  <ul className="mx-auto grid w-fit grid-cols-2 gap-x-10 gap-y-1 text-left text-sm md:mx-0">
+                    {SECTION_LINKS.map((link) => (
+                      <li key={link.label}>
+                        <Link href={sectionHref(link.href)} onClick={(event) => onSection(event, link.href)} className="inline-flex min-h-9 items-center text-foreground/75 transition-colors hover:text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                          {link.label}
+                        </Link>
+                      </li>
+                    ))}
+                    <li>
+                      <Link href="/work" className="inline-flex min-h-9 items-center text-foreground/75 transition-colors hover:text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                        All case studies
+                      </Link>
+                    </li>
+                    <li>
+                      <a href={personalInfo.resumeUrl} download className="inline-flex min-h-9 items-center gap-1.5 text-foreground/75 transition-colors hover:text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                        <Download className="h-3.5 w-3.5" aria-hidden="true" />
+                        Resume
+                      </a>
+                    </li>
+                  </ul>
+                </nav>
+              </FooterAskHost>
+            </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-8 text-center sm:text-left">
-            <p className="text-sm font-medium text-foreground/85">
-              Open to Applied AI, AI Product, Agentic AI, LLM/AI, and Software Engineer (Applied AI) roles.
-            </p>
-            <a
-              href={personalInfo.resumeUrl}
-              download
-              className="inline-flex items-center justify-center gap-2 self-center sm:self-auto rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/15"
-            >
-              Download Resume
-            </a>
-          </div>
-
-          {/* Mobile: centered social icons above copyright | Desktop: copyright-left icons-right */}
-          <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-6">
-            <p className="text-xs text-muted-foreground text-center sm:text-left font-medium">
-              © {new Date().getFullYear()} Nikunj Khitha · Built with Next.js &amp; Tailwind
-            </p>
-
-            <div className="flex items-center gap-3">
-              {SOCIAL_LINKS.map(({ icon: Icon, label, href }) => (
-                <a
-                  key={label}
-                  href={href}
-                  target={href.startsWith("mailto") ? undefined : "_blank"}
-                  rel="noopener noreferrer"
-                  aria-label={label}
-                  className="w-10 h-10 rounded-full glass-subtle border border-foreground/5 flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-foreground/5 hover:border-primary/20 transition-all duration-300"
-                >
-                  <Icon className="w-4 h-4" />
-                </a>
-              ))}
+            <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-foreground/10 pt-5 text-xs text-muted-foreground">
+              <p>© {new Date().getFullYear()} Nikunj Khitha</p>
+              <Link
+                href="/"
+                onClick={(event) => {
+                  if (!isHome) return;
+                  event.preventDefault();
+                  scrollToTop();
+                }}
+                className="inline-flex min-h-8 items-center gap-1.5 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" />
+                {isHome ? "Back to top" : "Home"}
+              </Link>
             </div>
           </div>
-
-        </div>
-      </SpotlightCard>
+        </SpotlightCard>
       </div>
     </footer>
   );

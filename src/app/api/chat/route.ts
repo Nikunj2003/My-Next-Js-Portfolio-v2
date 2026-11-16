@@ -1,3 +1,6 @@
+import { VISITOR_IDS, visitorContext } from "@/lib/guide/paths";
+import { cardForToolResult } from "@/lib/chat/cards";
+import { addToolCallDelta } from "@/lib/chat/tool-name";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { AI_MODEL, AI_REASONING_EFFORT, SYSTEM_PROMPT, SUGGESTION_SYSTEM_PROMPT } from "@/lib/ai-config";
@@ -91,6 +94,9 @@ const chatHistoryMessageSchema = z.object({
 const chatRequestSchema = z.object({
   message: z.string().trim().min(1, "Message is required").max(MAX_MESSAGE_LENGTH),
   conversationHistory: z.array(chatHistoryMessageSchema).max(CHAT_MEMORY_WINDOW).optional().default([]),
+  // Who is reading, from the tour's visitor paths: an id from a fixed list,
+  // mapped to an authored note below. Anything else is dropped, not an error.
+  visitor: z.enum(VISITOR_IDS).optional().catch(undefined),
 });
 
 const categoryKeywords: Record<string, RegExp> = {
@@ -455,12 +461,7 @@ async function streamCompletion(
       if (Array.isArray(deltaToolCalls)) {
         for (const rawCall of deltaToolCalls) {
           const call = rawCall as { index?: number; id?: string; function?: { name?: string; arguments?: string } };
-          const index = call.index ?? 0;
-          const existing = toolCallsByIndex.get(index) ?? { id: undefined, name: "", args: "" };
-          if (call.id) existing.id = call.id;
-          if (call.function?.name) existing.name += call.function.name;
-          if (call.function?.arguments) existing.args += call.function.arguments;
-          toolCallsByIndex.set(index, existing);
+          addToolCallDelta(toolCallsByIndex, call);
         }
       }
     };
@@ -691,7 +692,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { message, conversationHistory } = parsedBody.data;
+  const { message, conversationHistory, visitor } = parsedBody.data;
 
   const apiKey = process.env.LLM_API_KEY?.trim();
   if (!apiKey) {
@@ -726,7 +727,8 @@ export async function POST(request: Request) {
 
   const recentMessages = trimConversationHistory(conversationHistory, CHAT_MEMORY_WINDOW);
 
-  const messages: ChatCompletionMessageParam[] = [{ role: "system", content: SYSTEM_PROMPT }];
+  const reader = visitorContext(visitor);
+  const messages: ChatCompletionMessageParam[] = [{ role: "system", content: reader ? `${SYSTEM_PROMPT}\n\n## Who is reading\n${reader} Stay within the same facts and rules; this only changes emphasis.` : SYSTEM_PROMPT }];
   recentMessages.forEach((msg) => {
     messages.push({ role: msg.sender === "user" ? "user" : "assistant", content: msg.content });
   });
@@ -979,6 +981,7 @@ export async function POST(request: Request) {
                 refused: result.refused,
                 href,
                 highlight,
+                card: cardForToolResult(name, result.refused, result.output),
               },
             });
 

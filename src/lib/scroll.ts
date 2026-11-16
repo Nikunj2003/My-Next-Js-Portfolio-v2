@@ -1,7 +1,7 @@
 type LenisLike = {
   scrollTo: (
     target: number | string | HTMLElement,
-    options?: { offset?: number; onComplete?: () => void; immediate?: boolean; force?: boolean }
+    options?: { offset?: number; onComplete?: () => void; immediate?: boolean; force?: boolean; duration?: number; easing?: (t: number) => number }
   ) => void;
 };
 
@@ -111,6 +111,10 @@ export function scrollToElement(target: HTMLElement, options: ScrollToElementOpt
  * pending completion: the timer is cleared and `onComplete` is never called.
  * It does not stop a scroll already under way.
  */
+function easeInOutCubic(t: number) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
 export function scrollToOffset(top: number, options: { onComplete?: () => void } = {}) {
   let done = false;
   let fallback: ReturnType<typeof setTimeout> | null = null;
@@ -131,9 +135,14 @@ export function scrollToOffset(top: number, options: { onComplete?: () => void }
   };
   const lenis = (window as ScrollWindow).__lenis;
   if (lenis) {
-    lenis.scrollTo(top, { onComplete: complete, force: true });
+    // Paced by distance with a gentle in-out ease: the default exponential
+    // ease covered most of a 5,000px trip in its first frames (it read as a
+    // jump), then crawled for a second. Short trips stay quick.
+    const distance = Math.abs(top - window.scrollY);
+    const duration = prefersReducedMotion() ? 0 : Math.min(1.6, 0.6 + distance / 4000);
+    lenis.scrollTo(top, { onComplete: complete, force: true, duration, easing: easeInOutCubic });
     // Lenis skips onComplete when it is already at the target.
-    fallback = setTimeout(complete, 1600);
+    fallback = setTimeout(complete, duration * 1000 + 400);
     return cancel;
   }
   if (Math.abs(top - window.scrollY) < 2) {

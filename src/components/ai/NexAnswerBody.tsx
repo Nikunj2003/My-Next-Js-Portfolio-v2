@@ -6,6 +6,11 @@ import { PacedAnswer } from "@/components/ai/PacedAnswer";
 import type { ChatToolCall } from "@/lib/chat-contract";
 import type { Message } from "@/lib/chat/types";
 import { cn } from "@/lib/utils";
+import dynamic from "next/dynamic";
+import { MAX_CARDS_PER_ANSWER, parseCard, type AnswerCard } from "@/lib/chat/cards";
+
+// The cards carry the full case-study and metric data, so they load on first use.
+const AnswerCards = dynamic(() => import("@/components/ai/answer-cards/AnswerCards"), { ssr: false });
 
 type NexAnswerBodyProps = {
   message: Message;
@@ -27,15 +32,20 @@ export function NexAnswerBody({ message, components, reducedMotion, showTakeMeTh
   // Once the answer starts they move under it: the answer is what people read,
   // the tools are how it was produced.
   const answered = message.content.length > 0;
+  const cards: AnswerCard[] = [];
+  for (const call of calls) {
+    const card = call.status === "done" && !call.refused ? parseCard(call.card) : null;
+    if (card && cards.length < MAX_CARDS_PER_ANSWER && !cards.some((seen) => JSON.stringify(seen) === JSON.stringify(card))) cards.push(card);
+  }
   const toolList =
     calls.length > 0 ? (
-        <ul className={cn("flex flex-col gap-1.5 border-l-2 border-primary/25 pl-3", answered ? "mt-3" : "mb-1")}>
+        <ul aria-label="Tools Nex used" className={cn("flex flex-col gap-1 rounded-xl border border-foreground/[0.07] bg-foreground/[0.025] px-3 py-2", answered ? "mt-3" : "mb-2")}>
           {calls.map((call) => (
-            <li key={call.id} className="flex items-start gap-2 font-mono text-[11px] leading-relaxed">
+            <li key={call.id} className="flex items-center gap-2 py-0.5 font-mono text-[11px] leading-relaxed">
               <Wrench
                 className={cn(
                   "mt-[0.3em] h-3 w-3 shrink-0",
-                  call.status === "running" ? "animate-spin motion-reduce:animate-none text-primary" : "text-primary/70"
+                  call.status === "running" ? "animate-spin motion-reduce:animate-none text-primary-text" : "text-primary/70"
                 )}
               />
               {/* One wrapping block: the call and its result share the row's
@@ -53,7 +63,7 @@ export function NexAnswerBody({ message, components, reducedMotion, showTakeMeTh
                 <button
                   type="button"
                   onClick={() => onTakeMeThere?.(call)}
-                  className="ml-auto inline-flex min-h-8 shrink-0 items-center rounded-full bg-primary/10 px-3 font-sans text-[11px] font-semibold text-primary-text transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  className="ml-auto inline-flex min-h-8 shrink-0 items-center rounded-full border border-primary/30 px-3 font-sans text-xs font-semibold text-primary-text transition-colors hover:border-primary/60 hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   Take me there
                 </button>
@@ -89,11 +99,14 @@ export function NexAnswerBody({ message, components, reducedMotion, showTakeMeTh
 
       {answered && toolList}
 
+      {/* Page components for what the tools found, once the answer is complete. */}
+      {!message.streaming && !message.error && cards.length > 0 && <AnswerCards cards={cards} />}
+
       {/* Collapsed by default: a recruiter never has to open it,
           an engineer can. */}
       {message.trace && !message.error && (
-        <details className="group mt-3 border-t border-border/30 pt-2">
-          <summary className="cursor-pointer list-none font-mono text-[11px] text-muted-foreground/70 transition-colors hover:text-primary">
+        <details className="group mt-3 pt-1">
+          <summary className="cursor-pointer list-none font-mono text-[11px] text-muted-foreground/70 transition-colors hover:text-primary-text">
             <span className="group-open:hidden">
               trace · {message.trace.toolCount} tool{message.trace.toolCount === 1 ? "" : "s"} ·{" "}
               {(message.trace.elapsedMs / 1000).toFixed(1)}s

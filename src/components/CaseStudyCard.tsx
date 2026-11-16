@@ -3,6 +3,9 @@ import { ArrowRight, AudioLines, Blocks, Boxes, Database, BookOpen, FlaskConical
 import type { CaseStudy } from "@/data/case-studies";
 import { getCaseStudyPath } from "@/data/case-study-path";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
+import { PILLARS } from "@/data/thesis";
+
+const PILLAR_LABELS = Object.fromEntries(PILLARS.map((pillar) => [pillar.id, pillar.label]));
 import AskAboutThis from "@/components/AskAboutThis";
 
 /**
@@ -62,7 +65,7 @@ const CaseStudyCard = ({
         {/* Glyph inline with the title rather than on its own row —
             it was costing ~70px of height for one small icon. */}
         <div className="flex items-start gap-3">
-          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary transition-colors duration-300 group-hover/system:border-primary/50">
+          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary-text transition-colors duration-300 group-hover/system:border-primary/50">
             <Glyph className="h-4 w-4" />
           </span>
           <Heading className="text-lg font-bold leading-snug tracking-tight text-foreground">
@@ -74,8 +77,17 @@ const CaseStudyCard = ({
             the pill sits identically on every card regardless of how long the
             study title is or where it wraps. */}
         <div className="relative z-10 mt-2 flex min-h-6 items-center">
-          <AskAboutThis question={`Tell me about the ${study.title}.`} className="ml-0" />
+          <AskAboutThis label="Ask Nex" question={`Tell me about the ${study.title}.`} className="ml-0" />
         </div>
+
+        <p className="mt-3 font-mono text-[11px] text-muted-foreground/80">
+          {[study.employer, study.period].filter(Boolean).join(" · ")}
+          {(study.pillars ?? []).map((id) => (
+            <span key={id} className="ml-2 rounded-full border border-primary/25 px-2 py-0.5 text-primary-text">
+              {PILLAR_LABELS[id]}
+            </span>
+          ))}
+        </p>
 
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
           {study.oneLiner}
@@ -111,7 +123,7 @@ const CaseStudyCard = ({
         */}
         <Link
           href={getCaseStudyPath(study.slug)}
-          className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary after:absolute after:inset-0 after:rounded-[inherit] after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary-text after:absolute after:inset-0 after:rounded-[inherit] after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           Read case study
           <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover/system:translate-x-1 motion-reduce:transition-none" />

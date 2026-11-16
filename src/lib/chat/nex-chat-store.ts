@@ -7,6 +7,9 @@
  * conversation. Everything that used to live inside `NexChat` (sending,
  * streaming, retry, abort, persistence) is here; the components only render.
  */
+import { readGuidePrefs } from "@/lib/guide/prefs";
+import type { VisitorId } from "@/lib/guide/paths";
+import { parseCard } from "@/lib/chat/cards";
 import {
   CHAT_CLIENT_TIMEOUT_MS,
   CHAT_ENDPOINT,
@@ -186,6 +189,7 @@ function sanitizeStoredToolCall(value: unknown): ChatToolCall | null {
     refused: call.refused === true ? true : undefined,
     href: typeof call.href === "string" && SAFE_HREF.test(call.href) ? call.href : undefined,
     highlight: typeof call.highlight === "string" && /^[\w:-]{1,80}$/.test(call.highlight) ? call.highlight : undefined,
+    card: parseCard(call.card) ? (call.card as string) : undefined,
   };
 }
 
@@ -412,11 +416,14 @@ export type NexChatSnapshot = {
 type Deps = {
   fetch: typeof fetch;
   storage: Pick<Storage, "getItem" | "setItem" | "removeItem"> | null;
+  /** The visitor path the reader chose, sent with each request (an id, or null). */
+  visitor?: () => VisitorId | null;
 };
 
 const defaultDeps = (): Deps => ({
   fetch: (...args) => fetch(...args),
   storage: typeof window === "undefined" ? null : safeStorage(),
+  visitor: () => (typeof window === "undefined" ? null : readGuidePrefs().visitor),
 });
 
 function safeStorage() {
@@ -447,6 +454,12 @@ export function configureNexChat(overrides: Partial<Deps>) {
   sending = false;
   snapshot = { messages: INITIAL_MESSAGES, isLoading: false, hydrated: false, announcement: "", turnAnchorId: null };
   listeners.forEach((listener) => listener());
+}
+
+/** The visitor id to send: none for the default tour or no choice yet. */
+function requestVisitor() {
+  const visitor = getDeps().visitor?.() ?? null;
+  return visitor && visitor !== "default" ? visitor : undefined;
 }
 
 function getDeps() {
@@ -640,6 +653,8 @@ export async function sendNexMessage(request: SendRequest, options: SendOptions 
         body: JSON.stringify({
           message: msg,
           conversationHistory: conversationHistory(before, isRetry ? retryUserMessageId : undefined),
+          // The visitor path chosen for the tour, if any (an id; the server maps it).
+          visitor: requestVisitor(),
         }),
         redirect: "error",
         signal: controller.signal,

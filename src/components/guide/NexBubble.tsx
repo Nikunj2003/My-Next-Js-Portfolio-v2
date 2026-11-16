@@ -4,8 +4,9 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNo
 import { AnimatePresence, cancelFrame, frame, motion, useMotionValue, useReducedMotion, type MotionValue } from "framer-motion";
 import { ArrowRight, X } from "lucide-react";
 import { AskContent } from "@/components/guide/AskContent";
-import { dispatchCompanion, useCompanionState } from "@/lib/guide/companion-store";
-import { bubbleMaxHeight, chooseBubbleSide, easeInOutCubic, placeBubbleBeside, type BubbleSide, type Rect, type Viewport } from "@/lib/guide/placement";
+import { openRoleFit, dispatchCompanion, useCompanionState } from "@/lib/guide/companion-store";
+import { bubbleMaxHeight, chooseBubbleSide,
+  freeBubbleSide, easeInOutCubic, placeBubbleBeside, type BubbleSide, type Rect, type Viewport } from "@/lib/guide/placement";
 import { useLenisLock } from "@/hooks/useLenisLock";
 import { TIP_RULES } from "@/lib/guide/tips";
 import { NAVBAR_CLEARANCE as NAVBAR } from "@/lib/scroll";
@@ -13,6 +14,13 @@ import { NAVBAR_CLEARANCE as NAVBAR } from "@/lib/scroll";
 const BUBBLE_WIDTH = 360;
 /** A guess at the bubble's height before it has been measured. */
 const INITIAL_HEIGHT = 220;
+/**
+ * The height the ask box's side is chosen for: its reserved size, not what it
+ * measures at the moment it opens. It grows as chips load and an answer
+ * streams in; choosing from the first, smaller measurement picked a side
+ * that stopped fitting a few frames later, so it flashed there and jumped.
+ */
+const ASK_RESERVE = 460;
 const GAP = 12;
 /** How long the avatar must be still before the bubble's side is chosen again. */
 const REST_MS = 350;
@@ -60,9 +68,13 @@ export function NexBubble(props: NexBubbleProps) {
 
 function useShowing(visible: boolean, isMobile: boolean) {
   const companion = useCompanionState();
-  // While the hero avatar is on screen it hosts the ask box itself.
-  const heroHosts = companion.bubble === "ask" && companion.heroVisible && !isMobile;
-  const showing = heroHosts ? "none" : visible || isMobile ? companion.bubble : "none";
+  // An in-page host (the hero, the footer) shows the ask box itself; the
+  // bubble only carries it when it was opened beside the companion. Phones
+  // always use the sheet.
+  const pageHosts = companion.bubble === "ask" && companion.askHost !== "float" && !isMobile;
+  // Resting in a section's dock, a tip is that dock's line (SectionNexDock), not a bubble.
+  const tipInDock = companion.bubble === "tip" && !isMobile && companion.dockSection !== null && companion.dockSection === companion.tip?.section;
+  const showing = pageHosts || tipInDock ? "none" : visible || isMobile ? companion.bubble : "none";
   return { showing, tip: companion.tip };
 }
 
@@ -117,22 +129,66 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
   // companion moves to a new spot, and when the current side stops fitting
   // (checked each frame, cheaply); otherwise held, so it never flips while
   // scrolling. Reading text on screen is avoided where a side allows it.
-  const preferKey = (corner ? ["left", "top"] : prefer).join(",");
+  // The tour narrates from the corner, always above it: one side for every
+  // step, so the card never moves between left and top as steps change length.
+  const preferKey = (showing === "tour" ? ["top"] : corner ? ["left", "top"] : prefer).join(",");
   const [openSide, setOpenSide] = useState<BubbleSide>("right");
   // Hidden until it has been measured and its side chosen from that. It was
   // drawn first on a guessed side and height (right, 220px), then moved once
   // measured: in the corner that showed as a flash on the right, then a jump
   // to the left.
   const [readyNode, setReadyNode] = useState<HTMLDivElement | null>(null);
-  const ready = node !== null && readyNode === node;
+  // The tour card waits for Nex to reach the corner (it flies there when the
+  // tour starts), then appears once, beside it: it used to ride along the
+  // flight and switch sides on the way, the flicker before it settled.
+  // Once shown it stays: later steps scroll the page, never Nex.
+  const [restedNode, setRestedNode] = useState<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (showing !== "tour" || !node) return;
+    let timer = 0;
+    const done = () => {
+      offX();
+      offY();
+      setRestedNode(node);
+    };
+    const unsettle = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(done, 140);
+    };
+    const offX = anchorX.on("change", unsettle);
+    const offY = anchorY.on("change", unsettle);
+    timer = window.setTimeout(done, 140);
+    return () => {
+      offX();
+      offY();
+      window.clearTimeout(timer);
+    };
+  }, [anchorX, anchorY, node, showing]);
+  const ready = node !== null && readyNode === node && (showing !== "tour" || restedNode === node);
   const sideRef = useRef<BubbleSide | null>(null);
+  /** The size a side is chosen for: the ask box at its reserved height. */
+  const sizingHeight = useCallback(
+    () => (showing === "ask" ? Math.max(heightRef.current, Math.min(ASK_RESERVE, bubbleMaxHeight(viewport))) : heightRef.current),
+    [showing, viewport]
+  );
   const choose = useCallback(
     (fresh: boolean) => {
       const sides = preferKey.split(",") as BubbleSide[];
-      const next = chooseBubbleSide(
+      // A tip takes a side that covers no text when one exists (it was only
+      // offered because one did); the ask box takes the least-covering side.
+      const free = fresh && showing === "tip"
+        ? freeBubbleSide({ x: anchorX.get(), y: anchorY.get() }, anchorSize, { width: BUBBLE_WIDTH, height: heightRef.current }, viewport, sides, readingRects())
+        : null;
+      // A tip with no free side left (the page moved under it): it goes,
+      // rather than sit over what is being read.
+      if (fresh && showing === "tip" && !free && sideRef.current !== null) {
+        dispatchCompanion({ type: "tip/expire" });
+        return;
+      }
+      const next = free ?? chooseBubbleSide(
         { x: anchorX.get(), y: anchorY.get() },
         anchorSize,
-        { width: BUBBLE_WIDTH, height: heightRef.current },
+        { width: BUBBLE_WIDTH, height: sizingHeight() },
         viewport,
         sides,
         fresh ? null : sideRef.current,
@@ -143,7 +199,7 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
         setOpenSide(next);
       }
     },
-    [anchorSize, anchorX, anchorY, preferKey, viewport]
+    [anchorSize, anchorX, anchorY, preferKey, showing, sizingHeight, viewport]
   );
   useLayoutEffect(() => {
     if (!open) {
@@ -198,7 +254,7 @@ function DesktopBubble({ anchorX, anchorY, anchorSize, prefer, spotKey, corner, 
       const y = anchorY.get();
       const bubbleSize = { width: BUBBLE_WIDTH, height: heightRef.current };
       let side = sideRef.current ?? openSide;
-      const fitted = chooseBubbleSide({ x, y }, anchorSize, bubbleSize, viewport, preferKey.split(",") as BubbleSide[], side);
+      const fitted = chooseBubbleSide({ x, y }, anchorSize, { width: BUBBLE_WIDTH, height: sizingHeight() }, viewport, preferKey.split(",") as BubbleSide[], side);
       if (fitted !== side) {
         side = fitted;
         sideRef.current = fitted;
@@ -370,13 +426,13 @@ function MobileSheet({ visible, isMobile, activeSection, onExpand, returnFocus, 
 
 function bubbleContent(
   showing: string,
-  tip: { text: string } | null,
+  tip: { text: string; section: string } | null,
   ctx: { activeSection: string | null; onExpand: () => void; close: () => void; reduceMotion: boolean; tourContent?: ReactNode; isMobile?: boolean }
 ) {
   if (showing === "ask") {
     return <AskContent activeSection={ctx.activeSection} onExpand={ctx.onExpand} onClose={ctx.close} isMobile={Boolean(ctx.isMobile)} reduceMotion={ctx.reduceMotion} />;
   }
-  if (showing === "tip" && tip) return <TipContent text={tip.text} />;
+  if (showing === "tip" && tip) return <TipContent text={tip.text} tipSection={tip.section} />;
   if (showing === "tour") return ctx.tourContent ?? null;
   return null;
 }
@@ -388,10 +444,10 @@ const ORIGIN: Record<BubbleSide, string> = { right: "0% 100%", left: "100% 100%"
  * Reading text on screen the bubble should not cover when it has a choice:
  * headings, paragraphs and list items in the page, not cards' own controls.
  */
-function readingRects(): Rect[] {
+export function readingRects(): Rect[] {
   const rects: Rect[] = [];
   document.querySelectorAll("main h1, main h2, main h3, main p, main li").forEach((node) => {
-    if (node.closest("#nex-bubble, #nex-bubble-hero, nav")) return;
+    if (node.closest("#nex-bubble, [data-nex-host-live], nav")) return;
     const box = node.getBoundingClientRect();
     if (box.width === 0 || box.bottom < 0 || box.top > window.innerHeight) return;
     rects.push({ left: box.left, top: box.top, width: box.width, height: box.height });
@@ -400,7 +456,7 @@ function readingRects(): Rect[] {
 }
 
 
-function TipContent({ text }: { text: string }) {
+function TipContent({ text, tipSection }: { text: string; tipSection: string }) {
   const [hovered, setHovered] = useState(false);
   useEffect(() => {
     if (hovered) return;
@@ -421,8 +477,11 @@ function TipContent({ text }: { text: string }) {
         <button
           type="button"
           onClick={() => {
+            const section = tipSection;
             dispatchCompanion({ type: "tip/expire" });
-            dispatchCompanion({ type: "ask/open" });
+            // Contact's tip is about checking a role: open straight into that.
+            if (section === "contact") openRoleFit();
+            else dispatchCompanion({ type: "ask/open" });
           }}
           className="inline-flex min-h-8 items-center gap-1 text-xs font-semibold text-primary-text hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >

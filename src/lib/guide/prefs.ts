@@ -2,6 +2,8 @@
  * The guide's per-visitor preferences. Stored on this device only, and parsed
  * defensively: storage can be blocked, cleared, or hold an older shape.
  */
+import { isVisitorId, type VisitorId } from "@/lib/guide/paths";
+
 export const GUIDE_PREFS_KEY = "nikunj-guide-v1";
 
 export type GuidePrefs = {
@@ -9,9 +11,11 @@ export type GuidePrefs = {
   /** Tips stay off for good once the visitor says so. */
   tipsMuted: boolean;
   celebrated: boolean;
+  /** The visitor path last chosen (sent with chat requests, preselected in the chooser). */
+  visitor: VisitorId | null;
 };
 
-const DEFAULTS: GuidePrefs = { tourDone: false, tipsMuted: false, celebrated: false };
+const DEFAULTS: GuidePrefs = { tourDone: false, tipsMuted: false, celebrated: false, visitor: null };
 
 export function readGuidePrefs(): GuidePrefs {
   try {
@@ -23,6 +27,7 @@ export function readGuidePrefs(): GuidePrefs {
       tourDone: parsed.tourDone === true,
       tipsMuted: parsed.tipsMuted === true,
       celebrated: parsed.celebrated === true,
+      visitor: isVisitorId(parsed.visitor) ? parsed.visitor : null,
     };
   } catch {
     return DEFAULTS;

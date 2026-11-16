@@ -5,6 +5,8 @@ import { chatSuggestions } from "@/data/portfolio";
 import { openNex } from "@/lib/ask-nex";
 import { useChatAvailability } from "@/hooks/useChatAvailability";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
+import { SectionNexDock } from "@/components/guide/SectionNexDock";
+import { SectionAskRow } from "@/components/guide/InPageAskHost";
 
 /** The section's id before the assistant was named Nex; links to it still land here. */
 export const LEGACY_SECTION_ID = "ai-twin";
@@ -24,7 +26,7 @@ const NexSection = () => {
   }, []);
 
   const handlePromptClick = (question: string) => {
-    openNex(question);
+    openNex(question, undefined, { host: "section:nex" });
   };
 
   const statusLabel =
@@ -49,7 +51,7 @@ const NexSection = () => {
     <section id="nex" className="section-padding relative z-10">
       <span id={LEGACY_SECTION_ID} aria-hidden="true" className="absolute top-0 block h-0 w-0" />
       <div className="container-narrow">
-        <div data-guide-spot="nex">
+        <div data-guide-spot="nex" data-guide-target="nex-card">
           <SpotlightCard className="w-full relative">
             <div className="relative p-6 sm:p-8 md:p-12 lg:p-16 flex flex-col lg:flex-row items-center gap-12 lg:gap-16 text-center lg:text-left">
               {/* Background Glow */}
@@ -57,7 +59,7 @@ const NexSection = () => {
               
               {/* Left Content */}
               <div className="flex-1 relative z-10">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-subtle border border-black/10 dark:border-white/10 text-xs font-mono text-primary mb-6">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-subtle border border-black/10 dark:border-white/10 text-xs font-mono text-primary-text mb-6">
                   <span
                     className={`w-2 h-2 rounded-full motion-reduce:animate-none ${
                       status === "available"
@@ -85,8 +87,10 @@ const NexSection = () => {
                       : "Nex is offline for now. The case studies, contact form and resume all still work."}
                 </p>
                 <p className="text-sm text-foreground/75 mb-8 max-w-lg lg:mx-0 mx-auto">
-                  Ask for a number that isn&apos;t published and Nex says so instead of estimating, the same discipline Nikunj&apos;s evaluation platform enforces.
+                  Ask for a number that isn&apos;t published and Nex says so instead of estimating, the same discipline Nikunj&apos;s evaluation platform enforces. It can only take you to pages on an allow-list, and it is scored against its own golden set.
                 </p>
+
+                <SectionNexDock section="nex" className="mb-6 justify-center lg:justify-start" />
 
                 <button 
                   onClick={() => handlePromptClick("")}
@@ -119,12 +123,13 @@ const NexSection = () => {
                       &ldquo;{s}&rdquo;
                     </span>
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 opacity-50 group-hover:opacity-100 transition-opacity">
-                       <Bot className="w-4 h-4 text-primary" />
+                       <Bot className="w-4 h-4 text-primary-text" />
                     </div>
                   </button>
                 ))}
               </div>
             </div>
+            <SectionAskRow section="nex" className="relative z-10 px-6 sm:px-8 md:px-12 lg:px-16" />
           </SpotlightCard>
         </div>
       </div>

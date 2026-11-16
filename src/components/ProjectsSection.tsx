@@ -7,7 +7,19 @@ import { useInView } from "react-intersection-observer";
 import { ArrowRight, ExternalLink, Github, Maximize2 } from "lucide-react";
 import { projects, type Project } from "@/data/portfolio";
 import AskAboutThis from "@/components/AskAboutThis";
+import { SectionNexDock } from "@/components/guide/SectionNexDock";
+import { SectionAskRow } from "@/components/guide/InPageAskHost";
 import { PROJECT_ANCHOR_PREFIX } from "@/lib/chat/shared";
+import { caseStudyIndex } from "@/data/case-study-index";
+import { THESIS } from "@/data/thesis";
+import { PillarRow } from "@/components/PillarRow";
+
+/** Project cards whose product also has a case study: the card links to the deeper write-up. */
+const PROJECT_STUDY: Record<string, string> = { codenex: "codenex", "codenex-ai-api-proxy": "codenex-ai-proxy", serenify: "serenify" };
+const studyPath = (projectSlug: string) => {
+  const slug = PROJECT_STUDY[projectSlug];
+  return slug && caseStudyIndex.some((entry) => entry.slug === slug) ? `/work/${slug}` : null;
+};
 import {
   Carousel,
   CarouselContent,
@@ -100,8 +112,8 @@ function ProjectGallery({
 
           {project.images.length > 1 && (
             <div className="opacity-100 transition-opacity duration-300 lg:opacity-0 lg:group-hover/img:opacity-100 lg:group-focus-within/img:opacity-100">
-              <CarouselPrevious className="left-3 z-20 flex h-9 w-9 items-center justify-center border border-white/15 bg-background/85 glass-tier-surface text-foreground transition-colors hover:bg-background hover:text-primary" />
-              <CarouselNext className="right-3 z-20 flex h-9 w-9 items-center justify-center border border-white/15 bg-background/85 glass-tier-surface text-foreground transition-colors hover:bg-background hover:text-primary" />
+              <CarouselPrevious className="left-3 z-20 flex h-9 w-9 items-center justify-center border border-white/15 bg-background/85 glass-tier-surface text-foreground transition-colors hover:bg-background hover:text-primary-text" />
+              <CarouselNext className="right-3 z-20 flex h-9 w-9 items-center justify-center border border-white/15 bg-background/85 glass-tier-surface text-foreground transition-colors hover:bg-background hover:text-primary-text" />
             </div>
           )}
         </Carousel>
@@ -224,11 +236,20 @@ function ProjectCard({
                 href={project.github}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-full border border-white/10 glass-subtle px-4 py-2 text-xs font-bold text-foreground transition-colors hover:border-primary/30 hover:text-primary"
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/10 glass-subtle px-4 py-2 text-xs font-bold text-foreground transition-colors hover:border-primary/30 hover:text-primary-text"
               >
                 <Github className="h-3.5 w-3.5" />
                 Source
               </a>
+              {studyPath(project.slug) && (
+                <Link
+                  href={studyPath(project.slug)!}
+                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold text-primary-text transition-colors hover:text-primary-text"
+                >
+                  Case study
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              )}
             </div>
           </div>
 
@@ -264,7 +285,7 @@ const ProjectsSection = ({ featured, caseStudyCount }: { featured: ReactNode; ca
 
       <div className="container-narrow">
         {/* Centered Header */}
-        <div className="mb-16 flex flex-col items-center text-center">
+        <div className="mb-10 flex flex-col items-center text-center">
           <div className="mb-6 inline-flex items-center rounded-full border border-primary/20 px-3 py-1.5 font-mono text-xs text-primary-text glass-subtle">
             Work
           </div>
@@ -272,10 +293,14 @@ const ProjectsSection = ({ featured, caseStudyCount }: { featured: ReactNode; ca
             Selected <span className="text-gradient">Work</span>
           </h2>
           <p className="mb-4 max-w-xl text-lg leading-relaxed text-muted-foreground">
-            Agent systems, retrieval, and platform work I own at ArmorCode, GenAI products shipped at Xansr Media,
-            and the products I have built on my own.
+            {THESIS} Each case study below is evidence for one of four things.
           </p>
+          <SectionNexDock section="work" layout="stack" className="mt-4" />
         </div>
+
+        <SectionAskRow section="work" />
+
+        <PillarRow />
 
         {/* Tier 1 — the featured case studies, the only cards carrying metrics on
             their face. Labelled by what they are rather than by employer, since the
@@ -351,7 +376,7 @@ const ProjectsSection = ({ featured, caseStudyCount }: { featured: ReactNode; ca
                         href={project.github}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-primary"
+                        className="inline-flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-primary-text"
                       >
                         <Github className="h-3.5 w-3.5" />
                         Source
@@ -381,7 +406,7 @@ const ProjectsSection = ({ featured, caseStudyCount }: { featured: ReactNode; ca
             href="https://github.com/Nikunj2003"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 rounded-full border border-white/10 border-b-white/5 px-8 py-4 text-sm font-bold text-foreground shadow-accent-soft transition-all duration-300 glass hover:bg-white/10 hover:text-primary active:scale-95"
+            className="flex items-center gap-2 rounded-full border border-white/10 border-b-white/5 px-8 py-4 text-sm font-bold text-foreground shadow-accent-soft transition-all duration-300 glass hover:bg-white/10 hover:text-primary-text active:scale-95"
           >
             <Github className="h-5 w-5" />
             Explore more repositories

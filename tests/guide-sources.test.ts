@@ -13,11 +13,13 @@ test("the fluid cursor knows nothing about the guide", () => {
   }
 });
 
-test("the hero avatar is the handoff source for the companion", () => {
+test("the hero is a socket the one Nex sits in", () => {
   const hero = readFileSync("src/components/guide/GuideHeroAvatar.tsx", "utf8");
   assert.match(hero, /data-guide-hero-avatar/);
-  assert.match(hero, /followPointer/, "the hero avatar follows the pointer");
-  // The hero reports whether it is on screen; the companion only shows once it isn't.
+  // The companion follows the pointer while it sits in the hero.
+  const companion = readFileSync("src/components/guide/GuideCompanion.tsx", "utf8");
+  assert.match(companion, /followPointer=\{inHero\}/);
+  // The hero reports whether it is on screen; that decides where the ask box opens.
   assert.match(hero, /setHeroVisible\(/);
-  assert.match(readFileSync("src/components/guide/GuideCompanion.tsx", "utf8"), /companion\.heroVisible/);
+  assert.match(companion, /setHeroVisible\(heroHere \? morph < HANDOFF_SWAP_AT/);
 });

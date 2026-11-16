@@ -118,12 +118,12 @@ const SelectItem = React.forwardRef<
       wrapper, so an icon passed through `children` ends up inside it and the
       Item's flex row never applies — which stacked the icon above the label.
     */}
-    {Icon && <Icon className="h-4 w-4 shrink-0 text-primary" />}
+    {Icon && <Icon className="h-4 w-4 shrink-0 text-primary-text" />}
 
     <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
 
     {/* Right-aligned so the label column stays flush with the trigger's. */}
-    <span className="absolute right-3 flex h-4 w-4 items-center justify-center text-primary">
+    <span className="absolute right-3 flex h-4 w-4 items-center justify-center text-primary-text">
       <SelectPrimitive.ItemIndicator>
         <Check className="h-4 w-4" />
       </SelectPrimitive.ItemIndicator>
