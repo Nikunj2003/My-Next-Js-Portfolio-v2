@@ -3,6 +3,8 @@ import { SpotlightCard } from "@/components/ui/spotlight-card";
 import FlipWords from "@/components/ui/flip-words";
 import { skillCategories, skillEvidence } from "@/data/portfolio";
 import AskAboutThis from "@/components/AskAboutThis";
+import { SectionNexDock } from "@/components/guide/SectionNexDock";
+import { PanelAskSwap } from "@/components/guide/InPageAskHost";
 
 /** Keyed by exact category title — a miss falls back to Wrench silently, so
  *  these must be updated in the same edit as any title change in portfolio.ts. */
@@ -26,13 +28,16 @@ const SkillsSection = () => {
               <div className="absolute -bottom-20 -left-16 h-40 w-40 rounded-full bg-accent/10 blur-3xl" />
 
               <div className="relative">
-                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 font-mono text-xs text-primary-text">
-                  Expertise
-                </div>
+                <SectionNexDock
+                  section="skills"
+                  className="mb-6"
+                  eyebrow={<div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 font-mono text-xs text-primary-text">Expertise</div>}
+                />
                 <h2 className="heading-xl mb-6">
                   Technical <br className="hidden lg:block" />
                   <span className="text-gradient">Stack</span>
                 </h2>
+                <PanelAskSwap section="skills">
                 <p className="max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
                   The technologies I reach for most often when building agent systems, governed MCP tools, evaluation pipelines, and full-stack AI products. Highlighted ones link to the work that proves them.
                 </p>
@@ -44,6 +49,7 @@ const SkillsSection = () => {
                     className="text-primary-text"
                   />
                 </p>
+                </PanelAskSwap>
               </div>
             </div>
           </div>

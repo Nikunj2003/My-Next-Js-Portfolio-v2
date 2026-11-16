@@ -5,6 +5,8 @@ import { chatSuggestions } from "@/data/portfolio";
 import { openNex } from "@/lib/ask-nex";
 import { useChatAvailability } from "@/hooks/useChatAvailability";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
+import { SectionNexDock } from "@/components/guide/SectionNexDock";
+import { SectionAskRow } from "@/components/guide/InPageAskHost";
 
 /** The section's id before the assistant was named Nex; links to it still land here. */
 export const LEGACY_SECTION_ID = "ai-twin";
@@ -24,7 +26,7 @@ const NexSection = () => {
   }, []);
 
   const handlePromptClick = (question: string) => {
-    openNex(question);
+    openNex(question, undefined, { host: "section:nex" });
   };
 
   const statusLabel =
@@ -88,6 +90,8 @@ const NexSection = () => {
                   Ask for a number that isn&apos;t published and Nex says so instead of estimating, the same discipline Nikunj&apos;s evaluation platform enforces. It can only take you to pages on an allow-list, and it is scored against its own golden set.
                 </p>
 
+                <SectionNexDock section="nex" className="mb-6 justify-center lg:justify-start" />
+
                 <button 
                   onClick={() => handlePromptClick("")}
                   className={`inline-flex items-center gap-2 px-8 py-4 rounded-full font-bold text-sm tracking-wide transition-all duration-300 active:scale-95 ${
@@ -125,6 +129,7 @@ const NexSection = () => {
                 ))}
               </div>
             </div>
+            <SectionAskRow section="nex" className="relative z-10 px-6 sm:px-8 md:px-12 lg:px-16" />
           </SpotlightCard>
         </div>
       </div>

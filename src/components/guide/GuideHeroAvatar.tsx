@@ -2,16 +2,15 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { StaticGuideMark } from "@/components/guide/GuideAvatarSlot";
 import { NexRing } from "@/components/guide/NexRing";
 import { emitGuide } from "@/lib/guide/bus";
 import { ASLEEP_LINE, BORED_LINE, DIZZY_LINE, HOVER_LINE, WAKE_LINE, greetingFor } from "@/lib/guide/hero-lines";
 import { getSpoken, say as sayLine, sayPetLine, useSpoken } from "@/lib/guide/spoken";
 import { useGuideView } from "@/lib/guide/useGuideView";
-import { dispatchCompanion, openPanel, takeAskOpener, setHeroVisible, useCompanionState } from "@/lib/guide/companion-store";
-import { AskContent } from "@/components/guide/AskContent";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { setHeroVisible } from "@/lib/guide/companion-store";
+import { HostConversation, useInPageHost } from "@/components/guide/InPageAskHost";
 import { introPending } from "@/lib/hero-intro";
 import { HERO_FACE_SHARE } from "@/lib/guide/placement";
 
@@ -33,6 +32,8 @@ import { HERO_FACE_SHARE } from "@/lib/guide/placement";
  * box is the stage); `data-guide-target="hero-guide"` lets the tour and the
  * agent point here.
  */
+
+const heroAvatarButton = () => document.querySelector<HTMLElement>("[data-guide-hero-avatar]");
 
 /** The face's drawn size inside the stage (the companion matches it). */
 const FACE_SHARE = HERO_FACE_SHARE;
@@ -154,13 +155,8 @@ const PROOF_LINKS = [
  */
 export function HeroAskHost() {
   const view = useGuideView();
-  const companion = useCompanionState();
-  const isMobile = useIsMobile();
-  const reduceMotion = Boolean(useReducedMotion());
   const line = useSpoken();
-  const open = companion.bubble === "ask" && companion.askHost === "hero" && !isMobile;
-  const openerRef = useRef<HTMLElement | null>(null);
-  const hostRef = useRef<HTMLDivElement>(null);
+  const { open, close, hostRef, reduceMotion } = useInPageHost("hero", { fallbackFocus: heroAvatarButton });
   // The host's height follows its content with an eased transition, so the
   // role, line, actions and figures slide down when the conversation opens
   // and back up when it closes, instead of jumping. Measured, not guessed.
@@ -176,49 +172,11 @@ export function HeroAskHost() {
     return () => observer.disconnect();
   }, []);
 
-  // When it opens: remember what opened it (focus goes back there on close),
-  // and bring the whole conversation into view if it isn't. One scroll,
-  // after layout; never per token.
-  useEffect(() => {
-    if (!open) return;
-    openerRef.current = takeAskOpener();
-    const timer = window.setTimeout(() => {
-      const host = hostRef.current;
-      if (!host) return;
-      const box = host.getBoundingClientRect();
-      const overflow = box.bottom - (window.innerHeight - 24);
-      if (overflow <= 0) return;
-      const lenis = (window as Window & { __lenis?: { scrollTo: (y: number, options?: object) => void } }).__lenis;
-      const target = window.scrollY + Math.min(overflow, Math.max(0, box.top - 96));
-      if (lenis) lenis.scrollTo(target, { duration: reduceMotion ? 0 : 0.6 });
-      else window.scrollTo({ top: target, behavior: reduceMotion ? "auto" : "smooth" });
-    }, reduceMotion ? 0 : 260);
-    return () => window.clearTimeout(timer);
-  }, [open, reduceMotion]);
-
-  const close = useCallback(() => {
-    dispatchCompanion({ type: "ask/close" });
-    const opener = openerRef.current;
-    const avatar = document.querySelector<HTMLElement>("[data-guide-hero-avatar]");
-    (opener?.isConnected ? opener : avatar)?.focus({ preventScroll: true });
-  }, []);
-
-  // Escape closes it (the companion's own handler leaves in-page hosts alone).
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || event.defaultPrevented) return;
-      event.preventDefault();
-      close();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, close]);
-
   return (
     <motion.div
       ref={hostRef}
       data-hero-part="ask-host"
+      data-nex-host="hero"
       className="w-full"
       initial={false}
       animate={{ height }}
@@ -229,19 +187,14 @@ export function HeroAskHost() {
       <div ref={innerRef} className="flex w-full flex-col items-center pb-1">
       <AnimatePresence initial={false} mode="popLayout">
         {open ? (
-          <motion.div
+          <HostConversation
             key="ask"
-            id="nex-host-hero"
-            role="region"
-            aria-label="Conversation with Nex"
-            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -10, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.98 }}
-            transition={{ duration: reduceMotion ? 0.1 : 0.32, ease: [0.22, 1, 0.36, 1] }}
-            className="nex-host flex w-full max-w-[40rem] flex-col overflow-hidden rounded-2xl border border-primary/20 text-left glass-strong shadow-accent-soft"
-          >
-            <AskContent inline activeSection="hero" onExpand={openPanel} onClose={close} isMobile={false} reduceMotion={reduceMotion} />
-          </motion.div>
+            host="hero"
+            close={close}
+            reduceMotion={reduceMotion}
+            initial={{ opacity: 0, y: -10, scale: 0.98 }}
+            className="nex-host max-w-[40rem]"
+          />
         ) : (
           <motion.div
             key="caption"

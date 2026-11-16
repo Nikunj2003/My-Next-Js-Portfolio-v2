@@ -12,6 +12,8 @@ import { Briefcase, CalendarDays, GraduationCap } from "lucide-react";
 import { bulletStudySlug, bulletText, experiences, type Experience } from "@/data/portfolio";
 import { getCaseStudyPath } from "@/data/case-study-path";
 import AskAboutThis, { ReadCaseStudyLink } from "@/components/AskAboutThis";
+import { SectionNexDock } from "@/components/guide/SectionNexDock";
+import { PanelAskSwap } from "@/components/guide/InPageAskHost";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import FlipWords from "@/components/ui/flip-words";
 
@@ -263,13 +265,16 @@ const ExperienceSection = () => {
                 <div className="absolute -bottom-20 -left-16 h-40 w-40 rounded-full bg-accent/10 blur-3xl" />
 
                 <div className="relative">
-                  <div className="mb-6 inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-mono text-primary-text">
-                    Journey
-                  </div>
+                  <SectionNexDock
+                    section="experience"
+                    className="mb-6"
+                    eyebrow={<div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-mono text-primary-text">Journey</div>}
+                  />
                   <h2 className="heading-xl mb-6">
                     Professional <br className="hidden lg:block" />
                     <span className="text-gradient">Experience</span>
                   </h2>
+                  <PanelAskSwap section="experience">
                   <p className="max-w-md leading-relaxed text-muted-foreground">
                     I’ve grown from building public-sector software into delivering Applied AI systems, working through stakeholder discovery, agent architecture, governed tool integration, rollout, debugging, and iteration.
                   </p>
@@ -290,6 +295,7 @@ const ExperienceSection = () => {
                     ahead
                   </p>
                   </div>
+                  </PanelAskSwap>
                 </div>
               </div>
             </div>

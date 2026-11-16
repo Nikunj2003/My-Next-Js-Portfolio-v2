@@ -14,6 +14,7 @@ import { siteConfig } from "@/lib/seo/site";
 import CaseStudyDiagram from "@/components/diagrams";
 import CaseStudyToc, { type TocItem } from "@/components/CaseStudyToc";
 import AskAboutThis from "@/components/AskAboutThis";
+import { PageAskRow } from "@/components/guide/InPageAskHost";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -197,6 +198,9 @@ const CaseStudyPage = async ({ params }: PageProps) => {
               </p>
             </div>
 
+            {/* Asking from the header opens here, under the summary. */}
+            <PageAskRow id="header" context="case-study" label={study.title} />
+
             {/* Two columns from here: sticky TOC beside the prose. */}
             <div className="mt-16 flex flex-col gap-10 lg:flex-row lg:gap-14">
               <div className="w-full shrink-0 lg:w-56">
@@ -212,8 +216,10 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                       label="Why it mattered"
                       question={`What problem did the ${study.title} solve, and why did it matter?`}
                       className="ml-0"
+                      host="page:problem"
                     />
                   </div>
+                  <PageAskRow id="problem" context="case-study" label="The problem" />
                   <div className="mt-4 rounded-2xl border border-foreground/10 glass-subtle p-6">
                     <p className="text-base leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
                       {study.problem}
@@ -228,8 +234,10 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                       label="Why hard?"
                       question={`What made the constraints on the ${study.title} hard to work within?`}
                       className="ml-0"
+                      host="page:constraints"
                     />
                   </div>
+                  <PageAskRow id="constraints" context="case-study" label="Constraints" />
                   <ul className="mt-4 flex flex-col divide-y divide-foreground/10 overflow-hidden rounded-2xl glass-subtle">
                     {study.constraints.map((constraint) => (
                       <li key={constraint} className="flex gap-3 p-5 text-base leading-relaxed text-muted-foreground">
@@ -248,8 +256,10 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                         label="Walk me through it"
                         question={`Walk me through the architecture diagram for the ${study.title}.`}
                         className="ml-0"
+                      host="page:architecture"
                       />
                     </div>
+                  <PageAskRow id="architecture" context="case-study" label="Architecture" />
                     <CaseStudyDiagram diagram={study.diagram} description={study.diagramCaption} />
                   </div>
                 )}
@@ -261,8 +271,10 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                       label="What was rejected?"
                       question={`What did Nikunj consider and reject while building the ${study.title}?`}
                       className="ml-0"
+                      host="page:decisions"
                     />
                   </div>
+                  <PageAskRow id="decisions" context="case-study" label="Decisions" />
               <p className="mt-3 text-sm text-muted-foreground">
                 What was chosen, why, and what was turned down to get there.
               </p>
@@ -299,6 +311,7 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                           label={decision.rejected?.length ? "Why not the others?" : "Why this?"}
                           question={`On the ${study.title}, why did Nikunj choose "${decision.choice}" over the alternatives?`}
                           className="ml-0"
+                          host="page:decisions"
                         />
                       </div>
                       <p className="mt-3 text-sm leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
@@ -341,8 +354,10 @@ const CaseStudyPage = async ({ params }: PageProps) => {
                           label="Go deeper"
                           question={`On the ${study.title}: explain "${section.heading}" in more detail.`}
                           className="ml-0"
+                      host={`page:${sectionId(section.heading)}`}
                         />
                       </div>
+                  <PageAskRow id={sectionId(section.heading)} context="case-study" label={section.heading} />
                     </div>
                 <p className="mt-4 text-base leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
                   {section.body}

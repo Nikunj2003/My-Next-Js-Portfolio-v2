@@ -10,7 +10,7 @@ import {
   easeInOutCubic,
   gutterPoint,
   placeBubbleBeside,
-  underPanelPoint,
+  socketDockPoint,
   heroDockFrame,
   heroHandoffProgress,
   COMPANION_FACE_SHARE, HERO_FACE_SHARE, freeBubbleSide, routeSocketProgress } from "../src/lib/guide/placement.ts";
@@ -106,29 +106,30 @@ test("lookToward points the head at a target, clamped to the library's range", (
   assert.equal(Math.abs(y), 0);
 });
 
-test("under a sticky panel: one continuous path, the same both ways, never dipping to the screen bottom", () => {
-  // About at 1440x900: the panel pins at 128 with height 537, so it rests at 665 + 24.
-  const at = (panelBottom: number) => underPanelPoint({ panelLeft: 176, panelBottom, pinnedBottom: 665, gutterX: 38 });
-  // Arriving (panel still below the screen): waits in the margin at its resting height.
-  assert.deepEqual(at(1600), { x: 38, y: 689 });
-  assert.deepEqual(at(1000), { x: 38, y: 689 });
-  // Pinned: under the panel.
-  assert.deepEqual(at(665), { x: 196, y: 689 });
-  // Leaving at the end of the section: rides up with the panel.
-  assert.deepEqual(at(500), { x: 196, y: 524 });
-  // Height never increases as the panel moves up the screen (no dip and climb back).
-  let last = Infinity;
-  for (let bottom = 2000; bottom >= 300; bottom -= 7) {
-    const point = at(bottom);
-    assert.ok(point.y <= last + 1e-9, `height went back down at panelBottom ${bottom}`);
-    last = point.y;
+test("a section dock: margin while the socket is below, in the socket on screen, out again under the navbar; the same both ways", () => {
+  const viewport = { width: 1440, height: 900, insetTop: 88, insetBottom: 0 };
+  const gutter = { x: 38, y: 416 };
+  const at = (y: number) => socketDockPoint({ socket: { x: 300, y }, size: 68, viewport, gutter });
+  // Below the screen: waits in the margin.
+  assert.deepEqual(at(1400).point, gutter);
+  assert.equal(at(1400).hold, 0);
+  // On screen: resting in the socket (top-left = centre - size/2).
+  assert.deepEqual(at(500).point, { x: 266, y: 466 });
+  assert.equal(at(500).hold, 1);
+  // Pinned just under the navbar (a sticky panel at top 128): still in it.
+  assert.equal(at(128 + 24 + 34).hold, 1);
+  // Under the navbar: back in the margin.
+  assert.deepEqual(at(-200).point, gutter);
+  // Continuous: no single scroll step moves it further than a scroll can explain.
+  for (let y = 1400; y >= -240; y -= 8) {
+    const a = at(y).point, b = at(y - 8).point;
+    assert.ok(Math.hypot(a.x - b.x, a.y - b.y) < 60, `step at ${y}`);
   }
-  // The slide in is continuous (no single step larger than a scroll step can explain).
-  for (let bottom = 900; bottom >= 600; bottom -= 10) assert.ok(Math.abs(at(bottom).x - at(bottom - 10).x) < 20, `step at ${bottom}`);
 });
 
-test("without a margin, the under-panel spot doesn't slide; it waits at its resting height", () => {
-  assert.deepEqual(underPanelPoint({ panelLeft: 96, panelBottom: 1200, pinnedBottom: 665, gutterX: null }), { x: 116, y: 689 });
+test("without a margin, a dock just holds Nex on its socket", () => {
+  const viewport = { width: 1100, height: 800, insetTop: 88, insetBottom: 0 };
+  assert.deepEqual(socketDockPoint({ socket: { x: 200, y: 1500 }, size: 68, viewport, gutter: null }), { point: { x: 166, y: 1466 }, hold: 1 });
 });
 
 const handoff = (t: number) => heroDockFrame({ t, heroCentre: { x: 1047, y: 300 }, heroDiameter: 240, size: 68, spot: { x: 54, y: 689 } });

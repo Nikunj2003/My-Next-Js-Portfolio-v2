@@ -7,6 +7,7 @@ import { emitGuide } from "@/lib/guide/bus";
 // before the lazily mounted companion has loaded.
 import "@/lib/guide/store";
 import { readGuidePrefs, writeGuidePrefs } from "@/lib/guide/prefs";
+import { resolveAskHost } from "@/lib/guide/ask-hosts";
 
 /**
  * UI state shared by the companion avatar, its bubble and the full chat panel:
@@ -24,9 +25,13 @@ type CompanionState = BubbleState & {
   heroVisible: boolean;
   /** Nex has landed in the footer's slot (desktop), reported by the companion. */
   footerDocked: boolean;
+  /** The homepage section that owns the screen (the companion reports it). */
+  section: string | null;
+  /** The section whose dock Nex is resting in right now (desktop), or null. */
+  dockSection: string | null;
 };
 
-let state: CompanionState = { ...initialBubbleState, pendingQuestion: null, heroVisible: false, footerDocked: false };
+let state: CompanionState = { ...initialBubbleState, pendingQuestion: null, heroVisible: false, footerDocked: false, section: null, dockSection: null };
 let prefsLoaded = false;
 const listeners = new Set<() => void>();
 
@@ -55,16 +60,33 @@ function loadPrefs() {
   if (readGuidePrefs().tipsMuted) state = { ...state, tipBudget: { ...state.tipBudget, muted: true } };
 }
 
+/** Whether an in-page host is laid out on this page right now (it renders `data-nex-host`). */
+function hostAvailable(host: AskHost) {
+  if (typeof document === "undefined") return false;
+  const node = document.querySelector<HTMLElement>(`[data-nex-host="${host}"]`);
+  return Boolean(node && node.getClientRects().length > 0);
+}
+
 /**
- * Where a new ask box should open: in the hero while the hero avatar is the
- * guide, in the footer once Nex has landed there, otherwise beside the
- * companion. Phones always use the sheet.
+ * Where a new ask box opens (`resolveAskHost`): the place asked for when it
+ * is on the page, else the hero while Nex sits there, the footer once it has
+ * landed, the section in view, and the bubble beside Nex last. Phones: the sheet.
  */
-function defaultHost(): AskHost {
-  if (typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches) return "float";
-  if (state.heroVisible) return "hero";
-  if (state.footerDocked) return "footer";
-  return "float";
+export function chooseAskHost(requested?: AskHost): AskHost {
+  const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+  return resolveAskHost({ requested, isMobile, heroVisible: state.heroVisible, footerDocked: state.footerDocked, section: state.section, available: hostAvailable, nearest: nearestPageRow() });
+}
+
+/**
+ * Off the homepage, the page row for what is being read: the last row
+ * (`page:*`, in page order) whose top is above 60% of the screen, else the first.
+ */
+function nearestPageRow(): AskHost | null {
+  if (typeof document === "undefined") return null;
+  const rows = [...document.querySelectorAll<HTMLElement>('[data-nex-host^="page:"]')].filter((row) => row.getClientRects().length > 0);
+  let best: string | undefined;
+  for (const row of rows) if (row.getBoundingClientRect().top <= window.innerHeight * 0.6) best = row.dataset.nexHost;
+  return ((best ?? rows[0]?.dataset.nexHost) as AskHost | undefined) ?? null;
 }
 
 /**
@@ -82,7 +104,7 @@ export function takeAskOpener() {
 export function openAsk(question?: string, host?: AskHost) {
   if (typeof document !== "undefined" && state.bubble !== "ask") {
     const active = document.activeElement;
-    opener = active instanceof HTMLElement && active !== document.body && !active.closest("#nex-host-hero, #nex-host-footer, #nex-bubble") ? active : null;
+    opener = active instanceof HTMLElement && active !== document.body && !active.closest("[data-nex-host-live], #nex-bubble") ? active : null;
   }
   // The full panel is already showing the conversation: queue it there. The
   // panel sends it with its own options (offline state, navigation) once the
@@ -91,7 +113,7 @@ export function openAsk(question?: string, host?: AskHost) {
     if (question) set({ ...state, pendingQuestion: question });
     return;
   }
-  dispatchCompanion({ type: "ask/open", host: host ?? defaultHost() });
+  dispatchCompanion({ type: "ask/open", host: chooseAskHost(host) });
   if (question) set({ ...state, pendingQuestion: question });
 }
 
@@ -103,6 +125,14 @@ export function takePendingQuestion() {
 
 export function setHeroVisible(visible: boolean) {
   if (state.heroVisible !== visible) set({ ...state, heroVisible: visible });
+}
+
+export function setCompanionSection(section: string | null) {
+  if (state.section !== section) set({ ...state, section });
+}
+
+export function setDockSection(section: string | null) {
+  if (state.dockSection !== section) set({ ...state, dockSection: section });
 }
 
 export function setFooterDocked(docked: boolean) {

@@ -17,6 +17,7 @@ import { dispatchCompanion, getAskDraft, setAskDraft, takeComposerMode, takePend
 import { MAX_ROLE_LENGTH, roleFitQuestion } from "@/lib/chat/role-fit";
 import { startGuideTour } from "@/lib/guide/tour-control";
 import { useChatAvailability } from "@/hooks/useChatAvailability";
+import { NexRing } from "@/components/guide/NexRing";
 import { scrollToHash } from "@/lib/scroll";
 
 /** Matches the server's per-message limit (api/chat/route.ts). */
@@ -36,10 +37,18 @@ type AskContentProps = {
    * host's size. Chips are trimmed to one row's worth there.
    */
   fill?: boolean;
+  /** The answer area's height in an in-page row (CSS length); by default a compact one. */
+  bodyHeight?: string;
+  /**
+   * A reserved place for Nex at the head of the conversation (in-page rows):
+   * a ringed socket the companion flies to and rests in while it is open, in
+   * place of the small chat icon.
+   */
+  socket?: boolean;
 };
 
 /** The ask box: latest question and answer, chips, composer. Hosted by the companion's bubble or inline by the hero avatar. */
-export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceMotion, inline = false, fill = false }: AskContentProps) {
+export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceMotion, inline = false, fill = false, bodyHeight, socket = false }: AskContentProps) {
   const { messages, isLoading, announcement, turnAnchorId } = useNexChat();
   const { status } = useChatAvailability();
   const router = useRouter();
@@ -168,10 +177,17 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <p className="sr-only" role="status" aria-live="polite">{announcement}</p>
-      <div className="flex items-start gap-3 border-b border-foreground/[0.07] px-4 py-3.5">
-        <span aria-hidden="true" className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary-text">
+      <div className={"flex gap-3 border-b border-foreground/[0.07] px-4 py-3.5 " + (socket ? "items-center gap-4" : "items-start")}>
+        {socket ? (
+          <span data-guide-ask-socket aria-hidden="true" className="relative -my-1 block h-[68px] w-[68px] shrink-0">
+            <span className="pointer-events-none absolute inset-[-20%] rounded-full bg-[radial-gradient(circle,hsl(var(--primary)/0.12)_0%,transparent_68%)]" />
+            <NexRing outset={6} />
+          </span>
+        ) : (
+          <span aria-hidden="true" className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary-text">
           <MessageCircle className="h-3.5 w-3.5" />
         </span>
+        )}
         <div className="min-w-0 flex-1">
           <p className="text-xs text-muted-foreground">{exchange ? "You asked" : "Nex, AI guide"}</p>
           <p className="mt-0.5 line-clamp-2 text-[0.9375rem] font-semibold leading-snug text-foreground">
@@ -212,7 +228,7 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
           aria-live="off"
           aria-busy={Boolean(answer?.streaming) || (isLoading && !answer)}
           className="scroll-panel min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 text-[0.9375rem] leading-relaxed text-foreground"
-          style={inline && !fill ? { height: "clamp(12rem, 34svh, 20rem)" } : undefined}
+          style={inline && !fill ? { height: bodyHeight ?? "clamp(12rem, 34svh, 20rem)", flex: "none" } : undefined}
         >
           {answer ? (
             <>

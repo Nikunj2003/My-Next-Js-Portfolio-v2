@@ -40,9 +40,11 @@ an OpenAI-compatible LLM (`gpt-6-luna` through a self-hosted Bifrost gateway by 
 - **Nex's own eval** (`npm run eval:nex`): a 30-question golden set with a deterministic scorer,
   run as a development check.
 - **One Nex across the site**: a single animated guide sits in the hero between the two halves of
-  the name, shrinks into the page as you scroll, rests in reserved sockets on `/work` and every case
-  study, and lands in the footer's slot at the end of every page. The conversation opens in the page
-  (hero, footer) or beside it, never over the text being read.
+  the name, shrinks into the page as you scroll, rests in a reserved socket in every homepage section,
+  on `/work` and every case study, and lands in the footer's slot at the end of every page. The
+  conversation opens in the page (the hero, the section you are reading, a row under a case study's
+  section, the footer), never over the
+  text being read; another section offers "Continue here".
 - **Visitor paths**: "Take a tour" offers the 60-second tour or a path for a recruiter, hiring
   manager, engineer or founder; the chosen path is sent to the chat as a fixed id so answers lead with
   what that reader needs.

@@ -7,6 +7,8 @@ import logo from "@/assets/logo.png";
 
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import AskAboutThis from "@/components/AskAboutThis";
+import { SectionNexDock } from "@/components/guide/SectionNexDock";
+import { PanelAskSwap } from "@/components/guide/InPageAskHost";
 
 /** Latest entry is the current role; the earliest ArmorCode entry sets tenure. */
 const currentRole = experiences[experiences.length - 1];
@@ -49,16 +51,17 @@ const AboutSection = () => {
                 <div aria-hidden="true" className="absolute -bottom-20 -left-16 h-40 w-40 rounded-full bg-accent/10 blur-3xl" />
 
                 <div className="relative">
-                  <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 font-mono text-xs text-primary-text">
+                  <SectionNexDock section="about" className="mb-6" eyebrow={<div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 font-mono text-xs text-primary-text">
                     <span className="h-2 w-2 rounded-full bg-primary shadow-[0_0_12px_hsl(var(--accent)/0.6)]" />
                     Profile
-                  </div>
+                  </div>} />
 
                   <h2 className="heading-xl mb-6">
                     About <br className="hidden lg:block" />
                     <span className="text-gradient">Nikunj</span>
                   </h2>
 
+                  <PanelAskSwap section="about">
                   <p className="max-w-md leading-relaxed text-muted-foreground">
                     {THESIS}
                   </p>
@@ -103,6 +106,7 @@ const AboutSection = () => {
                       Resume
                     </a>
                   </div>
+                  </PanelAskSwap>
                 </div>
               </div>
             </div>

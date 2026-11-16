@@ -15,6 +15,8 @@ import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import cardImage from "@/assets/card.png";
 import { SOCIAL_LINKS } from "@/data/site-links";
+import { SectionNexDock } from "@/components/guide/SectionNexDock";
+import { SectionAskRow } from "@/components/guide/InPageAskHost";
 
 /**
  * One icon per contact reason.
@@ -135,7 +137,10 @@ const ContactSection = () => {
           <p className="text-muted-foreground max-w-xl mx-auto text-base leading-relaxed">
             {personalInfo.focus}
           </p>
+          <SectionNexDock section="contact" layout="stack" className="mt-6" />
         </div>
+
+        <SectionAskRow section="contact" />
 
         {/* Mobile-only card (the pointer tilt it had never ran on touch screens). */}
         <div className="mx-auto mb-10 block w-full max-w-xs sm:max-w-sm lg:hidden">

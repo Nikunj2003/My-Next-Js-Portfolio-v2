@@ -5,6 +5,7 @@ import { Loader2, Wrench, X } from "lucide-react";
 import { useAssistantAnswer } from "@/components/ai/useAssistantAnswer";
 import { AnswerBody } from "@/components/ai/AnswerBody";
 import { openNex } from "@/lib/ask-nex";
+import type { AskHost } from "@/lib/guide/ask-hosts";
 import { cn } from "@/lib/utils";
 
 /**
@@ -21,9 +22,12 @@ export function InlineAnswer({
   question,
   className = "",
   onDismiss,
+  host,
 }: {
   question: string;
   className?: string;
+  /** Where "Continue with Nex" opens the conversation (a page row); by default the section's own host. */
+  host?: AskHost;
   /** Called when the visitor closes the answer. */
   onDismiss?: () => void;
 }) {
@@ -47,10 +51,11 @@ export function InlineAnswer({
   };
 
   const handleContinueWithNex = () => {
-    // Hands the already-answered exchange to the panel rather than making the
-    // visitor re-ask: the panel appends it to its own message list and
-    // persists it, same as any other turn.
-    openNex(question, status === "done" ? content : undefined, { expand: true });
+    // Hands the already-answered exchange on rather than making the visitor
+    // re-ask: it is appended to the conversation and persisted, same as any
+    // other turn, and the conversation opens in the section's own host.
+    if (status === "done") openNex(question, content, { inPage: true, host });
+    else openNex(question, undefined, { expand: true });
     handleClose();
   };
 

@@ -1,4 +1,5 @@
 import { TIP_RULES } from "@/lib/guide/tips";
+import type { AskHost } from "@/lib/guide/ask-hosts";
 
 /**
  * What the companion's single bubble is showing. One bubble at a time, by
@@ -8,13 +9,11 @@ import { TIP_RULES } from "@/lib/guide/tips";
 export type BubbleKind = "none" | "tip" | "ask" | "tour";
 
 /**
- * Where an open ask box lives. `hero` and `footer` are in-page hosts: the
- * conversation opens in the page and stays there while the visitor scrolls.
- * `float` is the companion's bubble beside the avatar (or the sheet on
- * phones). The host is chosen when the box opens and only changes when the
- * visitor opens it somewhere else, never from scrolling alone.
+ * Where an open ask box lives (`lib/guide/ask-hosts.ts`): an in-page host
+ * (the hero, the footer, a section's dock) or `float`, the companion's bubble
+ * (the sheet on phones). Chosen when it opens; scrolling never changes it.
  */
-export type AskHost = "hero" | "footer" | "float";
+export type { AskHost };
 
 export type BubbleState = {
   bubble: BubbleKind;

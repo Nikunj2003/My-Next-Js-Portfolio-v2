@@ -57,7 +57,7 @@ test("the hero hand-off measures the hero's layout box, not the box it is scalin
 
 test("the hero hands off straight to About's spot (no second hop at the hero/About boundary)", () => {
   assert.match(companion, /hero: ABOUT,\n\s+about: ABOUT,/);
-  assert.match(companion, /underPanelPoint\(/);
+  assert.match(companion, /socketDockPoint\(/);
 });
 
 test("in the hero and the footer, clicking Nex pets it; elsewhere it opens the ask box", () => {

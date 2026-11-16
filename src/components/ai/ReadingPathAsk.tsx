@@ -2,7 +2,8 @@
 
 import { useCallback, useRef, useState } from "react";
 import { Compass, CornerDownRight } from "lucide-react";
-import { InlineAnswer } from "@/components/ai/InlineAnswer";
+import { PageAskSwap } from "@/components/guide/InPageAskHost";
+import { openNex } from "@/lib/ask-nex";
 import { TourChooser } from "@/components/guide/TourChooser";
 
 const EXAMPLES = [
@@ -20,7 +21,6 @@ const EXAMPLES = [
  * since an empty box invites a vague question that produces a thin answer.
  */
 export function ReadingPathAsk() {
-  const [question, setQuestion] = useState<string | null>(null);
   const [input, setInput] = useState("");
   // Or take a tour: the same choice of paths as the hero (it goes home to run).
   const [choosing, setChoosing] = useState(false);
@@ -30,7 +30,8 @@ export function ReadingPathAsk() {
 
   const ask = (q: string) => {
     if (!q.trim()) return;
-    setQuestion(q.trim());
+    openNex(q.trim(), undefined, { host: "page:header" });
+    setInput("");
   };
 
   return (
@@ -50,6 +51,8 @@ export function ReadingPathAsk() {
       </div>
       <TourChooser open={choosing} onClose={closeChooser} returnFocusTo={returnFocusTo} />
 
+      {/* Asking here opens the page's one conversation in this box's place (`page:header`). */}
+      <PageAskSwap id="header" context="work-index">
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -83,19 +86,7 @@ export function ReadingPathAsk() {
         ))}
       </div>
 
-      {question && (
-        // Keyed on the question so a NEW question (another example chip, or a
-        // resubmitted form) remounts the answer instead of the component
-        // silently keeping the previous one's state.
-        <div className="mt-4">
-          <InlineAnswer
-            key={question}
-            question={question}
-            className="mt-0"
-            onDismiss={() => setQuestion(null)}
-          />
-        </div>
-      )}
+      </PageAskSwap>
     </div>
   );
 }

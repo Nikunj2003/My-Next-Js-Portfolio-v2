@@ -202,7 +202,7 @@ test("the panel is the default target for an ask", () => {
   // site that forgets to think about layout gets the safe behaviour.
   assert.match(
     source,
-    /inline\s*\?\s*setOpen[\s\S]{0,40}:\s*openNex\(question\)/,
+    /inline\s*\?\s*setOpen[\s\S]{0,40}:\s*openNex\(question(\)|, undefined, \{ host \}\))/,
     "an ask must open the panel unless the call site explicitly opts into inline"
   );
 });

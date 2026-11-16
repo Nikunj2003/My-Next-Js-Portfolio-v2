@@ -10,4 +10,6 @@ export const SECTION_CHIPS: Record<string, string[]> = {
   skills: ["Which skills are production-proven?", "What's his agent stack?", "How deep is his MLOps work?"],
   nex: ["How do you pick a tool?", "What won't you answer?", "Show me your trace"],
   contact: ["Is he open to relocation?", "How do I reach him fastest?"],
+  "work-index": ["Which three should I read first?", "Which study shows production debugging?", "What should I read in five minutes?"],
+  "case-study": ["Why was this approach chosen?", "What did he own here?", "What would break first at 10x?"],
 };

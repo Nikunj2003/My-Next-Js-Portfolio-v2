@@ -9,7 +9,7 @@ import { NexBubble, readingRects } from "@/components/guide/NexBubble";
 import { useGuideTour } from "@/components/guide/GuideTourNarrator";
 import { SECTION_IDS } from "@/lib/guide/anchors";
 import { emitGuide } from "@/lib/guide/bus";
-import { dispatchCompanion, getCompanionState, openAsk, openPanel, setFooterDocked, setHeroVisible, useCompanionState } from "@/lib/guide/companion-store";
+import { dispatchCompanion, getCompanionState, openAsk, openPanel, setCompanionSection, setDockSection, setFooterDocked, setHeroVisible, useCompanionState } from "@/lib/guide/companion-store";
 import {
   activeSectionAt,
   blendPoint,
@@ -26,7 +26,7 @@ import {
   heroHandoffProgress,
   routeTravelFrame,
   routeTravelMs,
-  underPanelPoint,
+  socketDockPoint,
   type BubbleSide,
   type Point,
   type Viewport,
@@ -131,6 +131,7 @@ export default function GuideCompanion() {
   const inHeroRef = useRef(false);
   const [inSocket, setInSocket] = useState(false);
   const inSocketRef = useRef(false);
+  const dockSectionRef = useRef<string | null>(null);
   // The live drawing has rendered: until then the hero's socket keeps its still one.
   const [drawn, setDrawn] = useState(false);
 
@@ -185,14 +186,24 @@ export default function GuideCompanion() {
   useLayoutEffect(() => {
     routeRef.current = route;
   }, [route]);
+  // The conversation is open in a row that reserves a place for Nex: that
+  // place is where it goes (one glide there, and back when it closes).
+  // (The rows: Work, Nex and Contact's, and the page rows on /work and case
+  // studies. The sticky panels keep Nex in their own dock beside it.)
+  const askSocketHost = companion.bubble === "ask" && !isMobile && !touring && !companion.panelOpen && hostHasSocket(companion.askHost) ? companion.askHost : null;
+  const askSocketRef = useRef(askSocketHost);
+  useLayoutEffect(() => {
+    askSocketRef.current = askSocketHost;
+  }, [askSocketHost]);
   const rule = useMemo<SpotRule>(() => {
     if (cornerOnly) return CORNER;
+    if (askSocketHost) return askSocketRule(askSocketHost);
     // Other pages have spots of their own (the case study's table of
     // contents, the index's headings); only an unknown page uses the corner.
     if (route !== "home") return ROUTE_RULES[route] ?? CORNER;
     if (!activeSection) return marginRule("margin");
     return SECTION_RULES[activeSection] ?? marginRule(activeSection);
-  }, [activeSection, cornerOnly, route]);
+  }, [activeSection, askSocketHost, cornerOnly, route]);
 
   // The frame loop. Every frame: pick the section that owns the screen, read
   // the current rule's point from the live layout, blend from the previous
@@ -272,10 +283,11 @@ export default function GuideCompanion() {
     clearLayoutCache();
     watchLayoutCache();
     underContents = false;
+    dock = null;
     const footer = () => cachedNode("footer", () => document.querySelector("footer"));
     /** A page header's socket (/work, a case study), when Nex may rest in it now. */
     const routeSocketBox = () =>
-      !isHome && !isMobileRef.current && !touringRef.current && !panelOpenRef.current
+      !isHome && !isMobileRef.current && !touringRef.current && !panelOpenRef.current && !askSocketRef.current
         ? visibleBox(cachedNode<HTMLElement>("route-socket", () => document.querySelector<HTMLElement>("[data-guide-route-socket]")))
         : null;
     const footerSocket = () => cachedNode<HTMLElement>("footer-socket", () => document.querySelector<HTMLElement>("[data-guide-footer-socket]"));
@@ -322,6 +334,7 @@ export default function GuideCompanion() {
         if (next !== sectionRef.current) {
           sectionRef.current = next;
           setActiveSection(next);
+          setCompanionSection(next);
           if (next) emitGuide({ type: "page/section", id: next });
         }
       }
@@ -462,8 +475,16 @@ export default function GuideCompanion() {
       const socketProgress = routeSocket ? routeSocketProgress(routeSocket.top, routeSocket.top + window.scrollY, viewport.insetTop) : 1;
       const routeMorph = routeSocket ? (reduceMotionRef.current ? (socketProgress < 0.5 ? 0 : 1) : socketProgress) : 1;
       const leavingSocket = Boolean(routeSocket) && routeMorph < 1;
-      // Resting in the socket (its own Ask lives in the page): petting, like the hero.
-      const resting = Boolean(routeSocket) && routeMorph < HANDOFF_SWAP_AT;
+      // Resting in a section's dock: the current rule is a dock, Nex is fully
+      // in its socket, nothing else is moving it (a glide, the hero, the footer).
+      const docked = isHome && !usedFallback && current.key.startsWith("dock:") && dock !== null && current.key === `dock:${dock.section}` && dock.hold >= 0.999 && !glideRef.current && !(heroHere && morph < 1) && !isMobileRef.current && !touringRef.current && !panelOpenRef.current && !landingRef.current;
+      const dockSection = docked && dock ? dock.section : null;
+      if (dockSection !== dockSectionRef.current) {
+        dockSectionRef.current = dockSection;
+        setDockSection(dockSection);
+      }
+      // Resting in a socket (its own Ask lives in the page): petting, like the hero.
+      const resting = (Boolean(routeSocket) && routeMorph < HANDOFF_SWAP_AT) || docked;
       if (resting !== inSocketRef.current) {
         inSocketRef.current = resting;
         setInSocket(resting);
@@ -596,6 +617,8 @@ export default function GuideCompanion() {
       setInHero(false);
       inSocketRef.current = false;
       setInSocket(false);
+      dockSectionRef.current = null;
+      setDockSection(null);
     };
     // Re-run per page: each page settles afresh and the trip starts from the last one.
   }, [chrome, fade, isHome, opacity, pathname, posX, posY, scale, size]);
@@ -645,8 +668,10 @@ export default function GuideCompanion() {
       if (getCompanionState().footerDocked || landingRef.current) return;
       // Only into free space: when every side of Nex would cover reading text
       // (short screens), wait; the next retry may find room as the page moves.
+      // Resting in this section's dock, the tip is the dock's line: always room.
+      const inDock = getCompanionState().dockSection === activeSection;
       const viewport: Viewport = { width: document.documentElement.clientWidth, height: window.innerHeight, insetTop: NAVBAR, insetBottom: 0 };
-      if (!freeBubbleSide({ x: posX.get(), y: posY.get() }, size, TIP_BOX, viewport, ruleRef.current.prefer, readingRects())) return;
+      if (!inDock && !freeBubbleSide({ x: posX.get(), y: posY.get() }, size, TIP_BOX, viewport, ruleRef.current.prefer, readingRects())) return;
       dispatchCompanion({ type: "tip/offer", section: activeSection, text: SECTION_TIPS[activeSection], now: Date.now() });
     };
     let interval = 0;
@@ -846,85 +871,82 @@ function marginRule(key: string): SpotRule {
 
 const CORNER: SpotRule = { key: "corner", prefer: ["left", "top"], point: (size, viewport) => cornerPoint(size, viewport) };
 
-/** Is this element laid out as a sticky side column right now (desktop)? */
-/** The section's sticky intro panel and the column that sticks, when the sticky layout is on (desktop). */
-function stickyPanel(section: string) {
-  const key = `sticky:${section}`;
-  const hit = styleCache.get(key) as { panel: HTMLElement; stickyTop: number } | null | undefined;
-  if (hit !== undefined && (hit === null || hit.panel.isConnected)) return hit;
-  let result: { panel: HTMLElement; stickyTop: number } | null = null;
-  const panel = document.getElementById(section)?.querySelector<HTMLElement>("[data-guide-panel]");
-  for (let node: HTMLElement | null = panel ?? null; panel && node && node.id !== section; node = node.parentElement) {
-    const style = getComputedStyle(node);
-    if (style.position === "sticky") {
-      result = { panel, stickyTop: parseFloat(style.top) || 0 };
-      break;
-    }
-  }
-  // Only remember a miss once the section exists, so it is looked for again after it mounts.
-  if (result || document.getElementById(section)) styleCache.set(key, result);
-  return result;
-}
+/**
+ * How far Nex is into the dock of the section it is following (1 = resting in
+ * its socket), written by the section's rule each frame and read by the loop
+ * (petting, tips in the dock). Reset per page.
+ */
+let dock: { section: string; hold: number } | null = null;
 
 /**
- * Under a sticky intro panel (About, Experience, Skills). One continuous,
- * scroll-driven path (`underPanelPoint`): it waits in the margin at the
- * height it will rest at, slides in under the panel as the panel pins, stays
- * while it is pinned, and rides up with it when the section ends. Without the
- * sticky layout (narrow screens) it falls back to the margin.
+ * A section's dock (`SectionNexDock`, `data-guide-section-socket`): Nex rests
+ * in the ringed socket while it is on screen, drawn at its own size. A socket
+ * in a sticky panel (About, Experience, Skills) pins with the panel, so Nex
+ * does too; one in a section header (Work, Nex, Contact) scrolls away, and Nex
+ * slides out to the margin as it nears the navbar. One continuous function of
+ * the socket's position (`socketDockPoint`), so the path is the same both ways.
+ * Without the socket (narrower screens) it waits in the margin.
  */
-function underPanelRule(section: string): SpotRule {
+function socketRule(section: string): SpotRule {
   return {
-    key: `under:${section}`,
-    // Below the avatar, in the free space under the panel, when it fits.
-    prefer: ["bottom", "right", "top"],
-    point: (size, viewport) => {
-      const sticky = stickyPanel(section);
-      if (!sticky) return gutterPoint(contentLeft(), size, viewport);
-      const box = sticky.panel.getBoundingClientRect();
-      // The panel's own offset inside the sticky column (its first child here).
-      const column = sticky.panel.parentElement!.getBoundingClientRect();
-      const stickyTop = sticky.stickyTop + (box.top - column.top);
-      const gutter = gutterPoint(contentLeft(), size, viewport);
-      return underPanelPoint({ panelLeft: box.left, panelBottom: box.bottom, pinnedBottom: stickyTop + box.height, gutterX: gutter ? gutter.x : null });
-    },
-  };
-}
-
-/**
- * At the top-left corner of a section's block (Work header, Nex card,
- * Contact grid): rides with it as it scrolls, held on screen by the clamp
- * once the block's top has scrolled past.
- */
-function blockCornerRule(section: string, selector: string, offset: Point = { x: 0, y: 0 }): SpotRule {
-  return {
-    key: `block:${section}`,
+    key: `dock:${section}`,
+    // The dock's own line carries what Nex says; a bubble opens away from the text.
     prefer: ["right", "bottom", "top"],
     point: (size, viewport) => {
-      const block = cachedNode(`block:${section}`, () => document.getElementById(section)?.querySelector(selector) ?? null);
-      const left = contentLeft();
-      if (!block) return gutterPoint(left, size, viewport);
-      const box = block.getBoundingClientRect();
-      // In the margin beside the block where there is room, else just inside it.
-      const gutter = gutterPoint(left, size, viewport);
-      const x = gutter ? gutter.x : box.left + 16 + offset.x;
-      return { x, y: box.top + offset.y };
+      const node = cachedNode<HTMLElement>(`dock:${section}`, () => document.querySelector<HTMLElement>(`[data-guide-section-socket="${section}"]`));
+      const gutter = gutterPoint(contentLeft(), size, viewport);
+      const box = node?.getBoundingClientRect();
+      if (!box || !box.width) {
+        dock = { section, hold: 0 };
+        return gutter;
+      }
+      const placed = socketDockPoint({ socket: { x: box.left + box.width / 2, y: box.top + box.height / 2 }, size, viewport, gutter });
+      dock = { section, hold: placed.hold };
+      return placed.point;
     },
   };
 }
 
-const ABOUT = underPanelRule("about");
+/**
+ * The place an open conversation reserves for Nex (`data-guide-ask-socket`,
+ * at the head of a row): Nex rests in it and scrolls with it, so it sits
+ * beside the conversation it is having rather than over the page. Once the
+ * row's head scrolls under the navbar it waits in the margin (the clamp keeps
+ * it on screen); the glide on the change of rule takes it there and back.
+ */
+function hostHasSocket(host: string | null): host is string {
+  return Boolean(host && (host.startsWith("page:") || host === "section:work" || host === "section:nex" || host === "section:contact"));
+}
+
+function askSocketRule(host: string): SpotRule {
+  return {
+    key: `ask:${host}`,
+    prefer: ["right", "bottom", "top"],
+    point: (size, viewport) => {
+      const node = document.querySelector<HTMLElement>("[data-nex-host-live] [data-guide-ask-socket]");
+      const box = node?.getBoundingClientRect();
+      const gutter = gutterPoint(contentLeft(), size, viewport);
+      if (!box || !box.width) return gutter;
+      const at = { x: box.left + box.width / 2 - size / 2, y: box.top + box.height / 2 - size / 2 };
+      // Under the navbar or off the bottom: the margin (beside the row), else the socket.
+      if (at.y < viewport.insetTop + 8 || at.y + size > viewport.height - 8) return gutter ?? at;
+      return at;
+    },
+  };
+}
+
+const ABOUT = socketRule("about");
 
 const SECTION_RULES: Record<string, SpotRule> = {
-  // The hero hands off straight to About's spot (the same rule, so crossing
+  // The hero hands off straight to About's dock (the same rule, so crossing
   // the hero/About boundary is not a change of spot and starts no glide).
   hero: ABOUT,
   about: ABOUT,
-  experience: underPanelRule("experience"),
-  skills: underPanelRule("skills"),
-  work: blockCornerRule("work", '[data-guide-target="work-featured"]', { x: 0, y: -12 }),
-  nex: blockCornerRule("nex", '[data-guide-spot="nex"]', { x: 0, y: 24 }),
-  contact: blockCornerRule("contact", '[data-guide-spot="contact"]', { x: 0, y: 24 }),
+  experience: socketRule("experience"),
+  skills: socketRule("skills"),
+  work: socketRule("work"),
+  nex: socketRule("nex"),
+  contact: socketRule("contact"),
 };
 
 /* ------------------------------------------------------------------------ */

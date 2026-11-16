@@ -7,6 +7,8 @@ import { useInView } from "react-intersection-observer";
 import { ArrowRight, ExternalLink, Github, Maximize2 } from "lucide-react";
 import { projects, type Project } from "@/data/portfolio";
 import AskAboutThis from "@/components/AskAboutThis";
+import { SectionNexDock } from "@/components/guide/SectionNexDock";
+import { SectionAskRow } from "@/components/guide/InPageAskHost";
 import { PROJECT_ANCHOR_PREFIX } from "@/lib/chat/shared";
 import { caseStudyIndex } from "@/data/case-study-index";
 import { THESIS } from "@/data/thesis";
@@ -293,7 +295,10 @@ const ProjectsSection = ({ featured, caseStudyCount }: { featured: ReactNode; ca
           <p className="mb-4 max-w-xl text-lg leading-relaxed text-muted-foreground">
             {THESIS} Each case study below is evidence for one of four things.
           </p>
+          <SectionNexDock section="work" layout="stack" className="mt-4" />
         </div>
+
+        <SectionAskRow section="work" />
 
         <PillarRow />
 

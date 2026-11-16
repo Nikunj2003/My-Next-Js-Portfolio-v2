@@ -71,12 +71,13 @@ export function GuideCompanionMount() {
 
   useEffect(() => {
     const onOpen = (event: Event) => {
-      const detail = (event as CustomEvent<{ question?: string; answer?: string; expand?: boolean; host?: AskHost }>).detail ?? {};
+      const detail = (event as CustomEvent<{ question?: string; answer?: string; expand?: boolean; host?: AskHost; inPage?: boolean }>).detail ?? {};
       const question = detail.question?.trim() ?? "";
       setReady(true);
       if (question && detail.answer) {
         appendNexExchange(question, detail.answer);
-        openPanel();
+        if (detail.inPage) openAsk(undefined, detail.host);
+        else openPanel();
         return;
       }
       if (detail.expand) {
