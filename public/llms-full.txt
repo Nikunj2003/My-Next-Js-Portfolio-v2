@@ -52,6 +52,10 @@ Nex is the AI guide on nikunj.codenex.dev. It answers questions about Nikunj's w
 - Every tool call is shown to the visitor as it executes, with a collapsible trace reporting rounds, latency, grounding sources, and any refusals.
 - get_metric can return measured:false, so the agent says a figure is not published instead of inventing one. navigate_to is allow-listed, so the agent cannot invent a destination.
 - The design intent: the mechanics the case studies describe in prose — tool calling, governed permissions, evaluation discipline — are demonstrated by the site's own behaviour.
+- Answers can include page components (the matching metric, case-study card or comparison) taken from the tool results, never generated.
+- Nex has its own published eval: a 30-question golden set scored by deterministic checks, with the run's date, model and result shown in the Nex section. It is a snapshot of that run, not a claim of universal accuracy.
+- Guided tours: a 60-second tour, or a short path for a recruiter, hiring manager, engineer or founder. The chosen path also tells Nex who is reading, through a fixed list of reader types, so answers lead with what that reader needs.
+- Role fit: in the Contact section a visitor can paste a role description and Nex summarises how Nikunj's work fits it, gaps included.
 
 ## Engineering case studies
 

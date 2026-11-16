@@ -35,9 +35,18 @@ an OpenAI-compatible LLM (`gpt-6-luna` through a self-hosted Bifrost gateway by 
 - **`get_metric` refuses to invent numbers.** If a figure isn't in the portfolio's source of truth,
   the agent says so instead of estimating — the whole site's pitch is measurement, so a fabricated
   number would undercut it.
-- **Inline answers** expand under experience bullets in place; every other "Ask about this"
-  affordance opens Nex panel, since an answer of unpredictable length inside a narrow card
-  breaks the layout around it.
+- **Answers carry page components**: when a tool returns a metric, a case study or a comparison,
+  the answer shows the matching card, validated against the site's own ids.
+- **Nex's own eval** (`npm run eval:nex`): a 30-question golden set with a deterministic scorer;
+  the published snapshot (date, model, result) is shown in the Nex section.
+- **One Nex across the site**: a single animated guide sits in the hero between the two halves of
+  the name, shrinks into the page as you scroll, rests in reserved sockets on `/work` and every case
+  study, and lands in the footer's slot at the end of every page. The conversation opens in the page
+  (hero, footer) or beside it, never over the text being read.
+- **Visitor paths**: "Take a tour" offers the 60-second tour or a path for a recruiter, hiring
+  manager, engineer or founder; the chosen path is sent to the chat as a fixed id so answers lead with
+  what that reader needs.
+- **Role fit**: paste a role in Contact and Nex summarises the fit, gaps included.
 
 ### 3. One content model, many surfaces
 `src/data/portfolio.ts` and `src/data/case-studies.ts` are the source of truth for experience,
@@ -50,9 +59,10 @@ is made.
 ### 4. Consistent glassmorphism, tiered on purpose
 Blur and fill are tiered by surface role — in-page cards/panels, floating chrome, and modal overlays
 each get a distinct blur radius and fill opacity (`src/app/globals.css`) — rather than one blur value
-reused everywhere and drifting inconsistent by accident. Scroll-reveal animations slide rather than
-fade, since fading a translucent glass panel in from `opacity: 0` makes it read as flat for the
-length of the animation.
+reused everywhere and drifting inconsistent by accident. Only the hero animates in, and glass
+surfaces are moved and clipped in rather than faded, since fading a translucent glass panel in
+from `opacity: 0` makes it read as flat for the length of the animation. Text meets WCAG AA in both
+themes (a test keeps teal text on the darker text token).
 
 ### 5. Smooth scroll that behaves like the browser
 Lenis-backed smooth scrolling (`src/components/SmoothScroll.tsx`) that still respects native scroll
@@ -63,7 +73,7 @@ modal and locks the page; its desktop layout is a non-modal corner panel and doe
 ### 6. Cross-device animation and interaction polish
 - 3D card tilt on hover (`src/components/Card3D.tsx`)
 - A custom fluid-cursor canvas effect (`src/hooks/useFluidCursor.tsx`)
-- Scroll-triggered reveals via Framer Motion, honoring `prefers-reduced-motion`
+- One orchestrated hero intro (Web Animations API), honoring `prefers-reduced-motion`
 - A live contact form backed by a real API route with Zod validation and Resend delivery
 
 ---
