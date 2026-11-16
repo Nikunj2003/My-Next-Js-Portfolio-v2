@@ -338,8 +338,6 @@ export default function GuideCompanion() {
      */
     type Box = { left: number; top: number; width: number; height: number; bottom: number };
     let touchPlace: "hero" | "footer" | "corner" | null = null;
-    /** 0 = in the corner, 1 = tucked against the right edge (while the page scrolls). */
-    let tuck = 0;
     let touchFlight: { from: { point: Point; scale: number; chrome: number }; start: number } | null = null;
     const TOUCH_FLIGHT_MS = 480;
     const setAnchor = (next: boolean) => {
@@ -377,26 +375,6 @@ export default function GuideCompanion() {
           : place === "footer" && footerBox
             ? { point: { x: footerBox.left + footerBox.width / 2 - size / 2, y: footerBox.top + footerBox.height / 2 - size / 2 }, scale: FOOTER_SLOT / size, chrome: 1 }
             : { point: cornerPoint(size, viewport), scale: 1, chrome: 1 };
-      // In the corner while the page scrolls, Nex tucks against the right edge
-      // (a small tab stays on screen) so the text passing under it is never
-      // hidden; about a second after scrolling stops it slides back. Eased
-      // per frame toward where it should be, so it never jumps.
-      if (place === "corner") {
-        // While the page scrolls, Nex shrinks to a small whole circle tucked
-        // into the corner (never cut off at the edge), so the text passing
-        // under it is barely covered; about a second after scrolling stops it
-        // grows back. Eased per frame, so it never jumps.
-        const scrolling = performance.now() - lastScrollAt < 900 && !touchFlight;
-        const want = scrolling ? 1 : 0;
-        tuck += (want - tuck) * (reduceMotionRef.current ? 1 : scrolling ? 0.22 : 0.12);
-        if (Math.abs(want - tuck) < 0.002) tuck = want;
-        // Scaled about its centre to 45%, its edge 6px from the screen's:
-        // the centre moves by (corner gap 20 + half size) - (6 + half the small size).
-        const small = 0.45;
-        const shift = 20 + size / 2 - (6 + (size * small) / 2);
-        target.point = { x: target.point.x + tuck * shift, y: target.point.y + tuck * shift };
-        target.scale = 1 - (1 - small) * tuck;
-      } else tuck = 0;
       if (place !== touchPlace) {
         const drawn = drawnPoseRef.current;
         touchFlight = touchPlace !== null && drawn && !reduceMotionRef.current ? { from: drawn, start: now } : null;
