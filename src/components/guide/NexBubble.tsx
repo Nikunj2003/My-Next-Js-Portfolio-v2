@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNo
 import { AnimatePresence, cancelFrame, frame, motion, useMotionValue, useReducedMotion, type MotionValue } from "framer-motion";
 import { ArrowRight, X } from "lucide-react";
 import { AskContent } from "@/components/guide/AskContent";
-import { dispatchCompanion, useCompanionState } from "@/lib/guide/companion-store";
+import { openRoleFit, dispatchCompanion, useCompanionState } from "@/lib/guide/companion-store";
 import { bubbleMaxHeight, chooseBubbleSide,
   freeBubbleSide, easeInOutCubic, placeBubbleBeside, type BubbleSide, type Rect, type Viewport } from "@/lib/guide/placement";
 import { useLenisLock } from "@/hooks/useLenisLock";
@@ -424,13 +424,13 @@ function MobileSheet({ visible, isMobile, activeSection, onExpand, returnFocus, 
 
 function bubbleContent(
   showing: string,
-  tip: { text: string } | null,
+  tip: { text: string; section: string } | null,
   ctx: { activeSection: string | null; onExpand: () => void; close: () => void; reduceMotion: boolean; tourContent?: ReactNode; isMobile?: boolean }
 ) {
   if (showing === "ask") {
     return <AskContent activeSection={ctx.activeSection} onExpand={ctx.onExpand} onClose={ctx.close} isMobile={Boolean(ctx.isMobile)} reduceMotion={ctx.reduceMotion} />;
   }
-  if (showing === "tip" && tip) return <TipContent text={tip.text} />;
+  if (showing === "tip" && tip) return <TipContent text={tip.text} tipSection={tip.section} />;
   if (showing === "tour") return ctx.tourContent ?? null;
   return null;
 }
@@ -454,7 +454,7 @@ export function readingRects(): Rect[] {
 }
 
 
-function TipContent({ text }: { text: string }) {
+function TipContent({ text, tipSection }: { text: string; tipSection: string }) {
   const [hovered, setHovered] = useState(false);
   useEffect(() => {
     if (hovered) return;
@@ -475,8 +475,11 @@ function TipContent({ text }: { text: string }) {
         <button
           type="button"
           onClick={() => {
+            const section = tipSection;
             dispatchCompanion({ type: "tip/expire" });
-            dispatchCompanion({ type: "ask/open" });
+            // Contact's tip is about checking a role: open straight into that.
+            if (section === "contact") openRoleFit();
+            else dispatchCompanion({ type: "ask/open" });
           }}
           className="inline-flex min-h-8 items-center gap-1 text-xs font-semibold text-primary-text hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >

@@ -54,7 +54,7 @@ Nex is the AI guide on nikunj.codenex.dev. It answers questions about Nikunj's w
 - The design intent: the mechanics the case studies describe in prose — tool calling, governed permissions, evaluation discipline — are demonstrated by the site's own behaviour.
 - Answers can include page components (the matching metric, case-study card or comparison) taken from the tool results, never generated.
 - Guided tours: a 60-second tour, or a short path for a recruiter, hiring manager, engineer or founder. The chosen path also tells Nex who is reading, through a fixed list of reader types, so answers lead with what that reader needs.
-- Role fit: in the Contact section a visitor can paste a role description and Nex summarises how Nikunj's work fits it, gaps included.
+- Role fit: in the Contact section Nex's chat offers to check a pasted role description and summarises how Nikunj's work fits it, gaps included.
 
 ## Engineering case studies
 

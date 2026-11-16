@@ -111,7 +111,7 @@ Nex is fronted by an animated guide built on the MIT packages `@bible-strong/ava
 
 The contact form is split cleanly between client validation and server delivery.
 
-- `src/components/ContactSection.tsx` manages the form UI, client-side validation, timeout handling, and toast feedback. Above it, `RoleFitAsk` lets a visitor paste a role and get Nex's fit summary in place (`lib/chat/role-fit.ts` keeps the question within the chat's 1200-character limit); it sends nothing to Nikunj.
+- `src/components/ContactSection.tsx` manages the form UI, client-side validation, timeout handling, and toast feedback. Role fit runs in Nex's chat, not the section: in Contact the ask box offers "Check a role's fit" (and the Contact tip's "Ask now" opens straight into it, `openRoleFit`); the composer then takes a role and sends it wrapped by `roleFitQuestion` (`lib/chat/role-fit.ts`, within the 1200-character limit).
 - `src/lib/contact.ts` defines the shared Zod schema and allowed contact reasons.
 - `src/app/api/contact/route.ts` re-validates the payload, rate-limits submissions, builds sanitized email content, and sends via Resend.
 - `src/lib/rate-limit.ts` provides the shared in-memory rate limiting helpers used by both API routes.

@@ -72,6 +72,12 @@ test("the tour start carries the path through a deferred start", () => {
   assert.match(narrator, /writeGuidePrefs\(\{ visitor: pathId \}\)/);
 });
 
+test("role fit runs in Nex's chat, not in the Contact section", () => {
+  const ask = readFileSync("src/components/guide/AskContent.tsx", "utf8");
+  assert.match(ask, /send\(roleFitQuestion\(input\), false\)/);
+  assert.doesNotMatch(readFileSync("src/components/ContactSection.tsx", "utf8"), /RoleFit/);
+});
+
 test("the role-fit question never exceeds the chat's 1200-character limit", async () => {
   const { roleFitQuestion, MAX_ROLE_LENGTH } = await import("../src/lib/chat/role-fit.ts");
   assert.ok(roleFitQuestion("x".repeat(5000)).length <= 1200);

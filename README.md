@@ -46,7 +46,8 @@ an OpenAI-compatible LLM (`gpt-6-luna` through a self-hosted Bifrost gateway by 
 - **Visitor paths**: "Take a tour" offers the 60-second tour or a path for a recruiter, hiring
   manager, engineer or founder; the chosen path is sent to the chat as a fixed id so answers lead with
   what that reader needs.
-- **Role fit**: paste a role in Contact and Nex summarises the fit, gaps included.
+- **Role fit**: in Contact, Nex's chat offers "Check a role's fit": paste a role and it summarises
+  the fit, gaps included.
 
 ### 3. One content model, many surfaces
 `src/data/portfolio.ts` and `src/data/case-studies.ts` are the source of truth for experience,

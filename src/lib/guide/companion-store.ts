@@ -122,6 +122,22 @@ export function setAskDraft(text: string) {
   draft = text;
 }
 
+/**
+ * The ask box's composer mode. "role-fit": the visitor pastes a role and what
+ * they send is wrapped as a fit question (`roleFitQuestion`). Set when the ask
+ * box is opened for it (the Contact tip, the chip); read once by the composer.
+ */
+let composerMode: "ask" | "role-fit" = "ask";
+export function takeComposerMode() {
+  const mode = composerMode;
+  composerMode = "ask";
+  return mode;
+}
+export function openRoleFit(host?: AskHost) {
+  composerMode = "role-fit";
+  openAsk(undefined, host);
+}
+
 export function openPanel() {
   dispatchCompanion({ type: "panel/open" });
 }

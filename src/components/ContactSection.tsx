@@ -1,8 +1,7 @@
 "use client";
-import { RoleFitAsk } from "@/components/ai/RoleFitAsk";
 import Image from "next/image";
 import { useRef, useState } from "react";
-import { Send, Download, Briefcase, Users, GitPullRequest, MessageSquare } from "lucide-react";
+import { Send, Download, ArrowUpRight, Briefcase, Users, GitPullRequest, MessageSquare } from "lucide-react";
 import { personalInfo } from "@/data/portfolio";
 import { toast } from "@/components/ui/sonner";
 import {
@@ -122,15 +121,21 @@ const ContactSection = () => {
   };
 
   return (
-    // Shorter top padding than other sections: from the navbar's Contact link
-    // the heading and both panels fit one screen from 720px tall up.
-    <section id="contact" className="relative z-10 pb-20 pt-[clamp(1.5rem,4svh,2.5rem)] md:pb-28 lg:pb-32">
+    <section id="contact" className="section-padding relative z-10">
       <div className="container-narrow">
 
-        {/* Heading: the panels below carry the detail, so it stays one line. */}
-        <h2 className="heading-xl mb-[clamp(1rem,2.5svh,1.5rem)] text-center">
-          Get in <span className="text-gradient">Touch</span>
-        </h2>
+        {/* Heading */}
+        <div className="mb-14 text-center">
+          <div className="inline-flex items-center px-3 py-1.5 rounded-full glass-subtle border border-primary/20 text-xs font-mono text-primary-text mb-6">
+            Connect
+          </div>
+          <h2 className="heading-xl mb-4">
+            Get in <span className="text-gradient">Touch</span>
+          </h2>
+          <p className="text-muted-foreground max-w-xl mx-auto text-base leading-relaxed">
+            {personalInfo.focus}
+          </p>
+        </div>
 
         {/* Mobile-only card (the pointer tilt it had never ran on touch screens). */}
         <div className="mx-auto mb-10 block w-full max-w-xs sm:max-w-sm lg:hidden">
@@ -149,54 +154,60 @@ const ContactSection = () => {
 
           {/* Left panel */}
           <SpotlightCard className="h-full">
-            <div className="contact-panel flex h-full flex-col p-6">
-              <div>
-                <h3 className="heading-lg mb-2">Let&apos;s Build Something</h3>
-                <p className="text-[0.9375rem] leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
-                  {personalInfo.focus}
-                </p>
-              </div>
+            <div className="p-6 sm:p-8 md:p-10 flex flex-col gap-6 h-full">
+              {/* Grows to fill */}
+              <div className="flex flex-col gap-6 flex-1">
+                <div>
+                  <h3 className="heading-lg mb-3">Let&apos;s Build Something</h3>
+                  <p className="text-base text-muted-foreground leading-relaxed" style={{ textWrap: "pretty" }}>
+                    If you are hiring for Applied AI systems, AI product engineering, agent workflows, or AI-platform reliability, I would welcome a conversation about the team, workflow, or problem you are solving. I&apos;m also open to thoughtful collaborations and open-source conversations.
+                  </p>
+                </div>
 
-              {/* Contact links, one compact row (the full address is the tooltip) */}
-              <ul className="grid grid-cols-3 gap-2">
-                {SOCIAL_LINKS.map(({ icon: Icon, label, value, href }) => (
-                  <li key={label} className="min-w-0">
+                {/* Social links */}
+                <div className="flex flex-col gap-3">
+                  {SOCIAL_LINKS.map(({ icon: Icon, label, value, href }) => (
                     <a
+                      key={label}
                       href={href}
                       target={href.startsWith("mailto") ? undefined : "_blank"}
                       rel="noopener noreferrer"
-                      title={value}
-                      aria-label={`${label}: ${value}`}
-                      className="group flex min-h-12 items-center justify-center gap-2 rounded-xl border border-foreground/[0.08] px-2 text-sm font-semibold text-foreground transition-colors hover:border-primary/30 hover:bg-primary/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      className="group flex items-center gap-4 px-5 py-4 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 border border-black/5 dark:border-white/5 hover:border-primary/20 dark:hover:border-primary/20 transition-all duration-300"
                     >
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/20">
-                        <Icon className="h-4 w-4 text-primary-text" aria-hidden="true" />
-                      </span>
-                      <span className="hidden min-[380px]:inline">{label}</span>
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                        <Icon className="w-4 h-4 text-primary-text" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[11px] font-mono text-muted-foreground uppercase tracking-widest mb-1">{label}</p>
+                        <p className="text-sm font-semibold truncate text-foreground/90">{value}</p>
+                      </div>
+                      <ArrowUpRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-primary-text transition-colors shrink-0" />
                     </a>
-                  </li>
-                ))}
-              </ul>
-
-              <RoleFitAsk />
+                  ))}
+                </div>
+              </div>
 
               {/* Pinned to bottom */}
-              <div className="mt-auto flex flex-col gap-2.5">
-                <a href={personalInfo.resumeUrl} download className="btn-cta-primary w-full">
-                  <Download aria-hidden="true" />
-                  Download resume
+              <div className="mt-auto flex min-h-[122px] flex-col justify-between gap-4">
+                <a
+                  href={personalInfo.resumeUrl}
+                  download
+                  className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-primary text-primary-foreground font-bold text-sm tracking-wide glow-accent-sm hover:glow-accent-md transition-all duration-300 active:scale-[0.98]"
+                >
+                  <Download className="w-4 h-4" />
+                  Download Resume
                 </a>
-                <p className="flex items-center justify-center gap-2 text-xs font-medium text-muted-foreground">
-                  <span className="h-2 w-2 shrink-0 rounded-full bg-primary motion-safe:animate-pulse" />
+                <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground border-t border-black/10 dark:border-white/5 pt-4">
+                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse motion-reduce:animate-none shrink-0" />
                   Available for new opportunities
-                </p>
+                </div>
               </div>
             </div>
           </SpotlightCard>
 
           {/* Right panel — Form */}
           <SpotlightCard className="h-full">
-            <form data-guide-target="contact-form" onSubmit={handleSubmit} className="contact-panel relative flex h-full flex-col p-6" aria-busy={isSubmitting} noValidate>
+            <form data-guide-target="contact-form" onSubmit={handleSubmit} className="relative p-6 sm:p-8 md:p-10 flex flex-col gap-6 h-full" aria-busy={isSubmitting} noValidate>
               <div className="absolute left-[-10000px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
                 <label htmlFor="contact-website">Website</label>
                 <input
@@ -210,10 +221,10 @@ const ContactSection = () => {
               </div>
 
               {/* Grows to fill */}
-              <div className="contact-stack flex flex-1 flex-col">
+              <div className="flex flex-col gap-6 flex-1">
                 <div>
-                  <h3 className="heading-lg mb-2">Send a Message</h3>
-                  <p className="text-[0.9375rem] leading-relaxed text-muted-foreground">
+                  <h3 className="heading-lg mb-3">Send a Message</h3>
+                  <p className="text-base text-muted-foreground leading-relaxed">
                     Share the role, team, problem space, or product idea and I&apos;ll reply with context that&apos;s actually useful.
                   </p>
                 </div>
@@ -328,7 +339,7 @@ const ContactSection = () => {
                   )}
                 </div>
 
-                <div className="flex flex-1 flex-col">
+                <div className="flex-1 flex flex-col min-h-[140px]">
                   <label htmlFor="contact-message" className="text-xs font-mono font-medium text-foreground/70 mb-2 block uppercase tracking-wider">Message</label>
                   <textarea
                     id="contact-message"
@@ -345,8 +356,7 @@ const ContactSection = () => {
                     }}
                     aria-invalid={Boolean(errors.message)}
                     aria-describedby={errors.message ? "contact-message-error" : undefined}
-                    rows={4}
-                    className="min-h-[clamp(5rem,11svh,7.5rem)] w-full flex-1 resize-none rounded-xl border border-black/10 bg-black/5 px-4 py-3 text-sm outline-none transition-all placeholder:text-muted-foreground/40 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 dark:border-white/10 dark:bg-white/5"
+                    className="flex-1 w-full px-4 py-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-sm outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all resize-none placeholder:text-muted-foreground/40"
                     placeholder="Tell me about the opportunity or idea..."
                   />
                   {errors.message && (
@@ -358,12 +368,16 @@ const ContactSection = () => {
               </div>
 
               {/* Pinned to bottom */}
-              <div className="mt-auto flex flex-col gap-2.5">
-                <button type="submit" disabled={isSubmitting} className="btn-cta-secondary w-full disabled:cursor-not-allowed disabled:opacity-60">
-                  <Send aria-hidden="true" />
-                  {isSubmitting ? "Sending..." : "Send message"}
+              <div className="mt-auto flex min-h-[122px] flex-col justify-between gap-4">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl glass-subtle border border-black/10 dark:border-white/10 text-foreground font-bold text-sm tracking-wide hover:bg-black/10 dark:hover:bg-white/10 transition-all duration-300 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <Send className="w-4 h-4 text-primary-text" />
+                  {isSubmitting ? "Sending..." : "Send Message"}
                 </button>
-                <p className="text-center text-[11px] font-medium text-muted-foreground/70">
+                <p className="text-[11px] font-medium text-muted-foreground/60 text-center border-t border-black/10 dark:border-white/5 pt-4">
                   Messages are sent securely to {personalInfo.email} with your email set as the reply-to.
                 </p>
               </div>

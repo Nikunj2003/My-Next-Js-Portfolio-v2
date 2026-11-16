@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { type Components } from "react-markdown";
-import { Compass, CornerDownRight, Maximize2, MessageCircle, Send, X } from "lucide-react";
+import { Briefcase, Compass, CornerDownRight, Maximize2, MessageCircle, Send, X } from "lucide-react";
 import { buildAnswerComponents } from "@/components/ai/AnswerBody";
 import { NexAnswerBody } from "@/components/ai/NexAnswerBody";
 import type { ChatToolCall } from "@/lib/chat-contract";
@@ -13,7 +13,8 @@ import { useNexChat } from "@/lib/chat/useNexChat";
 import { runGuideAction } from "@/lib/guide/actions";
 import { SECTION_CHIPS } from "@/lib/guide/anchors";
 import { emitGuide } from "@/lib/guide/bus";
-import { dispatchCompanion, getAskDraft, setAskDraft, takePendingQuestion, useCompanionState } from "@/lib/guide/companion-store";
+import { dispatchCompanion, getAskDraft, setAskDraft, takeComposerMode, takePendingQuestion, useCompanionState } from "@/lib/guide/companion-store";
+import { MAX_ROLE_LENGTH, roleFitQuestion } from "@/lib/chat/role-fit";
 import { startGuideTour } from "@/lib/guide/tour-control";
 import { useChatAvailability } from "@/hooks/useChatAvailability";
 import { scrollToHash } from "@/lib/scroll";
@@ -52,6 +53,12 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
   }, []);
   const inputRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
+  // Role-fit mode: what is typed is a role, sent wrapped as a fit question.
+  const [roleFit, setRoleFit] = useState(() => takeComposerMode() === "role-fit");
+  const startRoleFit = () => {
+    setRoleFit(true);
+    inputRef.current?.focus({ preventScroll: true });
+  };
   const exchange = selectLatestExchange(messages);
   const unavailable = status === "unavailable";
 
@@ -252,7 +259,18 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
             </div>
           </div>
         )}
-        {!exchange && (
+        {activeSection === "contact" && !roleFit && !isLoading && (
+          <button
+            type="button"
+            onClick={startRoleFit}
+            className="inline-flex min-h-8 items-center gap-1.5 self-start text-xs font-semibold text-primary-text hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <Briefcase className="h-3.5 w-3.5" aria-hidden="true" />
+            Check a role&apos;s fit
+          </button>
+        )}
+        {roleFit && <p className="text-xs text-muted-foreground">Paste a role; Nex says how his work fits, gaps included. Nothing is sent to Nikunj.</p>}
+        {!exchange && activeSection !== "contact" && (
           <button
             type="button"
             onClick={() => {
@@ -269,17 +287,38 @@ export function AskContent({ activeSection, onExpand, onClose, isMobile, reduceM
           className="flex items-center gap-1.5 rounded-full border border-foreground/10 bg-background/55 py-1 pl-4 pr-1 transition-colors focus-within:border-primary/45 focus-within:ring-2 focus-within:ring-primary/15"
           onSubmit={(event) => {
             event.preventDefault();
+            if (!input.trim()) return;
+            if (roleFit) {
+              if (send(roleFitQuestion(input), false)) {
+                setInput("");
+                setRoleFit(false);
+              }
+              return;
+            }
             send(input);
           }}
         >
+          {roleFit && (
+            <button
+              type="button"
+              onClick={() => setRoleFit(false)}
+              aria-label="Stop checking a role's fit"
+              title="Back to asking"
+              className="-ml-2 flex h-8 shrink-0 items-center gap-1 rounded-full bg-primary/12 px-2.5 text-xs font-semibold text-primary-text"
+            >
+              <Briefcase className="h-3.5 w-3.5" aria-hidden="true" />
+              Role
+              <X className="h-3 w-3 opacity-70" aria-hidden="true" />
+            </button>
+          )}
           <input
             ref={inputRef}
             value={input}
             onChange={(event) => setInput(event.target.value)}
-            placeholder={unavailable ? "Nex is offline right now." : "Ask about his work…"}
-            aria-label="Ask Nex"
+            placeholder={unavailable ? "Nex is offline right now." : roleFit ? "Paste the role or job description…" : "Ask about his work…"}
+            aria-label={roleFit ? "Role to check Nikunj's fit against" : "Ask Nex"}
             autoComplete="off"
-            maxLength={MAX_QUESTION_LENGTH}
+            maxLength={roleFit ? MAX_ROLE_LENGTH : MAX_QUESTION_LENGTH}
             disabled={unavailable}
             className="min-h-10 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground/70 disabled:opacity-60 sm:text-sm"
           />

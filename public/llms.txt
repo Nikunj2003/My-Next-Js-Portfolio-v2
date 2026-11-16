@@ -27,7 +27,7 @@ Nex, the site's AI guide (a working artifact, not a chatbot widget):
 - Nex is an AI agent that answers questions about Nikunj's work; it speaks about him in the third person and never as him. It uses real tool calling: search_work, get_case_study, get_metric, compare_systems, and navigate_to.
 - Tool calls, latency, grounding sources, and refusals are shown to the visitor in a trace footer.
 - get_metric returns "not measured" for any figure not published, so the agent declines rather than estimating.
-- Guided tours exist for recruiters, hiring managers, engineers and founders; the Contact section has a role-fit check.
+- Guided tours exist for recruiters, hiring managers, engineers and founders; in the Contact section Nex can check a pasted role against his work.
 - Available at https://nikunj.codenex.dev/#nex
 
 Engineering case studies (deepest technical detail on this site) — 13 write-ups, indexed by theme at https://nikunj.codenex.dev/work:
