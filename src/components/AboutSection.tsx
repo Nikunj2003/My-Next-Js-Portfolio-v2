@@ -100,7 +100,7 @@ const AboutSection = () => {
                     <a
                       href={personalInfo.resumeUrl}
                       download
-                      className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground transition-transform active:scale-95"
+                      className="relative before:absolute before:-inset-y-1.5 before:inset-x-0 before:content-[''] inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground transition-transform active:scale-95"
                     >
                       <Download className="h-3.5 w-3.5" />
                       Resume
@@ -188,7 +188,7 @@ const AboutSection = () => {
                   <li key={highlight.label} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-5 py-3 text-sm">
                     <span className="font-bold tabular-nums text-foreground">{highlight.metric}</span>
                     <span className="text-muted-foreground">{highlight.label}</span>
-                    <a href={proofHref(highlight.metric)} className="ml-auto font-mono text-[11px] uppercase tracking-wider text-primary-text hover:text-primary-text">
+                    <a href={proofHref(highlight.metric)} className="relative ml-auto before:absolute before:-inset-x-2 before:-inset-y-3.5 before:content-[''] font-mono text-[11px] uppercase tracking-wider text-primary-text hover:text-primary-text">
                       See the proof
                     </a>
                   </li>

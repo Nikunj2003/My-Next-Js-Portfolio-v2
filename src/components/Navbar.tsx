@@ -207,7 +207,7 @@ const Navbar = () => {
             scrolled ? "glass-nav shadow-accent-card border-foreground/10" : "bg-transparent border-transparent"
           }`}
         >
-          <Link href="/" onClick={handleHomeClick} aria-label="Go to the top of the homepage" className="flex items-center gap-2 group">
+          <Link href="/" onClick={handleHomeClick} aria-label="Go to the top of the homepage" className="flex min-h-11 min-w-11 items-center gap-2 group">
             <Image src={logo} alt="" aria-hidden="true" sizes="48px" className="w-10 h-10 sm:w-12 sm:h-12 transition-transform duration-300 group-hover:scale-110 pointer-events-none" draggable={false} />
             <span className="font-bold text-lg tracking-wide hidden sm:block">Nikunj Khitha</span>
           </Link>
@@ -254,7 +254,7 @@ const Navbar = () => {
             ref={menuButtonRef}
             type="button"
             onClick={() => (isOpen ? closeMenu() : setIsOpen(true))}
-            className="md:hidden p-2 rounded-xl glass-subtle border border-foreground/10 hover:bg-foreground/10 transition-colors active:scale-95"
+            className="md:hidden flex h-11 w-11 items-center justify-center rounded-xl glass-subtle border border-foreground/10 hover:bg-foreground/10 transition-colors active:scale-95"
             aria-label="Toggle menu"
             aria-expanded={isOpen}
             aria-controls="mobile-navigation"

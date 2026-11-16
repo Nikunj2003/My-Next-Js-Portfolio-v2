@@ -93,7 +93,7 @@ const SkillsSection = () => {
                         {cat.skills.map((skill) => {
                           // A skill with evidence on the site links to it; the rest stay plain.
                           const evidence = skillEvidence[skill];
-                          const chip = "block rounded-xl border px-4 py-2 text-sm font-medium glass-subtle transition-all duration-300";
+                          const chip = "flex min-h-11 items-center rounded-xl border px-4 py-2 text-sm font-medium glass-subtle transition-all duration-300";
                           return (
                             <li key={skill}>
                               {evidence ? (

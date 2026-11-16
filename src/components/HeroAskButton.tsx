@@ -20,22 +20,22 @@ export function HeroActions() {
   const returnFocusTo = useCallback(() => tourRef.current, []);
   return (
     <>
-      <div data-hero-part="copy" data-hero-glass className="mt-[var(--hero-gap)] grid w-full max-w-sm grid-cols-2 gap-3 sm:flex sm:w-auto sm:max-w-none sm:flex-wrap sm:justify-center">
+      <div data-hero-part="copy" data-hero-glass className="hero-actions mt-[var(--hero-gap)] grid w-full max-w-sm grid-cols-2 gap-3 sm:flex sm:w-auto sm:max-w-none sm:flex-wrap sm:justify-center">
         <button type="button" onClick={() => openNex("")} className="btn-cta-primary">
           <MessageCircle aria-hidden="true" />
-          Ask Nex
+          <span className="hero-action-label">Ask Nex</span>
         </button>
         <a href="#work" className="btn-cta-secondary">
           <ArrowDown aria-hidden="true" />
-          View work
+          <span className="hero-action-label">View work</span>
         </a>
         <a href={personalInfo.resumeUrl} download className="btn-cta-secondary">
           <Download aria-hidden="true" />
-          Resume
+          <span className="hero-action-label">Resume</span>
         </a>
         <button ref={tourRef} type="button" onClick={() => setChoosing((open) => !open)} aria-expanded={choosing} className="btn-cta-secondary">
           <Compass aria-hidden="true" />
-          Take a tour
+          <span className="hero-action-label">Take a tour</span>
         </button>
       </div>
       <TourChooser open={choosing} onClose={close} returnFocusTo={returnFocusTo} />
