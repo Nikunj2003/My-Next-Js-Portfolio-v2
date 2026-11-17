@@ -13,10 +13,11 @@ export const personalInfo = {
 
 /** `href` points each number at the surface that actually proves it. */
 export const stats = [
-  { value: 20, suffix: "+", label: "Business Functions Served", href: "#experience" },
-  { value: 10, suffix: "+", label: "Production MCP Servers", href: "/work/governed-mcp-registry" },
-  { value: 1, suffix: "M+", label: "KG Entities", href: "/work/knowledge-graph-rag" },
-  { value: 9, suffix: "", label: "AI Surfaces Evaluated", href: "/work/llm-evaluation-platform" },
+  // `short`: the label in the phone hero's one-row strip (two lines at most in ~70px).
+  { value: 20, suffix: "+", label: "Business Functions Served", short: "Business functions", href: "#experience" },
+  { value: 10, suffix: "+", label: "Production MCP Servers", short: "MCP servers", href: "/work/governed-mcp-registry" },
+  { value: 1, suffix: "M+", label: "KG Entities", short: "KG entities", href: "/work/knowledge-graph-rag" },
+  { value: 9, suffix: "", label: "AI Surfaces Evaluated", short: "AI surfaces evaluated", href: "/work/llm-evaluation-platform" },
 ];
 
 export interface Highlight {

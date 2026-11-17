@@ -645,10 +645,12 @@ details[open]::details-content { block-size: auto; opacity: 1; }
   .hero-identity {
     /* The stack is 2 names (~2 x 1.08em) + the stage + 2 ring gaps: the
        stage takes about a sixth of the visible height, between 96 and 196. */
-    --stage: clamp(88px, min(calc(100svh * 0.2 - 32px), 42vw), 196px);
-    --ring-out: calc(var(--stage) * 0.08 + clamp(0.25rem, 1svh, 0.75rem));
+    --stage: clamp(84px, min(calc(100svh * 0.19 - 36px), 42vw), 196px);
+    --ring-out: calc(var(--stage) * 0.08 + 0.25rem);
   }
-  .hero-identity-row { row-gap: calc(var(--stage) * 0.08 + 0.375rem); }
+  .hero-identity-row { row-gap: calc(var(--stage) * 0.08 + 0.3125rem); }
+  /* The name's line box: the glyphs, not a full 1.08em band. */
+  .hero-name { line-height: 0.95; }
   .hero-name { font-size: clamp(2.5rem, min(12cqi, calc(100svh * 0.066)), 3.5rem); }
 }
 @media (max-width: 599px) {
@@ -656,7 +658,7 @@ details[open]::details-content { block-size: auto; opacity: 1; }
   .hero-caption { min-height: 2.25rem; padding-block: 0.25rem; }
   .hero-proof-links { margin-top: 0; }
   .hero-role { font-size: clamp(1.25rem, calc(100svh * 0.032), 1.5rem); }
-  .hero-tagline { margin-top: 0.375rem; font-size: 0.9375rem; line-height: 1.5; }
+  .hero-tagline { margin-top: 0.25rem; font-size: 0.9375rem; line-height: 1.45; }
   /* Four actions, a balanced 2x2, buttons a little shorter (still 44px). */
   .hero-actions { gap: 0.625rem; }
   .hero-actions .btn-cta-primary, .hero-actions .btn-cta-secondary { min-height: 2.75rem; padding-inline: 1rem; }
@@ -664,20 +666,51 @@ details[open]::details-content { block-size: auto; opacity: 1; }
 /* The shortest phones (iPhone SE class, small Androids): the proof links
    would make a second band of text before the role; the caption keeps
    Nex's line, the links are the figures' job below the fold there. */
-@media (max-width: 359px) {
-  .hero-identity { --stage: clamp(80px, calc(100svh * 0.2 - 40px), 120px); }
+@media (max-width: 599px), (max-height: 760px) {
+  /* The four figures: one row of four short columns (number over a short
+     label) instead of a 2x2 grid of long labels, about 120px shorter. The
+     full label stays for screen readers. */
+  .hero-figures { grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: 0.5rem; row-gap: 0; padding: 0.5rem 0.625rem; }
+  .hero-figures > a { border-left-width: 0; padding: 0; text-align: center; }
+  .hero-figures > a + a { border-left: 1px solid hsl(var(--foreground) / 0.08); }
+  .hero-figures > a > span:first-child { font-size: 1.25rem; line-height: 1.6rem; }
+  .hero-figure-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .hero-figure-short { display: block; margin-top: 0.125rem; font-size: 0.6875rem; line-height: 0.875rem; text-wrap: balance; }
+}
+/* The shortest phones (under 660px visible): every band at its smallest. */
+@media (max-width: 599px) and (max-height: 660px) {
+  #hero { --hero-gap: 0.375rem; }
+  .hero-identity { --stage: clamp(72px, calc(100svh * 0.19 - 40px), 96px); }
+  .hero-name { font-size: clamp(2.125rem, calc(100svh * 0.063), 2.5rem); }
+  .hero-caption { min-height: 1.75rem; padding-block: 0.125rem; }
+  .hero-availability { padding-block: 0.125rem; }
+  .hero-role { font-size: 1.1875rem; }
+}
+/* The smallest phones (320 x ~570): the stack alone would take a third of
+   the screen; the names sit as one line above Nex instead ("Nikunj Khitha"),
+   the same words and order, one row shorter. */
+@media (max-width: 359px) and (max-height: 620px) {
+  .hero-identity-row { grid-template-columns: auto auto; grid-template-areas: "left right" "nex nex"; column-gap: 0.5rem; justify-content: center; }
+  .hero-name[data-hero-name="left"] { grid-area: left; justify-self: end !important; }
+  .hero-name[data-hero-name="right"] { grid-area: right; justify-self: start !important; }
+  .hero-identity-row > [data-guide-hero-column] { grid-area: nex; }
   .hero-name { font-size: 2.25rem; }
+}
+@media (max-width: 359px) {
+  .hero-identity { --stage: clamp(72px, calc(100svh * 0.19 - 40px), 120px); }
+  .hero-name { font-size: 2.125rem; }
   .hero-tagline { font-size: 0.875rem; line-height: 1.45; }
-  /* Too narrow for a 2x2 of labelled buttons and a four-line tagline: Ask
-     Nex keeps its label, the other three are 44px icon buttons, one row.
-     Their names stay for screen readers (visually hidden, not removed). */
-  .hero-actions { display: flex; max-width: none; width: auto; gap: 0.5rem; }
+}
+@media (max-width: 599px) and (max-height: 860px) {
+  /* The four proof links duplicate the figures' row just below (same pages). */
+  .hero-proof-links { display: none; }
+  /* One row of actions: Ask Nex (the primary) keeps its label and takes the
+     free width, the other three are 44px icon buttons with their names kept
+     for screen readers (visually hidden, not removed). Saves a row (54px). */
+  .hero-actions { display: flex; width: 100%; max-width: 24rem; gap: 0.5rem; }
+  .hero-actions .btn-cta-primary { flex: 1; padding-inline: 1rem; }
   .hero-actions .btn-cta-secondary { width: 2.75rem; min-width: 2.75rem; padding-inline: 0; }
   .hero-actions .btn-cta-secondary .hero-action-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  .hero-actions .btn-cta-primary { padding-inline: 1rem; }
-}
-@media (max-width: 599px) and (max-height: 720px) {
-  .hero-proof-links { display: none; }
   .hero-caption { min-height: 2rem; font-size: 0.8125rem; }
   .hero-availability { padding-block: 0.25rem; font-size: 0.8125rem; }
 }
@@ -696,6 +729,45 @@ details[open]::details-content { block-size: auto; opacity: 1; }
   .hero-tagline { margin-top: 0.25rem; font-size: 0.9375rem; line-height: 1.45; }
   .hero-actions .btn-cta-primary, .hero-actions .btn-cta-secondary { min-height: 2.75rem; padding-inline: 1rem; }
   .hero-availability { padding-block: 0.25rem; font-size: 0.8125rem; }
+  .hero-caption { min-height: 2rem; }
+}
+/* Phones on their side: about 390px of height for the whole hero. Two
+   columns: the identity (stacked around Nex) and its caption on the left,
+   the availability, role, line, actions and figures on the right. */
+@media (max-height: 520px) and (min-width: 600px) and (orientation: landscape) {
+  /* Two columns, each its own stack: the left holds the availability line
+     and the identity (stacked round Nex), the right Nex's line, the role,
+     the line, the actions and the figures. `display: contents` would lose
+     the wrappers the intro moves, so the columns are a flex pair instead. */
+  #hero [data-hero-content] {
+    display: grid;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    grid-template-rows: repeat(6, auto) 1fr;
+    column-gap: 1.75rem;
+    text-align: left;
+    align-content: center;
+  }
+  #hero [data-hero-content] > * { grid-column: 2; justify-self: start; }
+  #hero [data-hero-content] > .hero-availability { grid-column: 1; grid-row: 1; justify-self: center; }
+  #hero [data-hero-content] > .hero-identity { grid-column: 1; grid-row: 2 / -1; justify-self: stretch; align-self: start; }
+  #hero [data-hero-content] > [data-hero-part="ask-host"] { grid-row: 1; }
+  #hero [data-hero-content] > [data-hero-part="ask-host"] > div { align-items: flex-start; }
+  #hero [data-hero-content] > .hero-role { grid-row: 2; margin-top: 0.25rem; }
+  #hero [data-hero-content] > .hero-tagline { grid-row: 3; }
+  #hero [data-hero-content] > .hero-actions { grid-row: 4; }
+  #hero [data-hero-content] > [data-hero-part="copy"][data-guide-target="hero-proof"] { grid-row: 5; }
+  /* While the conversation is open it takes the full width under both. */
+  #hero [data-hero-content]:has(#nex-host-hero) > [data-hero-part="ask-host"] { grid-column: 1 / -1; grid-row: 7; }
+  .hero-identity-row { grid-template-columns: minmax(0, 1fr); row-gap: calc(var(--stage) * 0.08 + 0.25rem); justify-items: center; }
+  .hero-identity { --stage: clamp(72px, calc(100svh * 0.24 - 10px), 112px); }
+  .hero-name { font-size: clamp(2rem, calc(100svh * 0.09), 2.75rem); justify-self: center !important; background-image: none !important; color: hsl(var(--foreground)); }
+  /* One row in the right column: Ask Nex labelled, the other three 44px
+     icon buttons (names kept for screen readers), as on phones upright. */
+  .hero-actions { display: flex; flex-wrap: nowrap; width: auto; max-width: none; justify-content: flex-start; gap: 0.5rem; }
+  .hero-actions .btn-cta-primary { padding-inline: 1.125rem; }
+  .hero-actions .btn-cta-secondary { width: 2.75rem; min-width: 2.75rem; padding-inline: 0; }
+  .hero-actions .btn-cta-secondary .hero-action-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .hero-figures { max-width: none; }
 }
 
 /* The ring around Nex wherever it rests (NexRing): a faint track with

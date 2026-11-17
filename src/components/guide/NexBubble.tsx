@@ -409,13 +409,20 @@ function MobileSheet({ visible, isMobile, activeSection, onExpand, returnFocus, 
             role={showing === "ask" ? "dialog" : "group"}
             aria-modal={showing === "ask" ? true : undefined}
             aria-label="Nex, AI guide"
-            initial={reduceMotion ? { opacity: 0 } : { y: "100%" }}
-            animate={reduceMotion ? { opacity: 1 } : { y: 0 }}
-            exit={reduceMotion ? { opacity: 0 } : { y: "100%" }}
+            initial={reduceMotion ? { opacity: 0 } : showing === "tip" ? { opacity: 0, y: 8, scale: 0.97 } : { y: "100%" }}
+            animate={reduceMotion ? { opacity: 1 } : showing === "tip" ? { opacity: 1, y: 0, scale: 1 } : { y: 0 }}
+            exit={reduceMotion ? { opacity: 0 } : showing === "tip" ? { opacity: 0, y: 6 } : { y: "100%" }}
             transition={reduceMotion ? { duration: 0.15 } : { type: "spring", stiffness: 300, damping: 32 }}
-            className="fixed inset-x-0 bottom-0 z-[60] flex max-h-[min(75dvh,calc(100dvh-5rem))] flex-col rounded-t-3xl border-t border-border/60 glass-strong glass-overlay pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-accent-card"
+            className={
+              showing === "tip"
+                ? // A tip is unasked for: a small card beside Nex in the corner,
+                  // not a sheet across the page (that hid 100-200px of what the
+                  // visitor was reading, for six seconds).
+                  "fixed bottom-[calc(max(1.25rem,env(safe-area-inset-bottom))+3.75rem)] right-3 z-[60] flex w-[min(19rem,calc(100vw-1.5rem))] flex-col rounded-2xl border border-border/60 glass-strong glass-overlay shadow-accent-card"
+                : "fixed inset-x-0 bottom-0 z-[60] flex max-h-[min(75dvh,calc(100dvh-5rem))] flex-col rounded-t-3xl border-t border-border/60 glass-strong glass-overlay pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-accent-card"
+            }
           >
-            <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-muted-foreground/30" aria-hidden="true" />
+            {showing !== "tip" && <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-muted-foreground/30" aria-hidden="true" />}
             {content}
           </motion.div>
         </>
@@ -432,7 +439,7 @@ function bubbleContent(
   if (showing === "ask") {
     return <AskContent activeSection={ctx.activeSection} onExpand={ctx.onExpand} onClose={ctx.close} isMobile={Boolean(ctx.isMobile)} reduceMotion={ctx.reduceMotion} />;
   }
-  if (showing === "tip" && tip) return <TipContent text={tip.text} tipSection={tip.section} />;
+  if (showing === "tip" && tip) return <TipContent text={tip.text} tipSection={tip.section} isMobile={Boolean(ctx.isMobile)} />;
   if (showing === "tour") return ctx.tourContent ?? null;
   return null;
 }
@@ -476,13 +483,25 @@ export function readingRects(): Rect[] {
   return rects;
 }
 
-function TipContent({ text, tipSection }: { text: string; tipSection: string }) {
+function TipContent({ text, tipSection, isMobile = false }: { text: string; tipSection: string; isMobile?: boolean }) {
   const [hovered, setHovered] = useState(false);
   useEffect(() => {
     if (hovered) return;
     const timer = window.setTimeout(() => dispatchCompanion({ type: "tip/expire" }), TIP_RULES.showMs);
     return () => window.clearTimeout(timer);
   }, [hovered]);
+  // On a phone the tip card sits over the page: once the visitor scrolls
+  // (they are reading on, not answering it) it goes, so it never covers
+  // what scrolls under it. Opened in a still moment, it only stays in one.
+  useEffect(() => {
+    if (!isMobile) return;
+    const start = window.scrollY;
+    const onScroll = () => {
+      if (Math.abs(window.scrollY - start) > 24) dispatchCompanion({ type: "tip/expire" });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [isMobile]);
 
   return (
     <div

@@ -356,11 +356,18 @@ export default function GuideCompanion() {
         if (share >= 0.6 || (touchPlace === "hero" && share >= 0.35)) place = "hero";
       }
       if (place === "corner" && footerOn && footerBox) {
-        // The slot may scroll under the navbar on a phone (the footer stacks
-        // it first): counted against the whole screen, so the landed Nex
-        // scrolls on with the page instead of jumping back to the corner.
-        const share = Math.max(0, Math.min(footerBox.bottom, viewport.height) - Math.max(footerBox.top, 0)) / footerBox.height;
-        if (share >= 0.6 || (touchPlace === "footer" && share >= 0.35)) place = "footer";
+        // Nex lands only once the whole slot is on screen, and leaves as soon
+        // as the slot starts to go off the bottom (scrolling back up): it is
+        // drawn with the page there, so a part-shown slot showed Nex cut off
+        // at the screen's edge. Going down, the slot scrolls away under the
+        // navbar with the rest of the footer (it stays landed while any of
+        // the footer is on screen, so the corner never sits on its links).
+        const footerEl = footer();
+        const footerBottom = footerEl ? footerEl.getBoundingClientRect().bottom : -1;
+        const whole = footerBox.top >= viewport.insetTop && footerBox.bottom <= viewport.height - 4;
+        const staying = touchPlace === "footer" && footerBox.bottom <= viewport.height + 2 && footerBottom > viewport.insetTop;
+        const arrived = footerBox.bottom <= viewport.insetTop && footerBottom > viewport.insetTop;
+        if (whole || staying || arrived) place = "footer";
       }
       const target =
         place === "hero" && heroBox
@@ -797,7 +804,13 @@ export default function GuideCompanion() {
       // Resting in this section's dock, the tip is the dock's line: always room.
       const inDock = getCompanionState().dockSection === activeSection;
       const viewport: Viewport = { width: document.documentElement.clientWidth, height: window.innerHeight, insetTop: NAVBAR, insetBottom: 0 };
-      // (Phones: the sheet has a fixed place, so the side check doesn't apply.)
+      // Phones: the tip card sits above the corner Nex; offer it only when
+      // that strip covers no reading text right now (and never mid-scroll).
+      if (isMobile) {
+        const card = { left: window.innerWidth - Math.min(304, window.innerWidth - 24) - 12, top: window.innerHeight - 76 - 150, width: Math.min(304, window.innerWidth - 24), height: 150 };
+        const overText = readingRects().some((r) => r.left < card.left + card.width && r.left + r.width > card.left && r.top < card.top + card.height && r.top + r.height > card.top);
+        if (overText) return;
+      }
       if (!inDock && !isMobile && !freeBubbleSide({ x: posX.get(), y: posY.get() }, size, TIP_BOX, viewport, ruleRef.current.prefer, readingRects())) return;
       dispatchCompanion({ type: "tip/offer", section: activeSection, text: SECTION_TIPS[activeSection], now: Date.now() });
     };
@@ -875,7 +888,10 @@ export default function GuideCompanion() {
   return (
     <>
       <motion.div
-        className={"pointer-events-none left-0 top-0 z-50 " + (anchored ? "absolute" : "fixed")}
+        // Anchored to the page (hero socket, footer slot) it is page content:
+        // it scrolls under the navbar like the rest of the footer (z-40, the
+        // navbar is z-50), never over it. Fixed (the corner) it stays on top.
+        className={"pointer-events-none left-0 top-0 " + (anchored ? "absolute z-40" : "fixed z-50")}
         style={{ x: posX, y: posY, scale, opacity, width: size, height: size, transformOrigin: "50% 50%" }}
         aria-hidden={!visible}
       >
