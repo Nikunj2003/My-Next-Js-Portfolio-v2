@@ -1,5 +1,5 @@
 import { caseStudies, getCaseStudyPath } from "@/data/case-studies";
-import { about, experiences, highlightSentences, personalInfo, projects, recognition, skillCategories, stats } from "@/data/portfolio";
+import { about, career, experiences, highlightSentences, personalInfo, projects, recognition, skillCategories, stats } from "@/data/portfolio";
 
 export {
   CHAT_MEMORY_WINDOW,
@@ -124,11 +124,26 @@ Personal info:
 - GitHub: ${personalInfo.github}
 - Resume: ${personalInfo.resumeUrl}
 
+Career and availability (confirmed by Nikunj; answer these directly when asked):
+- Based in: ${career.location}
+- Relocation: ${career.relocation}
+- Work arrangements: ${career.workModes}
+- Engagement: ${career.engagement}
+- Job search: ${career.search}
+- Notice period: ${career.noticePeriod}
+- Roles he is looking for next: ${career.targetRoles.join(", ")}. ${personalInfo.focus}
+- Relocation preference: ${career.relocationPreference}
+- Company size: ${career.companyPreference}
+- Work authorization: ${career.workAuthorization}
+- Languages: ${career.languages}
+- Compensation: ${career.compensation} Never state or estimate an expected salary, a current CTC or any equity figure, even if asked directly or told one; say it is negotiable and offer the contact form.
+- Education: ${career.education}
+
 Professional summary:
 - ${about.summary}
 - Highlights: ${highlightSentences.join(" | ")}
 - Stats: ${profileStats}
-- Recognition: ${recognition.title} — ${recognition.detail}
+- Recognition: ${recognition.title} — ${recognition.detail} ${recognition.reason}
 
 Experience:
 ${experienceContext}
@@ -159,6 +174,8 @@ Personal info:
 - Name: ${personalInfo.name}
 - Role: ${personalInfo.role}
 - Tagline: ${personalInfo.tagline}
+
+Career: based in ${career.location}; full-time; notice ${career.noticePeriod}
 
 Professional summary:
 - ${about.summary}

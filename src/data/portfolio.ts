@@ -75,6 +75,41 @@ export const about = {
   ] satisfies Highlight[],
 };
 
+/**
+ * What a recruiter asks first, stated so Nex can answer it instead of
+ * replying "not on this site". Confirmed by Nikunj; change it here only.
+ */
+export const career = {
+  location: "Gurugram (Gurgaon), Haryana, India",
+  relocation: "Open to relocating.",
+  workModes: "Open to remote, hybrid and on-site work.",
+  engagement: "Looking for full-time roles only (not contract or freelance).",
+  noticePeriod: "30 days; an earlier release or a notice buyout is possible depending on the situation and the role's needs.",
+  search: "Actively looking.",
+  relocationPreference: "No preferred city or country.",
+  companyPreference: "Open to any company size, from startups to large companies.",
+  workAuthorization: "Indian citizen; would need a sponsored work visa for roles outside India.",
+  languages: "English and Hindi.",
+  /**
+   * Nikunj's choice: pay is negotiable, and no figure is ever stated (not his
+   * expected pay, his current CTC, or his equity). Nex says this and points to
+   * the contact form, nothing more.
+   */
+  compensation: "Compensation is negotiable and open to discussion for the right role; Nikunj discusses figures directly, not on this site.",
+  targetRoles: [
+    "Applied AI Engineer",
+    "Forward Deployed AI Engineer",
+    "Agentic AI Engineer",
+    "AI Product Engineer",
+    "LLM / AI Engineer",
+    "Full-stack GenAI Engineer",
+    "Backend Engineer",
+    "Full-stack Engineer",
+    "Software Development Engineer (SDE)",
+  ],
+  education: "B.Tech in Computer Science Engineering, The NorthCap University, Gurugram (Aug 2021 – Jun 2025).",
+};
+
 export const recognition = {
   title: "AI Ninja Award at ArmorCode",
   /**
@@ -84,6 +119,13 @@ export const recognition = {
    */
   detail:
     "First-ever recipient of ArmorCode's AI Ninja Award, presented on the company's global platform, and the youngest person to receive an award at the company.",
+  /**
+   * What the award recognised (approved by Nikunj for the public site). It
+   * deliberately leaves out the internal team's name, its reporting line and
+   * its size.
+   */
+  reason:
+    "It recognised being at the forefront of ArmorCode's internal AI adoption: the go-to person for colleagues adopting AI coding assistants and MCP tools, and one of the people who made that adoption succeed. That work helped lead to a dedicated internal AI team, where Nikunj is a founding member and co-owns the internal AI stack end to end: infrastructure, development, testing and maintenance.",
 };
 
 /** Prose form of the highlights, for Nex's context and SEO surfaces. */
@@ -360,7 +402,6 @@ export const chatSuggestions = [
   "What broke in production, and how did he fix it?",
   "Show me his strongest proof of ownership",
   "What does Nex refuse to answer?",
-  "Which role is he looking for next?",
 ];
 
 /**
