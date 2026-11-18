@@ -147,6 +147,10 @@ const AboutSection = () => {
                     <p className="mt-2 text-sm leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
                       {recognition.detail}
                     </p>
+                    {/* What it was for: the reader's next question about any award. */}
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
+                      {recognition.reason}
+                    </p>
                   </div>
                 </div>
               </SpotlightCard>
